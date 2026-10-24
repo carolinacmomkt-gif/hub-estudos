@@ -132,9 +132,10 @@ export function dadosReaisDoInicio(estado, agora = Date.now()) {
     id: e.id,
     tipo: e.tipo,
     titulo: e.titulo,
-    disciplina: nome(e.disciplina_id),
+    disciplina: e.disciplina_id || e.origem !== 'academico' ? nome(e.disciplina_id) : 'Calendário acadêmico',
+    semDisciplina: !e.disciplina_id,
     prazo: tempo(e.inicio),
-    status: situacaoDoEvento(e, agora) || 'pendente',
+    status: situacaoDoEvento(e, agora) || null,
     link: e.link,
   }));
 

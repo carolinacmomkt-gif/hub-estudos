@@ -371,6 +371,22 @@ create table if not exists public.conexoes (
   unique (user_id, servico)
 );
 
+-- Leituras do calendário acadêmico com a IA (a Carol revisa antes de virar evento).
+create table if not exists public.importacoes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  tipo text not null default 'calendario' check (tipo in ('calendario')),
+  status text not null default 'lendo' check (status in ('lendo', 'pronto', 'erro')),
+  arquivo text,      -- caminho do PDF no Storage (apagado depois da leitura)
+  texto text,        -- ou o texto colado
+  curso text,        -- dica opcional para a IA
+  resultado jsonb,
+  erro text,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
 -- Segredos criptografados (AES-256-GCM, chave TOKEN_CRYPTO_KEY só na Netlify).
 create table if not exists public.credenciais (
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -403,7 +419,7 @@ declare
   tabelas text[] := array[
     'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
     'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes'
+    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes'
   ];
 begin
   foreach tabela in array tabelas loop

@@ -35,3 +35,22 @@ export const conectarAva = (matricula, senha) => chamar('ava-conectar', { matric
 export const conectarLyceum = (matricula, senha) => chamar('lyceum-conectar', { matricula, senha });
 export const desconectar = (servico) => chamar('desconectar', { servico });
 export const sincronizarServico = (corpo) => chamar('sincronizar', corpo);
+
+// Funções de segundo plano (nome terminado em "-background") respondem 202 na hora
+// e continuam trabalhando; o resultado chega por outro caminho (uma linha no banco).
+export async function dispararSegundoPlano(nome, corpo) {
+  if (!navigator.onLine) return { ok: false, erro: 'Sem internet agora. Isso precisa de conexão.' };
+  const token = await tokenDeAcesso();
+  if (!token) return { ok: false, erro: 'Entre no app de novo para continuar.' };
+  try {
+    const resp = await fetch(`/.netlify/functions/${nome}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(corpo || {}),
+    });
+    if (resp.status === 404) return { ok: false, erro: 'A função não foi encontrada. Ela só roda no site publicado na Netlify (ou com "netlify dev").' };
+    return resp.ok ? { ok: true } : { ok: false, erro: `A função não aceitou o pedido (HTTP ${resp.status}).` };
+  } catch {
+    return { ok: false, erro: 'Não foi possível chegar à função do app. Confira a internet e tente de novo.' };
+  }
+}

@@ -229,3 +229,32 @@ export async function rest(caminho, { metodo = 'GET', corpo, prefer } = {}) {
   }
   return texto ? JSON.parse(texto) : null;
 }
+
+export function idDaUsuaria() {
+  return sessao?.user?.id || null;
+}
+
+// Envia um arquivo para o Storage (bucket "arquivos"). caminho: "{id da usuária}/pasta/nome".
+export async function enviarArquivo(caminho, arquivo) {
+  const token = await tokenDeAcesso();
+  if (!token) throw new ErroNuvem('Entre no app para enviar arquivos.', 401, 'sem_sessao');
+  let r;
+  try {
+    r = await fetch(`${config.supabaseUrl}/storage/v1/object/arquivos/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
+      method: 'POST',
+      headers: {
+        apikey: config.supabaseAnonKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': arquivo.type || 'application/octet-stream',
+        'x-upsert': 'true',
+      },
+      body: arquivo,
+    });
+  } catch {
+    throw new ErroNuvem('Sem conexão com a internet.', 0, 'rede');
+  }
+  if (!r.ok) {
+    const texto = await r.text().catch(() => '');
+    throw new ErroNuvem(`Não foi possível enviar o arquivo (${r.status}).`, r.status, '', texto.slice(0, 160));
+  }
+}

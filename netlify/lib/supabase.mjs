@@ -68,6 +68,21 @@ async function pedirRest(caminho, { metodo = 'GET', corpo, prefer } = {}) {
   return texto ? JSON.parse(texto) : null;
 }
 
+// Arquivos do Storage (bucket "arquivos"), também com a service_role.
+async function pedirStorage(caminho, { metodo = 'GET' } = {}) {
+  const cfg = configuracao();
+  const r = await fetch(`${cfg.url}/storage/v1/object/arquivos/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
+    method: metodo,
+    headers: {
+      apikey: cfg.servico,
+      ...(cfg.servico.startsWith('sb_') ? {} : { Authorization: `Bearer ${cfg.servico}` }),
+    },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!r.ok) throw new Error(`Storage respondeu ${r.status}`);
+  return r;
+}
+
 const filtroUsuaria = (userId, servico) =>
   `user_id=eq.${encodeURIComponent(userId)}&servico=eq.${encodeURIComponent(servico)}`;
 
@@ -110,6 +125,22 @@ export const banco = {
   // Linhas da usuária numa tabela (sem as excluídas). filtros: texto extra do PostgREST.
   async listar(tabela, userId, filtros = '') {
     return (await pedirRest(`${tabela}?select=*&user_id=eq.${encodeURIComponent(userId)}&excluido_em=is.null${filtros ? `&${filtros}` : ''}`)) || [];
+  },
+
+  async lerPorId(tabela, userId, id) {
+    const linhas = await pedirRest(`${tabela}?select=*&user_id=eq.${encodeURIComponent(userId)}&id=eq.${encodeURIComponent(id)}`);
+    return linhas?.[0] || null;
+  },
+
+  // Só arquivos dentro da pasta da usuária ("{user_id}/...").
+  async baixarArquivo(userId, caminho) {
+    if (!String(caminho).startsWith(`${userId}/`)) throw new Error('Arquivo fora da pasta da usuária.');
+    return Buffer.from(await (await pedirStorage(caminho)).arrayBuffer());
+  },
+
+  async apagarArquivo(userId, caminho) {
+    if (!String(caminho).startsWith(`${userId}/`)) return;
+    await pedirStorage(caminho, { metodo: 'DELETE' });
   },
 
   // Atualiza alguns campos de uma linha da usuária (sem precisar mandar os obrigatórios).

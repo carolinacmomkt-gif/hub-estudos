@@ -13,17 +13,25 @@ const NOMES_TIPO = {
   aula: 'Aula', feriado: 'Feriado', pessoal: 'Pessoal',
 };
 
+// Prazo de verdade: prova, trabalho ou atividade (feriados e aulas do calendário acadêmico não contam).
+// Os vencidos só aparecem se ainda têm entrega pendente e venceram há menos de 14 dias.
+const TIPOS_PRAZO = new Set(['prova', 'trabalho', 'atividade']);
+function ehPrazoAberto(e, agora) {
+  if (!TIPOS_PRAZO.has(e.tipo) || e.status === 'entregue') return false;
+  return e.prazo >= agora || (Boolean(e.status) && agora - e.prazo <= 14 * DIA);
+}
+
 // Prioridade: prova próxima (7 dias) > entrega pendente > revisão pendente > leitura.
 export function escolherProximoPasso(dados, agora = Date.now()) {
   const pendentes = dados.eventos
-    .filter((e) => e.status !== 'entregue')
+    .filter((e) => ehPrazoAberto(e, agora))
     .sort((a, b) => a.prazo - b.prazo);
 
   const prova = pendentes.find((e) => e.tipo === 'prova' && e.prazo > agora && e.prazo - agora <= 7 * DIA);
   if (prova) {
     const dias = diasAte(prova.prazo, agora);
     return {
-      titulo: `Revisar para a ${prova.titulo} de ${prova.disciplina}`,
+      titulo: prova.semDisciplina ? `Revisar para: ${prova.titulo}` : `Revisar para a ${prova.titulo} de ${prova.disciplina}`,
       texto: `${dias <= 1 ? 'É logo' : `Faltam ${dias} dias`}. Uma sessão de 40 minutos hoje com o caderno e as questões da disciplina já ajuda bastante.`,
       acao: 'Ver no calendário',
       destino: '#calendario',
@@ -83,7 +91,7 @@ function cardProximoPasso(passo) {
 
 function cardPrazos(dados, agora) {
   const prazos = dados.eventos
-    .filter((e) => e.status !== 'entregue' && e.prazo - agora <= 7 * DIA)
+    .filter((e) => ehPrazoAberto(e, agora) && e.prazo - agora <= 7 * DIA)
     .sort((a, b) => a.prazo - b.prazo);
 
   const itens = prazos.map((e) => {
