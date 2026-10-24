@@ -782,3 +782,15 @@
 .ava-resultado .metodos + p {
   margin-top: 14px;
 }
+
+.relatorio {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+  font: 0.8rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  resize: vertical;
+}

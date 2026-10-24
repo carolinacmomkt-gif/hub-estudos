@@ -2,7 +2,8 @@
 
 import { definirTema } from './tema.js';
 import { testarConexaoAva } from './ava.js';
-import { renderCarregandoAva, renderResultadoAva } from './views-configuracoes.js';
+import { investigarLyceum } from './lyceum.js';
+import { renderCarregandoAva, renderResultadoAva, renderResultadoLyceum } from './views-configuracoes.js';
 
 async function enviarTesteAva(form) {
   const botao = form.querySelector('[type="submit"]');
@@ -31,6 +32,35 @@ async function enviarTesteAva(form) {
   }
 }
 
+async function enviarInvestigacaoLyceum(form) {
+  const botao = form.querySelector('[type="submit"]');
+  const saida = document.getElementById('lyceum-resultado');
+  const codigo = form.elements.codigo.value;
+  if (!codigo) {
+    saida.innerHTML = renderResultadoLyceum({ ok: false, erro: 'Digite o código de acesso.' });
+    return;
+  }
+  botao.disabled = true;
+  saida.innerHTML = '<p class="ava-status">Lendo o portal do Lyceum… isso leva alguns segundos.</p>';
+  try {
+    saida.innerHTML = renderResultadoLyceum(await investigarLyceum({ codigo }));
+    saida.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } finally {
+    botao.disabled = false;
+  }
+}
+
+async function copiarRelatorio(botao) {
+  const campo = document.getElementById('lyceum-relatorio');
+  try {
+    await navigator.clipboard.writeText(campo.value);
+  } catch {
+    campo.select();
+    document.execCommand('copy');
+  }
+  botao.textContent = 'Copiado!';
+}
+
 export function ligarEventos() {
   const folhaMais = document.getElementById('folha-mais');
 
@@ -50,6 +80,9 @@ export function ligarEventos() {
       case 'fechar-mais':
         folhaMais.close();
         return;
+      case 'copiar-lyceum':
+        copiarRelatorio(alvo);
+        return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -62,9 +95,10 @@ export function ligarEventos() {
   });
 
   document.addEventListener('submit', (evento) => {
-    const form = evento.target.closest('[data-form="ava-teste"]');
+    const form = evento.target.closest('[data-form]');
     if (!form) return;
     evento.preventDefault();
-    enviarTesteAva(form);
+    if (form.dataset.form === 'ava-teste') enviarTesteAva(form);
+    if (form.dataset.form === 'lyceum-investigar') enviarInvestigacaoLyceum(form);
   });
 }

@@ -1,0 +1,28 @@
+// Conversa com as Netlify Functions do Lyceum. O navegador nunca fala direto com o portal.
+
+const URL_INVESTIGAR = '/.netlify/functions/lyceum-investigar';
+
+export async function investigarLyceum({ codigo }) {
+  if (!navigator.onLine) return { ok: false, erro: 'Sem internet agora. A investigação precisa de conexão.' };
+
+  let resp;
+  try {
+    resp = await fetch(URL_INVESTIGAR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo }),
+    });
+  } catch {
+    return { ok: false, erro: 'Não foi possível chegar à função do app. Confira a internet e tente de novo.' };
+  }
+
+  if (resp.status === 404) {
+    return { ok: false, erro: 'A função do Lyceum não foi encontrada. Ela só roda no site publicado na Netlify.' };
+  }
+
+  try {
+    return await resp.json();
+  } catch {
+    return { ok: false, erro: `Resposta inesperada da função (HTTP ${resp.status}).` };
+  }
+}

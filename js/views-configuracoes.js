@@ -51,12 +51,49 @@ function cardAva() {
     </section>`;
 }
 
+function cardLyceum() {
+  return `
+    <section class="card" aria-labelledby="config-lyceum">
+      <h2 class="card-titulo" id="config-lyceum">Investigar o Lyceum</h2>
+      <p class="texto-suave">
+        O app lê só os arquivos públicos do portal do aluno (antes do login) para descobrir como ele
+        busca notas, faltas e agenda. Não usa CPF nem senha e não acessa nenhum dado seu.
+      </p>
+      <form class="formulario" data-form="lyceum-investigar" novalidate>
+        <label class="campo">
+          <span class="campo-rotulo">Código de acesso do Hub</span>
+          <input name="codigo" type="password" autocomplete="off" required>
+        </label>
+        <div>
+          <button class="botao botao-primario" type="submit">Investigar</button>
+        </div>
+      </form>
+      <div class="ava-resultado" id="lyceum-resultado" aria-live="polite"></div>
+    </section>`;
+}
+
 export function renderConfiguracoes() {
   return `
     ${cabecalho('Configurações', 'Ajustes deste aparelho')}
     <div class="pilha">
       ${cardTema()}
       ${cardAva()}
+      ${cardLyceum()}
+    </div>`;
+}
+
+export function renderResultadoLyceum(r) {
+  if (!r.ok) return `<div class="ava-alerta" role="alert">${esc(r.erro || 'Não deu certo desta vez.')}</div>`;
+  const texto = JSON.stringify(r, null, 2);
+  return `
+    <div class="ava-sucesso">
+      <strong>Investigação concluída.</strong>
+      <span>${r.scripts.length} arquivos lidos · ${r.urls.length} endereços e ${r.caminhos.length} caminhos encontrados${r.captcha ? ' · o portal menciona captcha' : ''}.</span>
+      <span>Toque em "Copiar resultado" e cole aqui no chat.</span>
+    </div>
+    <div class="formulario">
+      <div><button class="botao botao-secundario" type="button" data-acao="copiar-lyceum">Copiar resultado</button></div>
+      <textarea class="relatorio" id="lyceum-relatorio" readonly rows="12" aria-label="Resultado da investigação">${esc(texto)}</textarea>
     </div>`;
 }
 
