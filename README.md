@@ -54,7 +54,8 @@ index.html, manifest.webmanifest, sw.js, netlify.toml
 icones/             ícones do app
 css/                temas.css (todas as cores), base.css, layout.css, componentes.css
 js/                 main.js, estado.js, persistencia.js (aparelho + sincronização), nuvem.js (Supabase),
-                    funcoes.js, eventos.js, views-*.js, ...
+                    funcoes.js, eventos.js, editor-tinta.js (escrita à mão), views-*.js, ...
+js/vendor/          perfect-freehand (MIT), copiado sem alterações
 netlify/functions/  ava-conectar, lyceum-conectar, desconectar, config-publica
 netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http
 supabase/           esquema.sql

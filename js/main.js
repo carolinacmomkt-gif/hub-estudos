@@ -8,6 +8,7 @@ import { renderInicio } from './views-inicio.js';
 import { criarViewArea, IDS_AREAS } from './views-areas.js';
 import { renderConfiguracoes, textoSituacao } from './views-configuracoes.js';
 import { renderLogin } from './views-login.js';
+import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
 import { ligarEventos } from './eventos.js';
 import { carregarConfig, nuvemConfigurada, sessaoAtual, emailDaSessao } from './nuvem.js';
 import { listar, situacaoSincronizacao, iniciarSincronizacaoAutomatica } from './persistencia.js';
@@ -15,7 +16,14 @@ import { listar, situacaoSincronizacao, iniciarSincronizacaoAutomatica } from '.
 const VIEWS = {
   inicio: renderInicio,
   configuracoes: renderConfiguracoes,
+  caneta: renderCaneta,
 };
+
+// Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
+const CICLO = {
+  caneta: { montar: montarCaneta, desmontar: desmontarCaneta },
+};
+let telaMontada = null;
 ROTAS.filter((r) => IDS_AREAS.includes(r.id)).forEach((r) => {
   VIEWS[r.id] = criarViewArea(r);
 });
@@ -32,8 +40,16 @@ function digitando() {
 export function renderizar({ mudouDeTela = false } = {}) {
   if (!noApp) return;
   const rota = rotaAtual();
+  if (telaMontada) {
+    CICLO[telaMontada].desmontar();
+    telaMontada = null;
+  }
   atualizarEstado({ rota: rota.id, sinc: situacaoSincronizacao(), email: emailDaSessao() });
   conteudo.innerHTML = VIEWS[rota.id](obterEstado());
+  if (CICLO[rota.id]) {
+    telaMontada = rota.id;
+    CICLO[rota.id].montar();
+  }
   atualizarBotoesTema();
   marcarRotaAtiva(rota.id);
   document.title = rota.id === 'inicio' ? 'Hub de Estudos' : `${rota.titulo} · Hub de Estudos`;

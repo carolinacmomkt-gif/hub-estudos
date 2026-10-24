@@ -14,7 +14,10 @@ export const ROTAS = [
 
 export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configurações', icone: 'configuracoes' };
 
-const TODAS = [...ROTAS, ROTA_CONFIGURACOES];
+// Telas que não aparecem no menu (abertas por um botão).
+const ROTAS_INTERNAS = [{ id: 'caneta', titulo: 'Testar a caneta', icone: 'cadernos' }];
+
+const TODAS = [...ROTAS, ROTA_CONFIGURACOES, ...ROTAS_INTERNAS];
 
 export function rotaAtual() {
   const id = location.hash.replace(/^#\/?/, '').split(/[/?]/)[0];

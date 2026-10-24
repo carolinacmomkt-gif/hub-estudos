@@ -1,0 +1,211 @@
+/* Editor de escrita à mão (protótipo da caneta e, depois, os cadernos) */
+
+/* Em tela cheia: sem menus nem botão "+" */
+.modo-editor .app {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.modo-editor .nav-lateral,
+.modo-editor .nav-inferior,
+.modo-editor .fab {
+  display: none;
+}
+
+.modo-editor .conteudo {
+  max-width: none;
+  padding: 0;
+}
+
+.caneta {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding: 10px clamp(8px, 2vw, 20px) calc(10px + env(safe-area-inset-bottom));
+  gap: 8px;
+}
+
+.caneta-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.caneta-topo h1 {
+  font-size: 1.1rem;
+}
+
+.caneta-salvo {
+  margin-left: auto;
+  color: var(--cor-texto-fraco);
+  font-size: 0.85rem;
+}
+
+.ferramentas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 6px 8px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+}
+
+.ferramenta-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ferramenta-botao {
+  min-width: var(--toque);
+  min-height: var(--toque);
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ferramenta-botao[aria-pressed="true"] {
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.ferramenta-botao:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ferramenta-cor {
+  width: var(--toque);
+  height: var(--toque);
+  border: 2px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ferramenta-cor[aria-pressed="true"] {
+  border-color: var(--cor-texto);
+  box-shadow: inset 0 0 0 3px var(--cor-superficie);
+}
+
+.ferramenta-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cor-texto-suave);
+  font-size: 0.88rem;
+}
+
+.ferramenta-select select {
+  min-height: var(--toque);
+  padding: 0 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.caneta-dica {
+  color: var(--cor-texto-fraco);
+  font-size: 0.82rem;
+}
+
+/* A página ocupa a largura e rola na vertical (o dedo rola; a caneta escreve) */
+.caneta-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 24px;
+}
+
+.folha-tinta {
+  flex: none;
+}
+
+.folha-tinta {
+  position: relative;
+  border-radius: 6px;
+  box-shadow: var(--sombra);
+  overflow: hidden;
+}
+
+.folha-tinta canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* Só a camada de cima recebe a caneta; sem rolar, dar zoom ou abrir menu ao escrever */
+.folha-tinta-entrada {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.caneta-diagnostico {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 30;
+  width: min(300px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra);
+  font-size: 0.8rem;
+}
+
+.caneta-diagnostico[hidden] {
+  display: none;
+}
+
+.caneta-diagnostico dl {
+  display: grid;
+  gap: 3px;
+  margin: 0 0 10px;
+}
+
+.caneta-diagnostico dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.caneta-diagnostico dt {
+  color: var(--cor-texto-suave);
+}
+
+.caneta-diagnostico dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 700px) {
+  .caneta-dica {
+    display: none;
+  }
+
+  .ferramentas {
+    gap: 6px 8px;
+  }
+
+  .ferramenta-select span {
+    display: none;
+  }
+}

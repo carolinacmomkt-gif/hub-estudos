@@ -53,6 +53,21 @@
 
   --sombra: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.28);
   --sombra-capa: inset 6px 0 0 rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.3);
+
+  /* Papel e tintas dos cadernos (os traços guardam o nome da tinta, não a cor:
+     assim a escrita continua legível ao trocar o tema) */
+  --papel: #221A14;
+  --papel-linha: rgba(232, 211, 191, 0.14);
+  --papel-margem: rgba(236, 124, 102, 0.35);
+  --tinta-tinta: #F4EADF;
+  --tinta-azul: #8DB7EC;
+  --tinta-vermelho: #F28B77;
+  --tinta-verde: #9DCF95;
+  --tinta-roxo: #C6A8EC;
+  --tinta-amarelo: rgba(240, 210, 80, 0.38);
+  --tinta-rosa: rgba(240, 130, 180, 0.34);
+  --tinta-ciano: rgba(90, 210, 220, 0.32);
+  --borracha-contorno: rgba(244, 234, 223, 0.55);
 }
 
 :root[data-tema="claro"] {
@@ -103,4 +118,17 @@
 
   --sombra: 0 1px 2px rgba(43, 30, 22, 0.06), 0 8px 24px rgba(43, 30, 22, 0.07);
   --sombra-capa: inset 6px 0 0 rgba(0, 0, 0, 0.14), 0 6px 14px rgba(43, 30, 22, 0.16);
+
+  --papel: #FFFDF9;
+  --papel-linha: rgba(43, 30, 22, 0.13);
+  --papel-margem: rgba(192, 57, 43, 0.35);
+  --tinta-tinta: #2B1E16;
+  --tinta-azul: #2C5AA6;
+  --tinta-vermelho: #B3372A;
+  --tinta-verde: #3B7537;
+  --tinta-roxo: #6A47A3;
+  --tinta-amarelo: rgba(255, 214, 0, 0.42);
+  --tinta-rosa: rgba(255, 90, 160, 0.3);
+  --tinta-ciano: rgba(0, 190, 210, 0.28);
+  --borracha-contorno: rgba(43, 30, 22, 0.5);
 }
