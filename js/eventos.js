@@ -48,7 +48,7 @@ async function pedirCodigo(email, botao) {
     await enviarCodigo(email);
     app.mostrarLogin({ etapa: 'codigo', email });
   } catch (erro) {
-    app.mostrarLogin({ email, erro: erro.message });
+    app.mostrarLogin({ email, erro: erro.message, detalhe: erro.detalhe });
   }
 }
 
@@ -65,7 +65,7 @@ async function entrarComCodigo(form) {
     await app.entrarNoApp();
     sincronizar();
   } catch (erro) {
-    app.mostrarLogin({ etapa: 'codigo', email, erro: erro.message });
+    app.mostrarLogin({ etapa: 'codigo', email, erro: erro.message, detalhe: erro.detalhe });
   }
 }
 

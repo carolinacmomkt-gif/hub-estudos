@@ -993,3 +993,12 @@ button.card-link {
 .folha .formulario {
   margin: 0 0 4px;
 }
+
+.detalhe-tecnico {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}

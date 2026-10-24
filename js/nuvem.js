@@ -30,10 +30,11 @@ function guardar(chave, valor) {
 }
 
 export class ErroNuvem extends Error {
-  constructor(mensagem, status = 0, codigo = '') {
+  constructor(mensagem, status = 0, codigo = '', detalhe = '') {
     super(mensagem);
     this.status = status;
     this.codigo = codigo;
+    this.detalhe = detalhe; // motivo técnico, para diagnóstico
   }
 }
 
@@ -87,6 +88,7 @@ const MENSAGENS = {
   over_email_send_rate_limit: 'Muitos códigos pedidos. Espere alguns minutos e tente de novo.',
   over_request_rate_limit: 'Muitas tentativas. Espere alguns minutos e tente de novo.',
   email_address_invalid: 'Confira o e-mail digitado.',
+  email_address_not_authorized: 'O Supabase gratuito só manda e-mail para quem é da equipe do projeto. Use o e-mail da sua conta do Supabase ou configure um envio de e-mail próprio (SMTP).',
   validation_failed: 'Confira o e-mail digitado.',
 };
 
@@ -119,7 +121,10 @@ async function pedirAuth(caminho, corpo, token) {
     let mensagem = MENSAGENS[codigo];
     if (!mensagem && /signups not allowed|not found/i.test(bruto)) mensagem = MENSAGENS.signup_disabled;
     if (!mensagem && /expired|invalid/i.test(bruto) && caminho === 'verify') mensagem = MENSAGENS.otp_expired;
-    throw new ErroNuvem(mensagem || 'Não deu certo agora. Tente de novo em instantes.', r.status, codigo);
+    if (!mensagem && /not authorized/i.test(bruto)) mensagem = MENSAGENS.email_address_not_authorized;
+    if (!mensagem && /sending|smtp|email/i.test(bruto)) mensagem = 'O Supabase não conseguiu enviar o e-mail com o código.';
+    const detalhe = `HTTP ${r.status}${codigo ? ` · ${codigo}` : ''}${bruto ? ` · ${bruto.slice(0, 160)}` : ''}`;
+    throw new ErroNuvem(mensagem || 'Não deu certo agora. Tente de novo em instantes.', r.status, codigo, detalhe);
   }
   return dados;
 }

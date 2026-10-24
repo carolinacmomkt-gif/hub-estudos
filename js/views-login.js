@@ -4,7 +4,7 @@
 import { icone } from './icones.js';
 import { esc } from './utilidades.js';
 
-export function renderLogin({ etapa = 'email', email = '', mensagem = '', erro = '' } = {}) {
+export function renderLogin({ etapa = 'email', email = '', mensagem = '', erro = '', detalhe = '' } = {}) {
   const corpo = etapa === 'email'
     ? `
       <form class="formulario" data-form="login-email" novalidate>
@@ -35,7 +35,7 @@ export function renderLogin({ etapa = 'email', email = '', mensagem = '', erro =
       <h1 id="login-titulo" tabindex="-1">Entrar no Hub</h1>
       <p class="texto-suave">Só você tem acesso. Seus dados ficam guardados com segurança e também neste aparelho.</p>
       ${mensagem ? `<p class="ava-status" role="status">${esc(mensagem)}</p>` : ''}
-      ${erro ? `<div class="ava-alerta" role="alert">${esc(erro)}</div>` : ''}
+      ${erro ? `<div class="ava-alerta" role="alert">${esc(erro)}${detalhe ? `<small class="detalhe-tecnico">Detalhe: ${esc(detalhe)}</small>` : ''}</div>` : ''}
       ${corpo}
     </section>`;
 }
