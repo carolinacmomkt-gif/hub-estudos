@@ -112,6 +112,31 @@ export const banco = {
     return (await pedirRest(`${tabela}?select=*&user_id=eq.${encodeURIComponent(userId)}&excluido_em=is.null${filtros ? `&${filtros}` : ''}`)) || [];
   },
 
+  // Atualiza alguns campos de uma linha da usuária (sem precisar mandar os obrigatórios).
+  async atualizarPorId(tabela, userId, id, campos) {
+    await pedirRest(`${tabela}?user_id=eq.${encodeURIComponent(userId)}&id=eq.${encodeURIComponent(id)}`, {
+      metodo: 'PATCH',
+      corpo: campos,
+      prefer: 'return=minimal',
+    });
+  },
+
+  // Atualiza só o campo status de linhas que vêm de fora (identificadas por origem + origem_id).
+  async atualizarStatus(tabela, linhas) {
+    const fila = [...linhas];
+    const trabalhador = async () => {
+      while (fila.length) {
+        const l = fila.shift();
+        await pedirRest(`${tabela}?user_id=eq.${encodeURIComponent(l.user_id)}&origem=eq.${encodeURIComponent(l.origem)}&origem_id=eq.${encodeURIComponent(l.origem_id)}`, {
+          metodo: 'PATCH',
+          corpo: { status: l.status },
+          prefer: 'return=minimal',
+        });
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(6, fila.length) }, trabalhador));
+  },
+
   // Grava em lote. conflito: colunas da chave única (ex.: "user_id,origem,origem_id").
   // Só as colunas enviadas mudam; as que o app edita (pesos, faltas_manuais…) ficam como estão.
   async gravar(tabela, linhas, conflito) {

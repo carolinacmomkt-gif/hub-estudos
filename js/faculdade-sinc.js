@@ -1,11 +1,12 @@
 // Sincronização da faculdade pelo app: ao abrir (se faz mais de 1h) e no "Sincronizar agora".
 // Ordem: Lyceum primeiro (traz os nomes oficiais das disciplinas), depois o AVA em partes
-// (geral + até 3 disciplinas por vez), e no fim baixa tudo para o aparelho.
+// (geral + até 2 disciplinas por vez), e no fim baixa tudo para o aparelho.
 
 import { sincronizarServico } from './funcoes.js';
 import { sincronizar as sincronizarDados, listar } from './persistencia.js';
 
 const UMA_HORA = 60 * 60 * 1000;
+const POR_PARTE = 2; // disciplinas do AVA por chamada (igual a CURSOS_POR_PARTE nas funções)
 let emAndamento = null;
 const situacao = { estado: 'ocioso', passo: '', erros: [] };
 
@@ -49,9 +50,10 @@ export function sincronizarFaculdade({ forcar = false } = {}) {
           erros.push(geral.erro);
         } else {
           const cursos = geral.cursos || [];
-          for (let i = 0; i < cursos.length; i += 3) {
-            avisar({ passo: `Materiais e notas do AVA (${Math.min(i + 3, cursos.length)} de ${cursos.length})…` });
-            const parte = await sincronizarServico({ servico: 'ava', parte: 'cursos', cursos: cursos.slice(i, i + 3) });
+          if (!cursos.length) erros.push('O AVA não mostrou nenhuma disciplina em andamento.');
+          for (let i = 0; i < cursos.length; i += POR_PARTE) {
+            avisar({ passo: `Atividades, materiais e notas do AVA (${Math.min(i + POR_PARTE, cursos.length)} de ${cursos.length})…` });
+            const parte = await sincronizarServico({ servico: 'ava', parte: 'cursos', cursos: cursos.slice(i, i + POR_PARTE) });
             if (!parte.ok) {
               erros.push(parte.erro);
               break;

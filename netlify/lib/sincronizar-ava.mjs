@@ -1,8 +1,9 @@
 // Sincronização do AVA (somente leitura) → Supabase.
 //
-// Dividida em duas partes para caber no tempo das funções da Netlify:
-// - geral: disciplinas, trabalhos (com status de entrega), quizzes, eventos do calendário e avisos;
-// - cursos: materiais e notas de até 3 disciplinas por vez.
+// Dividida em partes para caber no tempo das funções da Netlify (~10 s):
+// - geral: quais disciplinas estão em andamento, trabalhos e quizzes (com a situação das
+//   pendências do calendário) e outros eventos do calendário;
+// - cursos (até 2 por vez): status de entrega de cada trabalho, avisos, materiais e notas.
 // Métodos bloqueados (accessexception) entram em "bloqueados" e o resto continua.
 
 import { chamarAva, ErroAva } from './ava.mjs';
@@ -11,6 +12,7 @@ import { emParalelo, melhorCombinacao, nomeBonito, dataIso, textoSemHtml, tipoPe
 
 const DIA = 24 * 60 * 60 * 1000;
 const MODULOS_DE_MATERIAL = new Set(['resource', 'url', 'page', 'folder', 'book']);
+export const CURSOS_POR_PARTE = 2;
 
 // Executa uma consulta; se o método estiver bloqueado ou falhar, anota e devolve null.
 // Token vencido não é engolido: interrompe a sincronização para pedir reconexão.
@@ -24,28 +26,46 @@ async function tentar(nome, bloqueados, fn) {
   }
 }
 
-function cursoAtivo(curso, agora) {
+// Reserva, se o AVA não disser quais cursos estão em andamento: datas e último acesso.
+function pareceAtivo(curso, agora) {
   if (curso.visible === 0) return false;
+  if (curso.lastaccess && curso.lastaccess * 1000 >= agora - 120 * DIA) return true;
   if (curso.enddate) return curso.enddate * 1000 >= agora - 15 * DIA;
   return !curso.startdate || curso.startdate * 1000 >= agora - 300 * DIA;
 }
+
+const linkDe = (base) => (caminho) => `${base}${caminho}`;
 
 export async function sincronizarAvaGeral({ userId, base, token, avaUserId }) {
   const agora = Date.now();
   const bloqueados = [];
   const contagens = {};
+  const link = linkDe(base);
 
-  // 1. Disciplinas
-  const cursos = (await chamarAva(base, token, 'core_enrol_get_users_courses', { userid: avaUserId })) || [];
+  // 1. Disciplinas: o próprio AVA diz quais estão "em andamento" (como na página inicial do Moodle).
+  const [cursos, classificacao] = await Promise.all([
+    chamarAva(base, token, 'core_enrol_get_users_courses', { userid: avaUserId }),
+    tentar('core_course_get_enrolled_courses_by_timeline_classification', bloqueados, () => chamarAva(base, token,
+      'core_course_get_enrolled_courses_by_timeline_classification', { classification: 'inprogress', limit: 0, offset: 0 })),
+  ]);
+  const emAndamento = new Set((classificacao?.courses || []).map((c) => c.id));
+  const ativo = (curso) => (emAndamento.size ? emAndamento.has(curso.id) : pareceAtivo(curso, agora));
+
   const existentes = await banco.listar('disciplinas', userId);
+  const limpezas = [];
   const linhasDisciplinas = [];
   const idPorCurso = new Map();
-  for (const curso of cursos) {
-    const ativo = cursoAtivo(curso, agora);
+  for (const curso of cursos || []) {
+    const estaAtivo = ativo(curso);
     let linha = existentes.find((d) => Number(d.ava_course_id) === curso.id);
-    if (!linha && ativo) {
-      // Disciplina que já veio do Lyceum e ainda não tem o AVA ligado: combina pelo nome.
-      linha = melhorCombinacao(curso.fullname, existentes.filter((d) => !d.ava_course_id && !d.arquivada && !d.combinacao_manual), 'nome_lyceum');
+    if (estaAtivo && !linha?.lyceum_cod_disciplina && !linha?.combinacao_manual) {
+      // Combina com a disciplina que veio do Lyceum (nome oficial), se houver.
+      const doLyceum = melhorCombinacao(curso.fullname, existentes.filter((d) => d.lyceum_cod_disciplina && !d.ava_course_id && !d.arquivada), 'nome_lyceum');
+      if (doLyceum) {
+        // A linha antiga, só do AVA, sai (primeiro solta o código do curso, que é único).
+        if (linha) limpezas.push(linha.id);
+        linha = doLyceum;
+      }
     }
     const id = linha?.id || crypto.randomUUID();
     idPorCurso.set(curso.id, id);
@@ -55,18 +75,19 @@ export async function sincronizarAvaGeral({ userId, base, token, avaUserId }) {
       ava_course_id: curso.id,
       nome_ava: curso.fullname,
       nome: nomeBonito(linha?.nome_lyceum || curso.fullname),
-      arquivada: !ativo,
+      arquivada: !estaAtivo,
     });
     if (linha) linha.ava_course_id = curso.id; // não combinar a mesma linha duas vezes
   }
+  for (const id of limpezas) {
+    await banco.atualizarPorId('disciplinas', userId, id, { ava_course_id: null, excluido_em: new Date().toISOString() });
+  }
   await banco.gravar('disciplinas', linhasDisciplinas, 'id');
-  contagens.disciplinas = linhasDisciplinas.filter((d) => !d.arquivada).length;
+  const ativos = (cursos || []).filter(ativo).map((c) => c.id);
+  contagens.cursosNoAva = (cursos || []).length;
+  contagens.disciplinas = ativos.length;
 
-  const ativos = cursos.filter((c) => cursoAtivo(c, agora)).map((c) => c.id);
-  const link = (caminho) => `${base}${caminho}`;
-  const eventos = [];
-
-  // 2. Pendências do calendário (dizem o que ainda falta fazer e o que está atrasado)
+  // 2. Pendências do calendário (o que ainda falta fazer e o que está atrasado)
   const acoes = await tentar('core_calendar_get_action_events_by_timesort', bloqueados, () => chamarAva(base, token, 'core_calendar_get_action_events_by_timesort', {
     timesortfrom: Math.floor((agora - 30 * DIA) / 1000),
     limitnum: 50,
@@ -74,39 +95,29 @@ export async function sincronizarAvaGeral({ userId, base, token, avaUserId }) {
   const pendencias = new Map();
   for (const ev of acoes?.events || []) pendencias.set(`${ev.modulename}-${ev.instance}`, ev);
 
+  const eventos = [];
   if (ativos.length) {
-    // 3. Trabalhos + status de entrega
+    // 3. Trabalhos (o status de entrega de cada um vem na parte por curso)
     const tarefas = await tentar('mod_assign_get_assignments', bloqueados, () => chamarAva(base, token, 'mod_assign_get_assignments', { courseids: ativos }));
-    const listaTarefas = (tarefas?.courses || []).flatMap((c) => (c.assignments || []).map((a) => ({ ...a, course: a.course || c.id })))
-      .filter((a) => a.duedate && a.duedate * 1000 >= agora - 60 * DIA && a.duedate * 1000 <= agora + 200 * DIA);
-
-    const status = await emParalelo(listaTarefas, 6, async (a) => {
-      const r = await chamarAva(base, token, 'mod_assign_get_submission_status', { assignid: a.id });
-      return r?.lastattempt?.submission?.status || r?.lastattempt?.teamsubmission?.status || null;
-    });
-    let statusBloqueado = false;
-    listaTarefas.forEach((a, i) => {
-      if (status[i]?.erro) {
-        if (status[i].erro instanceof ErroAva && status[i].erro.codigo === 'token') throw status[i].erro;
-        statusBloqueado = true;
+    for (const c of tarefas?.courses || []) {
+      for (const a of c.assignments || []) {
+        if (!a.duedate || a.duedate * 1000 < agora - 60 * DIA) continue;
+        const pendencia = pendencias.get(`assign-${a.id}`);
+        const evento = {
+          user_id: userId,
+          origem: 'ava',
+          origem_id: `assign-${a.id}`,
+          disciplina_id: idPorCurso.get(a.course || c.id) || null,
+          tipo: tipoPeloNome(a.name, 'trabalho') === 'prova' ? 'prova' : 'trabalho',
+          titulo: a.name,
+          inicio: dataIso(a.duedate),
+          link: link(`/mod/assign/view.php?id=${a.cmid}`),
+        };
+        // Sem pendência não dá para saber aqui: o status fica como estava até a parte por curso.
+        if (pendencia) evento.status = pendencia.overdue ? 'atrasado' : 'pendente';
+        eventos.push(evento);
       }
-      const enviado = status[i] === 'submitted';
-      const pendencia = pendencias.get(`assign-${a.id}`);
-      let situacao = enviado ? 'entregue' : a.duedate * 1000 < agora ? 'atrasado' : 'pendente';
-      if (status[i]?.erro) situacao = pendencia ? (pendencia.overdue ? 'atrasado' : 'pendente') : (a.duedate * 1000 < agora ? null : 'pendente');
-      eventos.push({
-        user_id: userId,
-        origem: 'ava',
-        origem_id: `assign-${a.id}`,
-        disciplina_id: idPorCurso.get(a.course) || null,
-        tipo: tipoPeloNome(a.name, 'trabalho') === 'prova' ? 'prova' : 'trabalho',
-        titulo: a.name,
-        inicio: dataIso(a.duedate),
-        status: situacao,
-        link: link(`/mod/assign/view.php?id=${a.cmid}`),
-      });
-    });
-    if (statusBloqueado) bloqueados.push({ metodo: 'mod_assign_get_submission_status', motivo: 'Status de entrega indisponível; usando as pendências do calendário.' });
+    }
 
     // 4. Quizzes (provas e questionários online)
     const quizzes = await tentar('mod_quiz_get_quizzes_by_courses', bloqueados, () => chamarAva(base, token, 'mod_quiz_get_quizzes_by_courses', { courseids: ativos }));
@@ -153,43 +164,75 @@ export async function sincronizarAvaGeral({ userId, base, token, avaUserId }) {
   await banco.gravar('eventos', eventos.filter((e) => e.inicio), 'user_id,origem,origem_id');
   contagens.eventos = eventos.length;
 
-  // 6. Avisos (fóruns de notícias de cada disciplina)
-  if (ativos.length) {
-    const foruns = await tentar('mod_forum_get_forums_by_courses', bloqueados, () => chamarAva(base, token, 'mod_forum_get_forums_by_courses', { courseids: ativos }));
-    const deAvisos = (Array.isArray(foruns) ? foruns : []).filter((f) => f.type === 'news');
-    const discussoes = await emParalelo(deAvisos, 4, (f) => chamarAva(base, token, 'mod_forum_get_forum_discussions', { forumid: f.id, page: 0, perpage: 10 }));
-    const avisos = [];
-    deAvisos.forEach((forum, i) => {
-      for (const d of discussoes[i]?.discussions || []) {
-        avisos.push({
-          user_id: userId,
-          origem: 'ava',
-          origem_id: `forum-${d.discussion || d.id}`,
-          disciplina_id: idPorCurso.get(forum.course) || null,
-          titulo: d.subject || d.name || 'Aviso',
-          texto: textoSemHtml(d.message),
-          data: dataIso(d.created || d.timemodified),
-          link: link(`/mod/forum/discuss.php?d=${d.discussion || d.id}`),
-        });
-      }
-    });
-    if (discussoes.some((d) => d?.erro)) bloqueados.push({ metodo: 'mod_forum_get_forum_discussions', motivo: 'Alguns avisos não vieram.' });
-    await banco.gravar('avisos', avisos, 'user_id,origem,origem_id');
-    contagens.avisos = avisos.length;
-  }
-
   return { cursos: ativos, contagens, bloqueados };
 }
 
 export async function sincronizarAvaCursos({ userId, base, token, avaUserId, cursos }) {
+  const agora = Date.now();
   const bloqueados = [];
-  const contagens = { materiais: 0, notas: 0 };
+  const contagens = { materiais: 0, notas: 0, avisos: 0, entregas: 0 };
+  const link = linkDe(base);
+  const lista = cursos.slice(0, CURSOS_POR_PARTE);
   const disciplinas = await banco.listar('disciplinas', userId);
   const idPorCurso = new Map(disciplinas.filter((d) => d.ava_course_id).map((d) => [Number(d.ava_course_id), d.id]));
 
-  for (const cursoId of cursos.slice(0, 3)) {
-    const disciplinaId = idPorCurso.get(cursoId) || null;
+  // Fóruns de avisos e trabalhos dos cursos desta parte (uma chamada cada)
+  const [foruns, tarefas] = await Promise.all([
+    tentar('mod_forum_get_forums_by_courses', bloqueados, () => chamarAva(base, token, 'mod_forum_get_forums_by_courses', { courseids: lista })),
+    tentar('mod_assign_get_assignments', bloqueados, () => chamarAva(base, token, 'mod_assign_get_assignments', { courseids: lista })),
+  ]);
 
+  // Status de entrega de cada trabalho (do último mês e dos próximos)
+  const listaTarefas = (tarefas?.courses || []).flatMap((c) => (c.assignments || []).map((a) => ({ ...a, course: a.course || c.id })))
+    .filter((a) => a.duedate && a.duedate * 1000 >= agora - 60 * DIA);
+  const status = await emParalelo(listaTarefas, 6, async (a) => {
+    const r = await chamarAva(base, token, 'mod_assign_get_submission_status', { assignid: a.id });
+    return r?.lastattempt?.submission?.status || r?.lastattempt?.teamsubmission?.status || 'new';
+  });
+  const entregas = [];
+  listaTarefas.forEach((a, i) => {
+    const r = status[i];
+    if (r?.erro) {
+      if (r.erro instanceof ErroAva && r.erro.codigo === 'token') throw r.erro;
+      return; // fica o status que veio das pendências do calendário
+    }
+    entregas.push({
+      user_id: userId,
+      origem: 'ava',
+      origem_id: `assign-${a.id}`,
+      status: r === 'submitted' ? 'entregue' : a.duedate * 1000 < agora ? 'atrasado' : 'pendente',
+    });
+  });
+  if (status.some((s) => s?.erro)) bloqueados.push({ metodo: 'mod_assign_get_submission_status', motivo: 'Alguns status de entrega não vieram.' });
+  // Só atualiza o status (os trabalhos já foram gravados na parte geral).
+  await banco.atualizarStatus('eventos', entregas);
+  contagens.entregas = entregas.length;
+
+  // Avisos (fóruns de notícias)
+  const deAvisos = (Array.isArray(foruns) ? foruns : []).filter((f) => f.type === 'news');
+  const discussoes = await emParalelo(deAvisos, 4, (f) => chamarAva(base, token, 'mod_forum_get_forum_discussions', { forumid: f.id, page: 0, perpage: 10 }));
+  const avisos = [];
+  deAvisos.forEach((forum, i) => {
+    for (const d of discussoes[i]?.discussions || []) {
+      avisos.push({
+        user_id: userId,
+        origem: 'ava',
+        origem_id: `forum-${d.discussion || d.id}`,
+        disciplina_id: idPorCurso.get(forum.course) || null,
+        titulo: d.subject || d.name || 'Aviso',
+        texto: textoSemHtml(d.message),
+        data: dataIso(d.created || d.timemodified),
+        link: link(`/mod/forum/discuss.php?d=${d.discussion || d.id}`),
+      });
+    }
+  });
+  if (discussoes.some((d) => d?.erro)) bloqueados.push({ metodo: 'mod_forum_get_forum_discussions', motivo: 'Alguns avisos não vieram.' });
+  await banco.gravar('avisos', avisos, 'user_id,origem,origem_id');
+  contagens.avisos = avisos.length;
+
+  // Materiais e notas de cada curso
+  await emParalelo(lista, 2, async (cursoId) => {
+    const disciplinaId = idPorCurso.get(cursoId) || null;
     const [conteudo, notas] = await Promise.all([
       tentar('core_course_get_contents', bloqueados, () => chamarAva(base, token, 'core_course_get_contents', { courseid: cursoId })),
       tentar('gradereport_user_get_grade_items', bloqueados, () => chamarAva(base, token, 'gradereport_user_get_grade_items', { courseid: cursoId, userid: avaUserId })),
@@ -233,6 +276,7 @@ export async function sincronizarAvaCursos({ userId, base, token, avaUserId, cur
       }));
     await banco.gravar('notas_ava', linhasNotas, 'user_id,origem_id');
     contagens.notas += linhasNotas.length;
-  }
+  });
+
   return { contagens, bloqueados };
 }

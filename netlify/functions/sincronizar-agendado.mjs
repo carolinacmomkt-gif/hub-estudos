@@ -3,7 +3,7 @@
 // o que faltar entra na próxima rodada (ou quando a Carol abrir o app).
 
 import { banco } from '../lib/supabase.mjs';
-import { sincronizarAva, sincronizarLyceumDaUsuaria } from '../lib/sincronizacao.mjs';
+import { sincronizarAva, sincronizarLyceumDaUsuaria, CURSOS_POR_PARTE } from '../lib/sincronizacao.mjs';
 
 const ORCAMENTO_MS = 24 * 1000;
 
@@ -20,8 +20,8 @@ export default async () => {
     }
     const geral = await sincronizarAva(userId, { parte: 'geral' });
     const cursos = geral.ok ? geral.cursos : [];
-    for (let i = 0; i < cursos.length && sobra() > 5000; i += 3) {
-      await sincronizarAva(userId, { parte: 'cursos', cursos: cursos.slice(i, i + 3) });
+    for (let i = 0; i < cursos.length && sobra() > 5000; i += CURSOS_POR_PARTE) {
+      await sincronizarAva(userId, { parte: 'cursos', cursos: cursos.slice(i, i + CURSOS_POR_PARTE) });
     }
   }
   return new Response('ok');

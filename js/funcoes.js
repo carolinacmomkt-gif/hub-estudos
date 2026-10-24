@@ -18,6 +18,9 @@ export async function chamar(nome, corpo) {
   } catch {
     return { ok: false, erro: 'Não foi possível chegar à função do app. Confira a internet e tente de novo.' };
   }
+  if (resp.status === 502 || resp.status === 504) {
+    return { ok: false, erro: 'A função demorou demais e a Netlify interrompeu (limite de tempo). Tente "Sincronizar agora" de novo.' };
+  }
   if (resp.status === 404) {
     return { ok: false, erro: 'A função não foi encontrada. Ela só roda no site publicado na Netlify (ou com "netlify dev").' };
   }

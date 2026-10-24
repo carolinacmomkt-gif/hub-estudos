@@ -125,6 +125,22 @@ function cardServico(estado, { servico, titulo, rotuloSenha, explicacao, resumo 
     </section>`;
 }
 
+// O que a última sincronização trouxe do AVA (ajuda a ver se algo ficou de fora).
+function resumoAva(d) {
+  const geral = d.sincronizacao?.contagens || {};
+  const cursos = d.cursosContagens || {};
+  const partes = [];
+  if (geral.cursosNoAva !== undefined) partes.push(`${geral.disciplinas || 0} disciplinas em andamento (de ${geral.cursosNoAva} no AVA)`);
+  if (geral.eventos !== undefined) partes.push(`${geral.eventos} prazos e eventos`);
+  if (cursos.materiais !== undefined) partes.push(`${cursos.materiais} materiais`, `${cursos.notas || 0} notas`, `${cursos.avisos || 0} avisos`);
+  const bloqueados = [...(d.sincronizacao?.bloqueados || []), ...(d.cursosBloqueados || [])];
+  return `
+    <span>${esc(d.site?.nome || 'AVA')}${d.site?.versao ? ` · Moodle ${esc(d.site.versao)}` : ''}</span>
+    ${partes.length ? `<span>Última leitura: ${esc(partes.join(' · '))}</span>` : ''}
+    ${bloqueados.length ? `<details class="detalhes"><summary>${bloqueados.length} ${bloqueados.length === 1 ? 'item não veio' : 'itens não vieram'}</summary>
+      <ul class="vazio-lista">${bloqueados.map((b) => `<li><code>${esc(b.metodo)}</code>: ${esc(b.motivo)}</li>`).join('')}</ul></details>` : ''}`;
+}
+
 export function renderConfiguracoes(estado) {
   return `
     ${cabecalho('Configurações', 'Conta, sincronização e conexões')}
@@ -137,7 +153,7 @@ export function renderConfiguracoes(estado) {
         titulo: 'AVA (Moodle)',
         rotuloSenha: 'Senha do AVA',
         explicacao: 'Digite a matrícula e a senha uma vez. O app guarda só o acesso do app do Moodle, criptografado, e descarta a senha. Daí em diante o AVA sincroniza sozinho.',
-        resumo: (d) => `<span>${esc(d.site?.nome || 'AVA')}${d.site?.versao ? ` · Moodle ${esc(d.site.versao)}` : ''}${d.bloqueados?.length ? ` · ${d.bloqueados.length} bloqueados` : ' · tudo liberado'}</span>`,
+        resumo: resumoAva,
       })}
       ${cardServico(estado, {
         servico: 'lyceum',

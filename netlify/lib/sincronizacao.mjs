@@ -4,8 +4,10 @@
 import { banco } from './supabase.mjs';
 import { decifrar, cifrar } from './cripto.mjs';
 import { lerSiteInfo, ErroAva } from './ava.mjs';
-import { sincronizarAvaGeral, sincronizarAvaCursos } from './sincronizar-ava.mjs';
+import { sincronizarAvaGeral, sincronizarAvaCursos, CURSOS_POR_PARTE } from './sincronizar-ava.mjs';
 import { sincronizarLyceum, ErroLyceum } from './sincronizar-lyceum.mjs';
+
+export { CURSOS_POR_PARTE };
 
 async function atualizarConexao(userId, servico, campos, detalheExtra) {
   const atual = await banco.lerConexao(userId, servico);
@@ -37,13 +39,24 @@ export async function sincronizarAva(userId, { parte = 'geral', cursos = [] } = 
 
     if (parte === 'cursos') {
       const r = await sincronizarAvaCursos({ userId, base, token: segredo.token, avaUserId, cursos });
+      // Guarda o que veio de cada curso, para a tela mostrar o resumo do AVA.
+      const atual = await banco.lerConexao(userId, 'ava');
+      const somar = { ...(atual?.detalhe?.cursosContagens || {}) };
+      for (const [chave, valor] of Object.entries(r.contagens)) somar[chave] = (somar[chave] || 0) + valor;
+      await atualizarConexao(userId, 'ava', {}, {
+        cursosContagens: somar,
+        cursosBloqueados: [...new Map([...(atual?.detalhe?.cursosBloqueados || []), ...r.bloqueados].map((b) => [b.metodo, b])).values()],
+      });
       return { ok: true, ...r };
     }
 
     const r = await sincronizarAvaGeral({ userId, base, token: segredo.token, avaUserId });
+    // A parte geral recomeça o resumo; as partes por curso vão somando.
     await atualizarConexao(userId, 'ava', { status: 'conectado', ultima_sincronizacao: new Date().toISOString() }, {
       mensagem: null,
       sincronizacao: { contagens: r.contagens, bloqueados: r.bloqueados },
+      cursosContagens: {},
+      cursosBloqueados: [],
     });
     return { ok: true, ...r };
   } catch (erro) {
