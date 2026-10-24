@@ -17,6 +17,7 @@ import { listar } from './persistencia.js';
 import { ligarCalendario, cliqueCalendario, enviarCalendario, mudancaCalendario } from './eventos-calendario.js';
 import { ligarAvisos, cliqueAvisos, enviarAvisos, mudancaAvisos } from './eventos-avisos.js';
 import { ligarInicio, cliqueInicio, enviarInicio, mudancaInicio } from './eventos-inicio.js';
+import { cliqueCadernos, enviarCadernos } from './eventos-cadernos.js';
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -334,7 +335,7 @@ export function ligarEventos(funcoesDoApp) {
         mudarFaltasManuais(alvo.dataset.id, -1);
         return;
       default:
-        if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo))) return;
+        if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -363,7 +364,7 @@ export function ligarEventos(funcoesDoApp) {
     const form = evento.target.closest('[data-form]');
     if (!form) return;
     evento.preventDefault();
-    if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form)) return;
+    if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form)) return;
     switch (form.dataset.form) {
       case 'login':
         entrar(form);

@@ -152,7 +152,7 @@ export function dadosReaisDoInicio(estado, agora = Date.now()) {
   const cadernos = (estado.cadernos || []).filter((c) => !c.excluido_em).map((c) => ({
     id: c.id,
     titulo: c.titulo,
-    disciplina: c.disciplina_id ? nome(c.disciplina_id) : 'Sem disciplina',
+    disciplina: c.disciplina_id ? nome(c.disciplina_id) : '',
     capa: c.capa?.cor || 1,
     paginas: (estado.paginas || []).filter((p) => p.caderno_id === c.id && !p.excluido_em).length,
     editadoEm: tempo(c.atualizado_em),

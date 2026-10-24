@@ -209,3 +209,217 @@
     display: none;
   }
 }
+
+/* Tela Cadernos: grade de capas */
+.cadernos.cadernos-grade {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+@media (max-width: 700px) {
+  .cadernos.cadernos-grade {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+.cadernos-grade .caderno-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.capa-opcao {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.capa-opcao input {
+  position: absolute;
+  opacity: 0;
+}
+
+.capa-amostra {
+  width: var(--toque);
+  height: var(--toque);
+  border: 3px solid transparent;
+  border-radius: 10px;
+  background: var(--capa-cor);
+}
+
+.capa-amostra.capa-1 { --capa-cor: var(--capa-1); }
+.capa-amostra.capa-2 { --capa-cor: var(--capa-2); }
+.capa-amostra.capa-3 { --capa-cor: var(--capa-3); }
+.capa-amostra.capa-4 { --capa-cor: var(--capa-4); }
+.capa-amostra.capa-5 { --capa-cor: var(--capa-5); }
+.capa-amostra.capa-6 { --capa-cor: var(--capa-6); }
+
+.capa-opcao input:checked + .capa-amostra {
+  border-color: var(--cor-texto);
+}
+
+.capa-opcao input:focus-visible + .capa-amostra {
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+/* Editor do caderno */
+.editor-caderno .caneta-topo h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-paginas {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.favoritos {
+  padding: 0 6px;
+  border-left: 1px solid var(--cor-borda);
+  border-right: 1px solid var(--cor-borda);
+}
+
+.favorito {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--toque);
+  height: var(--toque);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--cor-superficie-2);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.favorito[aria-pressed="true"] {
+  border-color: var(--cor-texto);
+}
+
+.favorito-ponta {
+  width: var(--tam);
+  height: var(--tam);
+  border-radius: 50%;
+  background: var(--cor);
+}
+
+.favorito-ponta.marca {
+  width: 22px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.cor-propria {
+  position: relative;
+  overflow: hidden;
+  background: conic-gradient(var(--cor) 0 100%);
+}
+
+.cor-propria::after {
+  content: "+";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--cor-superficie);
+  font-weight: 800;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+.cor-propria input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ferramenta-mais {
+  position: relative;
+}
+
+.ferramenta-mais summary {
+  display: inline-flex;
+  align-items: center;
+  list-style: none;
+}
+
+.ferramenta-mais summary::-webkit-details-marker {
+  display: none;
+}
+
+.ferramenta-painel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra);
+}
+
+.ferramenta-painel .ferramenta-select {
+  justify-content: space-between;
+}
+
+.ferramenta-painel .ferramenta-select span {
+  display: inline;
+}
+
+.selecao-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 6px 10px;
+  border: 1px solid var(--cor-foco);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+}
+
+.selecao-barra[hidden] {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .editor-paginas {
+    margin-left: 0;
+  }
+
+  .editor-caderno .caneta-topo {
+    flex-wrap: wrap;
+  }
+
+  .ferramentas {
+    max-height: 30vh;
+    overflow-y: auto;
+  }
+
+  .ferramenta-painel {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: auto;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    width: auto;
+  }
+}

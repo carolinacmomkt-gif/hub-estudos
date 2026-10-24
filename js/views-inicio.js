@@ -205,10 +205,10 @@ function cardCadernos(dados, agora) {
     .slice(0, 4)
     .map((c) => `
       <li>
-        <a class="caderno" href="#cadernos">
+        <a class="caderno" href="${/^c\d+$/.test(String(c.id)) ? '#cadernos' : `#cadernos/${esc(c.id)}`}">
           <div class="caderno-capa capa-${Number(c.capa) || 1}">
             <span class="caderno-capa-titulo">${esc(c.titulo)}</span>
-            <span class="caderno-capa-disciplina">${esc(c.disciplina)}</span>
+            ${c.disciplina ? `<span class="caderno-capa-disciplina">${esc(c.disciplina)}</span>` : ''}
           </div>
           <p class="caderno-info">${c.paginas ? `${c.paginas} ${c.paginas === 1 ? 'página' : 'páginas'} · ` : ''}${esc(haQuantoTempo(c.editadoEm, agora))}</p>
         </a>
@@ -220,7 +220,7 @@ function cardCadernos(dados, agora) {
         <h2 class="card-titulo" id="cadernos-titulo">Cadernos recentes</h2>
         <a class="card-link" href="#cadernos">Todos os cadernos</a>
       </div>
-      ${itens ? `<ul class="cadernos">${itens}</ul>` : '<p class="texto-suave">Nenhum caderno ainda. Os cadernos completos chegam na etapa 5.</p>'}
+      ${itens ? `<ul class="cadernos">${itens}</ul>` : '<p class="texto-suave">Nenhum caderno ainda. Crie o primeiro em Cadernos ou pelo botão +.</p>'}
     </section>`;
 }
 

@@ -27,15 +27,6 @@ const AREAS = {
     itens: ['Adicionar por link, PDF ou texto colado', 'Tags, área e status (ler / lendo / lido / fichado)', 'Destaques e notas'],
     etapa: '6',
   },
-  cadernos: {
-    sub: 'Escrita à mão com a S Pen',
-    icone: 'cadernos',
-    titulo: 'Estantes e cadernos',
-    texto: 'Cadernos no estilo GoodNotes, com pressão da caneta e vários modelos de folha.',
-    itens: ['Caderno comum, por matéria, fichário, PDF, quadro infinito e planner', 'Canetas, marca-texto, borracha, laço e formas', 'Modelos de folha: pautada, quadriculada, Cornell, flashcards e muitos outros', 'Exportar em PDF ou PNG'],
-    etapa: '5',
-    acao: { href: '#caneta', rotulo: 'Testar a caneta (protótipo)' },
-  },
   questoes: {
     sub: 'Gerador com IA, banco e revisão',
     icone: 'questoes',

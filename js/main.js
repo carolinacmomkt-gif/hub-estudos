@@ -11,6 +11,8 @@ import { renderLogin } from './views-login.js';
 import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
 import { renderFaculdade, textoSituacaoFaculdade } from './views-faculdade.js';
 import { renderCalendario } from './views-calendario.js';
+import { renderCadernos } from './views-cadernos.js';
+import { montarEditorCaderno, desmontarEditorCaderno } from './editor-caderno.js';
 import { retomarImportacao } from './importar-calendario.js';
 import { atualizarSituacaoAvisos } from './eventos-avisos.js';
 import { temDadosReais } from './dados-faculdade.js';
@@ -25,12 +27,15 @@ const VIEWS = {
   caneta: renderCaneta,
   faculdade: renderFaculdade,
   calendario: renderCalendario,
+  cadernos: renderCadernos,
 };
 
 // Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
 const CICLO = {
   caneta: { montar: montarCaneta, desmontar: desmontarCaneta },
   configuracoes: { montar: atualizarSituacaoAvisos, desmontar: () => {} },
+  // Só o editor (#cadernos/<id>) tem partes vivas; a lista não.
+  cadernos: { montar: (id) => id && montarEditorCaderno(id), desmontar: desmontarEditorCaderno },
 };
 let telaMontada = null;
 ROTAS.filter((r) => IDS_AREAS.includes(r.id)).forEach((r) => {
@@ -70,7 +75,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
   if (foco) conteudo.querySelector(`${foco}:not([disabled])`)?.focus({ preventScroll: true });
   if (CICLO[rota.id]) {
     telaMontada = rota.id;
-    CICLO[rota.id].montar();
+    CICLO[rota.id].montar(rota.parametro);
   }
   atualizarBotoesTema();
   marcarRotaAtiva(rota.id);
@@ -111,7 +116,7 @@ async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
 const TELAS_DA_TABELA = {
   caixa_entrada: ['inicio'],
   conexoes: ['configuracoes', 'faculdade'],
-  cadernos: ['inicio'],
+  cadernos: ['inicio', 'cadernos'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
   config: ['inicio', 'calendario', 'configuracoes'],
@@ -148,6 +153,9 @@ window.addEventListener('hub:dados', async (evento) => {
   if (!TABELAS_NA_MEMORIA[tabela]) return;
   await carregarDadosLocais([tabela]);
   const telas = TELAS_DA_TABELA[tabela] || ['inicio', 'faculdade'];
+  // O editor de caderno nunca é redesenhado por fora: ele perderia o traço em andamento.
+  const { id: rotaVista, parametro: parametroVisto } = rotaAtual();
+  if (rotaVista === 'cadernos' && parametroVisto) return;
   if (noApp && telas.includes(obterEstado().rota) && !digitando() && !obterEstado().ocupado) renderizar();
 });
 

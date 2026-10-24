@@ -191,11 +191,6 @@ async function enviarFila() {
 }
 
 async function receberMudancas() {
-  const pendentes = new Set(
-    (await transacao(['fila'], 'readonly', (tx) => comoPromessa(tx.objectStore('fila').getAll())))
-      .map((f) => `${f.tabela}:${f.id}`),
-  );
-
   for (const tabela of TABELAS) {
     const meta = await transacao(['meta'], 'readonly', (tx) => comoPromessa(tx.objectStore('meta').get(`cursor:${tabela}`)));
     let cursor = meta?.valor || '1970-01-01T00:00:00Z';
@@ -206,10 +201,13 @@ async function receberMudancas() {
         `${tabela}?select=*&atualizado_em=gte.${encodeURIComponent(cursor)}&order=atualizado_em.asc,id.asc&limit=${LOTE}`,
       );
       if (!linhas?.length) break;
-      await transacao([tabela], 'readwrite', (tx) => {
+      // A fila é lida na mesma transação da gravação: uma mudança feita no aparelho enquanto
+      // a sincronização baixava (ex.: um traço novo no caderno) nunca é sobrescrita pela versão antiga.
+      await transacao([tabela, 'fila'], 'readwrite', async (tx) => {
+        const fila = await comoPromessa(tx.objectStore('fila').getAll());
+        const pendentes = new Set(fila.filter((f) => f.tabela === tabela).map((f) => f.id));
         for (const linha of linhas) {
-          // Se ainda há mudança local esperando para subir, a local vale.
-          if (!pendentes.has(`${tabela}:${linha.id}`)) tx.objectStore(tabela).put(linha);
+          if (!pendentes.has(linha.id)) tx.objectStore(tabela).put(linha);
         }
       });
       mudou = true;
