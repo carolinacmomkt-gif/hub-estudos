@@ -47,7 +47,8 @@ async function pedirRest(caminho, { metodo = 'GET', corpo, prefer } = {}) {
     method: metodo,
     headers: {
       apikey: cfg.servico,
-      Authorization: `Bearer ${cfg.servico}`,
+      // As chaves novas (sb_secret_...) vão só no apikey; as antigas (JWT) também no Authorization.
+      ...(cfg.servico.startsWith('sb_') ? {} : { Authorization: `Bearer ${cfg.servico}` }),
       'Content-Type': 'application/json',
       ...(prefer ? { Prefer: prefer } : {}),
     },
