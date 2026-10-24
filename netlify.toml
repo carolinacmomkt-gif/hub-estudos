@@ -4,6 +4,7 @@
 
 [functions]
   directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 # O service worker nunca pode ficar preso em cache, senão as atualizações não chegam.
 [[headers]]

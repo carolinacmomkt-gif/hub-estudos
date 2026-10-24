@@ -33,6 +33,19 @@
     <button class="botao botao-secundario folha-fechar" type="button" data-acao="fechar-mais">Fechar</button>
   </dialog>
 
+  <button class="fab" id="fab-criar" type="button" data-acao="abrir-criar" aria-haspopup="dialog" aria-label="Criar: anotar uma ideia rápida">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <dialog class="folha" id="folha-criar" aria-labelledby="folha-criar-titulo">
+    <div class="folha-alca" aria-hidden="true"></div>
+    <h2 class="folha-titulo" id="folha-criar-titulo">Criar</h2>
+    <div id="folha-criar-conteudo"></div>
+    <button class="botao botao-secundario folha-fechar" type="button" data-acao="fechar-criar">Fechar</button>
+  </dialog>
+
+  <div class="faixa-offline" id="faixa-offline" role="status" hidden>Sem internet. Salvando neste aparelho.</div>
+
   <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
 
   <script type="module" src="js/main.js"></script>

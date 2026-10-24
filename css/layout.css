@@ -282,3 +282,116 @@
     bottom: calc(84px + env(safe-area-inset-bottom));
   }
 }
+
+/* Tela de login: sem navegação nem botão "+" */
+.modo-login .app {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.modo-login .nav-lateral,
+.modo-login .nav-inferior,
+.modo-login .fab {
+  display: none;
+}
+
+.modo-login .conteudo {
+  padding-bottom: 48px;
+}
+
+/* Botão "+" */
+.fab {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  box-shadow: var(--sombra);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+.fab svg {
+  width: 28px;
+  height: 28px;
+}
+
+@media (max-width: 700px) {
+  .fab {
+    right: 16px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    width: 56px;
+    height: 56px;
+  }
+
+  /* espaço para o "+" não cobrir o fim da página */
+  .conteudo {
+    padding-bottom: calc(160px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Indicador de sincronização (barra lateral e folha "Mais") */
+.situacao-sinc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 12px 8px;
+  color: var(--cor-texto-fraco);
+  font-size: 0.8rem;
+}
+
+.situacao-ponto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--cor-sucesso);
+}
+
+.situacao-sinc[data-estado="sincronizando"] .situacao-ponto { background: var(--urg-semana); }
+.situacao-sinc[data-estado="offline"] .situacao-ponto,
+.situacao-sinc[data-estado="local"] .situacao-ponto,
+.situacao-sinc[data-estado="sair"] .situacao-ponto { background: var(--urg-urgente); }
+.situacao-sinc[data-estado="erro"] .situacao-ponto { background: var(--urg-atrasado); }
+
+@media (max-width: 1099px) {
+  .nav-lateral .situacao-sinc {
+    justify-content: center;
+    padding: 0 0 8px;
+  }
+
+  .nav-lateral .situacao-texto {
+    display: none;
+  }
+}
+
+/* Faixa "sem internet" */
+.faixa-offline {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 40;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  border-radius: 0 0 12px 12px;
+  background: var(--urg-urgente-fundo);
+  color: var(--urg-urgente-texto);
+  font-size: 0.85rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+}
+
+.faixa-offline[hidden] {
+  display: none;
+}

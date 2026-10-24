@@ -3,11 +3,14 @@
 import { iniciarTema, atualizarBotoesTema } from './tema.js';
 import { ROTAS, rotaAtual } from './rotas.js';
 import { obterEstado, atualizarEstado } from './estado.js';
-import { montarNavegacao, marcarRotaAtiva } from './views-navegacao.js';
+import { montarNavegacao, marcarRotaAtiva, atualizarIndicadorSincronizacao } from './views-navegacao.js';
 import { renderInicio } from './views-inicio.js';
 import { criarViewArea, IDS_AREAS } from './views-areas.js';
-import { renderConfiguracoes } from './views-configuracoes.js';
+import { renderConfiguracoes, textoSituacao } from './views-configuracoes.js';
+import { renderLogin } from './views-login.js';
 import { ligarEventos } from './eventos.js';
+import { carregarConfig, nuvemConfigurada, sessaoAtual, emailDaSessao } from './nuvem.js';
+import { listar, situacaoSincronizacao, iniciarSincronizacaoAutomatica } from './persistencia.js';
 
 const VIEWS = {
   inicio: renderInicio,
@@ -18,10 +21,18 @@ ROTAS.filter((r) => IDS_AREAS.includes(r.id)).forEach((r) => {
 });
 
 const conteudo = document.getElementById('conteudo');
+let noApp = false;
+let sincronizacaoIniciada = false;
 
-function renderizar({ mudouDeTela = false } = {}) {
+function digitando() {
+  const ativo = document.activeElement;
+  return conteudo.contains(ativo) && /^(INPUT|TEXTAREA|SELECT)$/.test(ativo.tagName);
+}
+
+export function renderizar({ mudouDeTela = false } = {}) {
+  if (!noApp) return;
   const rota = rotaAtual();
-  atualizarEstado({ rota: rota.id });
+  atualizarEstado({ rota: rota.id, sinc: situacaoSincronizacao(), email: emailDaSessao() });
   conteudo.innerHTML = VIEWS[rota.id](obterEstado());
   atualizarBotoesTema();
   marcarRotaAtiva(rota.id);
@@ -32,6 +43,52 @@ function renderizar({ mudouDeTela = false } = {}) {
     conteudo.querySelector('h1')?.focus({ preventScroll: true });
   }
 }
+
+async function carregarDadosLocais() {
+  const [caixa, conexoes] = await Promise.all([listar('caixa_entrada'), listar('conexoes')]);
+  atualizarEstado({ caixa, conexoes });
+}
+
+export function mostrarLogin(opcoes = {}) {
+  noApp = false;
+  document.body.classList.add('modo-login');
+  document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+  conteudo.innerHTML = renderLogin(opcoes);
+  document.title = 'Entrar · Hub de Estudos';
+  conteudo.querySelector('input:not([type="hidden"])')?.focus();
+}
+
+export async function entrarNoApp() {
+  noApp = true;
+  document.body.classList.remove('modo-login');
+  await carregarDadosLocais();
+  renderizar();
+  if (!sincronizacaoIniciada) {
+    sincronizacaoIniciada = true;
+    iniciarSincronizacaoAutomatica();
+  }
+}
+
+// Dados mudaram (no aparelho ou vindos do Supabase): atualiza a tela que mostra esses dados.
+window.addEventListener('hub:dados', async (evento) => {
+  const { tabela } = evento.detail || {};
+  if (tabela !== 'caixa_entrada' && tabela !== 'conexoes') return;
+  await carregarDadosLocais();
+  const rota = obterEstado().rota;
+  const mostra = (tabela === 'caixa_entrada' && rota === 'inicio') || (tabela === 'conexoes' && rota === 'configuracoes');
+  if (mostra && !digitando() && !obterEstado().ocupado) renderizar();
+});
+
+window.addEventListener('hub:sincronizacao', () => {
+  const s = situacaoSincronizacao();
+  atualizarIndicadorSincronizacao(s);
+  const linha = conteudo.querySelector('[data-situacao-sinc]');
+  if (linha) linha.textContent = textoSituacao(s);
+});
+
+window.addEventListener('hub:sessao-expirada', () => {
+  mostrarLogin({ email: obterEstado().email || '', mensagem: 'Sua sessão expirou. Entre de novo; seus dados continuam no aparelho.' });
+});
 
 function registrarServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
@@ -51,32 +108,46 @@ function registrarServiceWorker() {
     }
   });
 
-  let recarregando = false;
+  // Recarrega só quando a Carol pediu a atualização (na primeira instalação o
+  // service worker também assume a página, e recarregar ali apagaria o que ela digitava).
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (recarregando) return;
-    recarregando = true;
-    location.reload();
+    if (atualizacaoPedida) location.reload();
   });
 }
+
+let atualizacaoPedida = false;
 
 function avisarNovaVersao(trabalhador) {
   const aviso = document.getElementById('aviso');
   aviso.innerHTML = '<span>Tem uma versão nova do app.</span><button class="botao botao-primario" type="button">Atualizar</button>';
   aviso.hidden = false;
   aviso.querySelector('button').addEventListener('click', () => {
+    atualizacaoPedida = true;
     trabalhador.postMessage('pular-espera');
   }, { once: true });
 }
 
-iniciarTema();
-montarNavegacao();
-ligarEventos();
-renderizar();
-window.addEventListener('hashchange', () => renderizar({ mudouDeTela: true }));
+async function iniciar() {
+  iniciarTema();
+  montarNavegacao();
+  ligarEventos({ renderizar, mostrarLogin, entrarNoApp });
+  window.addEventListener('hashchange', () => renderizar({ mudouDeTela: true }));
+  registrarServiceWorker();
+
+  // Com sessão guardada, abre na hora (mesmo offline) e atualiza a configuração por trás.
+  if (nuvemConfigurada() && sessaoAtual()) {
+    carregarConfig();
+    await entrarNoApp();
+    return;
+  }
+  await carregarConfig();
+  if (nuvemConfigurada() && !sessaoAtual()) mostrarLogin();
+  else await entrarNoApp(); // modo local: Supabase ainda não configurado
+}
 
 // A contagem regressiva do Início se atualiza a cada minuto.
 setInterval(() => {
-  if (obterEstado().rota === 'inicio' && !document.hidden) renderizar();
+  if (noApp && obterEstado().rota === 'inicio' && !document.hidden && !digitando()) renderizar();
 }, 60 * 1000);
 
-registrarServiceWorker();
+iniciar();

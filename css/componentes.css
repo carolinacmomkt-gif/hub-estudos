@@ -794,3 +794,202 @@
   font: 0.8rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   resize: vertical;
 }
+
+/* Grupo de botões */
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.botao-pequeno {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 0.88rem;
+}
+
+label.botao {
+  position: relative;
+}
+
+.campo textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font: inherit;
+  resize: vertical;
+}
+
+.campo textarea:focus-visible {
+  border-color: var(--cor-foco);
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 0;
+}
+
+.detalhes {
+  margin-top: 16px;
+}
+
+.detalhes summary {
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  color: var(--cor-texto-destaque);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reconectar {
+  margin-top: 6px;
+}
+
+/* Tamanho do texto: a amostra "Aa" cresce como a opção */
+.opcao-texto > span:first-child {
+  min-width: 2ch;
+  font-weight: 700;
+}
+
+.opcao-texto--normal > span:first-child { font-size: 1rem; }
+.opcao-texto--grande > span:first-child { font-size: 1.2rem; }
+.opcao-texto--maior > span:first-child { font-size: 1.4rem; }
+
+/* Login */
+.login {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 420px;
+  margin: 8vh auto 0;
+  padding: 32px 28px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+}
+
+.login h1 {
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+}
+
+.login-marca {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.login-marca svg {
+  width: 28px;
+  height: 28px;
+}
+
+.login .formulario {
+  margin-top: 4px;
+}
+
+.login .campo input {
+  max-width: none;
+}
+
+.campo-codigo {
+  font-size: 1.4rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.login-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.login-acoes .botao {
+  flex: 1 1 160px;
+}
+
+/* Caixa de entrada */
+.entradas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entrada {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+
+.entrada-texto {
+  min-width: 0;
+}
+
+.entrada-texto p:first-child {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.entrada-meta {
+  color: var(--cor-texto-fraco);
+  font-size: 0.8rem;
+}
+
+.card-titulo .selo {
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+
+button.card-link {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Atalhos do "+" (em breve) */
+.atalhos-criar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.atalho-criar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+}
+
+.atalho-criar svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.atalho-criar .selo {
+  margin-left: auto;
+}
+
+.folha .formulario {
+  margin: 0 0 4px;
+}

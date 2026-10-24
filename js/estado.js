@@ -1,11 +1,15 @@
-// Estado do app em memória. Na Etapa 2 ele passa a ser preenchido pela persistencia.js.
+// Estado do app em memória. Os dados reais vêm da persistencia.js (aparelho + Supabase).
 
 import { gerarDadosExemplo } from './dados-exemplo.js';
 
 const estado = {
   rota: 'inicio',
-  dados: gerarDadosExemplo(),
+  dados: gerarDadosExemplo(), // até a Etapa 4 trazer os dados reais da faculdade
   usandoExemplo: true,
+  caixa: [], // caixa de entrada (dados reais, do aparelho/Supabase)
+  conexoes: [], // situação do AVA e do Lyceum
+  sinc: {}, // situação da sincronização
+  email: null,
 };
 
 const ouvintes = new Set();

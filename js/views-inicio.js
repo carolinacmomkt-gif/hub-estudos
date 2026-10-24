@@ -1,6 +1,7 @@
 // Tela Início: saudação, "Próximo passo" e cards de resumo.
 
 import { cabecalho, barraProgresso } from './componentes.js';
+import { cardCaixaEntrada } from './views-criar.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
   diasAte, haQuantoTempo, numeroNota, DIA,
@@ -235,6 +236,7 @@ export function renderInicio(estado) {
       ${cardProvas(dados, agora)}
       ${cardRevisoes(dados)}
       ${cardNotas(dados, agora)}
+      ${cardCaixaEntrada(estado.caixa || [], agora)}
       ${cardCadernos(dados, agora)}
       ${cardProgresso(dados)}
     </div>`;

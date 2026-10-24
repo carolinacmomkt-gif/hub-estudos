@@ -1,142 +1,156 @@
-// Tela Configurações: tema e teste de conexão com o AVA.
+// Tela Configurações: conta, sincronização e backup, aparência, AVA e Lyceum.
 
 import { cabecalho } from './componentes.js';
 import { icone } from './icones.js';
 import { OPCOES_TEMA, lerPreferenciaTema } from './tema.js';
-import { esc } from './utilidades.js';
+import { OPCOES_TEXTO, lerTamanhoTexto } from './preferencias.js';
+import { esc, haQuantoTempo } from './utilidades.js';
 
-function cardTema() {
-  const atual = lerPreferenciaTema();
-  const opcoes = OPCOES_TEMA.map((o) => `
-    <button class="opcao-tema" type="button" data-tema-opcao="${o.id}" aria-pressed="${o.id === atual}">
+const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+export function textoSituacao(s) {
+  if (!s.nuvem) return 'Modo local: a nuvem ainda não foi configurada. Tudo fica salvo neste aparelho.';
+  if (!s.logada) return 'Entre no app para sincronizar.';
+  if (!s.online || s.estado === 'offline') return 'Sem internet. Salvando neste aparelho; sincroniza quando a conexão voltar.';
+  if (s.estado === 'sincronizando') return 'Sincronizando…';
+  if (s.estado === 'erro') return `A última sincronização falhou. ${s.erro || ''}`.trim();
+  if (s.ultima) return `Sincronizado ${haQuantoTempo(new Date(s.ultima).getTime())}.`;
+  return 'Ainda não sincronizado.';
+}
+
+function cardConta(estado) {
+  const s = estado.sinc;
+  return `
+    <section class="card" aria-labelledby="config-conta">
+      <h2 class="card-titulo" id="config-conta">Conta</h2>
+      ${s.nuvem && estado.email
+        ? `<p class="texto-suave">Você entrou como <strong>${esc(estado.email)}</strong>.</p>
+           <div class="acoes"><button class="botao botao-secundario" type="button" data-acao="sair">Sair da conta</button></div>`
+        : `<p class="texto-suave">${s.nuvem ? 'Você não entrou na conta.' : 'O Supabase ainda não foi configurado na Netlify. O app funciona só neste aparelho por enquanto.'}</p>`}
+    </section>`;
+}
+
+function cardSincronizacao(estado) {
+  const s = estado.sinc;
+  return `
+    <section class="card" aria-labelledby="config-sinc">
+      <h2 class="card-titulo" id="config-sinc">Sincronização e backup</h2>
+      <p class="texto-suave" data-situacao-sinc>${esc(textoSituacao(s))}</p>
+      ${s.pendentes ? `<p class="texto-suave">${s.pendentes} ${s.pendentes === 1 ? 'mudança esperando' : 'mudanças esperando'} para subir.</p>` : ''}
+      <div class="acoes">
+        ${s.nuvem && s.logada ? '<button class="botao botao-primario" type="button" data-acao="sincronizar">Sincronizar agora</button>' : ''}
+        <button class="botao botao-secundario" type="button" data-acao="exportar-backup">Exportar backup</button>
+        <label class="botao botao-secundario">
+          Importar backup
+          <input class="visualmente-oculto" type="file" accept="application/json,.json" data-acao="importar-backup">
+        </label>
+      </div>
+      <p class="campo-ajuda">O backup é um arquivo .json com tudo o que está no app. Guarde no Drive de vez em quando.</p>
+      <div id="backup-resultado" aria-live="polite"></div>
+    </section>`;
+}
+
+function cardAparencia() {
+  const tema = lerPreferenciaTema();
+  const texto = lerTamanhoTexto();
+  const opcoesTema = OPCOES_TEMA.map((o) => `
+    <button class="opcao-tema" type="button" data-tema-opcao="${o.id}" aria-pressed="${o.id === tema}">
       ${icone(o.id)}
       <span>${esc(o.rotulo)}<small>${esc(o.descricao)}</small></span>
     </button>`).join('');
+  const opcoesTexto = OPCOES_TEXTO.map((o) => `
+    <button class="opcao-tema opcao-texto opcao-texto--${o.id}" type="button" data-texto-opcao="${o.id}" aria-pressed="${o.id === texto}">
+      <span aria-hidden="true">Aa</span><span>${esc(o.rotulo)}</span>
+    </button>`).join('');
 
   return `
-    <section class="card" aria-labelledby="config-tema">
-      <h2 class="card-titulo" id="config-tema">Aparência</h2>
-      <p class="texto-suave">A escolha fica salva neste aparelho.</p>
-      <div class="opcoes-tema">${opcoes}</div>
+    <section class="card" aria-labelledby="config-aparencia">
+      <h2 class="card-titulo" id="config-aparencia">Aparência</h2>
+      <p class="texto-suave">As escolhas ficam salvas neste aparelho.</p>
+      <h3 class="ava-subtitulo">Tema</h3>
+      <div class="opcoes-tema">${opcoesTema}</div>
+      <h3 class="ava-subtitulo">Tamanho do texto</h3>
+      <div class="opcoes-tema">${opcoesTexto}</div>
     </section>`;
 }
 
-function cardAva() {
+function formularioConexao(servico, rotuloSenha) {
   return `
-    <section class="card" aria-labelledby="config-ava">
-      <h2 class="card-titulo" id="config-ava">Testar a conexão com o AVA</h2>
-      <p class="texto-suave">
-        Digite a matrícula e a senha do AVA uma vez. O app pede o acesso ao AVA, mostra o que está
-        liberado e descarta a senha. Nesta etapa nada fica guardado.
-      </p>
-      <form class="formulario" data-form="ava-teste" novalidate>
-        <label class="campo">
-          <span class="campo-rotulo">Matrícula</span>
-          <input name="matricula" type="text" inputmode="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
-        </label>
-        <label class="campo">
-          <span class="campo-rotulo">Senha do AVA</span>
-          <input name="senha" type="password" autocomplete="current-password" required>
-        </label>
-        <label class="campo">
-          <span class="campo-rotulo">Código de acesso do Hub</span>
-          <input name="codigo" type="password" autocomplete="off" required>
-          <span class="campo-ajuda">O código que você criou na Netlify (HUB_CODIGO_ACESSO). Ele protege o teste até o login do app existir.</span>
-        </label>
-        <div>
-          <button class="botao botao-primario" type="submit">Testar conexão</button>
-        </div>
-      </form>
-      <div class="ava-resultado" id="ava-resultado" aria-live="polite"></div>
-    </section>`;
+    <form class="formulario" data-form="conectar-${servico}" novalidate>
+      <label class="campo">
+        <span class="campo-rotulo">Matrícula</span>
+        <input name="matricula" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      </label>
+      <label class="campo">
+        <span class="campo-rotulo">${esc(rotuloSenha)}</span>
+        <input name="senha" type="password" autocomplete="current-password" required>
+      </label>
+      <div><button class="botao botao-primario" type="submit">Conectar</button></div>
+    </form>`;
 }
 
-function cardLyceum() {
-  return `
-    <section class="card" aria-labelledby="config-lyceum">
-      <h2 class="card-titulo" id="config-lyceum">Testar a conexão com o Lyceum</h2>
-      <p class="texto-suave">
-        Digite a matrícula e a senha do Lyceum. O app entra uma vez, vê como chegam as notas, as faltas,
-        a agenda e os avisos, e sai. O resultado mostra só a forma dos dados, sem notas e sem senha.
-        Nesta etapa nada fica guardado.
-      </p>
-      <form class="formulario" data-form="lyceum-teste" novalidate>
-        <label class="campo">
-          <span class="campo-rotulo">Matrícula</span>
-          <input name="matricula" type="text" inputmode="numeric" autocomplete="username" autocapitalize="off" spellcheck="false" required>
-        </label>
-        <label class="campo">
-          <span class="campo-rotulo">Senha do Lyceum</span>
-          <input name="senha" type="password" autocomplete="current-password" required>
-        </label>
-        <label class="campo">
-          <span class="campo-rotulo">Código de acesso do Hub</span>
-          <input name="codigo" type="password" autocomplete="off" required>
-        </label>
-        <div>
-          <button class="botao botao-primario" type="submit">Testar conexão</button>
-        </div>
-      </form>
-      <div class="ava-resultado" id="lyceum-resultado" aria-live="polite"></div>
-    </section>`;
-}
+function cardServico(estado, { servico, titulo, rotuloSenha, explicacao, resumo }) {
+  const conexao = estado.conexoes.find((c) => c.servico === servico);
+  const conectado = conexao?.status === 'conectado';
+  const pedeReconectar = conexao?.status === 'reconectar' || conexao?.status === 'erro';
+  const semConta = !estado.sinc.nuvem || !estado.email;
 
-export function renderConfiguracoes() {
-  return `
-    ${cabecalho('Configurações', 'Ajustes deste aparelho')}
-    <div class="pilha">
-      ${cardTema()}
-      ${cardAva()}
-      ${cardLyceum()}
-    </div>`;
-}
-
-function itemEtapa(e) {
-  return `
-    <li class="metodo ${e.ok ? 'metodo--ok' : 'metodo--bloqueado'}">
-      <span class="metodo-marca" aria-hidden="true">${e.ok ? '✓' : '✕'}</span>
-      <span class="metodo-texto">
-        <span class="metodo-descricao">${esc(e.nome || e.descricao)}</span>
-        <span class="metodo-detalhe">${esc(e.detalhe)}</span>
-      </span>
-    </li>`;
-}
-
-export function renderResultadoLyceum(r) {
-  const etapas = (r.etapas || []).map(itemEtapa).join('');
-  const blocoEtapas = etapas ? `<h3 class="ava-subtitulo">Passo a passo</h3><ul class="metodos">${etapas}</ul>` : '';
-  const copiar = `
-    <div class="formulario">
-      <div><button class="botao botao-secundario" type="button" data-acao="copiar-lyceum">Copiar resultado</button></div>
-      <textarea class="relatorio" id="lyceum-relatorio" readonly rows="10" aria-label="Resultado do teste">${esc(JSON.stringify(r, null, 2))}</textarea>
-    </div>`;
-
-  if (!r.ok) {
-    return `
-      <div class="ava-alerta" role="alert">${esc(r.erro || 'Não deu certo desta vez.')}</div>
-      ${blocoEtapas}
-      ${r.etapas ? copiar : ''}`;
+  let corpo;
+  if (semConta) {
+    corpo = '<p class="texto-suave">Entre na sua conta do Hub para conectar.</p>';
+  } else if (conectado) {
+    corpo = `
+      <div class="ava-sucesso">
+        <strong>✓ Conectado${conexao.conectado_em ? ` desde ${dataCurta.format(new Date(conexao.conectado_em))}` : ''}</strong>
+        ${resumo(conexao.detalhe || {})}
+      </div>
+      <div class="acoes">
+        <button class="botao botao-secundario" type="button" data-acao="mostrar-reconectar" data-servico="${servico}">Reconectar</button>
+        <button class="botao botao-secundario" type="button" data-acao="desconectar" data-servico="${servico}">Desconectar</button>
+      </div>
+      <div class="reconectar" id="reconectar-${servico}" hidden>${formularioConexao(servico, rotuloSenha)}</div>`;
+  } else {
+    corpo = `
+      ${pedeReconectar ? `<div class="ava-alerta" role="alert">${esc(conexao.detalhe?.mensagem || 'O acesso parou de funcionar. Conecte de novo.')}</div>` : ''}
+      <p class="texto-suave">${esc(explicacao)}</p>
+      ${formularioConexao(servico, rotuloSenha)}`;
   }
 
-  const rotas = r.rotas.map((rota) => itemEtapa({
-    ok: rota.ok,
-    descricao: rota.descricao,
-    detalhe: rota.ok
-      ? `Respondeu${rota.servidor ? ` (${rota.servidor})` : ''}.`
-      : `Não respondeu (${(rota.tentativas || []).map((t) => `${t.servidor}: ${t.status}`).join(' · ') || rota.status}).`,
-  })).join('');
-
   return `
-    <div class="ava-sucesso">
-      <strong>Conectou ao Lyceum!</strong>
-      <span>${esc(r.resumo)}</span>
-      <span>Toque em "Copiar resultado" e cole aqui no chat.</span>
-    </div>
-    ${blocoEtapas}
-    <h3 class="ava-subtitulo">Rotas testadas</h3>
-    <ul class="metodos">${rotas}</ul>
-    ${copiar}`;
+    <section class="card" aria-labelledby="config-${servico}">
+      <h2 class="card-titulo" id="config-${servico}">${esc(titulo)}</h2>
+      ${corpo}
+      <div class="ava-resultado" id="resultado-${servico}" aria-live="polite"></div>
+    </section>`;
 }
+
+export function renderConfiguracoes(estado) {
+  return `
+    ${cabecalho('Configurações', 'Conta, sincronização e conexões')}
+    <div class="pilha">
+      ${cardConta(estado)}
+      ${cardSincronizacao(estado)}
+      ${cardAparencia()}
+      ${cardServico(estado, {
+        servico: 'ava',
+        titulo: 'AVA (Moodle)',
+        rotuloSenha: 'Senha do AVA',
+        explicacao: 'Digite a matrícula e a senha uma vez. O app guarda só o acesso do app do Moodle, criptografado, e descarta a senha. Daí em diante o AVA sincroniza sozinho.',
+        resumo: (d) => `<span>${esc(d.site?.nome || 'AVA')}${d.site?.versao ? ` · Moodle ${esc(d.site.versao)}` : ''}${d.bloqueados?.length ? ` · ${d.bloqueados.length} bloqueados` : ' · tudo liberado'}</span>`,
+      })}
+      ${cardServico(estado, {
+        servico: 'lyceum',
+        titulo: 'Lyceum (notas e frequência)',
+        rotuloSenha: 'Senha do Lyceum',
+        explicacao: 'Digite a matrícula e a senha uma vez. A senha fica guardada criptografada (só as funções do app conseguem abrir) para o Lyceum sincronizar sozinho. Você pode desconectar quando quiser.',
+        resumo: (d) => `<span>${esc([d.curso, d.turno, d.serie].filter(Boolean).join(' · ') || 'Portal do aluno')}</span>`,
+      })}
+    </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Resultado da conexão com o AVA (mesmo relatório do teste da Etapa 3)
+// ---------------------------------------------------------------------------
 
 function itemMetodo(m) {
   return `
@@ -150,50 +164,51 @@ function itemMetodo(m) {
     </li>`;
 }
 
-export function renderCarregandoAva() {
-  return '<p class="ava-status">Falando com o AVA… isso leva alguns segundos.</p>';
-}
-
-export function renderResultadoAva(r) {
-  const etapas = (r.etapas || []).map((e) => `
+function itemEtapa(e) {
+  return `
     <li class="metodo ${e.ok ? 'metodo--ok' : 'metodo--bloqueado'}">
       <span class="metodo-marca" aria-hidden="true">${e.ok ? '✓' : '✕'}</span>
       <span class="metodo-texto">
         <span class="metodo-descricao">${esc(e.nome)}</span>
         <span class="metodo-detalhe">${esc(e.detalhe)}</span>
       </span>
-    </li>`).join('');
+    </li>`;
+}
 
+export function renderCarregando(texto) {
+  return `<p class="ava-status">${esc(texto)}</p>`;
+}
+
+export function renderResultadoAva(r) {
+  const etapas = (r.etapas || []).map(itemEtapa).join('');
   const blocoEtapas = etapas ? `<h3 class="ava-subtitulo">Passo a passo</h3><ul class="metodos">${etapas}</ul>` : '';
 
   if (!r.ok) {
     return `
       <div class="ava-alerta" role="alert">${esc(r.erro || 'Não deu certo desta vez.')}</div>
-      ${blocoEtapas}
-      <p class="texto-suave">Se aparecer algo que você não entender, copie esta tela e me mande no chat.</p>`;
+      ${blocoEtapas}`;
   }
 
   const bloqueados = r.metodos.filter((m) => !m.liberado).length;
-  const resumo = bloqueados === 0
-    ? 'Tudo o que o Hub precisa está liberado.'
-    : `${bloqueados} ${bloqueados === 1 ? 'método está bloqueado' : 'métodos estão bloqueados'}. O app segue com o resto e mostra o que faltar.`;
-
   return `
     <div class="ava-sucesso">
-      <strong>Conectou${r.usuaria?.nome ? `, ${esc(r.usuaria.nome)}` : ''}!</strong>
-      <span>${esc(r.site?.nome || 'AVA')}${r.site?.versao ? ` · Moodle ${esc(r.site.versao)}` : ''} · ${r.totalFuncoes} funções liberadas no total.</span>
-      <span>${esc(resumo)}</span>
+      <strong>AVA conectado${r.usuaria?.nome ? `, ${esc(r.usuaria.nome)}` : ''}!</strong>
+      <span>${bloqueados === 0 ? 'Tudo o que o Hub precisa está liberado.' : `${bloqueados} ${bloqueados === 1 ? 'método está bloqueado' : 'métodos estão bloqueados'}; o app segue com o resto.`}</span>
     </div>
     ${blocoEtapas}
-    <h3 class="ava-subtitulo">O que o Hub usa</h3>
-    <ul class="metodos">${r.metodos.map(itemMetodo).join('')}</ul>
-    <h3 class="ava-subtitulo">Frequência</h3>
-    <p class="texto-suave">${r.frequencia.disponivel
-      ? `Disponível pelo AVA (${r.frequencia.funcoes.map(esc).join(', ')}).`
-      : 'O plugin de frequência não está no AVA: a frequência fica no Lyceum.'}</p>
-    <h3 class="ava-subtitulo">Arquivos</h3>
-    <p class="texto-suave">${r.baixarArquivos ? 'O AVA permite baixar os arquivos dos materiais pelo app.' : 'O AVA não liberou o download de arquivos pelo app.'}</p>
-    <h3 class="ava-subtitulo">Alternativas (se algo acima estiver bloqueado)</h3>
-    <ul class="metodos">${r.reservas.map(itemMetodo).join('')}</ul>
-    <p class="texto-suave">Me mande este resultado no chat para eu ajustar o que vier bloqueado.</p>`;
+    <details class="detalhes">
+      <summary>Ver os métodos liberados</summary>
+      <ul class="metodos">${r.metodos.map(itemMetodo).join('')}</ul>
+    </details>`;
+}
+
+export function renderResultadoLyceum(r) {
+  if (!r.ok) return `<div class="ava-alerta" role="alert">${esc(r.erro || 'Não deu certo desta vez.')}</div>`;
+  const curso = [r.curso?.curso, r.curso?.turno, r.curso?.serie].filter(Boolean).join(' · ');
+  return `
+    <div class="ava-sucesso">
+      <strong>Lyceum conectado!</strong>
+      ${curso ? `<span>${esc(curso)}</span>` : ''}
+      <span>A senha ficou guardada criptografada. A leitura de notas e faltas chega na próxima etapa.</span>
+    </div>`;
 }

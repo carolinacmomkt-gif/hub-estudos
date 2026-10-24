@@ -29,7 +29,10 @@ export function montarNavegacao() {
       </span>
     </a>
     ${lista(ROTAS)}
-    <div class="nav-rodape">${lista([ROTA_CONFIGURACOES])}</div>`;
+    <div class="nav-rodape">
+      <p class="situacao-sinc" data-situacao-curta><span class="situacao-ponto" aria-hidden="true"></span><span class="situacao-texto"></span></p>
+      ${lista([ROTA_CONFIGURACOES])}
+    </div>`;
 
   document.getElementById('nav-inferior').innerHTML = `
     <ul class="nav-lista">
@@ -41,7 +44,34 @@ export function montarNavegacao() {
       </li>
     </ul>`;
 
-  document.getElementById('folha-mais-lista').innerHTML = lista(rotasDoMais);
+  document.getElementById('folha-mais-lista').innerHTML = `
+    ${lista(rotasDoMais)}
+    <p class="situacao-sinc" data-situacao-curta><span class="situacao-ponto" aria-hidden="true"></span><span class="situacao-texto"></span></p>`;
+}
+
+const TEXTO_CURTO = {
+  local: 'Modo local',
+  offline: 'Sem internet',
+  sincronizando: 'Sincronizando…',
+  erro: 'Erro ao sincronizar',
+  ok: 'Sincronizado',
+  ocioso: 'Sincronizado',
+  sair: 'Entre para sincronizar',
+};
+
+// Indicador pequeno na barra lateral e na folha "Mais".
+export function atualizarIndicadorSincronizacao(s) {
+  let estado = s.estado;
+  if (!s.nuvem) estado = 'local';
+  else if (!s.logada) estado = 'sair';
+  else if (!s.online) estado = 'offline';
+  document.querySelectorAll('[data-situacao-curta]').forEach((el) => {
+    el.dataset.estado = estado;
+    const texto = TEXTO_CURTO[estado] || '';
+    el.querySelector('.situacao-texto').textContent = s.pendentes && estado !== 'sincronizando' ? `${texto} · ${s.pendentes} na fila` : texto;
+    el.title = texto;
+  });
+  document.getElementById('faixa-offline').hidden = s.online !== false || !s.nuvem;
 }
 
 export function marcarRotaAtiva(id) {

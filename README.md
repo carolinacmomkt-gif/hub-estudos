@@ -26,31 +26,38 @@ O `netlify.toml` já cuida do resto (cabeçalhos e o service worker sem cache).
 
 ### Variáveis de ambiente
 
-Na Netlify: **Site configuration → Environment variables → Add a variable**. Nunca coloque esses valores no código.
+Na Netlify: **Project configuration → Environment variables → Add a variable**. Nunca coloque esses valores no código.
 
-| Variável | Valor | Desde |
+| Variável | De onde vem | Secreta? |
 |---|---|---|
-| `AVA_BASE_URL` | `https://avagrad.unievangelica.edu.br` | Etapa 3 |
-| `HUB_CODIGO_ACESSO` | um código que você inventa (ex.: uma frase longa); protege o teste do AVA até o login existir | Etapa 3 |
+| `AVA_BASE_URL` | `https://avagrad.unievangelica.edu.br` | não |
+| `SUPABASE_URL` | Supabase → Project Settings → Data API → Project URL | não |
+| `SUPABASE_ANON_KEY` | Supabase → Project Settings → API Keys → `anon` `public` | não (o RLS protege) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys → `service_role` | **sim** |
+| `TOKEN_CRYPTO_KEY` | Terminal do Mac: `openssl rand -base64 32` | **sim** |
 
-Depois de criar ou mudar uma variável, faça um novo deploy (**Deploys → Trigger deploy → Deploy site**).
+Depois de criar ou mudar uma variável, faça um novo deploy (**Deploys → Trigger deploy**).
+`HUB_CODIGO_ACESSO` não é mais usada desde a Etapa 2 (o login protege as funções) e pode ser apagada.
 
-## Testar a conexão com o AVA (Etapa 3)
+## Banco de dados (Supabase)
 
-1. Com o site publicado e as duas variáveis criadas, abra **Configurações** no app.
-2. Em "Testar a conexão com o AVA", digite matrícula, senha e o código de acesso e toque em **Testar conexão**.
-3. O app mostra o passo a passo, os métodos liberados (✓) e bloqueados (✕), a frequência e os arquivos.
-   A senha e o token não são guardados.
+O esquema completo está em [`supabase/esquema.sql`](supabase/esquema.sql): cole no **SQL Editor** do Supabase e clique em **Run**.
+Pode rodar de novo sem problema. Toda tabela tem RLS ligado à dona; a tabela `credenciais` (token do AVA e senha
+do Lyceum, criptografados) não pode ser lida nem pelo app, só pelas funções.
 
-Para rodar as funções no computador: `npx netlify-cli dev` (precisa das variáveis num arquivo `.env`, que nunca vai para o repositório).
+Login: só por código no e-mail, com o cadastro de novas contas desligado no Supabase.
 
 ## Estrutura
 
 ```
 index.html, manifest.webmanifest, sw.js, netlify.toml
-icones/   ícones do app
-css/      temas.css (todas as cores), base.css, layout.css, componentes.css
-js/       main.js, estado.js, tema.js, rotas.js, eventos.js, views-*.js, ...
+icones/             ícones do app
+css/                temas.css (todas as cores), base.css, layout.css, componentes.css
+js/                 main.js, estado.js, persistencia.js (aparelho + sincronização), nuvem.js (Supabase),
+                    funcoes.js, eventos.js, views-*.js, ...
+netlify/functions/  ava-conectar, lyceum-conectar, desconectar, config-publica
+netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http
+supabase/           esquema.sql
 ```
 
 Ao mudar arquivos do app, aumente a `VERSAO` em `sw.js`: assim o app instalado avisa "Tem uma versão nova".
