@@ -49,13 +49,17 @@ export async function carregarConfig() {
     const r = await fetch(URL_CONFIG, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
     const dados = r.ok ? await r.json() : null;
     if (dados?.ok) {
-      config = { supabaseUrl: new URL(dados.supabaseUrl).origin, supabaseAnonKey: dados.supabaseAnonKey };
+      config = { supabaseUrl: new URL(dados.supabaseUrl).origin, supabaseAnonKey: dados.supabaseAnonKey, avaBaseUrl: dados.avaBaseUrl || null };
       guardar(CHAVE_CONFIG, config);
     }
   } catch {
     // offline ou rodando sem as funções: segue com o que estiver guardado
   }
   return config;
+}
+
+export function enderecoDoAva() {
+  return config?.avaBaseUrl || null;
 }
 
 export function nuvemConfigurada() {

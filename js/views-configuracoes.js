@@ -103,6 +103,7 @@ function cardServico(estado, { servico, titulo, rotuloSenha, explicacao, resumo 
       <div class="ava-sucesso">
         <strong>✓ Conectado${conexao.conectado_em ? ` desde ${dataCurta.format(new Date(conexao.conectado_em))}` : ''}</strong>
         ${resumo(conexao.detalhe || {})}
+        <span>${conexao.ultima_sincronizacao ? `Última sincronização ${esc(haQuantoTempo(new Date(conexao.ultima_sincronizacao).getTime()))}` : 'Ainda não sincronizado'}${conexao.detalhe?.sincronizacao?.bloqueados?.length ? ` · ${conexao.detalhe.sincronizacao.bloqueados.length} item(ns) indisponível(is)` : ''}</span>
       </div>
       <div class="acoes">
         <button class="botao botao-secundario" type="button" data-acao="mostrar-reconectar" data-servico="${servico}">Reconectar</button>

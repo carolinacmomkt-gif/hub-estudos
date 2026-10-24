@@ -2,6 +2,7 @@
 
 import { cabecalho, barraProgresso } from './componentes.js';
 import { cardCaixaEntrada } from './views-criar.js';
+import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas } from './dados-faculdade.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
   diasAte, haQuantoTempo, numeroNota, DIA,
@@ -144,6 +145,13 @@ function cardProvas(dados, agora) {
 
 function cardRevisoes(dados) {
   const total = dados.revisoes.reduce((soma, r) => soma + r.quantidade, 0);
+  if (!total) {
+    return `
+      <section class="card l-5 t-6" aria-labelledby="revisoes-titulo">
+        <div class="card-topo"><h2 class="card-titulo" id="revisoes-titulo">Revisões pendentes</h2></div>
+        <p class="texto-suave">Nenhuma questão para revisar. O gerador de questões e a revisão espaçada chegam na etapa 7.</p>
+      </section>`;
+  }
   const itens = dados.revisoes.map((r) => `
     <li><span>${esc(r.disciplina)}</span><strong>${r.quantidade}</strong></li>`).join('');
 
@@ -191,7 +199,7 @@ function cardCadernos(dados, agora) {
             <span class="caderno-capa-titulo">${esc(c.titulo)}</span>
             <span class="caderno-capa-disciplina">${esc(c.disciplina)}</span>
           </div>
-          <p class="caderno-info">${c.paginas} páginas · ${esc(haQuantoTempo(c.editadoEm, agora))}</p>
+          <p class="caderno-info">${c.paginas ? `${c.paginas} ${c.paginas === 1 ? 'página' : 'páginas'} · ` : ''}${esc(haQuantoTempo(c.editadoEm, agora))}</p>
         </a>
       </li>`).join('');
 
@@ -201,7 +209,7 @@ function cardCadernos(dados, agora) {
         <h2 class="card-titulo" id="cadernos-titulo">Cadernos recentes</h2>
         <a class="card-link" href="#cadernos">Todos os cadernos</a>
       </div>
-      <ul class="cadernos">${itens}</ul>
+      ${itens ? `<ul class="cadernos">${itens}</ul>` : '<p class="texto-suave">Nenhum caderno ainda. Os cadernos completos chegam na etapa 5.</p>'}
     </section>`;
 }
 
@@ -223,9 +231,45 @@ function cardProgresso(dados) {
     </section>`;
 }
 
+function cardFaltas(estado) {
+  const risco = disciplinasComFaltasEmRisco(estado);
+  if (!risco.length) return '';
+  return `
+    <section class="card l-5 t-6" aria-labelledby="faltas-titulo">
+      <div class="card-topo">
+        <h2 class="card-titulo" id="faltas-titulo">Atenção às faltas</h2>
+        <a class="card-link" href="#faculdade">Faculdade</a>
+      </div>
+      <ul class="prazos">${risco.map(({ disciplina, faltas }) => `
+        <li class="prazo urg-${urgenciaFaltas(faltas)}">
+          <span class="prazo-marca" aria-hidden="true"></span>
+          <div><p class="prazo-titulo"><a href="#faculdade/${esc(disciplina.id)}">${esc(disciplina.nome)}</a></p>
+            <p class="prazo-meta">${faltas.total} de ${faltas.permitidas} faltas</p></div>
+          <div class="prazo-tempo"><span class="chip">${esc(textoFaltas(faltas))}</span></div>
+        </li>`).join('')}</ul>
+    </section>`;
+}
+
+function cardAvisos(estado, agora) {
+  const avisos = avisosRecentes(estado, 4);
+  if (!avisos.length) return '';
+  return `
+    <section class="card l-7 t-12" aria-labelledby="avisos-inicio">
+      <div class="card-topo">
+        <h2 class="card-titulo" id="avisos-inicio">Avisos da faculdade</h2>
+        <a class="card-link" href="#faculdade">Faculdade</a>
+      </div>
+      <ul class="avisos">${avisos.map((a) => `
+        <li class="aviso-item">
+          <p class="aviso-titulo">${esc(a.titulo)}</p>
+          <p class="nota-meta">${a.origem === 'lyceum' ? 'Lyceum' : 'AVA'}${a.data ? ` · ${esc(haQuantoTempo(new Date(a.data).getTime(), agora))}` : ''}</p>
+        </li>`).join('')}</ul>
+    </section>`;
+}
+
 export function renderInicio(estado) {
   const agora = Date.now();
-  const { dados } = estado;
+  const dados = estado.usandoExemplo ? estado.dados : dadosReaisDoInicio(estado, agora);
   const sub = `<span>${esc(dataLonga(new Date(agora)))}</span>${estado.usandoExemplo ? '<span class="selo">Dados de exemplo</span>' : ''}`;
 
   return `
@@ -236,6 +280,8 @@ export function renderInicio(estado) {
       ${cardProvas(dados, agora)}
       ${cardRevisoes(dados)}
       ${cardNotas(dados, agora)}
+      ${estado.usandoExemplo ? '' : cardFaltas(estado)}
+      ${estado.usandoExemplo ? '' : cardAvisos(estado, agora)}
       ${cardCaixaEntrada(estado.caixa || [], agora)}
       ${cardCadernos(dados, agora)}
       ${cardProgresso(dados)}

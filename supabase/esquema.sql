@@ -52,6 +52,11 @@ create table if not exists public.disciplinas (
   semestre integer,
   cor text,
   arquivada boolean not null default false,
+  nome_ava text,
+  nome_lyceum text,
+  combinacao_manual boolean not null default false,
+  pesos jsonb not null default '{}'::jsonb, -- calculadora de média (editado no app)
+  dados jsonb not null default '{}'::jsonb, -- média, situação, aulas (vindos do Lyceum)
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
@@ -383,6 +388,8 @@ create unique index if not exists notas_ava_origem_uk on public.notas_ava (user_
 create unique index if not exists notas_lyceum_origem_uk on public.notas_lyceum (user_id, origem_id);
 create unique index if not exists frequencias_origem_uk on public.frequencias (user_id, origem_id);
 create unique index if not exists avisos_origem_uk on public.avisos (user_id, origem, origem_id);
+create unique index if not exists disciplinas_ava_uk on public.disciplinas (user_id, ava_course_id);
+create unique index if not exists disciplinas_lyceum_uk on public.disciplinas (user_id, lyceum_cod_disciplina, ano, semestre);
 create index if not exists paginas_caderno_idx on public.paginas (caderno_id, ordem);
 create index if not exists revisoes_proxima_idx on public.revisoes (user_id, proxima_em) where concluida_em is null;
 

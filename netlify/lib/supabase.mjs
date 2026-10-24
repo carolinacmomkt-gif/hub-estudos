@@ -96,4 +96,41 @@ export const banco = {
       prefer: 'resolution=merge-duplicates,return=minimal',
     });
   },
+
+  async lerConexao(userId, servico) {
+    const linhas = await pedirRest(`conexoes?select=*&${filtroUsuaria(userId, servico)}`);
+    return linhas?.[0] || null;
+  },
+
+  // Quem tem algum segredo guardado (usado pela sincronização agendada).
+  async listarCredenciais() {
+    return (await pedirRest('credenciais?select=user_id,servico')) || [];
+  },
+
+  // Linhas da usuária numa tabela (sem as excluídas). filtros: texto extra do PostgREST.
+  async listar(tabela, userId, filtros = '') {
+    return (await pedirRest(`${tabela}?select=*&user_id=eq.${encodeURIComponent(userId)}&excluido_em=is.null${filtros ? `&${filtros}` : ''}`)) || [];
+  },
+
+  // Grava em lote. conflito: colunas da chave única (ex.: "user_id,origem,origem_id").
+  // Só as colunas enviadas mudam; as que o app edita (pesos, faltas_manuais…) ficam como estão.
+  async gravar(tabela, linhas, conflito) {
+    if (!linhas.length) return;
+    // O envio em lote exige que todas as linhas tenham as mesmas colunas.
+    const grupos = new Map();
+    for (const linha of linhas) {
+      const chave = Object.keys(linha).sort().join(',');
+      if (!grupos.has(chave)) grupos.set(chave, []);
+      grupos.get(chave).push(linha);
+    }
+    for (const grupo of grupos.values()) {
+      for (let i = 0; i < grupo.length; i += 200) {
+        await pedirRest(`${tabela}?on_conflict=${conflito}`, {
+          metodo: 'POST',
+          corpo: grupo.slice(i, i + 200),
+          prefer: 'resolution=merge-duplicates,return=minimal',
+        });
+      }
+    }
+  },
 };

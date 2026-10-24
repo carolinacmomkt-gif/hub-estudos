@@ -19,7 +19,9 @@ const ROTAS_INTERNAS = [{ id: 'caneta', titulo: 'Testar a caneta', icone: 'cader
 
 const TODAS = [...ROTAS, ROTA_CONFIGURACOES, ...ROTAS_INTERNAS];
 
+// "#faculdade/abc" → rota faculdade com parametro "abc"
 export function rotaAtual() {
-  const id = location.hash.replace(/^#\/?/, '').split(/[/?]/)[0];
-  return TODAS.find((rota) => rota.id === id) || ROTAS[0];
+  const [id, parametro = null] = location.hash.replace(/^#\/?/, '').split(/[?]/)[0].split('/');
+  const rota = TODAS.find((r) => r.id === id) || ROTAS[0];
+  return { ...rota, parametro: rota.id === id ? (parametro ? decodeURIComponent(parametro) : null) : null };
 }

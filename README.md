@@ -47,6 +47,10 @@ do Lyceum, criptografados) não pode ser lida nem pelo app, só pelas funções.
 
 Login: e-mail e senha da usuária criada no Supabase (Authentication → Users), com o cadastro de novas contas desligado.
 
+**Migrações**: quando uma etapa muda o banco, o arquivo novo fica em [`supabase/migracoes/`](supabase/migracoes/).
+Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, para instalações novas).
+- `002-faculdade.sql` (Etapa 4a): campos das disciplinas para juntar AVA e Lyceum, pesos da calculadora e média.
+
 ## Estrutura
 
 ```
@@ -56,8 +60,8 @@ css/                temas.css (todas as cores), base.css, layout.css, componente
 js/                 main.js, estado.js, persistencia.js (aparelho + sincronização), nuvem.js (Supabase),
                     funcoes.js, eventos.js, editor-tinta.js (escrita à mão), views-*.js, ...
 js/vendor/          perfect-freehand (MIT), copiado sem alterações
-netlify/functions/  ava-conectar, lyceum-conectar, desconectar, config-publica
-netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http
+netlify/functions/  ava-conectar, lyceum-conectar, desconectar, config-publica, sincronizar, sincronizar-agendado (6h)
+netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http, faculdade, sincronizar-ava, sincronizar-lyceum, sincronizacao
 supabase/           esquema.sql
 ```
 

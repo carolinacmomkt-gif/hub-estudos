@@ -3,14 +3,6 @@
 import { cabecalho, emConstrucao } from './componentes.js';
 
 const AREAS = {
-  faculdade: {
-    sub: 'UniEVANGÉLICA, integrada ao AVA',
-    icone: 'faculdade',
-    titulo: 'Suas disciplinas aparecem aqui',
-    texto: 'Depois de conectar o AVA, este painel mostra tudo da faculdade num lugar só.',
-    itens: ['Painel geral e um painel por disciplina', 'Materiais, atividades e prazos', 'Notas, frequência e avisos', 'Cadernos e questões de cada disciplina'],
-    etapa: '4',
-  },
   estudos: {
     sub: 'O que você estuda por conta própria',
     icone: 'estudos',

@@ -138,3 +138,47 @@ export function montarRelatorio(info) {
     frequencia: { disponivel: funcoesFrequencia.length > 0, funcoes: funcoesFrequencia },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Chamada genérica (usada pela sincronização)
+// ---------------------------------------------------------------------------
+
+export class ErroAva extends Error {
+  constructor(mensagem, codigo) {
+    super(mensagem);
+    this.codigo = codigo; // 'token' (vencido/recusado), 'bloqueado' (accessexception), 'rede', 'outro'
+  }
+}
+
+// O Moodle recebe listas assim: courseids[0]=1&courseids[1]=2&options[0][name]=x
+function achatar(params, prefixo = '', saida = new URLSearchParams()) {
+  for (const [chave, valor] of Object.entries(params)) {
+    const nome = prefixo ? `${prefixo}[${chave}]` : chave;
+    if (valor === undefined || valor === null) continue;
+    if (typeof valor === 'object') achatar(valor, nome, saida);
+    else saida.append(nome, String(valor));
+  }
+  return saida;
+}
+
+export async function chamarAva(base, token, funcao, params = {}) {
+  const corpo = achatar(params);
+  corpo.set('wstoken', token);
+  corpo.set('wsfunction', funcao);
+  corpo.set('moodlewsrestformat', 'json');
+  let dados;
+  try {
+    dados = await postar(`${base}/webservice/rest/server.php`, corpo.toString());
+  } catch (erro) {
+    throw new ErroAva(`${funcao}: ${explicarFalhaDeRede(erro)}`, 'rede');
+  }
+  if (dados && dados.exception) {
+    if (['invalidtoken', 'webservice_access_exception'].includes(dados.errorcode) && /token/i.test(dados.message || '')) {
+      throw new ErroAva('O acesso ao AVA venceu ou foi recusado. Conecte o AVA de novo.', 'token');
+    }
+    if (dados.errorcode === 'invalidtoken') throw new ErroAva('O acesso ao AVA venceu. Conecte o AVA de novo.', 'token');
+    if (dados.errorcode === 'accessexception') throw new ErroAva(`${funcao} está bloqueado no AVA.`, 'bloqueado');
+    throw new ErroAva(`${funcao}: ${dados.message || dados.errorcode}`, 'outro');
+  }
+  return dados;
+}

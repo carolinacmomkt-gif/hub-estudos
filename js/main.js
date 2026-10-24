@@ -9,14 +9,18 @@ import { criarViewArea, IDS_AREAS } from './views-areas.js';
 import { renderConfiguracoes, textoSituacao } from './views-configuracoes.js';
 import { renderLogin } from './views-login.js';
 import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
+import { renderFaculdade, textoSituacaoFaculdade } from './views-faculdade.js';
+import { temDadosReais } from './dados-faculdade.js';
+import { sincronizarFaculdade, situacaoFaculdade } from './faculdade-sinc.js';
 import { ligarEventos } from './eventos.js';
 import { carregarConfig, nuvemConfigurada, sessaoAtual, emailDaSessao } from './nuvem.js';
-import { listar, situacaoSincronizacao, iniciarSincronizacaoAutomatica } from './persistencia.js';
+import { listar, situacaoSincronizacao, iniciarSincronizacaoAutomatica, sincronizar } from './persistencia.js';
 
 const VIEWS = {
   inicio: renderInicio,
   configuracoes: renderConfiguracoes,
   caneta: renderCaneta,
+  faculdade: renderFaculdade,
 };
 
 // Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
@@ -44,7 +48,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
     CICLO[telaMontada].desmontar();
     telaMontada = null;
   }
-  atualizarEstado({ rota: rota.id, sinc: situacaoSincronizacao(), email: emailDaSessao() });
+  atualizarEstado({ rota: rota.id, parametro: rota.parametro, sinc: situacaoSincronizacao(), email: emailDaSessao(), faculdade: situacaoFaculdade() });
   conteudo.innerHTML = VIEWS[rota.id](obterEstado());
   if (CICLO[rota.id]) {
     telaMontada = rota.id;
@@ -60,10 +64,36 @@ export function renderizar({ mudouDeTela = false } = {}) {
   }
 }
 
-async function carregarDadosLocais() {
-  const [caixa, conexoes] = await Promise.all([listar('caixa_entrada'), listar('conexoes')]);
-  atualizarEstado({ caixa, conexoes });
+// Tabelas que as telas usam (as páginas de caderno ficam de fora: são pesadas e só o editor abre).
+const TABELAS_NA_MEMORIA = {
+  caixa_entrada: 'caixa',
+  conexoes: 'conexoes',
+  disciplinas: 'disciplinas',
+  eventos: 'eventos',
+  notas_ava: 'notasAva',
+  notas_lyceum: 'notasLyceum',
+  frequencias: 'frequencias',
+  avisos: 'avisos',
+  materiais: 'materiais',
+  cadernos: 'cadernos',
+};
+
+async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
+  const listas = await Promise.all(tabelas.map((t) => listar(t)));
+  const novo = {};
+  tabelas.forEach((t, i) => {
+    novo[TABELAS_NA_MEMORIA[t]] = listas[i];
+  });
+  atualizarEstado(novo);
+  atualizarEstado({ usandoExemplo: !temDadosReais(obterEstado()) });
 }
+
+// Telas que mostram cada tabela (para redesenhar quando os dados mudam).
+const TELAS_DA_TABELA = {
+  caixa_entrada: ['inicio'],
+  conexoes: ['configuracoes', 'faculdade'],
+  cadernos: ['inicio'],
+};
 
 export function mostrarLogin(opcoes = {}) {
   noApp = false;
@@ -82,17 +112,32 @@ export async function entrarNoApp() {
   if (!sincronizacaoIniciada) {
     sincronizacaoIniciada = true;
     iniciarSincronizacaoAutomatica();
+    // Ao abrir: baixa o que mudou e, se faz mais de 1h, atualiza a faculdade (AVA + Lyceum).
+    sincronizar().finally(() => sincronizarFaculdade());
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) sincronizarFaculdade();
+    });
   }
 }
 
 // Dados mudaram (no aparelho ou vindos do Supabase): atualiza a tela que mostra esses dados.
 window.addEventListener('hub:dados', async (evento) => {
   const { tabela } = evento.detail || {};
-  if (tabela !== 'caixa_entrada' && tabela !== 'conexoes') return;
-  await carregarDadosLocais();
-  const rota = obterEstado().rota;
-  const mostra = (tabela === 'caixa_entrada' && rota === 'inicio') || (tabela === 'conexoes' && rota === 'configuracoes');
-  if (mostra && !digitando() && !obterEstado().ocupado) renderizar();
+  if (!TABELAS_NA_MEMORIA[tabela]) return;
+  await carregarDadosLocais([tabela]);
+  const telas = TELAS_DA_TABELA[tabela] || ['inicio', 'faculdade'];
+  if (noApp && telas.includes(obterEstado().rota) && !digitando() && !obterEstado().ocupado) renderizar();
+});
+
+window.addEventListener('hub:faculdade', (evento) => {
+  atualizarEstado({ faculdade: evento.detail });
+  const linha = conteudo.querySelector('[data-situacao-faculdade]');
+  if (linha) linha.textContent = textoSituacaoFaculdade(obterEstado());
+  const botao = conteudo.querySelector('[data-acao="sincronizar-faculdade"]');
+  if (botao) {
+    botao.disabled = evento.detail.estado === 'sincronizando';
+    botao.textContent = botao.disabled ? 'Sincronizando…' : 'Sincronizar agora';
+  }
 });
 
 window.addEventListener('hub:sincronizacao', () => {

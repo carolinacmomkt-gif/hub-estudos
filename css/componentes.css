@@ -988,3 +988,193 @@ button.card-link {
   opacity: 0.85;
   overflow-wrap: anywhere;
 }
+
+/* Faculdade */
+.pilha-larga {
+  max-width: none;
+}
+
+.faculdade-sinc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.disciplinas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.disciplina-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  height: 100%;
+  padding: 18px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  text-decoration: none;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.disciplina-card:hover {
+  border-color: var(--cor-texto-destaque);
+  transform: translateY(-1px);
+}
+
+.disciplina-card .progresso {
+  align-self: stretch;
+  margin-top: auto;
+}
+
+.disciplina-nome {
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.disciplina-meta {
+  color: var(--cor-texto-suave);
+  font-size: 0.88rem;
+}
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  margin-bottom: 4px;
+  color: var(--cor-texto-destaque);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.acoes-topo {
+  margin: -12px 0 20px;
+}
+
+.acoes-topo:empty {
+  display: none;
+}
+
+.avisos {
+  display: flex;
+  flex-direction: column;
+}
+
+.aviso-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.aviso-item:last-child {
+  border-bottom: 0;
+}
+
+.aviso-titulo {
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.aviso-titulo a,
+.prazo-titulo a,
+.material a {
+  color: inherit;
+  text-decoration-color: var(--cor-borda);
+  text-underline-offset: 3px;
+}
+
+.aviso-texto {
+  margin-top: 4px;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+  white-space: pre-line;
+}
+
+.frequencia-numero {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.frequencia-numero strong {
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--cor-texto-destaque);
+}
+
+.calculadora {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calculadora-provas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.campo-curto input {
+  max-width: 140px;
+}
+
+.campo-rotulo small {
+  display: block;
+  color: var(--cor-texto-fraco);
+  font-weight: 400;
+}
+
+.calculadora-resultado {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--raio);
+  background: var(--cor-destaque-suave);
+  font-weight: 600;
+}
+
+.materiais {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+.material {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.material .selo {
+  flex: none;
+}
+
+.detalhes summary .selo {
+  margin-left: 8px;
+}
+
+details.card > summary {
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  color: var(--cor-texto-destaque);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.campo select {
+  min-height: var(--toque);
+  max-width: 420px;
+  padding: 0 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font: inherit;
+}

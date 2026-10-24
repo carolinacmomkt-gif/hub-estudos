@@ -3,7 +3,7 @@
 
 import { tokenDeAcesso } from './nuvem.js';
 
-async function chamar(nome, corpo) {
+export async function chamar(nome, corpo) {
   if (!navigator.onLine) return { ok: false, erro: 'Sem internet agora. Isso precisa de conexão.' };
   const token = await tokenDeAcesso();
   if (!token) return { ok: false, erro: 'Entre no app de novo para continuar.' };
@@ -31,3 +31,4 @@ async function chamar(nome, corpo) {
 export const conectarAva = (matricula, senha) => chamar('ava-conectar', { matricula, senha });
 export const conectarLyceum = (matricula, senha) => chamar('lyceum-conectar', { matricula, senha });
 export const desconectar = (servico) => chamar('desconectar', { servico });
+export const sincronizarServico = (corpo) => chamar('sincronizar', corpo);
