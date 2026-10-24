@@ -121,7 +121,9 @@ export function renderResultadoLyceum(r) {
   const rotas = r.rotas.map((rota) => itemEtapa({
     ok: rota.ok,
     descricao: rota.descricao,
-    detalhe: rota.ok ? 'Respondeu.' : `Não respondeu (${rota.status}${rota.mensagem ? `: ${rota.mensagem}` : ''}).`,
+    detalhe: rota.ok
+      ? `Respondeu${rota.servidor ? ` (${rota.servidor})` : ''}.`
+      : `Não respondeu (${(rota.tentativas || []).map((t) => `${t.servidor}: ${t.status}`).join(' · ') || rota.status}).`,
   })).join('');
 
   return `

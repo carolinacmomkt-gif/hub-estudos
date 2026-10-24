@@ -1,7 +1,12 @@
 // Teste de conexão com o Lyceum (portal do aluno da UniEVANGÉLICA).
 //
-// Faz UM login com matrícula e senha (do mesmo jeito que o portal), descobre os
-// códigos de pessoa e de aluno e testa as rotas de notas, faltas, agenda e avisos.
+// Repete o caminho do próprio portal:
+//   1. POST /aluno/auth com matrícula e senha (base64), captcha vazio;
+//   2. lê o cookie user-data para achar o código da pessoa;
+//   3. GET apix/pessoas/{pessoa}/alunos (ainda sem identificação) para achar o código do aluno;
+//   4. daí em diante manda X-Lyceum-Usuario no formato "perfil: códigoDoAluno".
+// Os endereços do portal são relativos a /aluno/ ("apix" vem de Configs.getApiServer()).
+//
 // Devolve só a ESTRUTURA das respostas (nomes e tipos dos campos), nunca os valores.
 // A senha e a sessão não saem desta função e não são guardadas.
 //
@@ -12,20 +17,24 @@ import { timingSafeEqual } from 'node:crypto';
 const BASE_PADRAO = 'https://portal.unievangelica.edu.br/aluno';
 const TEMPO_LIMITE_MS = 4500;
 const AGENTE = 'Mozilla/5.0 (compatible; HubDeEstudos/1.0)';
+const PERFIS = ['aluno', 'ALUNO', 'Aluno'];
 
-// {p} = código da pessoa, {a} = código do aluno
+// {p} = código da pessoa, {a} = código do aluno.
+// "apix": rotas montadas com Configs.getApiServer() (= "apix").
+// "apiUrl": rotas montadas com ${API_URL}, trocado por AppCfg.getApiServer() (ainda não sabemos o valor).
 const ROTAS = [
-  { id: 'boletim', descricao: 'Boletim (notas e faltas)', caminho: '/pessoas/{p}/alunos/{a}/boletim' },
-  { id: 'disciplinasBoletim', descricao: 'Disciplinas do boletim', caminho: '/pessoas/{p}/alunos/{a}/disciplinasBoletim' },
-  { id: 'ultimasNotas', descricao: 'Últimas notas', caminho: '/pessoas/{p}/alunos/{a}/qtddNotas/5/ultimasNotas' },
-  { id: 'subPeriodos', descricao: 'Períodos do boletim (N1, N2…)', caminho: '/pessoas/alunos/{a}/listaSubPeriodos' },
-  { id: 'frequencias', descricao: 'Frequência', caminho: '/api/rest/alunos/codAluno/{a}/codPessoa/{p}/Frequencias' },
-  { id: 'disciplinasMatriculadas', descricao: 'Disciplinas matriculadas', caminho: '/matricula/codAluno/{a}/obterDisciplinasMatriculadas' },
-  { id: 'dadosAcademicos', descricao: 'Dados acadêmicos (curso, período)', caminho: '/pessoas/codAluno/{a}/obterDadosAcademicos' },
-  { id: 'eventos', descricao: 'Agenda (eventos)', caminho: '/api/rest/alunos/pessoa/{p}/events' },
-  { id: 'agendaDiario', descricao: 'Agenda do diário', caminho: '/matricula/listar-agenda-diario?codAluno={a}' },
-  { id: 'avisos', descricao: 'Avisos', caminho: '/pessoas/{p}/alunos/{a}/avisos' },
-  { id: 'ultimasAtividades', descricao: 'Últimas atividades', caminho: '/pessoas/cod_pessoa/{p}/cod_aluno/{a}/lista_ultimas_atividades' },
+  { id: 'boletim', base: 'apix', descricao: 'Boletim (notas e faltas)', caminho: '/pessoas/{p}/alunos/{a}/boletim' },
+  { id: 'subPeriodos', base: 'apix', descricao: 'Períodos do boletim (N1, N2…)', caminho: '/pessoas/alunos/{a}/listaSubPeriodos' },
+  { id: 'disciplinasBoletim', base: 'apix', descricao: 'Disciplinas do boletim', caminho: '/pessoas/{p}/alunos/{a}/disciplinasBoletim' },
+  { id: 'ultimasNotas', base: 'apix', descricao: 'Últimas notas', caminho: '/pessoas/{p}/alunos/{a}/qtddNotas/5/ultimasNotas' },
+  { id: 'dadosAcademicos', base: 'apix', descricao: 'Dados acadêmicos (curso, período)', caminho: '/pessoas/codAluno/{a}/obterDadosAcademicos' },
+  { id: 'avisos', base: 'apix', descricao: 'Avisos', caminho: '/pessoas/{p}/alunos/{a}/avisos' },
+  { id: 'ultimasAtividades', base: 'apix', descricao: 'Últimas atividades', caminho: '/pessoas/cod_pessoa/{p}/cod_aluno/{a}/lista_ultimas_atividades' },
+  { id: 'agendaDiario', base: 'apix', descricao: 'Agenda do diário', caminho: '/matricula/listar-agenda-diario' },
+  { id: 'frequencias', base: 'apiUrl', descricao: 'Frequência', caminho: '/api/rest/alunos/codAluno/{a}/codPessoa/{p}/Frequencias?page=0&size=1000' },
+  { id: 'boletins', base: 'apiUrl', descricao: 'Boletins (outro caminho)', caminho: '/api/rest/alunos/{a}/pessoa/{p}/boletins' },
+  { id: 'disciplinasBoletimRest', base: 'apiUrl', descricao: 'Disciplinas do boletim (outro caminho)', caminho: '/api/rest/alunos/{a}/pessoa/{p}/disciplinasBoletim?page=0&size=1000' },
+  { id: 'eventos', base: 'apiUrl', descricao: 'Agenda (eventos)', caminho: '/api/rest/alunos/pessoa/{p}/events' },
 ];
 
 function resposta(status, corpo) {
@@ -65,8 +74,7 @@ function criarPotinhoDeCookies() {
 function lerUserData(valor) {
   if (!valor) return null;
   try {
-    const texto = Buffer.from(decodeURIComponent(valor), 'base64').toString('utf8');
-    return JSON.parse(texto);
+    return JSON.parse(Buffer.from(decodeURIComponent(valor), 'base64').toString('utf8'));
   } catch {
     return null;
   }
@@ -82,27 +90,16 @@ function tipoDe(v) {
 function estrutura(v, profundidade = 0) {
   if (Array.isArray(v)) {
     const primeiro = v.find((x) => x && typeof x === 'object');
-    return { tipo: 'lista', itens: v.length, ...(primeiro && profundidade < 2 ? { item: estrutura(primeiro, profundidade + 1) } : {}) };
+    return { tipo: 'lista', itens: v.length, ...(primeiro && profundidade < 3 ? { item: estrutura(primeiro, profundidade + 1) } : {}) };
   }
   if (v && typeof v === 'object') {
     const campos = {};
     for (const [k, x] of Object.entries(v).slice(0, 60)) {
-      campos[k] = (x && typeof x === 'object' && profundidade < 2) ? estrutura(x, profundidade + 1) : tipoDe(x);
+      campos[k] = (x && typeof x === 'object' && profundidade < 3) ? estrutura(x, profundidade + 1) : tipoDe(x);
     }
     return { tipo: 'objeto', campos };
   }
   return { tipo: tipoDe(v) };
-}
-
-// Procura o código do aluno na resposta de /pessoas/{p}/alunos.
-function acharCodigoAluno(dados) {
-  const lista = Array.isArray(dados) ? dados : (dados && typeof dados === 'object' ? Object.values(dados).find(Array.isArray) : null);
-  const item = lista?.find((x) => x && typeof x === 'object') ?? (dados && typeof dados === 'object' && !Array.isArray(dados) ? dados : null);
-  if (!item) return null;
-  for (const chave of ['codAluno', 'cod_aluno', 'aluno', 'codigoAluno', 'id']) {
-    if (item[chave] !== undefined && item[chave] !== null && typeof item[chave] !== 'object') return String(item[chave]);
-  }
-  return null;
 }
 
 function descreverErro(dados) {
@@ -114,53 +111,44 @@ function descreverErro(dados) {
   return saida;
 }
 
-const PREFIXOS = [
-  '/aluno', '/aluno/api', '/aluno/rest', '/aluno/services', '/aluno/service', '/aluno/ws', '/aluno/backend',
-  '/aluno/app', '/aluno/lyceum', '/api', '/rest', '/services', '/lyceum', '/portal', '/aluno-api', '',
-];
-
-// Testa em que prefixo a rota /pessoas/{p}/alunos existe (404 = não existe ali).
-async function testarPrefixos(origem, codPessoa, usuario, pedir) {
-  return Promise.all(PREFIXOS.map(async (prefixo) => {
-    try {
-      const r = await pedir(`${origem}${prefixo}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, {
-        headers: { 'X-Lyceum-Usuario': usuario },
-      });
-      const tipo = r.headers.get('content-type') || '';
-      await r.arrayBuffer();
-      return { prefixo, status: r.status, json: tipo.includes('json') };
-    } catch {
-      return { prefixo, status: 'erro', json: false };
-    }
-  }));
+// Procura o código do aluno na resposta de /pessoas/{p}/alunos.
+function acharCodigoAluno(dados) {
+  const lista = Array.isArray(dados) ? dados : (dados && typeof dados === 'object' ? Object.values(dados).find(Array.isArray) : null);
+  const item = lista?.find((x) => x && typeof x === 'object') ?? (dados && typeof dados === 'object' && !Array.isArray(dados) ? dados : null);
+  if (!item) return null;
+  for (const chave of ['codAluno', 'cod_aluno', 'aluno', 'codigoAluno']) {
+    if (item[chave] !== undefined && item[chave] !== null && typeof item[chave] !== 'object') return String(item[chave]);
+  }
+  return null;
 }
 
 // Lê o código público do portal (sem dados da Carol) e devolve os trechos onde
-// ele monta os endereços da API, para descobrir o prefixo certo.
+// ele define o servidor da API, para o caso de algo ainda não responder.
 async function lerTrechosDoCodigo(html, base, pedir) {
   const srcs = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
     .map((m) => new URL(m[1], `${base}/`).href)
-    .filter((u) => /\/_app\/app-[^/]*\.js/i.test(u) || /\/_app\/[^/]*config[^/]*\.js/i.test(u));
-  const agulhas = ['getApiServer=', 'getApiServer:', 'X-Lyceum-Usuario', 'perfil=', 'perfil:', 'Authorization', 'Bearer', 'withCredentials', 'SessionData.user='];
-  const trechos = [];
-  for (const url of srcs.slice(0, 3)) {
+    .filter((u) => /\/_app\/[^/]*\.js/i.test(u));
+  const agulhas = ['"AppCfg"', 'AppCfg=', 'getApiServer'];
+  const textos = await Promise.all(srcs.slice(0, 4).map(async (url) => {
     try {
-      const r = await pedir(url);
-      const texto = await r.text();
-      for (const agulha of agulhas) {
-        let i = texto.indexOf(agulha);
-        let vezes = 0;
-        while (i >= 0 && vezes < 3) {
-          trechos.push({ agulha, trecho: texto.slice(Math.max(0, i - 300), i + 300).replace(/\s+/g, ' ') });
-          i = texto.indexOf(agulha, i + agulha.length);
-          vezes += 1;
-        }
-      }
+      return await (await pedir(url)).text();
     } catch {
-      // segue sem os trechos
+      return ''; // segue sem os trechos deste arquivo
+    }
+  }));
+  const trechos = [];
+  for (const texto of textos) {
+    for (const agulha of agulhas) {
+      let i = texto.indexOf(agulha);
+      let vezes = 0;
+      while (i >= 0 && vezes < 2) {
+        trechos.push({ agulha, trecho: texto.slice(Math.max(0, i - 200), i + 300).replace(/\s+/g, ' ') });
+        i = texto.indexOf(agulha, i + agulha.length);
+        vezes += 1;
+      }
     }
   }
-  return trechos.slice(0, 30);
+  return trechos.slice(0, 10);
 }
 
 export default async (req) => {
@@ -169,6 +157,7 @@ export default async (req) => {
   const codigoEsperado = process.env.HUB_CODIGO_ACESSO;
   if (!codigoEsperado) return resposta(500, { ok: false, erro: 'Falta a variável HUB_CODIGO_ACESSO na Netlify.' });
   const base = (process.env.LYCEUM_BASE_URL || BASE_PADRAO).replace(/\/+$/, '');
+  const origem = new URL(base).origin;
 
   let entrada;
   try {
@@ -189,32 +178,41 @@ export default async (req) => {
 
   const potinho = criarPotinhoDeCookies();
   const etapas = [];
-  const cabecalhosBase = {
-    Accept: 'application/json, text/plain, */*',
-    'Accept-Language-Portal': 'pt_br',
-    'User-Agent': AGENTE,
-    Origin: new URL(base).origin,
-    Referer: `${base}/`,
-  };
-
   const pedir = async (url, opcoes = {}) => {
     const resp = await fetch(url, {
       ...opcoes,
-      headers: { ...cabecalhosBase, Cookie: potinho.cabecalho(), ...(opcoes.headers || {}) },
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+        'Accept-Language-Portal': 'pt_br',
+        'User-Agent': AGENTE,
+        Origin: origem,
+        Referer: `${base}/`,
+        Cookie: potinho.cabecalho(),
+        ...(opcoes.headers || {}),
+      },
       redirect: 'manual',
       signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
     });
     potinho.guardar(resp);
     return resp;
   };
+  const lerJson = async (r) => {
+    const tipo = r.headers.get('content-type') || '';
+    const texto = await r.text();
+    if (!tipo.includes('json')) return { json: false, tamanho: texto.length, tipo };
+    try {
+      return { json: true, dados: JSON.parse(texto) };
+    } catch {
+      return { json: false, tamanho: texto.length, tipo };
+    }
+  };
 
-  // 1. Abre o portal (o portal cria uma sessão antes do login)
+  // 1. Abre o portal (ele cria uma sessão antes do login)
   let htmlInicial = '';
   try {
-    const r = await pedir(`${base}/`);
-    htmlInicial = await r.text();
+    htmlInicial = await (await pedir(`${base}/`)).text();
   } catch {
-    // segue mesmo assim: o login às vezes funciona sem a sessão prévia
+    // segue mesmo assim
   }
 
   // 2. Login: exatamente uma tentativa
@@ -242,127 +240,100 @@ export default async (req) => {
 
   if (login.status !== 200) {
     const texto = (await login.text().catch(() => '')).slice(0, 2000);
-    const pediuCaptcha = /captcha/i.test(texto);
-    const erro = pediuCaptcha
+    const erro = /captcha/i.test(texto)
       ? 'O Lyceum pediu captcha. O app não tenta contornar: me avise para seguirmos pelo plano B.'
       : login.status === 401 ? 'Matrícula ou senha incorretas. Confira e tente de novo.' : `O Lyceum recusou o login (HTTP ${login.status}).`;
     etapas.push({ nome: 'Entrar no Lyceum', ok: false, detalhe: erro });
     return resposta(200, { ok: false, etapas, erro });
   }
-  etapas.push({ nome: 'Entrar no Lyceum', ok: true, detalhe: `Login aceito (sem captcha). Cookies da sessão: ${potinho.ler('JSESSIONID') ? 'JSESSIONID' : 'nenhum JSESSIONID'}${potinho.ler('user-data') ? ', user-data' : ''}.` });
+  etapas.push({ nome: 'Entrar no Lyceum', ok: true, detalhe: 'Login aceito (sem captcha).' });
 
-  // 3. Descobre os códigos da pessoa e do aluno
+  // 3. Código da pessoa (cookie user-data) e código do aluno (lista de alunos da pessoa)
   const usuario = lerUserData(potinho.ler('user-data'));
   const codPessoa = usuario?.id ? String(usuario.id) : null;
+  const apix = `${base}/apix`;
+  const transacao = { 'X-Lyceum-Transacao': `${base}/#/home/avisos` };
+
   let codAluno = null;
-  let origemAluno = 'não encontrado';
-  // O portal manda o cabeçalho X-Lyceum-Usuario; não sabemos qual valor ele espera depois do login.
-  // No código do portal o formato é `${perfil}: ${usuario}`.
-  const identidades = [
-    { rotulo: 'matrícula', valor: usuario?.login ? String(usuario.login) : null },
-    { rotulo: 'código da pessoa', valor: codPessoa },
-  ].filter((o) => o.valor);
-  const perfis = ['ALUNO', 'Aluno', 'aluno', 'ROLE_USER'];
-  const opcoesUsuario = [
-    ...identidades.flatMap((id) => perfis.map((perfil) => ({ rotulo: `${perfil}: ${id.rotulo}`, valor: `${perfil}: ${id.valor}` }))),
-    ...identidades,
-    { rotulo: 'null', valor: 'null' },
-  ];
-  let cabecalhoUsuario = { 'X-Lyceum-Usuario': opcoesUsuario[0]?.valor ?? 'null' };
-
-  // Descobre o prefixo da API: lê o código público e testa prefixos comuns.
-  const origem = new URL(base).origin;
-  const [trechos, testesPrefixo] = await Promise.all([
-    lerTrechosDoCodigo(htmlInicial, base, pedir),
-    codPessoa ? testarPrefixos(origem, codPessoa, opcoesUsuario[0]?.valor ?? 'null', pedir) : [],
-  ]);
-  const escolhido = testesPrefixo.find((t) => t.status === 200 && t.json) || testesPrefixo.find((t) => t.json && t.status !== 404);
-  const prefixo = escolhido ? escolhido.prefixo : new URL(base).pathname.replace(/\/+$/, '');
-  const raizApi = `${origem}${prefixo}`;
-  etapas.push({
-    nome: 'Descobrir o endereço da API',
-    ok: Boolean(escolhido),
-    detalhe: escolhido ? `Prefixo encontrado: ${prefixo || '(raiz)'} (HTTP ${escolhido.status}).` : 'Nenhum prefixo comum respondeu. Veja os trechos do código no resultado.',
-  });
-
-  let usuarioQueFuncionou = 'nenhum';
-  let testesCabecalho = [];
+  let statusAlunos = 'não testado';
   if (codPessoa) {
-    testesCabecalho = await Promise.all(opcoesUsuario.map(async (opcao) => {
-      try {
-        const r = await pedir(`${raizApi}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, { headers: { 'X-Lyceum-Usuario': opcao.valor } });
-        const tipo = r.headers.get('content-type') || '';
-        const texto = await r.text();
-        let dados = null;
-        if (tipo.includes('json')) {
-          try { dados = JSON.parse(texto); } catch { /* ignora */ }
-        }
-        return { opcao, status: r.status, dados };
-      } catch {
-        return { opcao, status: 'erro', dados: null };
-      }
-    }));
-    const certo = testesCabecalho.find((t) => t.status === 200);
-    if (certo) {
-      cabecalhoUsuario = { 'X-Lyceum-Usuario': certo.opcao.valor };
-      usuarioQueFuncionou = certo.opcao.rotulo;
-      codAluno = acharCodigoAluno(certo.dados);
-      if (codAluno) origemAluno = 'lista de alunos da pessoa';
+    try {
+      const r = await pedir(`${apix}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, { headers: { ...transacao, 'X-Lyceum-Usuario': 'null' } });
+      statusAlunos = r.status;
+      const { json, dados } = await lerJson(r);
+      if (r.ok && json) codAluno = acharCodigoAluno(dados);
+    } catch {
+      statusAlunos = 'erro';
     }
   }
-  // Só rótulo e status (os valores têm a matrícula e o código da pessoa).
-  const resumoCabecalho = testesCabecalho.map((t) => ({ formato: t.opcao.rotulo, status: t.status }));
-  const erro401 = testesCabecalho.find((t) => t.status === 401 && t.dados);
-  const mensagem401 = erro401 ? descreverErro(erro401.dados) : null;
-  if (!codAluno && usuario?.login) {
-    codAluno = String(usuario.login);
-    origemAluno = 'matrícula (reserva)';
-  }
-
   etapas.push({
     nome: 'Descobrir os códigos',
     ok: Boolean(codPessoa && codAluno),
-    detalhe: `Código da pessoa: ${codPessoa ? 'encontrado' : 'não encontrado'}. Código do aluno: ${origemAluno}. Cabeçalho X-Lyceum-Usuario aceito: ${usuarioQueFuncionou}.`,
+    detalhe: `Código da pessoa: ${codPessoa ? 'encontrado' : 'não encontrado'}. Lista de alunos (apix): HTTP ${statusAlunos}. Código do aluno: ${codAluno ? 'encontrado' : 'não encontrado'}.`,
   });
   if (!codPessoa || !codAluno) {
-    return resposta(200, { ok: false, etapas, prefixos: testesPrefixo, cabecalhos: resumoCabecalho, mensagem401, trechos, erro: 'Entrou no Lyceum, mas não achei os seus códigos. Me mande este resultado.' });
+    const trechos = await lerTrechosDoCodigo(htmlInicial, base, pedir);
+    return resposta(200, { ok: false, etapas, trechos, erro: 'Entrou no Lyceum, mas não achei os seus códigos. Me mande este resultado.' });
   }
 
-  // 4. Testa as rotas (todas juntas, para caber no tempo da Netlify)
-  const rotas = await Promise.all(ROTAS.map(async (rota) => {
-    const caminho = rota.caminho.replace('{p}', encodeURIComponent(codPessoa)).replace('{a}', encodeURIComponent(codAluno));
+  const montar = (caminho) => caminho.replace('{p}', encodeURIComponent(codPessoa)).replace('{a}', encodeURIComponent(codAluno));
+
+  // 4. Qual perfil o portal aceita no cabeçalho "perfil: códigoDoAluno"
+  const testesPerfil = await Promise.all(PERFIS.map(async (perfil) => {
     try {
-      const r = await pedir(`${raizApi}${caminho}`, { headers: cabecalhoUsuario });
-      const tipo = r.headers.get('content-type') || '';
-      const texto = await r.text();
-      const item = { id: rota.id, descricao: rota.descricao, rota: rota.caminho, status: r.status, ok: r.ok };
-      if (tipo.includes('json')) {
-        try {
-          const dados = JSON.parse(texto);
-          if (r.ok) item.estrutura = estrutura(dados);
-          else if (dados && typeof dados.message === 'string') item.mensagem = dados.message.slice(0, 160);
-        } catch {
-          item.observacao = 'JSON inválido';
-        }
-      } else {
-        item.observacao = `Resposta em ${tipo || 'formato desconhecido'} (${texto.length} caracteres)`;
-      }
+      const r = await pedir(`${apix}${montar('/pessoas/codAluno/{a}/obterDadosAcademicos')}`, {
+        headers: { ...transacao, 'X-Lyceum-Usuario': `${perfil}: ${codAluno}` },
+      });
+      await r.arrayBuffer();
+      return { perfil, status: r.status };
+    } catch {
+      return { perfil, status: 'erro' };
+    }
+  }));
+  const perfilCerto = testesPerfil.find((t) => t.status === 200)?.perfil || PERFIS[0];
+  etapas.push({
+    nome: 'Identificação no portal',
+    ok: testesPerfil.some((t) => t.status === 200),
+    detalhe: `Formato "perfil: código do aluno". ${testesPerfil.map((t) => `${t.perfil}: HTTP ${t.status}`).join(' · ')}.`,
+  });
+  const identificacao = { ...transacao, 'X-Lyceum-Usuario': `${perfilCerto}: ${codAluno}` };
+
+  // 5. Testa as rotas. As de ${API_URL} vão em três servidores possíveis.
+  const servidoresApiUrl = [
+    { rotulo: '/aluno/apix', url: apix },
+    { rotulo: '/aluno/api', url: `${base}/api` },
+    { rotulo: '/api', url: `${origem}/api` },
+  ];
+  const testar = async (rota, servidor) => {
+    try {
+      const r = await pedir(`${servidor.url}${montar(rota.caminho)}`, { headers: identificacao });
+      const lido = await lerJson(r);
+      const item = { servidor: servidor.rotulo, status: r.status, ok: r.ok && lido.json };
+      if (item.ok) item.estrutura = estrutura(lido.dados);
+      else if (lido.json) item.erro = descreverErro(lido.dados);
+      else item.observacao = `Resposta em ${lido.tipo || 'formato desconhecido'} (${lido.tamanho} caracteres)`;
       return item;
     } catch (erro) {
       const demorou = erro?.name === 'TimeoutError' || erro?.name === 'AbortError';
-      return { id: rota.id, descricao: rota.descricao, rota: rota.caminho, status: 'erro', ok: false, observacao: demorou ? 'demorou demais' : 'falha de rede' };
+      return { servidor: servidor.rotulo, status: 'erro', ok: false, observacao: demorou ? 'demorou demais' : 'falha de rede' };
     }
+  };
+
+  const rotas = await Promise.all(ROTAS.map(async (rota) => {
+    const servidores = rota.base === 'apix' ? [{ rotulo: '/aluno/apix', url: apix }] : servidoresApiUrl;
+    const tentativas = await Promise.all(servidores.map((s) => testar(rota, s)));
+    const certa = tentativas.find((t) => t.ok);
+    return {
+      id: rota.id,
+      descricao: rota.descricao,
+      rota: rota.caminho,
+      ok: Boolean(certa),
+      ...(certa ? { servidor: certa.servidor, estrutura: certa.estrutura } : { tentativas }),
+    };
   }));
 
   const funcionaram = rotas.filter((r) => r.ok).length;
-  return resposta(200, {
-    ok: true,
-    etapas,
-    resumo: `${funcionaram} de ${rotas.length} rotas responderam.`,
-    rotas,
-    prefixos: testesPrefixo,
-    cabecalhos: resumoCabecalho,
-    mensagem401,
-    trechos,
-  });
+  const corpo = { ok: true, etapas, resumo: `${funcionaram} de ${rotas.length} rotas responderam.`, rotas };
+  if (funcionaram < rotas.length) corpo.trechos = await lerTrechosDoCodigo(htmlInicial, base, pedir);
+  return resposta(200, corpo);
 };
