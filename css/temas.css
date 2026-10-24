@@ -141,4 +141,5 @@
   --tipo-aula: var(--tinta-azul);
   --tipo-feriado: var(--tinta-verde);
   --tipo-pessoal: var(--tinta-roxo);
+  --tipo-revisao: var(--capa-3);
 }

@@ -12,6 +12,7 @@ import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
 import { renderFaculdade, textoSituacaoFaculdade } from './views-faculdade.js';
 import { renderCalendario } from './views-calendario.js';
 import { retomarImportacao } from './importar-calendario.js';
+import { atualizarSituacaoAvisos } from './eventos-avisos.js';
 import { temDadosReais } from './dados-faculdade.js';
 import { sincronizarFaculdade, situacaoFaculdade } from './faculdade-sinc.js';
 import { ligarEventos } from './eventos.js';
@@ -29,6 +30,7 @@ const VIEWS = {
 // Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
 const CICLO = {
   caneta: { montar: montarCaneta, desmontar: desmontarCaneta },
+  configuracoes: { montar: atualizarSituacaoAvisos, desmontar: () => {} },
 };
 let telaMontada = null;
 ROTAS.filter((r) => IDS_AREAS.includes(r.id)).forEach((r) => {
@@ -80,6 +82,7 @@ const TABELAS_NA_MEMORIA = {
   avisos: 'avisos',
   materiais: 'materiais',
   cadernos: 'cadernos',
+  config: 'config',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -99,6 +102,7 @@ const TELAS_DA_TABELA = {
   cadernos: ['inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
+  config: ['inicio', 'calendario', 'configuracoes'],
 };
 
 export function mostrarLogin(opcoes = {}) {

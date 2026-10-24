@@ -49,7 +49,7 @@ export async function carregarConfig() {
     const r = await fetch(URL_CONFIG, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
     const dados = r.ok ? await r.json() : null;
     if (dados?.ok) {
-      config = { supabaseUrl: new URL(dados.supabaseUrl).origin, supabaseAnonKey: dados.supabaseAnonKey, avaBaseUrl: dados.avaBaseUrl || null };
+      config = { supabaseUrl: new URL(dados.supabaseUrl).origin, supabaseAnonKey: dados.supabaseAnonKey, avaBaseUrl: dados.avaBaseUrl || null, vapidPublicKey: dados.vapidPublicKey || null };
       guardar(CHAVE_CONFIG, config);
     }
   } catch {
@@ -60,6 +60,10 @@ export async function carregarConfig() {
 
 export function enderecoDoAva() {
   return config?.avaBaseUrl || null;
+}
+
+export function chaveDosAvisos() {
+  return config?.vapidPublicKey || null;
 }
 
 export function nuvemConfigurada() {

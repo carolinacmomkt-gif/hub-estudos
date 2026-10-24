@@ -23,7 +23,7 @@ use o Chrome: F12 → ícone de celular → dimensões 1340×800, 800×1340 e 37
 3. Clique em **Deploy**. Cada novo push nessa branch publica sozinho.
 
 O `netlify.toml` já cuida do resto (cabeçalhos e o service worker sem cache).
-O `package.json` lista só o que as funções usam (o SDK da Anthropic); a Netlify instala sozinha a cada deploy.
+O `package.json` lista só o que as funções usam (o SDK da Anthropic e o `web-push`); a Netlify instala sozinha a cada deploy.
 O front-end continua sem build.
 
 ### Variáveis de ambiente
@@ -37,7 +37,17 @@ Na Netlify: **Project configuration → Environment variables → Add a variable
 | `SUPABASE_ANON_KEY` | Supabase → Project Settings → API Keys → `anon` `public` | não (o RLS protege) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys → `service_role` | **sim** |
 | `TOKEN_CRYPTO_KEY` | Terminal do Mac: `openssl rand -base64 32` | **sim** |
+| `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` | Avisos no aparelho. Gere no Terminal do Mac (veja abaixo) | só a `PRIVATE` é secreta |
 | `ANTHROPIC_API_KEY` | console.anthropic.com → API Keys → Create Key (usada na leitura do calendário acadêmico e, depois, no gerador de questões) | **sim** |
+
+**Chaves dos avisos (VAPID)**: no Terminal do Mac, cole as três linhas. A primeira cria o arquivo `vapid.pem`;
+as outras mostram as duas chaves para copiar na Netlify. Depois apague o `vapid.pem` (ele não vai para o repositório).
+
+```bash
+openssl ecparam -name prime256v1 -genkey -noout -out vapid.pem
+echo "VAPID_PUBLIC_KEY:";  openssl ec -in vapid.pem -pubout -outform DER 2>/dev/null | tail -c 65 | base64 | tr '/+' '_-' | tr -d '=\n'; echo
+echo "VAPID_PRIVATE_KEY:"; openssl ec -in vapid.pem -outform DER 2>/dev/null | tail -c +8 | head -c 32 | base64 | tr '/+' '_-' | tr -d '=\n'; echo
+```
 
 Depois de criar ou mudar uma variável, faça um novo deploy (**Deploys → Trigger deploy**).
 `HUB_CODIGO_ACESSO` não é mais usada desde a Etapa 2 (o login protege as funções) e pode ser apagada.
@@ -54,6 +64,7 @@ Login: e-mail e senha da usuária criada no Supabase (Authentication → Users),
 Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, para instalações novas).
 - `002-faculdade.sql` (Etapa 4a): campos das disciplinas para juntar AVA e Lyceum, pesos da calculadora e média.
 - `003-calendario.sql` (Etapa 4b): tabela `importacoes`, onde fica a leitura do calendário acadêmico até a Carol revisar.
+- `004-avisos.sql` (Etapa 4c): aparelhos que recebem avisos, registro dos avisos enviados e sessões de revisão (tipo `revisao`).
 
 ## Estrutura
 
@@ -65,8 +76,9 @@ js/                 main.js, estado.js, persistencia.js (aparelho + sincronizaç
                     funcoes.js, eventos.js, editor-tinta.js (escrita à mão), views-*.js, ...
 js/vendor/          perfect-freehand (MIT), copiado sem alterações
 netlify/functions/  ava-conectar, lyceum-conectar, desconectar, config-publica, sincronizar, sincronizar-agendado (6h),
-                    calendario-ler-background (lê o calendário acadêmico com a IA, em segundo plano)
-netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http, faculdade, sincronizar-ava, sincronizar-lyceum, sincronizacao, ia-calendario
+                    calendario-ler-background (lê o calendário acadêmico com a IA, em segundo plano),
+                    avisos-agendado (de hora em hora: avisos de prazo), avisos-teste
+netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http, faculdade, sincronizar-ava, sincronizar-lyceum, sincronizacao, ia-calendario, avisos
 supabase/           esquema.sql
 ```
 

@@ -132,7 +132,8 @@ export function dadosReaisDoInicio(estado, agora = Date.now()) {
     id: e.id,
     tipo: e.tipo,
     titulo: e.titulo,
-    disciplina: e.disciplina_id || e.origem !== 'academico' ? nome(e.disciplina_id) : 'Calendário acadêmico',
+    // Sem disciplina: o calendário acadêmico se identifica; os eventos próprios ficam sem rótulo.
+    disciplina: e.disciplina_id ? nome(e.disciplina_id) : (e.origem === 'academico' ? 'Calendário acadêmico' : ''),
     semDisciplina: !e.disciplina_id,
     prazo: tempo(e.inicio),
     status: situacaoDoEvento(e, agora) || null,

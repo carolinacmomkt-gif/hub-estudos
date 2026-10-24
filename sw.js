@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v19';
+const VERSAO = 'hub-v20';
 
 const ARQUIVOS = [
   './',
@@ -37,6 +37,11 @@ const ARQUIVOS = [
   './js/dados-calendario.js',
   './js/eventos-calendario.js',
   './js/importar-calendario.js',
+  './js/avisos.js',
+  './js/views-avisos.js',
+  './js/eventos-avisos.js',
+  './js/plano-estudo.js',
+  './js/views-plano.js',
   './js/editor-tinta.js',
   './js/vendor/perfect-freehand.js',
   './js/views-navegacao.js',
@@ -104,5 +109,37 @@ self.addEventListener('fetch', (evento) => {
       return guardado;
     }
     return daRede;
+  })());
+});
+
+// Avisos de prazo (Web Push): chegam mesmo com o app fechado.
+self.addEventListener('push', (evento) => {
+  let aviso = {};
+  try {
+    aviso = evento.data ? evento.data.json() : {};
+  } catch {
+    aviso = { texto: evento.data?.text() };
+  }
+  evento.waitUntil(self.registration.showNotification(aviso.titulo || 'Hub de Estudos', {
+    body: aviso.texto || '',
+    tag: aviso.tag,
+    icon: './icones/icone-192.png',
+    badge: './icones/icone-192.png',
+    data: { url: aviso.url || './' },
+  }));
+});
+
+// Tocar no aviso abre o app (ou traz para a frente a janela que já estava aberta).
+self.addEventListener('notificationclick', (evento) => {
+  evento.notification.close();
+  const destino = new URL(evento.notification.data?.url || './', self.registration.scope).href;
+  evento.waitUntil((async () => {
+    const janelas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const aberta = janelas.find((j) => new URL(j.url).origin === self.location.origin);
+    if (aberta) {
+      await aberta.focus();
+      return aberta.navigate(destino).catch(() => aberta.postMessage({ tipo: 'abrir', url: destino }));
+    }
+    return self.clients.openWindow(destino);
   })());
 });

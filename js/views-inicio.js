@@ -2,6 +2,7 @@
 
 import { cabecalho, barraProgresso } from './componentes.js';
 import { cardCaixaEntrada } from './views-criar.js';
+import { cardPlano } from './views-plano.js';
 import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas } from './dados-faculdade.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
@@ -10,7 +11,7 @@ import {
 
 const NOMES_TIPO = {
   prova: 'Prova', trabalho: 'Trabalho', atividade: 'Atividade',
-  aula: 'Aula', feriado: 'Feriado', pessoal: 'Pessoal',
+  aula: 'Aula', feriado: 'Feriado', pessoal: 'Pessoal', revisao: 'Revisão',
 };
 
 // Prazo de verdade: prova, trabalho ou atividade (feriados e aulas do calendário acadêmico não contam).
@@ -43,7 +44,7 @@ export function escolherProximoPasso(dados, agora = Date.now()) {
     const atrasada = entrega.prazo < agora;
     return {
       titulo: `${atrasada ? 'Entregar' : 'Adiantar'}: ${entrega.titulo}`,
-      texto: `${entrega.disciplina} · ${contagemRegressiva(entrega.prazo, agora)}.`,
+      texto: `${[entrega.disciplina, contagemRegressiva(entrega.prazo, agora)].filter(Boolean).join(' · ')}.`,
       acao: 'Ver na Faculdade',
       destino: '#faculdade',
     };
@@ -101,7 +102,7 @@ function cardPrazos(dados, agora) {
         <span class="prazo-marca" aria-hidden="true"></span>
         <div>
           <p class="prazo-titulo">${esc(e.titulo)}</p>
-          <p class="prazo-meta">${esc(e.disciplina)} · ${esc(NOMES_TIPO[e.tipo] || e.tipo)}</p>
+          <p class="prazo-meta">${esc([e.disciplina, NOMES_TIPO[e.tipo] || e.tipo].filter(Boolean).join(' · '))}</p>
         </div>
         <div class="prazo-tempo">
           <span class="chip">${esc(contagemRegressiva(e.prazo, agora))}</span>
@@ -135,7 +136,7 @@ function cardProvas(dados, agora) {
           <strong>${dias === 0 ? '!' : dias}</strong><span>${rotulo}</span>
         </div>
         <div>
-          <p class="prova-titulo">${esc(p.titulo)} · ${esc(p.disciplina)}</p>
+          <p class="prova-titulo">${esc([p.titulo, p.disciplina].filter(Boolean).join(' · '))}</p>
           <p class="prova-meta">${esc(diaEHora(p.prazo))}</p>
           <p class="visualmente-oculto">${dias === 0 ? 'É hoje' : `Faltam ${dias} ${rotulo}`}</p>
         </div>
@@ -286,6 +287,7 @@ export function renderInicio(estado) {
       ${cardProximoPasso(escolherProximoPasso(dados, agora))}
       ${cardPrazos(dados, agora)}
       ${cardProvas(dados, agora)}
+      ${estado.usandoExemplo ? '' : cardPlano(estado, { classes: 'l-7 t-12', agora })}
       ${cardRevisoes(dados)}
       ${cardNotas(dados, agora)}
       ${estado.usandoExemplo ? '' : cardFaltas(estado)}

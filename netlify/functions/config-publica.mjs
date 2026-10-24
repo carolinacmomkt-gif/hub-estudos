@@ -16,5 +16,6 @@ export default async () => {
   const anon = process.env.SUPABASE_ANON_KEY || '';
   if (!url || !anon) return resposta(200, { ok: false, erro: 'O Supabase ainda não foi configurado na Netlify.' });
   const avaBaseUrl = (process.env.AVA_BASE_URL || '').replace(/\/+$/, '') || null; // para os links "Abrir no AVA"
-  return resposta(200, { ok: true, supabaseUrl: url, supabaseAnonKey: anon, avaBaseUrl });
+  const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || null; // pública por natureza (avisos no aparelho)
+  return resposta(200, { ok: true, supabaseUrl: url, supabaseAnonKey: anon, avaBaseUrl, vapidPublicKey });
 };

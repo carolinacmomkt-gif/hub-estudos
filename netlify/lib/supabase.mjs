@@ -143,6 +143,16 @@ export const banco = {
     await pedirStorage(caminho, { metodo: 'DELETE' });
   },
 
+  // Leitura sem filtro de usuária (só para as funções agendadas, que passam por todas).
+  async listarTodas(tabela, filtros = '') {
+    return (await pedirRest(`${tabela}?select=*${filtros ? `&${filtros}` : ''}`)) || [];
+  },
+
+  async apagar(tabela, filtros) {
+    if (!filtros) throw new Error('apagar precisa de filtros');
+    await pedirRest(`${tabela}?${filtros}`, { metodo: 'DELETE', prefer: 'return=minimal' });
+  },
+
   // Atualiza alguns campos de uma linha da usuária (sem precisar mandar os obrigatórios).
   async atualizarPorId(tabela, userId, id, campos) {
     await pedirRest(`${tabela}?user_id=eq.${encodeURIComponent(userId)}&id=eq.${encodeURIComponent(id)}`, {

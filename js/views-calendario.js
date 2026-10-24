@@ -6,10 +6,11 @@ import { esc, contagemRegressiva, urgencia } from './utilidades.js';
 import { disciplinasAtivas, nomeDaDisciplina, situacaoDoEvento } from './dados-faculdade.js';
 import {
   chaveDia, dataDaChave, somarDias, eventosDoCalendario, eventosPorDia, gradeDoMes, semanaDe,
-  mesmoMes, horaLocal, diasDoEvento,
+  mesmoMes, horaLocal, diasDoEvento, chaveValida,
 } from './dados-calendario.js';
 import { nuvemConfigurada, sessaoAtual } from './nuvem.js';
 import { cursoGuardado } from './importar-calendario.js';
+import { cardPlano } from './views-plano.js';
 
 export const TIPOS_EVENTO = [
   { id: 'prova', nome: 'Prova' },
@@ -18,6 +19,7 @@ export const TIPOS_EVENTO = [
   { id: 'aula', nome: 'Aula' },
   { id: 'feriado', nome: 'Feriado' },
   { id: 'pessoal', nome: 'Pessoal' },
+  { id: 'revisao', nome: 'Revisão' },
 ];
 const NOME_TIPO = Object.fromEntries(TIPOS_EVENTO.map((t) => [t.id, t.nome]));
 const NOME_ORIGEM = { ava: 'AVA', ics: 'AVA', lyceum: 'Lyceum', academico: 'Calendário acadêmico', manual: 'Seu evento' };
@@ -208,6 +210,13 @@ function barra(cal) {
 export function renderCalendario(estado) {
   if (estado.parametro === 'importar') return renderImportar(estado);
   const cal = situacaoCalendario(estado);
+  // "#calendario/2026-10-25" (vindo de um aviso) abre naquele dia; o endereço volta a ser "#calendario".
+  if (chaveValida(estado.parametro)) {
+    cal.foco = estado.parametro;
+    cal.dia = estado.parametro;
+    estado.parametro = null;
+    history.replaceState(null, '', '#calendario');
+  }
   const agora = Date.now();
   const eventos = eventosDoCalendario(estado);
   const corpo = { mes: visaoMes, semana: visaoSemana, lista: visaoLista }[cal.visao](estado, cal, eventos, agora);
@@ -219,6 +228,7 @@ export function renderCalendario(estado) {
       <button class="botao botao-primario" type="button" data-acao="cal-novo">Novo evento</button>
       <a class="botao botao-secundario" href="#calendario/importar">${temAcademico ? 'Atualizar calendário acadêmico' : 'Importar calendário acadêmico'}</a>
     </div>
+    ${cardPlano(estado, { agora })}
     ${barra(cal)}
     <div class="pilha pilha-larga">${corpo}</div>`;
 }
@@ -359,7 +369,7 @@ function revisao(imp) {
         <input class="importado-titulo" type="text" maxlength="140" value="${esc(e.titulo)}" data-campo="titulo" data-indice="${i}" aria-label="Título da data ${i + 1}">
         <div class="importado-linha">
           <label class="importado-campo">Tipo
-            <select data-campo="tipo" data-indice="${i}">${opcoes(TIPOS_EVENTO.filter((t) => t.id !== 'pessoal'), e.tipo)}</select></label>
+            <select data-campo="tipo" data-indice="${i}">${opcoes(TIPOS_EVENTO.filter((t) => t.id !== 'pessoal' && t.id !== 'revisao'), e.tipo)}</select></label>
           <label class="importado-campo">Data
             <input type="date" value="${esc(e.inicio)}" data-campo="inicio" data-indice="${i}"></label>
           <label class="importado-campo">Até

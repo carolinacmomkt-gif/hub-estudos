@@ -1,0 +1,63 @@
+// Avisos de prazo no aparelho, de hora em hora (Netlify Scheduled Function).
+// Para cada aparelho ativado: vê o que vence em 3 dias, amanhã e hoje, manda o aviso no
+// horário escolhido e anota o que já saiu (cada prazo sai uma vez em cada marco).
+
+import { banco } from '../lib/supabase.mjs';
+import { avisosDevidos, montarNotificacoes, enviarPush, configDeAvisos, chaveEnviado, ErroPush } from '../lib/avisos.mjs';
+
+const DIA = 24 * 60 * 60 * 1000;
+
+export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.now()) {
+  const [linhaConfig] = await banco.listar('config', userId, 'chave=eq.avisos');
+  const config = configDeAvisos(linhaConfig?.valor);
+  const janela = `inicio=gte.${new Date(agora - DIA).toISOString()}&inicio=lt.${new Date(agora + 5 * DIA).toISOString()}`;
+  const eventos = await banco.listar('eventos', userId, janela);
+  const enviados = new Set((await banco.listarTodas('avisos_enviados', `user_id=eq.${userId}&enviado_em=gte.${new Date(agora - 10 * DIA).toISOString()}`))
+    .map((l) => chaveEnviado(l.evento_id, l.marco, l.data_evento)));
+
+  const devidos = avisosDevidos({ eventos, config, agora, enviados });
+  if (!devidos.length) return { enviados: 0 };
+
+  const disciplinas = new Map((await banco.listar('disciplinas', userId)).map((d) => [d.id, d.nome]));
+  const notificacoes = montarNotificacoes(devidos, { nomeDisciplina: (id) => disciplinas.get(id) || '', fuso: config.fuso });
+  let entregues = 0;
+  for (const assinatura of assinaturas) {
+    for (const n of notificacoes) {
+      const r = await enviarPush(assinatura, n);
+      if (r === 'expirada') {
+        await banco.apagar('assinaturas_push', `user_id=eq.${userId}&id=eq.${assinatura.id}`);
+        break;
+      }
+      if (r === 'ok') entregues += 1;
+    }
+  }
+  // Só anota como enviado se chegou a pelo menos um aparelho; senão tenta de novo na próxima hora.
+  if (entregues) {
+    await banco.gravar('avisos_enviados', devidos.map((d) => ({
+      user_id: userId, evento_id: d.evento.id, marco: d.marco, data_evento: d.evento.inicio,
+    })), 'user_id,evento_id,marco,data_evento');
+  }
+  return { enviados: entregues };
+}
+
+export default async () => {
+  const agora = Date.now();
+  const assinaturas = await banco.listarTodas('assinaturas_push', 'excluido_em=is.null');
+  const porUsuaria = new Map();
+  for (const a of assinaturas) {
+    if (!porUsuaria.has(a.user_id)) porUsuaria.set(a.user_id, []);
+    porUsuaria.get(a.user_id).push(a);
+  }
+  for (const [userId, lista] of porUsuaria) {
+    try {
+      await enviarAvisosDaUsuaria(userId, lista, agora);
+    } catch (erro) {
+      console.error('avisos:', erro instanceof ErroPush ? erro.message : erro?.message);
+      if (erro instanceof ErroPush) break;
+    }
+  }
+  await banco.apagar('avisos_enviados', `enviado_em=lt.${new Date(agora - 30 * DIA).toISOString()}`).catch(() => {});
+  return new Response('ok');
+};
+
+export const config = { schedule: '0 * * * *' };

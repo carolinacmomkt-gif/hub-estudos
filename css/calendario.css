@@ -536,3 +536,47 @@ button.atalho-criar:hover {
     font-size: 1rem;
   }
 }
+
+.tipo-revisao { --tipo-cor: var(--tipo-revisao); }
+
+/* Grupos de caixas de marcar (avisos e plano de estudo) */
+.grupo-marcar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.grupo-marcar legend {
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+.grupo-marcar-linha {
+  flex-direction: row;
+  flex-wrap: wrap;
+  column-gap: 18px;
+}
+
+/* Card "Plano para a prova" */
+.plano-prova {
+  font-size: 1.05rem;
+}
+
+.plano-dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 14px;
+}
+
+.plano-dias .chip {
+  text-transform: capitalize;
+}
+
+.cal-barra + .pilha,
+.plano + .cal-barra {
+  margin-top: 16px;
+}

@@ -87,7 +87,7 @@ create table if not exists public.eventos (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   disciplina_id uuid references public.disciplinas (id) on delete set null,
-  tipo text not null default 'pessoal' check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal')),
+  tipo text not null default 'pessoal' check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao')),
   titulo text not null,
   descricao text,
   inicio timestamptz not null,
@@ -97,6 +97,7 @@ create table if not exists public.eventos (
   origem text not null default 'manual' check (origem in ('ava', 'ics', 'academico', 'lyceum', 'manual')),
   origem_id text,
   link text,
+  prova_id uuid,  -- sessão de revisão: a prova a que pertence
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
@@ -387,6 +388,32 @@ create table if not exists public.importacoes (
   excluido_em timestamptz
 );
 
+-- Aparelhos que recebem avisos (Web Push).
+create table if not exists public.assinaturas_push (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  endpoint text not null,
+  p256dh text not null,
+  auth text not null,
+  aparelho text,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz,
+  unique (user_id, endpoint)
+);
+
+-- Avisos já mandados (cada prazo sai uma vez em cada marco). Só as funções usam.
+create table if not exists public.avisos_enviados (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  evento_id uuid not null,
+  marco text not null check (marco in ('3d', '1d', 'dia')),
+  data_evento timestamptz not null,
+  enviado_em timestamptz not null default now(),
+  primary key (user_id, evento_id, marco, data_evento)
+);
+alter table public.avisos_enviados enable row level security;
+revoke all on public.avisos_enviados from anon, authenticated;
+
 -- Segredos criptografados (AES-256-GCM, chave TOKEN_CRYPTO_KEY só na Netlify).
 create table if not exists public.credenciais (
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -406,6 +433,7 @@ create unique index if not exists frequencias_origem_uk on public.frequencias (u
 create unique index if not exists avisos_origem_uk on public.avisos (user_id, origem, origem_id);
 create unique index if not exists disciplinas_ava_uk on public.disciplinas (user_id, ava_course_id);
 create unique index if not exists disciplinas_lyceum_uk on public.disciplinas (user_id, lyceum_cod_disciplina, ano, semestre);
+create index if not exists eventos_prova_idx on public.eventos (prova_id) where prova_id is not null;
 create index if not exists paginas_caderno_idx on public.paginas (caderno_id, ordem);
 create index if not exists revisoes_proxima_idx on public.revisoes (user_id, proxima_em) where concluida_em is null;
 
@@ -419,7 +447,7 @@ declare
   tabelas text[] := array[
     'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
     'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes'
+    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push'
   ];
 begin
   foreach tabela in array tabelas loop

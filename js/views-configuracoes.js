@@ -5,6 +5,7 @@ import { icone } from './icones.js';
 import { OPCOES_TEMA, lerPreferenciaTema } from './tema.js';
 import { OPCOES_TEXTO, lerTamanhoTexto } from './preferencias.js';
 import { esc, haQuantoTempo } from './utilidades.js';
+import { cardAvisos, cardPlanoPrefs } from './views-avisos.js';
 
 const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -151,11 +152,13 @@ function resumoAva(d) {
 
 export function renderConfiguracoes(estado) {
   return `
-    ${cabecalho('Configurações', 'Conta, sincronização e conexões')}
+    ${cabecalho('Configurações', 'Conta, sincronização, avisos e conexões')}
     <div class="pilha">
       ${cardConta(estado)}
       ${cardSincronizacao(estado)}
       ${cardAparencia()}
+      ${cardAvisos(estado)}
+      ${cardPlanoPrefs(estado)}
       ${cardServico(estado, {
         servico: 'ava',
         titulo: 'AVA (Moodle)',

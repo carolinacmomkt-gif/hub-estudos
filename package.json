@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Hub de Estudos da Carol. O front-end não tem build; esta lista é só das Netlify Functions.",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.3.0"
+    "@anthropic-ai/sdk": "^1.3.0",
+    "web-push": "^3.6.7"
   }
 }

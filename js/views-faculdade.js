@@ -11,7 +11,7 @@ import {
   notasLyceumDaDisciplina, notasAvaDaDisciplina, provasDaCalculadora, calcularMedia, situacaoDoEvento, avisosRecentes,
 } from './dados-faculdade.js';
 
-const NOMES_TIPO = { prova: 'Prova', trabalho: 'Trabalho', atividade: 'Atividade', aula: 'Aula', feriado: 'Feriado', pessoal: 'Pessoal' };
+const NOMES_TIPO = { prova: 'Prova', trabalho: 'Trabalho', atividade: 'Atividade', aula: 'Aula', feriado: 'Feriado', pessoal: 'Pessoal', revisao: 'Revisão' };
 const NOMES_STATUS = { entregue: 'Entregue', atrasado: 'Atrasado', pendente: 'Pendente' };
 const NOMES_MATERIAL = { resource: 'Arquivo', url: 'Link', page: 'Página', folder: 'Pasta', book: 'Livro' };
 
