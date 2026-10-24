@@ -104,9 +104,17 @@ async function pedirAuth(caminho, corpo, token) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(corpo || {}),
+      // Enviar o e-mail pode demorar alguns segundos; sem limite, a tela ficaria parada para sempre.
+      signal: AbortSignal.timeout(20000),
     });
-  } catch {
-    throw new ErroNuvem('Sem conexão com a internet.', 0, 'rede');
+  } catch (erro) {
+    if (erro?.name === 'TimeoutError') {
+      throw new ErroNuvem(
+        'O Supabase demorou demais para responder. Confira se o código chegou mesmo assim; se não, tente de novo em alguns minutos.',
+        0, 'demora', `sem resposta em 20 s (${caminho.split('?')[0]})`,
+      );
+    }
+    throw new ErroNuvem('Sem conexão com a internet.', 0, 'rede', String(erro?.message || ''));
   }
   const texto = await r.text();
   let dados = {};
