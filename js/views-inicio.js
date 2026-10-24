@@ -283,16 +283,18 @@ function barraDoBloco(bloco, indice, total, proprios) {
   const nome = nomeDoBloco(bloco.id, proprios);
   return `
     <div class="bloco-barra">
-      <span class="bloco-nome">${esc(nome)}</span>
+      <button class="bloco-alca" type="button" data-arrastar="${esc(bloco.id)}" aria-label="Arrastar ${esc(nome)}" title="Segure e arraste para mudar de lugar">
+        <span class="bloco-alca-pontos" aria-hidden="true">⠿</span><span class="bloco-nome">${esc(nome)}</span>
+      </button>
       <div class="bloco-controles">
-        <button class="botao-icone" type="button" data-acao="inicio-mover" data-id="${esc(bloco.id)}" data-passo="-1" aria-label="Subir ${esc(nome)}"${indice === 0 ? ' disabled' : ''}>↑</button>
-        <button class="botao-icone" type="button" data-acao="inicio-mover" data-id="${esc(bloco.id)}" data-passo="1" aria-label="Descer ${esc(nome)}"${indice === total - 1 ? ' disabled' : ''}>↓</button>
-        <label class="visualmente-oculto" for="tam-${esc(bloco.id)}">Tamanho de ${esc(nome)}</label>
+        <button class="botao-icone botao-icone-p" type="button" data-acao="inicio-mover" data-id="${esc(bloco.id)}" data-passo="-1" aria-label="Subir ${esc(nome)}"${indice === 0 ? ' disabled' : ''}>↑</button>
+        <button class="botao-icone botao-icone-p" type="button" data-acao="inicio-mover" data-id="${esc(bloco.id)}" data-passo="1" aria-label="Descer ${esc(nome)}"${indice === total - 1 ? ' disabled' : ''}>↓</button>
+        <label class="visualmente-oculto" for="tam-${esc(bloco.id)}">Largura de ${esc(nome)}</label>
         <select id="tam-${esc(bloco.id)}" class="bloco-tamanho" data-acao-mudar="inicio-tamanho" data-id="${esc(bloco.id)}">
           ${TAMANHOS.map((t) => `<option value="${t.id}"${t.id === bloco.tamanho ? ' selected' : ''}>${t.nome}</option>`).join('')}
         </select>
-        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-visivel" data-id="${esc(bloco.id)}">${bloco.visivel ? 'Ocultar' : 'Mostrar'}</button>
         ${proprio ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-editar" data-id="${esc(bloco.id)}">Editar</button>` : ''}
+        <button class="botao-icone botao-icone-p bloco-remover" type="button" data-acao="inicio-remover-bloco" data-id="${esc(bloco.id)}" aria-label="Remover ${esc(nome)} do Início" title="Remover do Início">×</button>
       </div>
     </div>`;
 }
@@ -301,19 +303,34 @@ function avisoVazio(nome) {
   return `<section class="card bloco-vazio"><p class="texto-suave">${esc(nome)}: nada para mostrar agora. Aparece sozinho quando tiver.</p></section>`;
 }
 
-function painelPersonalizar() {
+function painelPersonalizar(blocos, proprios) {
+  const fora = blocos.filter((b) => !b.visivel);
+  const listaFora = fora.length ? `
+    <ul class="atalhos-criar">${fora.map((b) => `
+      <li class="catalogo-item">
+        <span><strong>${esc(nomeDoBloco(b.id, proprios))}</strong>${proprios[b.id] ? ' <small class="campo-ajuda">· seu card</small>' : ''}</span>
+        <span class="catalogo-acoes">
+          <button class="botao botao-primario botao-pequeno" type="button" data-acao="inicio-adicionar" data-id="${esc(b.id)}">Adicionar</button>
+          ${proprios[b.id] ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-remover" data-id="${esc(b.id)}">Excluir de vez</button>` : ''}
+        </span>
+      </li>`).join('')}</ul>` : '<p class="texto-suave">Todos os cards do app já estão no Início.</p>';
   return `
     <section class="card personalizar" aria-labelledby="personalizar-titulo">
       <div class="card-topo">
         <h2 class="card-titulo" id="personalizar-titulo">Personalizar o Início</h2>
         <button class="botao botao-primario botao-pequeno" type="button" data-acao="inicio-pronto">Pronto</button>
       </div>
-      <p class="texto-suave">Use as setas para mudar a ordem, escolha o tamanho de cada card no tablet e oculte o que não quiser ver. No celular, os cards ficam um embaixo do outro, nesta ordem.</p>
-      <h3 class="ava-subtitulo">Adicionar um card seu</h3>
-      <ul class="atalhos-criar">${TIPOS_PROPRIOS.map((t) => `
-        <li><button class="atalho-criar" type="button" data-acao="inicio-novo" data-tipo="${t.id}">
-          <span><strong>${esc(t.nome)}</strong><small class="campo-ajuda"> · ${esc(t.descricao)}</small></span>
-        </button></li>`).join('')}</ul>
+      <p class="texto-suave">Segure <strong>⠿</strong> e arraste o card para onde quiser. Puxe o canto de baixo, à direita, para mudar a largura e a altura (toque duas vezes no canto para a altura voltar ao automático). O <strong>×</strong> tira o card do Início; ele fica aqui embaixo para adicionar de volta.</p>
+      <details class="catalogo">
+        <summary>Adicionar ao Início</summary>
+        <h3 class="ava-subtitulo">Cards fora do Início</h3>
+        ${listaFora}
+        <h3 class="ava-subtitulo">Criar um card seu</h3>
+        <ul class="atalhos-criar">${TIPOS_PROPRIOS.map((t) => `
+          <li><button class="atalho-criar" type="button" data-acao="inicio-novo" data-tipo="${t.id}">
+            <span><strong>${esc(t.nome)}</strong><small class="campo-ajuda"> · ${esc(t.descricao)}</small></span>
+          </button></li>`).join('')}</ul>
+      </details>
       <div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-padrao">Voltar ao padrão</button></div>
     </section>`;
 }
@@ -339,21 +356,23 @@ export function renderInicio(estado) {
     progresso: () => cardProgresso(dados),
   };
 
-  const visiveis = editando ? blocos : blocos.filter((b) => b.visivel);
+  const visiveis = blocos.filter((b) => b.visivel);
   const html = visiveis.map((bloco, i) => {
     let conteudo = proprios[bloco.id] ? renderProprio(bloco.id, proprios[bloco.id], agora) : doApp[bloco.id]();
     if (!conteudo && !editando) return '';
     if (!conteudo) conteudo = avisoVazio(nomeDoBloco(bloco.id, proprios));
-    const classes = ['bloco', `tam-${bloco.tamanho.replace('/', '-')}`, editando && 'editando', !bloco.visivel && 'oculto'].filter(Boolean).join(' ');
+    const classes = ['bloco', `tam-${bloco.tamanho.replace('/', '-')}`, editando && 'editando', bloco.altura && 'com-altura'].filter(Boolean).join(' ');
+    const estilo = bloco.altura ? ` style="--altura: ${bloco.altura}px"` : '';
     return `
-      <div class="${classes}" data-bloco="${esc(bloco.id)}">
+      <div class="${classes}" data-bloco="${esc(bloco.id)}" data-tamanho="${esc(bloco.tamanho)}"${estilo}>
         ${editando ? barraDoBloco(bloco, i, visiveis.length, proprios) : ''}
         <div class="bloco-conteudo"${editando ? ' inert' : ''}>${conteudo}</div>
+        ${editando ? `<span class="bloco-canto" data-redimensionar="${esc(bloco.id)}" role="presentation" title="Puxe para mudar o tamanho"></span>` : ''}
       </div>`;
   }).join('');
 
   return `
     ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
-    ${editando ? painelPersonalizar() : '<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar o Início</button></div>'}
-    <div class="painel">${html}</div>`;
+    ${editando ? painelPersonalizar(blocos, proprios) : '<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar o Início</button></div>'}
+    <div class="painel${editando ? ' painel-editando' : ''}">${html}</div>`;
 }

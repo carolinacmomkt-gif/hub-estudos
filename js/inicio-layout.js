@@ -32,6 +32,10 @@ export const TAMANHOS = [
   { id: '1/3', nome: '1/3' },
 ];
 
+// Altura escolhida ao puxar o canto (em px); sem altura, o card se ajusta ao conteúdo.
+export const ALTURA_MIN = 120;
+export const ALTURA_MAX = 1200;
+
 const PADRAO_PROPRIO = { nota: 'metade', atalhos: 'metade', checklist: '1/3', contagem: '1/3' };
 
 function salvo(estado) {
@@ -46,12 +50,17 @@ export function blocosDoInicio(estado) {
   const tamanhoOk = (t) => TAMANHOS.some((x) => x.id === t);
   const blocos = (Array.isArray(v.blocos) ? v.blocos : [])
     .filter((b) => conhecidos.has(b.id) || proprios[b.id])
-    .map((b) => ({ id: b.id, visivel: b.visivel !== false, tamanho: tamanhoOk(b.tamanho) ? b.tamanho : '2/3' }));
+    .map((b) => ({
+      id: b.id,
+      visivel: b.visivel !== false,
+      tamanho: tamanhoOk(b.tamanho) ? b.tamanho : '2/3',
+      altura: Number(b.altura) >= ALTURA_MIN ? Math.min(ALTURA_MAX, Number(b.altura)) : null,
+    }));
   const presentes = new Set(blocos.map((b) => b.id));
   CARDS_DO_APP.forEach((c, i) => {
     if (presentes.has(c.id)) return;
     // Card novo do app entra na posição do padrão (ou no fim).
-    blocos.splice(Math.min(i, blocos.length), 0, { id: c.id, visivel: true, tamanho: c.tamanho });
+    blocos.splice(Math.min(i, blocos.length), 0, { id: c.id, visivel: true, tamanho: c.tamanho, altura: null });
   });
   return { blocos, proprios };
 }
@@ -77,9 +86,39 @@ export const moverBloco = (id, passo) => mudar(({ blocos }) => {
   [blocos[i], blocos[j]] = [blocos[j], blocos[i]];
 });
 
-export const mudarTamanho = (id, tamanho) => mudar(({ blocos }) => {
+// Arrastar e soltar: coloca o bloco "id" antes (ou depois) do bloco "alvoId".
+export const colocarBloco = (id, alvoId, depois = false) => mudar(({ blocos }) => {
+  const i = blocos.findIndex((b) => b.id === id);
+  if (i < 0 || id === alvoId) return;
+  const [bloco] = blocos.splice(i, 1);
+  let j = blocos.findIndex((b) => b.id === alvoId);
+  if (j < 0) j = blocos.length;
+  else if (depois) j += 1;
+  blocos.splice(j, 0, bloco);
+});
+
+// Puxar o canto: largura (um dos TAMANHOS) e altura em px (null = automática).
+export const redimensionar = (id, tamanho, altura) => mudar(({ blocos }) => {
   const b = blocos.find((x) => x.id === id);
-  if (b && TAMANHOS.some((t) => t.id === tamanho)) b.tamanho = tamanho;
+  if (!b) return;
+  if (TAMANHOS.some((t) => t.id === tamanho)) b.tamanho = tamanho;
+  if (altura !== undefined) b.altura = altura === null ? null : Math.round(Math.min(ALTURA_MAX, Math.max(ALTURA_MIN, altura)));
+});
+
+export const mudarTamanho = (id, tamanho) => redimensionar(id, tamanho);
+
+// Remover tira do Início (o card continua na lista "Adicionar"); adicionar põe de volta no topo.
+export const removerBloco = (id) => mudar(({ blocos }) => {
+  const b = blocos.find((x) => x.id === id);
+  if (b) b.visivel = false;
+});
+
+export const adicionarBloco = (id) => mudar(({ blocos }) => {
+  const i = blocos.findIndex((x) => x.id === id);
+  if (i < 0) return;
+  const [b] = blocos.splice(i, 1);
+  b.visivel = true;
+  blocos.unshift(b);
 });
 
 export const alternarVisivel = (id) => mudar(({ blocos }) => {
@@ -91,7 +130,7 @@ export function adicionarProprio(tipo, dados) {
   const id = `meu-${crypto.randomUUID().slice(0, 8)}`;
   return mudar((v) => {
     v.proprios[id] = { tipo, ...dados };
-    v.blocos.unshift({ id, visivel: true, tamanho: PADRAO_PROPRIO[tipo] || 'metade' });
+    v.blocos.unshift({ id, visivel: true, tamanho: PADRAO_PROPRIO[tipo] || 'metade', altura: null });
   }).then(() => id);
 }
 
@@ -112,7 +151,7 @@ export const marcarItem = (id, indice) => mudar((v) => {
 // Volta à ordem e aos tamanhos do padrão, mas guarda os cards próprios (ocultos).
 export const voltarAoPadrao = () => mudar((v) => {
   v.blocos = [
-    ...CARDS_DO_APP.map((c) => ({ id: c.id, visivel: true, tamanho: c.tamanho })),
+    ...CARDS_DO_APP.map((c) => ({ id: c.id, visivel: true, tamanho: c.tamanho, altura: null })),
     ...Object.keys(v.proprios).map((id) => ({ id, visivel: false, tamanho: PADRAO_PROPRIO[v.proprios[id].tipo] || 'metade' })),
   ];
 });

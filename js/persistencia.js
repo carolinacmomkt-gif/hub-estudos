@@ -18,6 +18,9 @@ export const TABELAS = [
   'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes',
 ];
 const SOMENTE_LEITURA = new Set(['conexoes']); // quem escreve são as funções da Netlify
+// config tem uma linha por chave ("inicio", "avisos"…). Dois aparelhos podem criar a mesma chave
+// antes de se verem: o envio junta pela chave em vez de dar erro de duplicidade.
+const CHAVE_DE_CONFLITO = { config: 'user_id,chave' };
 
 let bancoAberto = null;
 let sincronizando = null;
@@ -164,7 +167,7 @@ async function enviarFila() {
     const devolvidos = [];
     for (const grupo of agruparPorColunas(corpo)) {
       for (let i = 0; i < grupo.length; i += LOTE) {
-        const linhas = await rest(`${tabela}?on_conflict=id`, {
+        const linhas = await rest(`${tabela}?on_conflict=${CHAVE_DE_CONFLITO[tabela] || 'id'}`, {
           metodo: 'POST',
           corpo: grupo.slice(i, i + LOTE),
           prefer: 'resolution=merge-duplicates,return=representation',
@@ -207,7 +210,18 @@ async function receberMudancas() {
         const fila = await comoPromessa(tx.objectStore('fila').getAll());
         const pendentes = new Set(fila.filter((f) => f.tabela === tabela).map((f) => f.id));
         for (const linha of linhas) {
-          if (!pendentes.has(linha.id)) tx.objectStore(tabela).put(linha);
+          if (pendentes.has(linha.id)) continue;
+          tx.objectStore(tabela).put(linha);
+        }
+        // Uma chave de config só pode ter uma linha: a que veio da nuvem substitui as cópias locais.
+        if (tabela === 'config') {
+          const loja = tx.objectStore('config');
+          const locais = await comoPromessa(loja.getAll());
+          for (const linha of linhas) {
+            for (const l of locais) {
+              if (l.chave === linha.chave && l.id !== linha.id && !pendentes.has(l.id)) loja.delete(l.id);
+            }
+          }
         }
       });
       mudou = true;
