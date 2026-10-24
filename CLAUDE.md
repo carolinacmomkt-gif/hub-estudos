@@ -100,7 +100,39 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - **Organização**: estantes por área, favoritos, busca por título e tag, e a ligação de um caderno a uma disciplina ou tema.
 - **Exportação**: página ou caderno em PDF/PNG.
 - **IA**: o botão "gerar questões desta página/caderno" manda a imagem da página para a função de questões.
-- Formato salvo: os traços ficam em JSON vetorial (pontos + pressão + ferramenta + cor), por página, para manter o arquivo leve e editável. A miniatura fica em PNG.
+- Formato salvo: os traços ficam em JSON vetorial (pontos + pressão + ferramenta + cor), por página e **organizados em camadas**, para manter o arquivo leve e editável. A miniatura fica em PNG. O formato já nasce com camadas desde o primeiro editor, para não precisar migrar depois.
+
+### Legibilidade da letra
+- **Estabilizador**: suavização do traço com intensidade ajustável (desligado / leve / médio / forte), para tirar a tremida.
+- **Melhorar letra** (não destrutivo: o traço original fica guardado e dá para voltar):
+  - endireita a linha de base, uniformiza inclinação, tamanho e espaçamento entre palavras, mantendo o seu jeito de escrever;
+  - intensidade ajustável;
+  - aplica na seleção do laço, na página inteira ou automaticamente depois de uma pausa na escrita.
+- **Alinhar à pauta**: encaixa as palavras nas linhas do modelo pautado/quadriculado.
+- **Janela de zoom**: faixa ampliada embaixo da página para escrever pequeno com letra grande, que avança sozinha pela linha.
+- **Converter em texto digitado** (sob demanda, na seleção do laço, usando IA) e **verificar ortografia** da letra na seleção. Só roda quando a Carol pedir.
+- Ajustes da caneta: curva de pressão, espessura mínima/máxima e "caneta fina para letra pequena".
+
+### Camadas
+- Cada página tem uma camada de **Fundo** (modelo de folha ou PDF, bloqueada) e uma ou mais camadas de desenho.
+- Adicionar, renomear, ocultar/mostrar, bloquear, reordenar, mudar a opacidade, mesclar e excluir camadas.
+- O marca-texto pode ir para uma camada própria. O laço e a borracha agem na camada ativa (com a opção "todas as camadas").
+
+### Recursos inspirados no GoodNotes
+- **Canetas**: até 5 predefinições favoritas na barra, cores personalizadas, conta-gotas, opacidade; marca-texto com opção de linha reta.
+- **Gestos**: segurar no fim do traço para linha reta ou forma perfeita; rabiscar por cima para apagar; toque com dois dedos desfaz e com três refaz.
+- **Formas**: linha, seta, retângulo, círculo/elipse, triângulo e polígono, com preenchimento e tipo de linha.
+- **Régua**: mover e girar com dois dedos; o traço gruda nela.
+- **Fita de estudo**: cobre um trecho da página; tocar revela (para treinar memória).
+- **Ponteiro laser** que some sozinho e **modo apresentação**.
+- **Laço avançado**: selecionar por tipo (escrita, formas, imagens, texto), girar, mudar cor e espessura, duplicar, recortar, transformar em adesivo, capturar como imagem e converter em texto.
+- **Elementos**: biblioteca de adesivos próprios (criados a partir de uma seleção) além dos simples.
+- **Caixas de texto** com fonte, tamanho, cor e fundo.
+- **Imagens e documentos**: inserir da galeria ou da câmera, digitalizar documento com a câmera (recorte e ajuste de perspectiva) e inserir PDF.
+- **Navegação**: abas com vários cadernos abertos, índice (sumário) e marcadores, links entre páginas, para outros cadernos e para sites, rolagem vertical ou horizontal e modo leitura (sem editar).
+- **Modelos próprios**: importar PDF ou imagem como modelo de folha.
+- **Organização extra**: pastas e subpastas, favoritos e lixeira.
+- Fora por enquanto (ideias grandes, para depois): gravação de áudio sincronizada e busca na letra no caderno inteiro.
 
 ## Integração com o AVA (Moodle 5.1)
 
