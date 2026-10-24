@@ -105,6 +105,15 @@ function acharCodigoAluno(dados) {
   return null;
 }
 
+function descreverErro(dados) {
+  if (!dados || typeof dados !== 'object') return null;
+  const saida = { campos: Object.keys(dados).slice(0, 20) };
+  for (const chave of ['message', 'mensagem', 'error', 'erro', 'error_description', 'detail', 'status']) {
+    if (typeof dados[chave] === 'string' || typeof dados[chave] === 'number') saida[chave] = String(dados[chave]).slice(0, 200);
+  }
+  return saida;
+}
+
 const PREFIXOS = [
   '/aluno', '/aluno/api', '/aluno/rest', '/aluno/services', '/aluno/service', '/aluno/ws', '/aluno/backend',
   '/aluno/app', '/aluno/lyceum', '/api', '/rest', '/services', '/lyceum', '/portal', '/aluno-api', '',
@@ -132,7 +141,7 @@ async function lerTrechosDoCodigo(html, base, pedir) {
   const srcs = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
     .map((m) => new URL(m[1], `${base}/`).href)
     .filter((u) => /\/_app\/app-[^/]*\.js/i.test(u) || /\/_app\/[^/]*config[^/]*\.js/i.test(u));
-  const agulhas = ['API_URL', '/pessoas/:codPessoa/alunos', 'obterDadosAcademicos', '/Frequencias', 'disciplinasBoletim'];
+  const agulhas = ['getApiServer=', 'getApiServer:', 'X-Lyceum-Usuario', 'perfil=', 'perfil:', 'Authorization', 'Bearer', 'withCredentials', 'SessionData.user='];
   const trechos = [];
   for (const url of srcs.slice(0, 3)) {
     try {
@@ -142,7 +151,7 @@ async function lerTrechosDoCodigo(html, base, pedir) {
         let i = texto.indexOf(agulha);
         let vezes = 0;
         while (i >= 0 && vezes < 3) {
-          trechos.push({ agulha, trecho: texto.slice(Math.max(0, i - 160), i + 60).replace(/\s+/g, ' ') });
+          trechos.push({ agulha, trecho: texto.slice(Math.max(0, i - 300), i + 300).replace(/\s+/g, ' ') });
           i = texto.indexOf(agulha, i + agulha.length);
           vezes += 1;
         }
@@ -151,7 +160,7 @@ async function lerTrechosDoCodigo(html, base, pedir) {
       // segue sem os trechos
     }
   }
-  return trechos.slice(0, 15);
+  return trechos.slice(0, 30);
 }
 
 export default async (req) => {
@@ -248,11 +257,17 @@ export default async (req) => {
   let codAluno = null;
   let origemAluno = 'não encontrado';
   // O portal manda o cabeçalho X-Lyceum-Usuario; não sabemos qual valor ele espera depois do login.
-  const opcoesUsuario = [
+  // No código do portal o formato é `${perfil}: ${usuario}`.
+  const identidades = [
     { rotulo: 'matrícula', valor: usuario?.login ? String(usuario.login) : null },
     { rotulo: 'código da pessoa', valor: codPessoa },
-    { rotulo: 'null', valor: 'null' },
   ].filter((o) => o.valor);
+  const perfis = ['ALUNO', 'Aluno', 'aluno', 'ROLE_USER'];
+  const opcoesUsuario = [
+    ...identidades.flatMap((id) => perfis.map((perfil) => ({ rotulo: `${perfil}: ${id.rotulo}`, valor: `${perfil}: ${id.valor}` }))),
+    ...identidades,
+    { rotulo: 'null', valor: 'null' },
+  ];
   let cabecalhoUsuario = { 'X-Lyceum-Usuario': opcoesUsuario[0]?.valor ?? 'null' };
 
   // Descobre o prefixo da API: lê o código público e testa prefixos comuns.
@@ -271,24 +286,34 @@ export default async (req) => {
   });
 
   let usuarioQueFuncionou = 'nenhum';
+  let testesCabecalho = [];
   if (codPessoa) {
-    for (const opcao of opcoesUsuario) {
+    testesCabecalho = await Promise.all(opcoesUsuario.map(async (opcao) => {
       try {
-        const cab = { 'X-Lyceum-Usuario': opcao.valor };
-        const r = await pedir(`${raizApi}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, { headers: cab });
-        if (r.status === 401 || r.status === 403 || r.status === 404) continue;
-        cabecalhoUsuario = cab;
-        usuarioQueFuncionou = opcao.rotulo;
-        if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
-          codAluno = acharCodigoAluno(await r.json());
-          if (codAluno) origemAluno = 'lista de alunos da pessoa';
+        const r = await pedir(`${raizApi}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, { headers: { 'X-Lyceum-Usuario': opcao.valor } });
+        const tipo = r.headers.get('content-type') || '';
+        const texto = await r.text();
+        let dados = null;
+        if (tipo.includes('json')) {
+          try { dados = JSON.parse(texto); } catch { /* ignora */ }
         }
-        break;
+        return { opcao, status: r.status, dados };
       } catch {
-        break; // usa a matrícula como reserva
+        return { opcao, status: 'erro', dados: null };
       }
+    }));
+    const certo = testesCabecalho.find((t) => t.status === 200);
+    if (certo) {
+      cabecalhoUsuario = { 'X-Lyceum-Usuario': certo.opcao.valor };
+      usuarioQueFuncionou = certo.opcao.rotulo;
+      codAluno = acharCodigoAluno(certo.dados);
+      if (codAluno) origemAluno = 'lista de alunos da pessoa';
     }
   }
+  // Só rótulo e status (os valores têm a matrícula e o código da pessoa).
+  const resumoCabecalho = testesCabecalho.map((t) => ({ formato: t.opcao.rotulo, status: t.status }));
+  const erro401 = testesCabecalho.find((t) => t.status === 401 && t.dados);
+  const mensagem401 = erro401 ? descreverErro(erro401.dados) : null;
   if (!codAluno && usuario?.login) {
     codAluno = String(usuario.login);
     origemAluno = 'matrícula (reserva)';
@@ -300,7 +325,7 @@ export default async (req) => {
     detalhe: `Código da pessoa: ${codPessoa ? 'encontrado' : 'não encontrado'}. Código do aluno: ${origemAluno}. Cabeçalho X-Lyceum-Usuario aceito: ${usuarioQueFuncionou}.`,
   });
   if (!codPessoa || !codAluno) {
-    return resposta(200, { ok: false, etapas, prefixos: testesPrefixo, trechos, erro: 'Entrou no Lyceum, mas não achei os seus códigos. Me mande este resultado.' });
+    return resposta(200, { ok: false, etapas, prefixos: testesPrefixo, cabecalhos: resumoCabecalho, mensagem401, trechos, erro: 'Entrou no Lyceum, mas não achei os seus códigos. Me mande este resultado.' });
   }
 
   // 4. Testa as rotas (todas juntas, para caber no tempo da Netlify)
@@ -336,6 +361,8 @@ export default async (req) => {
     resumo: `${funcionaram} de ${rotas.length} rotas responderam.`,
     rotas,
     prefixos: testesPrefixo,
+    cabecalhos: resumoCabecalho,
+    mensagem401,
     trechos,
   });
 };
