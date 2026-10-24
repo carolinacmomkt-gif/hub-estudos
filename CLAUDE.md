@@ -1,0 +1,173 @@
+# Hub de Estudos da Carol
+
+App pessoal de estudos (uso exclusivo da Carol), instalável como PWA no Galaxy Tab S10 Lite (S Pen) e usado também no computador e no celular.
+
+Áreas do app:
+- **Faculdade**: UniEVANGÉLICA, integrada ao AVA (Moodle).
+- **Estudos gerais**.
+- **Substack**.
+- **Cadernos** com escrita à mão.
+- **Gerador de questões** com IA.
+- **Calendário**.
+
+## Regras gerais
+
+- Todo texto da interface fica em **português do Brasil**, com tom direto e acolhedor, igual à Central de Conteúdo.
+- Mantenha o mesmo padrão de arquitetura da Central de Conteúdo (centralconteudo.netlify.app):
+  - **HTML + CSS + JavaScript puro**, sem framework e sem etapa de build.
+  - Código dividido em módulos pequenos e com nomes em português, como `estado.js`, `persistencia.js`, `views-*.js`, `eventos.js` e `main.js`.
+- Nunca coloque chaves, tokens ou senhas no front-end ou no repositório. Tudo que é secreto fica em variáveis de ambiente da Netlify e é usado só nas Netlify Functions.
+- Antes de cada módulo novo, descreva o plano em poucas linhas e espere o OK da Carol. Ao terminar, diga como testar.
+- Teste sempre em largura de tablet na horizontal e na vertical (1340×800 / 800×1340) e no celular (375px).
+
+## Stack
+
+| Parte | Tecnologia |
+|---|---|
+| Front-end | HTML/CSS/JS puro, PWA (manifest + service worker, funciona offline) |
+| Hospedagem | Netlify |
+| Backend | Netlify Functions (Node) |
+| Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
+| Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
+| Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pela função `gerar-questoes` |
+| AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
+
+## Visual
+
+A base é a identidade da Central de Conteúdo.
+
+- **Tema escuro (padrão da Central)**: fundo marrom bem escuro (`#17110D`), cards em marrom quente, destaque bege/areia (`#E8D3BF`) e texto creme.
+- **Tema claro (novo)**: fundo creme/papel (`#F7F1EA`), cards brancos quentes, texto marrom-café (`#2B1E16`) e o mesmo bege como destaque, com contraste mínimo AA.
+- Alternância entre **claro, escuro e automático** (segue o sistema), com a escolha salva no aparelho.
+- Todas as cores ficam definidas como variáveis CSS em `:root` e `[data-tema="claro"]` / `[data-tema="escuro"]`. Nenhuma cor deve ficar escrita direto nos componentes.
+- Padrões da Central que se repetem no app:
+  - saudação com a data no topo ("Boa tarde, Carol.");
+  - card grande de **"Próximo passo"**;
+  - cards numerados com barra de progresso;
+  - tipografia do sistema;
+  - bordas arredondadas.
+- A área de toque mínima é de 44px, pensando no uso com o dedo e com a S Pen.
+
+## Estrutura de telas
+
+1. **Início**: painel-resumo geral, com:
+   - os próximos prazos (7 dias) e as provas;
+   - o card "Próximo passo";
+   - revisões de questões pendentes;
+   - as últimas notas do AVA;
+   - os cadernos recentes;
+   - o progresso por área.
+2. **Faculdade**: painel geral e um painel por disciplina, com materiais, atividades e prazos, notas, frequência (se disponível), avisos, cadernos e questões daquela disciplina.
+3. **Estudos gerais**: painel com trilhas ou temas, a biblioteca filtrada, cadernos, questões e o progresso.
+4. **Substack**: painel com pautas (ideia → rascunho → revisão → publicado), rascunhos com editor de texto, referências da biblioteca ligadas a cada texto e uma meta de publicação.
+5. **Biblioteca**: artigos por link (extrai o texto), por PDF ou por texto colado, com tags, área, status (ler / lendo / lido / fichado), destaques e notas.
+6. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
+7. **Questões**: gerador, banco de questões, modo prova, modo fixação e revisão espaçada.
+8. **Calendário**: visão de mês, semana e lista, com eventos da faculdade e eventos próprios.
+
+## Cadernos (requisito importante)
+
+Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
+
+- **Tipos de caderno**:
+  - caderno comum (páginas sequenciais);
+  - caderno por matéria com divisórias/seções;
+  - fichário (páginas soltas reordenáveis);
+  - caderno de PDF (anotar por cima de slides ou artigos importados do AVA ou da Biblioteca);
+  - quadro infinito (canvas sem limite, para mapas mentais);
+  - planner (semanal/mensal com datas).
+- **Capas**: várias cores e estilos dentro da paleta do app, com título e disciplina.
+- **Tamanhos e orientação**: A4, A5, Carta e "tela do tablet"; retrato ou paisagem.
+- **Modelos de folha**:
+  - Básicos: em branco, pautada (estreita, média, larga), quadriculada (5 mm e 1 cm), pontilhada (dot grid), milimetrada, isométrica e hexagonal.
+  - Estudo: Cornell (tópicos / anotações / resumo), mapa mental, fichamento de leitura, resumo de aula, flashcards (frente e verso), "perguntas e respostas", folha de revisão para prova, linha do tempo e tabela comparativa.
+  - Organização: checklist, to-do diário, planner semanal, planner mensal, planejamento de estudos da semana, controle de leitura e quadro de entrega de trabalhos.
+  - Escrita: rascunho de texto do Substack (pautada com margem para notas) e storyboard.
+  - Música: pentagrama.
+- O usuário pode escolher o modelo **por página** e trocar o modelo de uma página já existente.
+- **Ferramentas**:
+  - canetas tinteiro, esferográfica e pincel, com pressão;
+  - lápis;
+  - marca-texto, que fica atrás do traço;
+  - borracha de traço e de área;
+  - laço para selecionar, mover, redimensionar, mudar a cor, copiar e colar;
+  - formas com auto-ajuste (segurar no final do traço);
+  - texto digitado, imagens, adesivos simples e linhas tracejadas/pontilhadas;
+  - desfazer/refazer, zoom com pinça, rolagem com dois dedos e rejeição da palma (desenhar só com `pointerType === "pen"` quando a S Pen estiver ativa, com uma opção de desenhar com o dedo);
+  - o botão da S Pen alterna para a borracha, se o navegador expuser o evento (`buttons === 32`); se não expuser, use a alternância rápida pela barra.
+- **Páginas**: adicionar, duplicar, reordenar, excluir com lixeira e ver as miniaturas.
+- **Organização**: estantes por área, favoritos, busca por título e tag, e a ligação de um caderno a uma disciplina ou tema.
+- **Exportação**: página ou caderno em PDF/PNG.
+- **IA**: o botão "gerar questões desta página/caderno" manda a imagem da página para a função de questões.
+- Formato salvo: os traços ficam em JSON vetorial (pontos + pressão + ferramenta + cor), por página, para manter o arquivo leve e editável. A miniatura fica em PNG.
+
+## Integração com o AVA (Moodle 5.1)
+
+- URL base: `https://avagrad.unievangelica.edu.br`
+- O serviço do app mobile está liberado, e o login do app é por usuário/senha (`typeoflogin: 1`).
+- **Geração do token**: a função `ava-conectar` recebe a matrícula e a senha uma única vez, chama `POST /login/token.php` com `service=moodle_mobile_app`, guarda **só o token** (criptografado no Supabase) e descarta a senha.
+- A função `ava-sincronizar` chama `/webservice/rest/server.php?wstoken=...&moodlewsrestformat=json` com estes métodos:
+  - `core_webservice_get_site_info` (descobre o `userid` e as funções liberadas);
+  - `core_enrol_get_users_courses` (disciplinas);
+  - `core_course_get_contents` (materiais e arquivos de cada disciplina);
+  - `mod_assign_get_assignments` e `mod_assign_get_submission_status` (trabalhos, prazos e status de entrega);
+  - `mod_quiz_get_quizzes_by_courses` (provas e questionários online);
+  - `core_calendar_get_action_events_by_timesort` e `core_calendar_get_calendar_upcoming_view` (prazos);
+  - `gradereport_user_get_grade_items` (notas);
+  - `mod_forum_get_forums_by_courses` e `mod_forum_get_forum_discussions` (avisos);
+  - `mod_attendance_*` (frequência, só se o plugin existir; se não existir, mostre "frequência fica no Lyceum").
+- Os arquivos do Moodle são baixados pela função, com `?token=` em `pluginfile.php`, e vão para o Storage do Supabase quando a Carol abrir ou fixar um material.
+- A sincronização roda automaticamente ao abrir o app (se faz mais de 1h) e pelo botão "Sincronizar agora". Uma Netlify Scheduled Function roda a cada 6h.
+- Se uma função vier bloqueada (`accessexception`), o app registra o bloqueio, continua com as outras e mostra no painel o que não está disponível.
+- Tudo do AVA é **somente leitura**. O app nunca envia trabalho, nunca responde quiz e nunca posta no fórum.
+
+## Calendário da faculdade (requisito importante)
+
+- Fontes:
+  1. eventos do AVA (prazos de tarefas, quizzes, eventos de curso e eventos do site/instituição) pela API;
+  2. a exportação de calendário do Moodle (link .ics em `/calendar/export.php`), como reserva;
+  3. o calendário acadêmico da UniEVANGÉLICA (provas, feriados, início e fim do semestre), importado de PDF ou de uma página com a ajuda da IA e revisado pela Carol antes de salvar;
+  4. eventos que a Carol cria à mão (provas avisadas em sala, apresentações).
+- Cada evento tem: tipo (prova, trabalho, atividade, aula, feriado, pessoal), disciplina, data/hora, status (pendente / entregue / atrasado, vindo do AVA) e um link para o AVA.
+- **Avisos**: contagem regressiva no Início e destaque vermelho para atrasados, laranja para menos de 48h e bege para a semana. Notificações do PWA 3 dias antes, 1 dia antes e no dia, com horário configurável.
+- **Plano de estudo automático para provas**: ao surgir uma prova, o app sugere sessões de revisão nos dias anteriores, já com os cadernos e as questões daquela disciplina.
+- Opcional: exportar tudo como um link .ics para assinar no Google Agenda.
+
+## Gerador de questões
+
+- Entradas possíveis: um tema digitado, um artigo da Biblioteca, um material do AVA, uma página ou um caderno inteiro (imagem).
+- Configurações: quantidade, dificuldade, área/disciplina e modo.
+  - **Prova**: múltipla escolha (4 ou 5 alternativas) e verdadeiro/falso, com nota final.
+  - **Fixação**: perguntas dissertativas; a IA corrige a resposta da Carol, com nota de 0 a 10 e um comentário.
+- A função `gerar-questoes` usa a web search da Anthropic para pesquisar o tema e devolve **JSON validado** com: enunciado, alternativas, resposta correta, explicação comentada, fontes (título + URL) e nível.
+- Questões salvas no banco, com tags, acertos/erros e **revisão espaçada** (refazer as erradas em 1, 3, 7 e 15 dias).
+
+## Modelo de dados (Supabase)
+
+Tabelas:
+- `areas`
+- `disciplinas` (`ava_course_id`)
+- `materiais`
+- `eventos`
+- `notas_ava`
+- `artigos`
+- `cadernos`
+- `secoes`
+- `paginas` (`modelo_folha`, `tracos_json`, `miniatura_url`)
+- `questoes`
+- `respostas`
+- `revisoes`
+- `pautas_substack`
+- `config` (tema, horários de aviso, token do AVA criptografado)
+
+Todas as tabelas usam RLS ligado ao usuário da Carol.
+
+## Variáveis de ambiente (Netlify)
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (somente nas funções)
+- `ANTHROPIC_API_KEY`
+- `AVA_BASE_URL`
+- `TOKEN_CRYPTO_KEY`
