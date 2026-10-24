@@ -26,13 +26,17 @@ async function tentar(nome, bloqueados, fn) {
   }
 }
 
-// Reserva, se o AVA não disser quais cursos estão em andamento: datas e último acesso.
+// Reserva, se o AVA não disser quais cursos estão em andamento: último acesso, ano no nome e datas.
 function pareceAtivo(curso, agora) {
   if (curso.visible === 0) return false;
   if (curso.lastaccess && curso.lastaccess * 1000 >= agora - 120 * DIA) return true;
+  const ano = new Date(agora).getFullYear();
+  if (new RegExp(`\\b${ano}\\s*[./-]?\\s*[12]?\\b`).test(curso.fullname || '')) return true;
   if (curso.enddate) return curso.enddate * 1000 >= agora - 15 * DIA;
-  return !curso.startdate || curso.startdate * 1000 >= agora - 300 * DIA;
+  return Boolean(curso.startdate) && curso.startdate * 1000 >= agora - 200 * DIA;
 }
+
+const dataCurta = (seg) => (seg ? new Date(seg * 1000).toISOString().slice(0, 10) : null);
 
 const linkDe = (base) => (caminho) => `${base}${caminho}`;
 
@@ -48,8 +52,27 @@ export async function sincronizarAvaGeral({ userId, base, token, avaUserId }) {
     tentar('core_course_get_enrolled_courses_by_timeline_classification', bloqueados, () => chamarAva(base, token,
       'core_course_get_enrolled_courses_by_timeline_classification', { classification: 'inprogress', limit: 0, offset: 0 })),
   ]);
-  const emAndamento = new Set((classificacao?.courses || []).map((c) => c.id));
-  const ativo = (curso) => (emAndamento.size ? emAndamento.has(curso.id) : pareceAtivo(curso, agora));
+  const emAndamento = new Set((classificacao?.courses || []).map((c) => Number(c.id)));
+
+  // Escolha da Carol no app ("É deste semestre" / "Esconder"), guardada em config.
+  const escolha = (await banco.listar('config', userId, 'chave=eq.ava_cursos'))[0]?.valor || {};
+  const sempre = new Set((escolha.ativos || []).map(Number));
+  const nunca = new Set((escolha.arquivados || []).map(Number));
+
+  // Quem está em andamento: 1) o próprio AVA; 2) se ele não disser, a reserva; 3) se nada, todas.
+  let modo = emAndamento.size ? 'andamento' : 'reserva';
+  let regra = (curso) => (modo === 'andamento' ? emAndamento.has(curso.id) : pareceAtivo(curso, agora));
+  const visiveis = (cursos || []).filter((c) => c.visible !== 0);
+  if (visiveis.length && !visiveis.some((c) => !nunca.has(c.id) && regra(c))) {
+    modo = emAndamento.size ? 'reserva' : 'todas';
+    if (modo === 'reserva' && !visiveis.some((c) => pareceAtivo(c, agora))) modo = 'todas';
+    regra = modo === 'todas' ? () => true : (curso) => pareceAtivo(curso, agora);
+  }
+  const ativo = (curso) => {
+    if (sempre.has(curso.id)) return true;
+    if (nunca.has(curso.id)) return false;
+    return curso.visible !== 0 && regra(curso);
+  };
 
   const existentes = await banco.listar('disciplinas', userId);
   const limpezas = [];
@@ -86,6 +109,18 @@ export async function sincronizarAvaGeral({ userId, base, token, avaUserId }) {
   const ativos = (cursos || []).filter(ativo).map((c) => c.id);
   contagens.cursosNoAva = (cursos || []).length;
   contagens.disciplinas = ativos.length;
+  contagens.modo = modo;
+  // Diagnóstico para a tela de Configurações: como o AVA descreveu cada curso.
+  contagens.diagnostico = (cursos || []).slice(0, 40).map((c) => ({
+    id: c.id,
+    nome: c.fullname,
+    inicio: dataCurta(c.startdate),
+    fim: dataCurta(c.enddate),
+    ultimoAcesso: dataCurta(c.lastaccess),
+    visivel: c.visible !== 0,
+    emAndamento: emAndamento.has(c.id),
+    ativo: ativo(c),
+  }));
 
   // 2. Pendências do calendário (o que ainda falta fazer e o que está atrasado)
   const acoes = await tentar('core_calendar_get_action_events_by_timesort', bloqueados, () => chamarAva(base, token, 'core_calendar_get_action_events_by_timesort', {

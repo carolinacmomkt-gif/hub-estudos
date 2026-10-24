@@ -133,12 +133,20 @@ function resumoAva(d) {
   if (geral.cursosNoAva !== undefined) partes.push(`${geral.disciplinas || 0} disciplinas em andamento (de ${geral.cursosNoAva} no AVA)`);
   if (geral.eventos !== undefined) partes.push(`${geral.eventos} prazos e eventos`);
   if (cursos.materiais !== undefined) partes.push(`${cursos.materiais} materiais`, `${cursos.notas || 0} notas`, `${cursos.avisos || 0} avisos`);
+  const diagnostico = geral.diagnostico || [];
+  const MODOS = { andamento: 'o próprio AVA', reserva: 'datas e último acesso', todas: 'todas (o AVA não indicou)' };
+  const blocoDiagnostico = diagnostico.length ? `
+    <details class="detalhes"><summary>Diagnóstico das disciplinas do AVA</summary>
+      <p class="campo-ajuda">Em andamento decidido por: ${esc(MODOS[geral.modo] || geral.modo || '—')}.</p>
+      <ul class="vazio-lista">${diagnostico.map((c) => `<li>${c.ativo ? '✓' : '✕'} ${esc(c.nome)} — início ${esc(c.inicio || '—')}, fim ${esc(c.fim || '—')}, último acesso ${esc(c.ultimoAcesso || '—')}${c.emAndamento ? ', AVA: em andamento' : ''}${c.visivel ? '' : ', oculta'}</li>`).join('')}</ul>
+    </details>` : '';
   const bloqueados = [...(d.sincronizacao?.bloqueados || []), ...(d.cursosBloqueados || [])];
   return `
     <span>${esc(d.site?.nome || 'AVA')}${d.site?.versao ? ` · Moodle ${esc(d.site.versao)}` : ''}</span>
     ${partes.length ? `<span>Última leitura: ${esc(partes.join(' · '))}</span>` : ''}
     ${bloqueados.length ? `<details class="detalhes"><summary>${bloqueados.length} ${bloqueados.length === 1 ? 'item não veio' : 'itens não vieram'}</summary>
-      <ul class="vazio-lista">${bloqueados.map((b) => `<li><code>${esc(b.metodo)}</code>: ${esc(b.motivo)}</li>`).join('')}</ul></details>` : ''}`;
+      <ul class="vazio-lista">${bloqueados.map((b) => `<li><code>${esc(b.metodo)}</code>: ${esc(b.motivo)}</li>`).join('')}</ul></details>` : ''}
+    ${blocoDiagnostico}`;
 }
 
 export function renderConfiguracoes(estado) {

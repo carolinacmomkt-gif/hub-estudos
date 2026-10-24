@@ -1178,3 +1178,8 @@ details.card > summary {
   color: var(--cor-texto);
   font: inherit;
 }
+
+.material-acao {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}

@@ -230,6 +230,28 @@ async function juntarDisciplinas(form) {
   avisoCurto('Disciplinas juntadas.');
 }
 
+// A Carol escolhe quais disciplinas do AVA são deste semestre (vale para as próximas sincronizações).
+async function escolherCursoAva(cursoId, ativo) {
+  const id = Number(cursoId);
+  const configs = await listar('config');
+  const atual = configs.find((c) => c.chave === 'ava_cursos');
+  const valor = { ativos: [], arquivados: [], ...(atual?.valor || {}) };
+  valor.ativos = valor.ativos.filter((x) => x !== id);
+  valor.arquivados = valor.arquivados.filter((x) => x !== id);
+  (ativo ? valor.ativos : valor.arquivados).push(id);
+  await salvar('config', { ...(atual || {}), chave: 'ava_cursos', valor });
+
+  // Na tela já muda na hora; a próxima sincronização traz as atividades e os materiais.
+  const disciplina = obterEstado().disciplinas.find((d) => Number(d.ava_course_id) === id && !d.excluido_em);
+  if (disciplina) await salvar('disciplinas', { ...disciplina, arquivada: !ativo });
+  if (!ativo) location.hash = '#faculdade';
+  avisoCurto(ativo ? 'Disciplina trazida para este semestre. Buscando as atividades…' : 'Disciplina escondida.');
+  if (ativo) {
+    await sincronizar();
+    sincronizarFaculdade({ forcar: true });
+  }
+}
+
 // ---------------------------------------------------------------------------
 
 export function ligarEventos(funcoesDoApp) {
@@ -290,6 +312,14 @@ export function ligarEventos(funcoesDoApp) {
         sincronizarFaculdade({ forcar: true }).then((r) => {
           if (r.estado === 'ok') avisoCurto('Faculdade atualizada.');
         });
+        return;
+      case 'ava-curso-ativo':
+        escolherCursoAva(alvo.dataset.curso, true);
+        return;
+      case 'ava-curso-esconder':
+        if (window.confirm('Esconder esta disciplina? Ela sai da Faculdade e do Início. Dá para trazer de volta em "Disciplinas do AVA fora deste semestre".')) {
+          escolherCursoAva(alvo.dataset.curso, false);
+        }
         return;
       case 'faltei-hoje':
         mudarFaltasManuais(alvo.dataset.id, 1);

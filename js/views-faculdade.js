@@ -107,12 +107,28 @@ function painelGeral(estado) {
     <div class="ava-alerta" role="alert">${esc(c.detalhe?.mensagem || `O ${c.servico === 'ava' ? 'AVA' : 'Lyceum'} pediu para conectar de novo.`)}
       <a class="card-link" href="#configuracoes">Conectar de novo</a></div>`).join('');
 
+  // Disciplinas do AVA que o app considerou de outros semestres (a Carol pode trazer de volta).
+  const foraDoSemestre = (estado.disciplinas || [])
+    .filter((d) => d.ava_course_id && d.arquivada && !d.excluido_em)
+    .sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+  const blocoFora = foraDoSemestre.length ? `
+    <details class="detalhes card">
+      <summary>Disciplinas do AVA fora deste semestre <span class="selo">${foraDoSemestre.length}</span></summary>
+      <p class="texto-suave">Se alguma delas é deste semestre, toque em "É deste semestre" e ela passa a aparecer com as atividades e os materiais.</p>
+      <ul class="materiais">${foraDoSemestre.map((d) => `
+        <li class="material material-acao">
+          <span>${esc(d.nome_ava || d.nome)}</span>
+          <button class="botao botao-secundario botao-pequeno" type="button" data-acao="ava-curso-ativo" data-curso="${esc(d.ava_course_id)}">É deste semestre</button>
+        </li>`).join('')}</ul>
+    </details>` : '';
+
   return `
     ${cabecalho('Faculdade', esc(sub))}
     <div class="pilha pilha-larga">
       ${conectadas.length ? botaoSincronizar(estado) : ''}
       ${alertas}
       ${corpo}
+      ${blocoFora}
     </div>`;
 }
 
@@ -300,6 +316,7 @@ function painelDisciplina(estado, id) {
     ${cabecalho(d.nome, sub)}
     <div class="acoes acoes-topo">
       ${linkAva ? `<a class="botao botao-secundario" href="${esc(linkAva)}" target="_blank" rel="noopener">Abrir no AVA</a>` : ''}
+      ${d.ava_course_id ? `<button class="botao botao-secundario" type="button" data-acao="ava-curso-esconder" data-curso="${esc(d.ava_course_id)}">Não é deste semestre</button>` : ''}
     </div>
     <div class="painel">
       ${cardFrequencia(estado, d)}

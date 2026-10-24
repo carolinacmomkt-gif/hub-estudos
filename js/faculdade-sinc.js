@@ -50,7 +50,7 @@ export function sincronizarFaculdade({ forcar = false } = {}) {
           erros.push(geral.erro);
         } else {
           const cursos = geral.cursos || [];
-          if (!cursos.length) erros.push('O AVA não mostrou nenhuma disciplina em andamento.');
+          if (!cursos.length) erros.push('O AVA não devolveu nenhuma disciplina. Veja o diagnóstico em Configurações → AVA.');
           for (let i = 0; i < cursos.length; i += POR_PARTE) {
             avisar({ passo: `Atividades, materiais e notas do AVA (${Math.min(i + POR_PARTE, cursos.length)} de ${cursos.length})…` });
             const parte = await sincronizarServico({ servico: 'ava', parte: 'cursos', cursos: cursos.slice(i, i + POR_PARTE) });
