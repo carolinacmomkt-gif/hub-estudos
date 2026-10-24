@@ -9,6 +9,11 @@ const CHAVE_CONFIG = 'hub.nuvem.config';
 const CHAVE_SESSAO = 'hub.nuvem.sessao';
 
 let config = lerGuardado(CHAVE_CONFIG);
+try {
+  if (config?.supabaseUrl) config.supabaseUrl = new URL(config.supabaseUrl).origin;
+} catch {
+  config = null;
+}
 let sessao = lerGuardado(CHAVE_SESSAO);
 let renovando = null;
 
@@ -44,7 +49,7 @@ export async function carregarConfig() {
     const r = await fetch(URL_CONFIG, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
     const dados = r.ok ? await r.json() : null;
     if (dados?.ok) {
-      config = { supabaseUrl: dados.supabaseUrl, supabaseAnonKey: dados.supabaseAnonKey };
+      config = { supabaseUrl: new URL(dados.supabaseUrl).origin, supabaseAnonKey: dados.supabaseAnonKey };
       guardar(CHAVE_CONFIG, config);
     }
   } catch {

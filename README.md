@@ -31,7 +31,7 @@ Na Netlify: **Project configuration → Environment variables → Add a variable
 | Variável | De onde vem | Secreta? |
 |---|---|---|
 | `AVA_BASE_URL` | `https://avagrad.unievangelica.edu.br` | não |
-| `SUPABASE_URL` | Supabase → Project Settings → Data API → Project URL | não |
+| `SUPABASE_URL` | Supabase → Project Settings → Data API → Project URL (`https://xxxx.supabase.co`; se vier com `/rest/v1` no fim, o app ignora) | não |
 | `SUPABASE_ANON_KEY` | Supabase → Project Settings → API Keys → `anon` `public` | não (o RLS protege) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys → `service_role` | **sim** |
 | `TOKEN_CRYPTO_KEY` | Terminal do Mac: `openssl rand -base64 32` | **sim** |

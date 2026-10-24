@@ -7,7 +7,12 @@
 import { resposta } from './http.mjs';
 
 function configuracao() {
-  const url = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+  let url = '';
+  try {
+    url = new URL(process.env.SUPABASE_URL || '').origin; // aceita o endereço com ou sem /rest/v1
+  } catch {
+    url = '';
+  }
   const anon = process.env.SUPABASE_ANON_KEY;
   const servico = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !anon || !servico) {

@@ -5,7 +5,14 @@
 import { resposta } from '../lib/http.mjs';
 
 export default async () => {
-  const url = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+  // Usa só a origem (https://xxxx.supabase.co): a página "Data API" do Supabase mostra o
+  // endereço com /rest/v1 no fim, e com ele os pedidos de login iriam para o lugar errado.
+  let url = '';
+  try {
+    url = new URL(process.env.SUPABASE_URL || '').origin;
+  } catch {
+    url = '';
+  }
   const anon = process.env.SUPABASE_ANON_KEY || '';
   if (!url || !anon) return resposta(200, { ok: false, erro: 'O Supabase ainda não foi configurado na Netlify.' });
   return resposta(200, { ok: true, supabaseUrl: url, supabaseAnonKey: anon });
