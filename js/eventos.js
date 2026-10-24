@@ -2,8 +2,8 @@
 
 import { definirTema } from './tema.js';
 import { definirTamanhoTexto } from './preferencias.js';
-import { obterEstado, atualizarEstado } from './estado.js';
-import { enviarCodigo, confirmarCodigo, sair } from './nuvem.js';
+import { atualizarEstado } from './estado.js';
+import { entrarComSenha, sair } from './nuvem.js';
 import {
   salvar, obter, sincronizar, situacaoSincronizacao, exportarBackup, importarBackup, apagarDadosLocais,
 } from './persistencia.js';
@@ -38,34 +38,20 @@ async function ocupado(fn) {
 // Login
 // ---------------------------------------------------------------------------
 
-async function pedirCodigo(email, botao) {
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
-    app.mostrarLogin({ email, erro: 'Confira o e-mail digitado.' });
-    return;
-  }
-  if (botao) botao.disabled = true;
-  try {
-    await enviarCodigo(email);
-    app.mostrarLogin({ etapa: 'codigo', email });
-  } catch (erro) {
-    app.mostrarLogin({ email, erro: erro.message, detalhe: erro.detalhe });
-  }
-}
-
-async function entrarComCodigo(form) {
-  const email = form.elements.email.value;
-  const codigo = form.elements.codigo.value.replace(/\D/g, '');
-  if (codigo.length < 6) {
-    app.mostrarLogin({ etapa: 'codigo', email, erro: 'Digite o código que chegou no e-mail.' });
+async function entrar(form) {
+  const email = form.elements.email.value.trim();
+  const senha = form.elements.senha.value;
+  if (!/^\S+@\S+\.\S+$/.test(email) || !senha) {
+    app.mostrarLogin({ email, erro: 'Preencha o e-mail e a senha.' });
     return;
   }
   form.querySelector('[type="submit"]').disabled = true;
   try {
-    await confirmarCodigo(email, codigo);
+    await entrarComSenha(email, senha);
     await app.entrarNoApp();
     sincronizar();
   } catch (erro) {
-    app.mostrarLogin({ etapa: 'codigo', email, erro: erro.message, detalhe: erro.detalhe });
+    app.mostrarLogin({ email, erro: erro.message, detalhe: erro.detalhe });
   }
 }
 
@@ -234,12 +220,6 @@ export function ligarEventos(funcoesDoApp) {
       case 'entrada-feita':
         marcarEntradaFeita(alvo.dataset.id);
         return;
-      case 'login-reenviar':
-        pedirCodigo(alvo.dataset.email, alvo);
-        return;
-      case 'login-trocar-email':
-        app.mostrarLogin({ email: obterEstado().email || '' });
-        return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -262,11 +242,8 @@ export function ligarEventos(funcoesDoApp) {
     if (!form) return;
     evento.preventDefault();
     switch (form.dataset.form) {
-      case 'login-email':
-        pedirCodigo(form.elements.email.value.trim(), form.querySelector('[type="submit"]'));
-        break;
-      case 'login-codigo':
-        entrarComCodigo(form);
+      case 'login':
+        entrar(form);
         break;
       case 'caixa-entrada':
         guardarIdeia(form);

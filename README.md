@@ -45,7 +45,7 @@ O esquema completo está em [`supabase/esquema.sql`](supabase/esquema.sql): cole
 Pode rodar de novo sem problema. Toda tabela tem RLS ligado à dona; a tabela `credenciais` (token do AVA e senha
 do Lyceum, criptografados) não pode ser lida nem pelo app, só pelas funções.
 
-Login: só por código no e-mail, com o cadastro de novas contas desligado no Supabase.
+Login: e-mail e senha da usuária criada no Supabase (Authentication → Users), com o cadastro de novas contas desligado.
 
 ## Estrutura
 

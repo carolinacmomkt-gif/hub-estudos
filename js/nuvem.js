@@ -1,4 +1,4 @@
-// Conexão com o Supabase: login por código no e-mail e acesso ao banco (REST).
+// Conexão com o Supabase: login por e-mail e senha e acesso ao banco (REST).
 // Sem bibliotecas: só fetch, para o app abrir offline e continuar sem etapa de build.
 //
 // O endereço e a chave pública (anon) vêm da função config-publica e ficam guardados
@@ -86,15 +86,11 @@ export function encerrarSessaoLocal() {
 }
 
 const MENSAGENS = {
-  otp_expired: 'Código incorreto ou expirado. Peça um novo.',
-  otp_disabled: 'Este e-mail não tem acesso ao Hub.',
-  signup_disabled: 'Este e-mail não tem acesso ao Hub.',
-  user_not_found: 'Este e-mail não tem acesso ao Hub.',
-  over_email_send_rate_limit: 'Muitos códigos pedidos. Espere alguns minutos e tente de novo.',
+  invalid_credentials: 'E-mail ou senha incorretos.',
+  email_not_confirmed: 'Este e-mail ainda não foi confirmado no Supabase (marque "Auto Confirm User" ao criar a usuária).',
+  user_banned: 'Este acesso está bloqueado no Supabase.',
   over_request_rate_limit: 'Muitas tentativas. Espere alguns minutos e tente de novo.',
-  email_address_invalid: 'Confira o e-mail digitado.',
-  email_address_not_authorized: 'O Supabase gratuito só manda e-mail para quem é da equipe do projeto. Use o e-mail da sua conta do Supabase ou configure um envio de e-mail próprio (SMTP).',
-  validation_failed: 'Confira o e-mail digitado.',
+  validation_failed: 'Confira o e-mail e a senha.',
 };
 
 async function pedirAuth(caminho, corpo, token) {
@@ -115,7 +111,7 @@ async function pedirAuth(caminho, corpo, token) {
   } catch (erro) {
     if (erro?.name === 'TimeoutError') {
       throw new ErroNuvem(
-        'O Supabase demorou demais para responder. Confira se o código chegou mesmo assim; se não, tente de novo em alguns minutos.',
+        'O Supabase demorou demais para responder. Tente de novo em instantes.',
         0, 'demora', `sem resposta em 20 s (${caminho.split('?')[0]})`,
       );
     }
@@ -132,23 +128,17 @@ async function pedirAuth(caminho, corpo, token) {
     const codigo = dados.error_code || dados.code || dados.error || '';
     const bruto = String(dados.msg || dados.error_description || dados.message || '');
     let mensagem = MENSAGENS[codigo];
-    if (!mensagem && /signups not allowed|not found/i.test(bruto)) mensagem = MENSAGENS.signup_disabled;
-    if (!mensagem && /expired|invalid/i.test(bruto) && caminho === 'verify') mensagem = MENSAGENS.otp_expired;
-    if (!mensagem && /not authorized/i.test(bruto)) mensagem = MENSAGENS.email_address_not_authorized;
-    if (!mensagem && /sending|smtp|email/i.test(bruto)) mensagem = 'O Supabase não conseguiu enviar o e-mail com o código.';
+    if (!mensagem && /invalid login credentials/i.test(bruto)) mensagem = MENSAGENS.invalid_credentials;
+    if (!mensagem && /email not confirmed/i.test(bruto)) mensagem = MENSAGENS.email_not_confirmed;
     const detalhe = `HTTP ${r.status}${codigo ? ` · ${codigo}` : ''}${bruto ? ` · ${bruto.slice(0, 160)}` : ''}`;
     throw new ErroNuvem(mensagem || 'Não deu certo agora. Tente de novo em instantes.', r.status, codigo, detalhe);
   }
   return dados;
 }
 
-export async function enviarCodigo(email) {
-  await pedirAuth('otp', { email, create_user: false });
-}
-
-export async function confirmarCodigo(email, codigo) {
-  const dados = await pedirAuth('verify', { type: 'email', email, token: codigo });
-  if (!dados.access_token) throw new ErroNuvem(MENSAGENS.otp_expired);
+export async function entrarComSenha(email, senha) {
+  const dados = await pedirAuth('token?grant_type=password', { email, password: senha });
+  if (!dados.access_token) throw new ErroNuvem(MENSAGENS.invalid_credentials);
   guardarSessao(dados);
   return sessao;
 }

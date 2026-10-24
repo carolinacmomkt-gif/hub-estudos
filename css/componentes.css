@@ -900,21 +900,7 @@ label.botao {
   max-width: none;
 }
 
-.campo-codigo {
-  font-size: 1.4rem;
-  letter-spacing: 0.3em;
-  text-align: center;
-}
 
-.login-acoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.login-acoes .botao {
-  flex: 1 1 160px;
-}
 
 /* Caixa de entrada */
 .entradas {
