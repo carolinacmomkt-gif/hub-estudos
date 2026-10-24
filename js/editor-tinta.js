@@ -1,7 +1,7 @@
 // Motor de escrita à mão: Pointer Events + perfect-freehand sobre canvas.
 //
 // - Três canvas empilhados: papel (fundo), tinta (traços prontos) e ao vivo (traço em andamento).
-//   O "ao vivo" usa desynchronized para o traço aparecer com o menor atraso possível.
+//   O traço em andamento usa eventos agrupados e previstos para acompanhar a ponta da caneta.
 // - Coordenadas em unidades da página (1000 de largura, proporção A4), iguais em qualquer tela.
 // - Formato salvo (JSON vetorial, já com camadas):
 //   { versao: 1, modelo, camadas: [{ id, nome, tipo: 'fundo'|'desenho', visivel, bloqueada, opacidade, itens: [traço] }] }
@@ -115,7 +115,9 @@ export class EditorDeTinta {
 
     this.xPapel = this.cPapel.getContext('2d');
     this.xTinta = this.cTinta.getContext('2d');
-    this.xVivo = this.cVivo.getContext('2d', { desynchronized: true });
+    // Sem "desynchronized": no Galaxy Tab ele deixa este canvas opaco (preto) e esconde
+    // o papel e os traços prontos. O atraso medido sem ele já é de 1 a 3 ms.
+    this.xVivo = this.cVivo.getContext('2d');
 
     this.aoRedimensionar = () => this.ajustarTamanho();
     this.observador = new ResizeObserver(this.aoRedimensionar);
