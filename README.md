@@ -71,7 +71,7 @@ Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, 
 ```
 index.html, manifest.webmanifest, sw.js, netlify.toml
 icones/             ícones do app
-css/                temas.css (todas as cores), base.css, layout.css, componentes.css, editor.css, calendario.css
+css/                temas.css (todas as cores), base.css, layout.css, componentes.css, editor.css, calendario.css, inicio.css
 js/                 main.js, estado.js, persistencia.js (aparelho + sincronização), nuvem.js (Supabase),
                     funcoes.js, eventos.js, editor-tinta.js (escrita à mão), views-*.js, ...
 js/vendor/          perfect-freehand (MIT), copiado sem alterações

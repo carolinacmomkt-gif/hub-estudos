@@ -26,6 +26,7 @@ Os números são os do guia original; a lista está na **ordem combinada** com a
 - **Compartilhar para o Hub** (Web Share Target): link compartilhado no Android cai na Biblioteca ou vira pauta. *(Etapa 6)*
 - **Modo véspera de prova**: resumos, cadernos, questões erradas e simulado cronometrado da disciplina. *(Etapa 7)*
 - **Flashcards saindo do caderno**: páginas no modelo flashcards viram baralho na revisão espaçada. *(Etapa 7)*
+- **Início personalizável** ✓ código pronto, aguardando teste: ordem, tamanho e ocultar cada card, e cards próprios (nota, atalhos, checklist, contagem regressiva).
 - Sessão de foco (cronômetro tipo Pomodoro) a partir do "Próximo passo". *(Etapa 8)*
 - **Resumo da semana** no domingo à noite, com notificação. *(Etapa 8)*
 

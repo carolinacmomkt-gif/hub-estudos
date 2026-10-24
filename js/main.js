@@ -46,6 +46,16 @@ function digitando() {
   return conteudo.contains(ativo) && /^(INPUT|TEXTAREA|SELECT)$/.test(ativo.tagName);
 }
 
+// Identifica o controle com foco para devolver o foco a ele depois de redesenhar a tela.
+function seletorDoFoco() {
+  const ativo = document.activeElement;
+  if (!ativo || !conteudo.contains(ativo) || ativo === conteudo) return null;
+  if (ativo.id) return `#${CSS.escape(ativo.id)}`;
+  const partes = ['acao', 'id', 'passo', 'dia', 'visao', 'tipo'].filter((k) => ativo.dataset[k] !== undefined)
+    .map((k) => `[data-${k}="${CSS.escape(ativo.dataset[k])}"]`);
+  return partes.length ? `${ativo.tagName.toLowerCase()}${partes.join('')}` : null;
+}
+
 export function renderizar({ mudouDeTela = false } = {}) {
   if (!noApp) return;
   const rota = rotaAtual();
@@ -55,7 +65,9 @@ export function renderizar({ mudouDeTela = false } = {}) {
   }
   if (rota.id === 'calendario' && rota.parametro === 'importar') retomarImportacao();
   atualizarEstado({ rota: rota.id, parametro: rota.parametro, sinc: situacaoSincronizacao(), email: emailDaSessao(), faculdade: situacaoFaculdade() });
+  const foco = mudouDeTela ? null : seletorDoFoco();
   conteudo.innerHTML = VIEWS[rota.id](obterEstado());
+  if (foco) conteudo.querySelector(`${foco}:not([disabled])`)?.focus({ preventScroll: true });
   if (CICLO[rota.id]) {
     telaMontada = rota.id;
     CICLO[rota.id].montar();

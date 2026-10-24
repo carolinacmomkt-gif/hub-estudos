@@ -16,6 +16,7 @@ import { atualizarResultadoCalculadora } from './views-faculdade.js';
 import { listar } from './persistencia.js';
 import { ligarCalendario, cliqueCalendario, enviarCalendario, mudancaCalendario } from './eventos-calendario.js';
 import { ligarAvisos, cliqueAvisos, enviarAvisos, mudancaAvisos } from './eventos-avisos.js';
+import { ligarInicio, cliqueInicio, enviarInicio, mudancaInicio } from './eventos-inicio.js';
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -260,6 +261,7 @@ export function ligarEventos(funcoesDoApp) {
   app = funcoesDoApp;
   ligarCalendario({ renderizar: () => app.renderizar(), avisoCurto });
   ligarAvisos({ avisoCurto });
+  ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
 
@@ -332,7 +334,7 @@ export function ligarEventos(funcoesDoApp) {
         mudarFaltasManuais(alvo.dataset.id, -1);
         return;
       default:
-        if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo))) return;
+        if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -348,7 +350,7 @@ export function ligarEventos(funcoesDoApp) {
 
   document.addEventListener('change', (evento) => {
     if (evento.target.matches('[data-acao="importar-backup"]')) restaurarBackup(evento.target);
-    else if (!mudancaAvisos(evento.target)) mudancaCalendario(evento.target);
+    else if (!mudancaInicio(evento.target) && !mudancaAvisos(evento.target)) mudancaCalendario(evento.target);
   });
 
   document.addEventListener('input', (evento) => {
@@ -361,7 +363,7 @@ export function ligarEventos(funcoesDoApp) {
     const form = evento.target.closest('[data-form]');
     if (!form) return;
     evento.preventDefault();
-    if (enviarCalendario(form) || enviarAvisos(form)) return;
+    if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form)) return;
     switch (form.dataset.form) {
       case 'login':
         entrar(form);

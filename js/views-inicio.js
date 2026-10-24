@@ -3,6 +3,8 @@
 import { cabecalho, barraProgresso } from './componentes.js';
 import { cardCaixaEntrada } from './views-criar.js';
 import { cardPlano } from './views-plano.js';
+import { blocosDoInicio, nomeDoBloco, TAMANHOS, TIPOS_PROPRIOS } from './inicio-layout.js';
+import { renderProprio } from './views-inicio-proprios.js';
 import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas } from './dados-faculdade.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
@@ -112,7 +114,7 @@ function cardPrazos(dados, agora) {
   }).join('');
 
   return `
-    <section class="card l-7 t-12" aria-labelledby="prazos-titulo">
+    <section class="card" aria-labelledby="prazos-titulo">
       <div class="card-topo">
         <h2 class="card-titulo" id="prazos-titulo">Prazos dos próximos 7 dias</h2>
         <a class="card-link" href="#calendario">Calendário</a>
@@ -144,7 +146,7 @@ function cardProvas(dados, agora) {
   }).join('');
 
   return `
-    <section class="card l-5 t-6" aria-labelledby="provas-titulo">
+    <section class="card" aria-labelledby="provas-titulo">
       <div class="card-topo">
         <h2 class="card-titulo" id="provas-titulo">Provas</h2>
       </div>
@@ -156,7 +158,7 @@ function cardRevisoes(dados) {
   const total = dados.revisoes.reduce((soma, r) => soma + r.quantidade, 0);
   if (!total) {
     return `
-      <section class="card l-5 t-6" aria-labelledby="revisoes-titulo">
+      <section class="card" aria-labelledby="revisoes-titulo">
         <div class="card-topo"><h2 class="card-titulo" id="revisoes-titulo">Revisões pendentes</h2></div>
         <p class="texto-suave">Nenhuma questão para revisar. O gerador de questões e a revisão espaçada chegam na etapa 7.</p>
       </section>`;
@@ -165,7 +167,7 @@ function cardRevisoes(dados) {
     <li><span>${esc(r.disciplina)}</span><strong>${r.quantidade}</strong></li>`).join('');
 
   return `
-    <section class="card l-5 t-6" aria-labelledby="revisoes-titulo">
+    <section class="card" aria-labelledby="revisoes-titulo">
       <div class="card-topo">
         <h2 class="card-titulo" id="revisoes-titulo">Revisões pendentes</h2>
       </div>
@@ -188,7 +190,7 @@ function cardNotas(dados, agora) {
       </li>`).join('');
 
   return `
-    <section class="card l-7 t-12" aria-labelledby="notas-titulo">
+    <section class="card" aria-labelledby="notas-titulo">
       <div class="card-topo">
         <h2 class="card-titulo" id="notas-titulo">Últimas notas do AVA</h2>
         <a class="card-link" href="#faculdade">Faculdade</a>
@@ -244,7 +246,7 @@ function cardFaltas(estado) {
   const risco = disciplinasComFaltasEmRisco(estado);
   if (!risco.length) return '';
   return `
-    <section class="card l-5 t-6" aria-labelledby="faltas-titulo">
+    <section class="card" aria-labelledby="faltas-titulo">
       <div class="card-topo">
         <h2 class="card-titulo" id="faltas-titulo">Atenção às faltas</h2>
         <a class="card-link" href="#faculdade">Faculdade</a>
@@ -263,7 +265,7 @@ function cardAvisos(estado, agora) {
   const avisos = avisosRecentes(estado, 4);
   if (!avisos.length) return '';
   return `
-    <section class="card l-7 t-12" aria-labelledby="avisos-inicio">
+    <section class="card" aria-labelledby="avisos-inicio">
       <div class="card-topo">
         <h2 class="card-titulo" id="avisos-inicio">Avisos da faculdade</h2>
         <a class="card-link" href="#faculdade">Faculdade</a>
@@ -276,24 +278,82 @@ function cardAvisos(estado, agora) {
     </section>`;
 }
 
+function barraDoBloco(bloco, indice, total, proprios) {
+  const proprio = Boolean(proprios[bloco.id]);
+  const nome = nomeDoBloco(bloco.id, proprios);
+  return `
+    <div class="bloco-barra">
+      <span class="bloco-nome">${esc(nome)}</span>
+      <div class="bloco-controles">
+        <button class="botao-icone" type="button" data-acao="inicio-mover" data-id="${esc(bloco.id)}" data-passo="-1" aria-label="Subir ${esc(nome)}"${indice === 0 ? ' disabled' : ''}>↑</button>
+        <button class="botao-icone" type="button" data-acao="inicio-mover" data-id="${esc(bloco.id)}" data-passo="1" aria-label="Descer ${esc(nome)}"${indice === total - 1 ? ' disabled' : ''}>↓</button>
+        <label class="visualmente-oculto" for="tam-${esc(bloco.id)}">Tamanho de ${esc(nome)}</label>
+        <select id="tam-${esc(bloco.id)}" class="bloco-tamanho" data-acao-mudar="inicio-tamanho" data-id="${esc(bloco.id)}">
+          ${TAMANHOS.map((t) => `<option value="${t.id}"${t.id === bloco.tamanho ? ' selected' : ''}>${t.nome}</option>`).join('')}
+        </select>
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-visivel" data-id="${esc(bloco.id)}">${bloco.visivel ? 'Ocultar' : 'Mostrar'}</button>
+        ${proprio ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-editar" data-id="${esc(bloco.id)}">Editar</button>` : ''}
+      </div>
+    </div>`;
+}
+
+function avisoVazio(nome) {
+  return `<section class="card bloco-vazio"><p class="texto-suave">${esc(nome)}: nada para mostrar agora. Aparece sozinho quando tiver.</p></section>`;
+}
+
+function painelPersonalizar() {
+  return `
+    <section class="card personalizar" aria-labelledby="personalizar-titulo">
+      <div class="card-topo">
+        <h2 class="card-titulo" id="personalizar-titulo">Personalizar o Início</h2>
+        <button class="botao botao-primario botao-pequeno" type="button" data-acao="inicio-pronto">Pronto</button>
+      </div>
+      <p class="texto-suave">Use as setas para mudar a ordem, escolha o tamanho de cada card no tablet e oculte o que não quiser ver. No celular, os cards ficam um embaixo do outro, nesta ordem.</p>
+      <h3 class="ava-subtitulo">Adicionar um card seu</h3>
+      <ul class="atalhos-criar">${TIPOS_PROPRIOS.map((t) => `
+        <li><button class="atalho-criar" type="button" data-acao="inicio-novo" data-tipo="${t.id}">
+          <span><strong>${esc(t.nome)}</strong><small class="campo-ajuda"> · ${esc(t.descricao)}</small></span>
+        </button></li>`).join('')}</ul>
+      <div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-padrao">Voltar ao padrão</button></div>
+    </section>`;
+}
+
 export function renderInicio(estado) {
   const agora = Date.now();
   const dados = estado.usandoExemplo ? estado.dados : dadosReaisDoInicio(estado, agora);
   const sub = `<span>${esc(dataLonga(new Date(agora)))}</span>${estado.usandoExemplo ? '<span class="selo">Dados de exemplo</span>' : ''}`;
+  const editando = Boolean(estado.editandoInicio);
+  const { blocos, proprios } = blocosDoInicio(estado);
+
+  const doApp = {
+    proximo: () => cardProximoPasso(escolherProximoPasso(dados, agora)),
+    prazos: () => cardPrazos(dados, agora),
+    provas: () => cardProvas(dados, agora),
+    plano: () => (estado.usandoExemplo ? '' : cardPlano(estado, { agora })),
+    revisoes: () => cardRevisoes(dados),
+    notas: () => cardNotas(dados, agora),
+    faltas: () => (estado.usandoExemplo ? '' : cardFaltas(estado)),
+    avisos: () => (estado.usandoExemplo ? '' : cardAvisos(estado, agora)),
+    caixa: () => cardCaixaEntrada(estado.caixa || [], agora),
+    cadernos: () => cardCadernos(dados, agora),
+    progresso: () => cardProgresso(dados),
+  };
+
+  const visiveis = editando ? blocos : blocos.filter((b) => b.visivel);
+  const html = visiveis.map((bloco, i) => {
+    let conteudo = proprios[bloco.id] ? renderProprio(bloco.id, proprios[bloco.id], agora) : doApp[bloco.id]();
+    if (!conteudo && !editando) return '';
+    if (!conteudo) conteudo = avisoVazio(nomeDoBloco(bloco.id, proprios));
+    const classes = ['bloco', `tam-${bloco.tamanho.replace('/', '-')}`, editando && 'editando', !bloco.visivel && 'oculto'].filter(Boolean).join(' ');
+    return `
+      <div class="${classes}" data-bloco="${esc(bloco.id)}">
+        ${editando ? barraDoBloco(bloco, i, visiveis.length, proprios) : ''}
+        <div class="bloco-conteudo"${editando ? ' inert' : ''}>${conteudo}</div>
+      </div>`;
+  }).join('');
 
   return `
     ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
-    <div class="painel">
-      ${cardProximoPasso(escolherProximoPasso(dados, agora))}
-      ${cardPrazos(dados, agora)}
-      ${cardProvas(dados, agora)}
-      ${estado.usandoExemplo ? '' : cardPlano(estado, { classes: 'l-7 t-12', agora })}
-      ${cardRevisoes(dados)}
-      ${cardNotas(dados, agora)}
-      ${estado.usandoExemplo ? '' : cardFaltas(estado)}
-      ${estado.usandoExemplo ? '' : cardAvisos(estado, agora)}
-      ${cardCaixaEntrada(estado.caixa || [], agora)}
-      ${cardCadernos(dados, agora)}
-      ${cardProgresso(dados)}
-    </div>`;
+    ${editando ? painelPersonalizar() : '<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar o Início</button></div>'}
+    <div class="painel">${html}</div>`;
 }

@@ -1,0 +1,142 @@
+/* Início personalizável: tamanhos dos blocos, modo de edição e cards próprios. */
+
+.bloco {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bloco-conteudo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.bloco-conteudo > * {
+  flex: 1;
+}
+
+/* Tablet deitado e computador: 12 colunas */
+.painel > .tam-inteiro { grid-column: span 12; }
+.painel > .tam-2-3 { grid-column: span 8; }
+.painel > .tam-metade { grid-column: span 6; }
+.painel > .tam-1-3 { grid-column: span 4; }
+
+/* Tablet em pé: 2/3 vira inteiro e 1/3 vira metade */
+@media (max-width: 1099px) {
+  .painel > .tam-2-3 { grid-column: span 12; }
+  .painel > .tam-1-3 { grid-column: span 6; }
+}
+
+/* Celular: um embaixo do outro */
+@media (max-width: 700px) {
+  .painel > .bloco { grid-column: span 12; }
+}
+
+/* Modo de edição */
+.personalizar {
+  margin-bottom: 20px;
+  border-color: var(--cor-foco);
+}
+
+.bloco.editando {
+  gap: 8px;
+  padding: 8px;
+  border: 2px dashed var(--cor-borda);
+  border-radius: var(--raio-lg);
+}
+
+.bloco.oculto .bloco-conteudo {
+  opacity: 0.4;
+}
+
+.bloco-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bloco-nome {
+  font-weight: 650;
+}
+
+.bloco.oculto .bloco-nome::after {
+  content: " (oculto)";
+  color: var(--cor-texto-fraco);
+  font-weight: 500;
+}
+
+.bloco-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.bloco-controles .botao-icone:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.bloco-tamanho {
+  min-height: var(--toque);
+  padding: 0 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.bloco-vazio {
+  display: flex;
+  align-items: center;
+}
+
+/* Cards próprios */
+.proprio-texto {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+}
+
+.checklist .campo-marcar {
+  font-weight: 500;
+}
+
+.checklist .feito span {
+  color: var(--cor-texto-fraco);
+  text-decoration: line-through;
+}
+
+.contagem {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.contagem strong {
+  color: var(--cor-texto-destaque);
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.atalho-criar small {
+  font-weight: 400;
+}
