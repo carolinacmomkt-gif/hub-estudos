@@ -1,0 +1,273 @@
+// Teste de conexão com o Lyceum (portal do aluno da UniEVANGÉLICA).
+//
+// Faz UM login com matrícula e senha (do mesmo jeito que o portal), descobre os
+// códigos de pessoa e de aluno e testa as rotas de notas, faltas, agenda e avisos.
+// Devolve só a ESTRUTURA das respostas (nomes e tipos dos campos), nunca os valores.
+// A senha e a sessão não saem desta função e não são guardadas.
+//
+// Variáveis de ambiente: HUB_CODIGO_ACESSO e, opcional, LYCEUM_BASE_URL.
+
+import { timingSafeEqual } from 'node:crypto';
+
+const BASE_PADRAO = 'https://portal.unievangelica.edu.br/aluno';
+const TEMPO_LIMITE_MS = 4500;
+const AGENTE = 'Mozilla/5.0 (compatible; HubDeEstudos/1.0)';
+
+// {p} = código da pessoa, {a} = código do aluno
+const ROTAS = [
+  { id: 'boletim', descricao: 'Boletim (notas e faltas)', caminho: '/pessoas/{p}/alunos/{a}/boletim' },
+  { id: 'disciplinasBoletim', descricao: 'Disciplinas do boletim', caminho: '/pessoas/{p}/alunos/{a}/disciplinasBoletim' },
+  { id: 'ultimasNotas', descricao: 'Últimas notas', caminho: '/pessoas/{p}/alunos/{a}/qtddNotas/5/ultimasNotas' },
+  { id: 'subPeriodos', descricao: 'Períodos do boletim (N1, N2…)', caminho: '/pessoas/alunos/{a}/listaSubPeriodos' },
+  { id: 'frequencias', descricao: 'Frequência', caminho: '/api/rest/alunos/codAluno/{a}/codPessoa/{p}/Frequencias' },
+  { id: 'disciplinasMatriculadas', descricao: 'Disciplinas matriculadas', caminho: '/matricula/codAluno/{a}/obterDisciplinasMatriculadas' },
+  { id: 'dadosAcademicos', descricao: 'Dados acadêmicos (curso, período)', caminho: '/pessoas/codAluno/{a}/obterDadosAcademicos' },
+  { id: 'eventos', descricao: 'Agenda (eventos)', caminho: '/api/rest/alunos/pessoa/{p}/events' },
+  { id: 'agendaDiario', descricao: 'Agenda do diário', caminho: '/matricula/listar-agenda-diario?codAluno={a}' },
+  { id: 'avisos', descricao: 'Avisos', caminho: '/pessoas/{p}/alunos/{a}/avisos' },
+  { id: 'ultimasAtividades', descricao: 'Últimas atividades', caminho: '/pessoas/cod_pessoa/{p}/cod_aluno/{a}/lista_ultimas_atividades' },
+];
+
+function resposta(status, corpo) {
+  return new Response(JSON.stringify(corpo), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
+function codigoConfere(recebido, esperado) {
+  const a = Buffer.from(String(recebido));
+  const b = Buffer.from(String(esperado));
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+// Guarda os cookies da sessão só em memória, durante esta execução.
+function criarPotinhoDeCookies() {
+  const cookies = new Map();
+  return {
+    guardar(resp) {
+      const lista = typeof resp.headers.getSetCookie === 'function' ? resp.headers.getSetCookie() : [];
+      for (const linha of lista) {
+        const [par] = linha.split(';');
+        const i = par.indexOf('=');
+        if (i > 0) cookies.set(par.slice(0, i).trim(), par.slice(i + 1).trim());
+      }
+    },
+    cabecalho() {
+      return [...cookies].map(([k, v]) => `${k}=${v}`).join('; ');
+    },
+    ler(nome) {
+      return cookies.get(nome);
+    },
+  };
+}
+
+function lerUserData(valor) {
+  if (!valor) return null;
+  try {
+    const texto = Buffer.from(decodeURIComponent(valor), 'base64').toString('utf8');
+    return JSON.parse(texto);
+  } catch {
+    return null;
+  }
+}
+
+// Descreve a forma de um JSON (nomes e tipos), sem nenhum valor.
+function tipoDe(v) {
+  if (Array.isArray(v)) return 'lista';
+  if (v === null) return 'vazio';
+  return { string: 'texto', number: 'número', boolean: 'sim/não', object: 'objeto' }[typeof v] || typeof v;
+}
+
+function estrutura(v, profundidade = 0) {
+  if (Array.isArray(v)) {
+    const primeiro = v.find((x) => x && typeof x === 'object');
+    return { tipo: 'lista', itens: v.length, ...(primeiro && profundidade < 2 ? { item: estrutura(primeiro, profundidade + 1) } : {}) };
+  }
+  if (v && typeof v === 'object') {
+    const campos = {};
+    for (const [k, x] of Object.entries(v).slice(0, 60)) {
+      campos[k] = (x && typeof x === 'object' && profundidade < 2) ? estrutura(x, profundidade + 1) : tipoDe(x);
+    }
+    return { tipo: 'objeto', campos };
+  }
+  return { tipo: tipoDe(v) };
+}
+
+// Procura o código do aluno na resposta de /pessoas/{p}/alunos.
+function acharCodigoAluno(dados) {
+  const lista = Array.isArray(dados) ? dados : (dados && typeof dados === 'object' ? Object.values(dados).find(Array.isArray) : null);
+  const item = lista?.find((x) => x && typeof x === 'object') ?? (dados && typeof dados === 'object' && !Array.isArray(dados) ? dados : null);
+  if (!item) return null;
+  for (const chave of ['codAluno', 'cod_aluno', 'aluno', 'codigoAluno', 'id']) {
+    if (item[chave] !== undefined && item[chave] !== null && typeof item[chave] !== 'object') return String(item[chave]);
+  }
+  return null;
+}
+
+export default async (req) => {
+  if (req.method !== 'POST') return resposta(405, { ok: false, erro: 'Use POST.' });
+
+  const codigoEsperado = process.env.HUB_CODIGO_ACESSO;
+  if (!codigoEsperado) return resposta(500, { ok: false, erro: 'Falta a variável HUB_CODIGO_ACESSO na Netlify.' });
+  const base = (process.env.LYCEUM_BASE_URL || BASE_PADRAO).replace(/\/+$/, '');
+
+  let entrada;
+  try {
+    entrada = await req.json();
+  } catch {
+    return resposta(400, { ok: false, erro: 'Pedido inválido.' });
+  }
+
+  const matricula = typeof entrada?.matricula === 'string' ? entrada.matricula.trim() : '';
+  let senha = typeof entrada?.senha === 'string' ? entrada.senha : '';
+  if (!codigoConfere(entrada?.codigo ?? '', codigoEsperado)) {
+    await new Promise((r) => setTimeout(r, 1000));
+    return resposta(401, { ok: false, erro: 'Código de acesso incorreto.' });
+  }
+  if (!matricula || !senha || matricula.length > 50 || senha.length > 200) {
+    return resposta(400, { ok: false, erro: 'Preencha a matrícula e a senha.' });
+  }
+
+  const potinho = criarPotinhoDeCookies();
+  const etapas = [];
+  const cabecalhosBase = {
+    Accept: 'application/json, text/plain, */*',
+    'Accept-Language-Portal': 'pt_br',
+    'User-Agent': AGENTE,
+    Origin: new URL(base).origin,
+    Referer: `${base}/`,
+  };
+
+  const pedir = async (url, opcoes = {}) => {
+    const resp = await fetch(url, {
+      ...opcoes,
+      headers: { ...cabecalhosBase, Cookie: potinho.cabecalho(), ...(opcoes.headers || {}) },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
+    });
+    potinho.guardar(resp);
+    return resp;
+  };
+
+  // 1. Abre o portal (o portal cria uma sessão antes do login)
+  try {
+    await pedir(`${base}/`);
+  } catch {
+    // segue mesmo assim: o login às vezes funciona sem a sessão prévia
+  }
+
+  // 2. Login: exatamente uma tentativa
+  let login;
+  try {
+    login = await pedir(`${base}/auth`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Lyceum-Transacao': `${base}/#/login`,
+        'X-Lyceum-Usuario': 'null',
+      },
+      body: new URLSearchParams({
+        username: matricula,
+        password: Buffer.from(senha, 'utf8').toString('base64'),
+        recaptchaResponse: '',
+      }).toString(),
+    });
+  } catch (erro) {
+    const demorou = erro?.name === 'TimeoutError' || erro?.name === 'AbortError';
+    return resposta(200, { ok: false, erro: demorou ? 'O Lyceum demorou demais para responder.' : 'Não foi possível falar com o Lyceum.' });
+  } finally {
+    senha = null; // não é mais necessária
+  }
+
+  if (login.status !== 200) {
+    const texto = (await login.text().catch(() => '')).slice(0, 2000);
+    const pediuCaptcha = /captcha/i.test(texto);
+    const erro = pediuCaptcha
+      ? 'O Lyceum pediu captcha. O app não tenta contornar: me avise para seguirmos pelo plano B.'
+      : login.status === 401 ? 'Matrícula ou senha incorretas. Confira e tente de novo.' : `O Lyceum recusou o login (HTTP ${login.status}).`;
+    etapas.push({ nome: 'Entrar no Lyceum', ok: false, detalhe: erro });
+    return resposta(200, { ok: false, etapas, erro });
+  }
+  etapas.push({ nome: 'Entrar no Lyceum', ok: true, detalhe: `Login aceito (sem captcha). Cookies da sessão: ${potinho.ler('JSESSIONID') ? 'JSESSIONID' : 'nenhum JSESSIONID'}${potinho.ler('user-data') ? ', user-data' : ''}.` });
+
+  // 3. Descobre os códigos da pessoa e do aluno
+  const usuario = lerUserData(potinho.ler('user-data'));
+  const codPessoa = usuario?.id ? String(usuario.id) : null;
+  let codAluno = null;
+  let origemAluno = 'não encontrado';
+  // O portal manda o cabeçalho X-Lyceum-Usuario; não sabemos qual valor ele espera depois do login.
+  const opcoesUsuario = [
+    { rotulo: 'matrícula', valor: usuario?.login ? String(usuario.login) : null },
+    { rotulo: 'código da pessoa', valor: codPessoa },
+    { rotulo: 'null', valor: 'null' },
+  ].filter((o) => o.valor);
+  let cabecalhoUsuario = { 'X-Lyceum-Usuario': opcoesUsuario[0]?.valor ?? 'null' };
+
+  let usuarioQueFuncionou = 'nenhum';
+  if (codPessoa) {
+    for (const opcao of opcoesUsuario) {
+      try {
+        const cab = { 'X-Lyceum-Usuario': opcao.valor };
+        const r = await pedir(`${base}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, { headers: cab });
+        if (r.status === 401 || r.status === 403) continue;
+        cabecalhoUsuario = cab;
+        usuarioQueFuncionou = opcao.rotulo;
+        if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
+          codAluno = acharCodigoAluno(await r.json());
+          if (codAluno) origemAluno = 'lista de alunos da pessoa';
+        }
+        break;
+      } catch {
+        break; // usa a matrícula como reserva
+      }
+    }
+  }
+  if (!codAluno && usuario?.login) {
+    codAluno = String(usuario.login);
+    origemAluno = 'matrícula (reserva)';
+  }
+
+  etapas.push({
+    nome: 'Descobrir os códigos',
+    ok: Boolean(codPessoa && codAluno),
+    detalhe: `Código da pessoa: ${codPessoa ? 'encontrado' : 'não encontrado'}. Código do aluno: ${origemAluno}. Cabeçalho X-Lyceum-Usuario aceito: ${usuarioQueFuncionou}.`,
+  });
+  if (!codPessoa || !codAluno) {
+    return resposta(200, { ok: false, etapas, erro: 'Entrou no Lyceum, mas não achei os seus códigos. Me mande este resultado.' });
+  }
+
+  // 4. Testa as rotas (todas juntas, para caber no tempo da Netlify)
+  const rotas = await Promise.all(ROTAS.map(async (rota) => {
+    const caminho = rota.caminho.replace('{p}', encodeURIComponent(codPessoa)).replace('{a}', encodeURIComponent(codAluno));
+    try {
+      const r = await pedir(`${base}${caminho}`, { headers: cabecalhoUsuario });
+      const tipo = r.headers.get('content-type') || '';
+      const texto = await r.text();
+      const item = { id: rota.id, descricao: rota.descricao, rota: rota.caminho, status: r.status, ok: r.ok };
+      if (tipo.includes('json')) {
+        try {
+          const dados = JSON.parse(texto);
+          if (r.ok) item.estrutura = estrutura(dados);
+          else if (dados && typeof dados.message === 'string') item.mensagem = dados.message.slice(0, 160);
+        } catch {
+          item.observacao = 'JSON inválido';
+        }
+      } else {
+        item.observacao = `Resposta em ${tipo || 'formato desconhecido'} (${texto.length} caracteres)`;
+      }
+      return item;
+    } catch (erro) {
+      const demorou = erro?.name === 'TimeoutError' || erro?.name === 'AbortError';
+      return { id: rota.id, descricao: rota.descricao, rota: rota.caminho, status: 'erro', ok: false, observacao: demorou ? 'demorou demais' : 'falha de rede' };
+    }
+  }));
+
+  const funcionaram = rotas.filter((r) => r.ok).length;
+  return resposta(200, {
+    ok: true,
+    etapas,
+    resumo: `${funcionaram} de ${rotas.length} rotas responderam.`,
+    rotas,
+  });
+};

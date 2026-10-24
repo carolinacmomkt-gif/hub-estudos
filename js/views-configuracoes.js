@@ -54,18 +54,27 @@ function cardAva() {
 function cardLyceum() {
   return `
     <section class="card" aria-labelledby="config-lyceum">
-      <h2 class="card-titulo" id="config-lyceum">Investigar o Lyceum</h2>
+      <h2 class="card-titulo" id="config-lyceum">Testar a conexão com o Lyceum</h2>
       <p class="texto-suave">
-        O app lê só os arquivos públicos do portal do aluno (antes do login) para descobrir como ele
-        busca notas, faltas e agenda. Não usa CPF nem senha e não acessa nenhum dado seu.
+        Digite a matrícula e a senha do Lyceum. O app entra uma vez, vê como chegam as notas, as faltas,
+        a agenda e os avisos, e sai. O resultado mostra só a forma dos dados, sem notas e sem senha.
+        Nesta etapa nada fica guardado.
       </p>
-      <form class="formulario" data-form="lyceum-investigar" novalidate>
+      <form class="formulario" data-form="lyceum-teste" novalidate>
+        <label class="campo">
+          <span class="campo-rotulo">Matrícula</span>
+          <input name="matricula" type="text" inputmode="numeric" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+        </label>
+        <label class="campo">
+          <span class="campo-rotulo">Senha do Lyceum</span>
+          <input name="senha" type="password" autocomplete="current-password" required>
+        </label>
         <label class="campo">
           <span class="campo-rotulo">Código de acesso do Hub</span>
           <input name="codigo" type="password" autocomplete="off" required>
         </label>
         <div>
-          <button class="botao botao-primario" type="submit">Investigar</button>
+          <button class="botao botao-primario" type="submit">Testar conexão</button>
         </div>
       </form>
       <div class="ava-resultado" id="lyceum-resultado" aria-live="polite"></div>
@@ -82,19 +91,49 @@ export function renderConfiguracoes() {
     </div>`;
 }
 
-export function renderResultadoLyceum(r) {
-  if (!r.ok) return `<div class="ava-alerta" role="alert">${esc(r.erro || 'Não deu certo desta vez.')}</div>`;
-  const texto = JSON.stringify(r, null, 2);
+function itemEtapa(e) {
   return `
-    <div class="ava-sucesso">
-      <strong>Investigação concluída.</strong>
-      <span>${r.scripts.length} arquivos lidos · ${r.urls.length} endereços e ${r.caminhos.length} caminhos encontrados${r.captcha ? ' · o portal menciona captcha' : ''}.</span>
-      <span>Toque em "Copiar resultado" e cole aqui no chat.</span>
-    </div>
+    <li class="metodo ${e.ok ? 'metodo--ok' : 'metodo--bloqueado'}">
+      <span class="metodo-marca" aria-hidden="true">${e.ok ? '✓' : '✕'}</span>
+      <span class="metodo-texto">
+        <span class="metodo-descricao">${esc(e.nome || e.descricao)}</span>
+        <span class="metodo-detalhe">${esc(e.detalhe)}</span>
+      </span>
+    </li>`;
+}
+
+export function renderResultadoLyceum(r) {
+  const etapas = (r.etapas || []).map(itemEtapa).join('');
+  const blocoEtapas = etapas ? `<h3 class="ava-subtitulo">Passo a passo</h3><ul class="metodos">${etapas}</ul>` : '';
+  const copiar = `
     <div class="formulario">
       <div><button class="botao botao-secundario" type="button" data-acao="copiar-lyceum">Copiar resultado</button></div>
-      <textarea class="relatorio" id="lyceum-relatorio" readonly rows="12" aria-label="Resultado da investigação">${esc(texto)}</textarea>
+      <textarea class="relatorio" id="lyceum-relatorio" readonly rows="10" aria-label="Resultado do teste">${esc(JSON.stringify(r, null, 2))}</textarea>
     </div>`;
+
+  if (!r.ok) {
+    return `
+      <div class="ava-alerta" role="alert">${esc(r.erro || 'Não deu certo desta vez.')}</div>
+      ${blocoEtapas}
+      ${r.etapas ? copiar : ''}`;
+  }
+
+  const rotas = r.rotas.map((rota) => itemEtapa({
+    ok: rota.ok,
+    descricao: rota.descricao,
+    detalhe: rota.ok ? 'Respondeu.' : `Não respondeu (${rota.status}${rota.mensagem ? `: ${rota.mensagem}` : ''}).`,
+  })).join('');
+
+  return `
+    <div class="ava-sucesso">
+      <strong>Conectou ao Lyceum!</strong>
+      <span>${esc(r.resumo)}</span>
+      <span>Toque em "Copiar resultado" e cole aqui no chat.</span>
+    </div>
+    ${blocoEtapas}
+    <h3 class="ava-subtitulo">Rotas testadas</h3>
+    <ul class="metodos">${rotas}</ul>
+    ${copiar}`;
 }
 
 function itemMetodo(m) {

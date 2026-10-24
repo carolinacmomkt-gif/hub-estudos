@@ -2,7 +2,7 @@
 
 import { definirTema } from './tema.js';
 import { testarConexaoAva } from './ava.js';
-import { investigarLyceum } from './lyceum.js';
+import { testarConexaoLyceum } from './lyceum.js';
 import { renderCarregandoAva, renderResultadoAva, renderResultadoLyceum } from './views-configuracoes.js';
 
 async function enviarTesteAva(form) {
@@ -32,20 +32,22 @@ async function enviarTesteAva(form) {
   }
 }
 
-async function enviarInvestigacaoLyceum(form) {
+async function enviarTesteLyceum(form) {
   const botao = form.querySelector('[type="submit"]');
   const saida = document.getElementById('lyceum-resultado');
-  const codigo = form.elements.codigo.value;
-  if (!codigo) {
-    saida.innerHTML = renderResultadoLyceum({ ok: false, erro: 'Digite o código de acesso.' });
+  const campos = Object.fromEntries(new FormData(form));
+  if (!campos.matricula?.trim() || !campos.senha || !campos.codigo) {
+    saida.innerHTML = renderResultadoLyceum({ ok: false, erro: 'Preencha a matrícula, a senha e o código de acesso.' });
     return;
   }
   botao.disabled = true;
-  saida.innerHTML = '<p class="ava-status">Lendo o portal do Lyceum… isso leva alguns segundos.</p>';
+  saida.innerHTML = '<p class="ava-status">Falando com o Lyceum… isso leva alguns segundos.</p>';
   try {
-    saida.innerHTML = renderResultadoLyceum(await investigarLyceum({ codigo }));
+    const resultado = await testarConexaoLyceum({ matricula: campos.matricula.trim(), senha: campos.senha, codigo: campos.codigo });
+    saida.innerHTML = renderResultadoLyceum(resultado);
     saida.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } finally {
+    form.elements.senha.value = '';
     botao.disabled = false;
   }
 }
@@ -99,6 +101,6 @@ export function ligarEventos() {
     if (!form) return;
     evento.preventDefault();
     if (form.dataset.form === 'ava-teste') enviarTesteAva(form);
-    if (form.dataset.form === 'lyceum-investigar') enviarInvestigacaoLyceum(form);
+    if (form.dataset.form === 'lyceum-teste') enviarTesteLyceum(form);
   });
 }
