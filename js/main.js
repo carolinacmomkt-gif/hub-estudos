@@ -10,6 +10,8 @@ import { renderConfiguracoes, textoSituacao } from './views-configuracoes.js';
 import { renderLogin } from './views-login.js';
 import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
 import { renderFaculdade, textoSituacaoFaculdade } from './views-faculdade.js';
+import { renderCalendario } from './views-calendario.js';
+import { retomarImportacao } from './importar-calendario.js';
 import { temDadosReais } from './dados-faculdade.js';
 import { sincronizarFaculdade, situacaoFaculdade } from './faculdade-sinc.js';
 import { ligarEventos } from './eventos.js';
@@ -21,6 +23,7 @@ const VIEWS = {
   configuracoes: renderConfiguracoes,
   caneta: renderCaneta,
   faculdade: renderFaculdade,
+  calendario: renderCalendario,
 };
 
 // Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
@@ -48,6 +51,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
     CICLO[telaMontada].desmontar();
     telaMontada = null;
   }
+  if (rota.id === 'calendario' && rota.parametro === 'importar') retomarImportacao();
   atualizarEstado({ rota: rota.id, parametro: rota.parametro, sinc: situacaoSincronizacao(), email: emailDaSessao(), faculdade: situacaoFaculdade() });
   conteudo.innerHTML = VIEWS[rota.id](obterEstado());
   if (CICLO[rota.id]) {
@@ -93,6 +97,8 @@ const TELAS_DA_TABELA = {
   caixa_entrada: ['inicio'],
   conexoes: ['configuracoes', 'faculdade'],
   cadernos: ['inicio'],
+  eventos: ['inicio', 'faculdade', 'calendario'],
+  disciplinas: ['inicio', 'faculdade', 'calendario'],
 };
 
 export function mostrarLogin(opcoes = {}) {
@@ -138,6 +144,12 @@ window.addEventListener('hub:faculdade', (evento) => {
     botao.disabled = evento.detail.estado === 'sincronizando';
     botao.textContent = botao.disabled ? 'Sincronizando…' : 'Sincronizar agora';
   }
+});
+
+// A leitura do calendário acadêmico mudou de situação (enviando → lendo → pronto/erro).
+window.addEventListener('hub:importacao', () => {
+  const { rota, parametro } = obterEstado();
+  if (noApp && rota === 'calendario' && parametro === 'importar' && !digitando()) renderizar();
 });
 
 window.addEventListener('hub:sincronizacao', () => {

@@ -6,7 +6,6 @@ import { esc, haQuantoTempo } from './utilidades.js';
 
 const EM_BREVE = [
   { icone: 'cadernos', rotulo: 'Novo caderno', etapa: '5' },
-  { icone: 'calendario', rotulo: 'Novo evento', etapa: '4' },
   { icone: 'biblioteca', rotulo: 'Novo artigo', etapa: '6' },
   { icone: 'questoes', rotulo: 'Gerar questões', etapa: '7' },
 ];
@@ -25,6 +24,10 @@ export function renderFolhaCriar() {
       </label>
       <button class="botao botao-primario" type="submit">Guardar na caixa de entrada</button>
     </form>
+    <h3 class="ava-subtitulo">Criar</h3>
+    <ul class="atalhos-criar">
+      <li><button class="atalho-criar" type="button" data-acao="cal-novo">${icone('calendario')}<span>Novo evento</span></button></li>
+    </ul>
     <h3 class="ava-subtitulo">Em breve</h3>
     <ul class="atalhos-criar">${atalhos}</ul>`;
 }

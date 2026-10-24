@@ -132,3 +132,13 @@
   --tinta-ciano: rgba(0, 190, 210, 0.28);
   --borracha-contorno: rgba(43, 30, 22, 0.5);
 }
+
+/* Tipos de evento: derivados das cores acima, valem nos dois temas */
+:root {
+  --tipo-prova: var(--urg-atrasado);
+  --tipo-trabalho: var(--urg-urgente);
+  --tipo-atividade: var(--urg-semana);
+  --tipo-aula: var(--tinta-azul);
+  --tipo-feriado: var(--tinta-verde);
+  --tipo-pessoal: var(--tinta-roxo);
+}

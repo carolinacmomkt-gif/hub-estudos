@@ -44,14 +44,6 @@ const AREAS = {
     itens: ['Modo prova: múltipla escolha e verdadeiro/falso', 'Modo fixação: a IA corrige a sua resposta', 'Gabarito comentado com fontes', 'Revisão das erradas em 1, 3, 7 e 15 dias'],
     etapa: '7',
   },
-  calendario: {
-    sub: 'Prazos, provas e eventos próprios',
-    icone: 'calendario',
-    titulo: 'Calendário da faculdade e o seu',
-    texto: 'Tudo o que tem data, num lugar só.',
-    itens: ['Visão de mês, semana e lista', 'Prazos e provas do AVA', 'Calendário acadêmico importado do PDF', 'Eventos que você cria e avisos 3 dias / 1 dia / no dia'],
-    etapa: '4',
-  },
 };
 
 export function criarViewArea(rota) {

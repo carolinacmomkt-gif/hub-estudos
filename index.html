@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/componentes.css">
   <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/calendario.css">
 </head>
 <body>
   <a class="pular-link" href="#conteudo">Pular para o conteúdo</a>
@@ -43,6 +44,12 @@
     <h2 class="folha-titulo" id="folha-criar-titulo">Criar</h2>
     <div id="folha-criar-conteudo"></div>
     <button class="botao botao-secundario folha-fechar" type="button" data-acao="fechar-criar">Fechar</button>
+  </dialog>
+
+  <dialog class="folha" id="folha-evento" aria-labelledby="folha-evento-titulo">
+    <div class="folha-alca" aria-hidden="true"></div>
+    <h2 class="folha-titulo" id="folha-evento-titulo">Novo evento</h2>
+    <div id="folha-evento-conteudo"></div>
   </dialog>
 
   <div class="faixa-offline" id="faixa-offline" role="status" hidden>Sem internet. Salvando neste aparelho.</div>

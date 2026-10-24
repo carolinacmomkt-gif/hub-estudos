@@ -14,6 +14,7 @@ import { esc } from './utilidades.js';
 import { sincronizarFaculdade } from './faculdade-sinc.js';
 import { atualizarResultadoCalculadora } from './views-faculdade.js';
 import { listar } from './persistencia.js';
+import { ligarCalendario, cliqueCalendario, enviarCalendario, mudancaCalendario } from './eventos-calendario.js';
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -256,6 +257,7 @@ async function escolherCursoAva(cursoId, ativo) {
 
 export function ligarEventos(funcoesDoApp) {
   app = funcoesDoApp;
+  ligarCalendario({ renderizar: () => app.renderizar(), avisoCurto });
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
 
@@ -327,6 +329,8 @@ export function ligarEventos(funcoesDoApp) {
       case 'desfazer-falta':
         mudarFaltasManuais(alvo.dataset.id, -1);
         return;
+      default:
+        if (alvo.dataset.acao && cliqueCalendario(alvo)) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -334,7 +338,7 @@ export function ligarEventos(funcoesDoApp) {
   });
 
   // Tocar fora da folha (no véu) também fecha.
-  for (const folha of [folhaMais, folhaCriar]) {
+  for (const folha of [folhaMais, folhaCriar, document.getElementById('folha-evento')]) {
     folha.addEventListener('click', (evento) => {
       if (evento.target === folha) folha.close();
     });
@@ -342,17 +346,20 @@ export function ligarEventos(funcoesDoApp) {
 
   document.addEventListener('change', (evento) => {
     if (evento.target.matches('[data-acao="importar-backup"]')) restaurarBackup(evento.target);
+    else mudancaCalendario(evento.target);
   });
 
   document.addEventListener('input', (evento) => {
     const form = evento.target.closest('[data-form="calculadora"]');
     if (form) aoMudarCalculadora(form);
+    else if (evento.target.type !== 'checkbox') mudancaCalendario(evento.target);
   });
 
   document.addEventListener('submit', (evento) => {
     const form = evento.target.closest('[data-form]');
     if (!form) return;
     evento.preventDefault();
+    if (enviarCalendario(form)) return;
     switch (form.dataset.form) {
       case 'login':
         entrar(form);

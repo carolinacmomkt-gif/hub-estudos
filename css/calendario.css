@@ -1,0 +1,538 @@
+/* Calendário: barra de visões, grade do mês, semana, lista, formulário de evento e importação. */
+
+/* Controles reaproveitáveis */
+.ava-alerta[hidden] {
+  display: none;
+}
+
+.segmentado {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+}
+
+.segmentado button {
+  min-height: calc(var(--toque) - 6px);
+  min-width: 72px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segmentado button[aria-pressed="true"] {
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.botao-icone {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--toque);
+  height: var(--toque);
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.botao-icone:hover {
+  background: var(--cor-superficie-2);
+}
+
+.campo-marcar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--toque);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.campo-marcar input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--cor-texto-destaque);
+}
+
+.campo select,
+.campo textarea {
+  width: 100%;
+}
+
+button.atalho-criar {
+  width: 100%;
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-texto);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.atalho-criar:hover {
+  background: var(--cor-superficie-elevada);
+}
+
+/* Barra do topo */
+.cal-acoes {
+  margin: -8px 0 16px;
+}
+
+.cal-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cal-navegar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-periodo {
+  min-width: 11ch;
+  margin: 0;
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+/* Cores por tipo */
+.tipo-prova { --tipo-cor: var(--tipo-prova); }
+.tipo-trabalho { --tipo-cor: var(--tipo-trabalho); }
+.tipo-atividade { --tipo-cor: var(--tipo-atividade); }
+.tipo-aula { --tipo-cor: var(--tipo-aula); }
+.tipo-feriado { --tipo-cor: var(--tipo-feriado); }
+.tipo-pessoal { --tipo-cor: var(--tipo-pessoal); }
+
+/* Mês */
+.cal-mes {
+  padding: 12px;
+}
+
+.cal-grade {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.cal-dia-semana {
+  padding: 4px 0 6px;
+  color: var(--cor-texto-fraco);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cal-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  min-width: 0;
+  min-height: 92px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cal-dia.fora {
+  background: transparent;
+  color: var(--cor-texto-fraco);
+}
+
+.cal-dia.escolhido {
+  border-color: var(--cor-foco);
+}
+
+.cal-dia-num {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.cal-dia.hoje .cal-dia-num {
+  align-self: flex-start;
+  min-width: 26px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  text-align: center;
+}
+
+.cal-pilulas {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cal-pilula {
+  overflow: hidden;
+  padding: 1px 6px;
+  border-left: 3px solid var(--tipo-cor);
+  border-radius: 4px;
+  background: var(--cor-superficie);
+  font-size: 0.74rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-mais {
+  color: var(--cor-texto-suave);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+/* No celular e no tablet em pé, cada dia mostra só pontinhos coloridos. */
+@media (max-width: 860px) {
+  .cal-dia {
+    align-items: center;
+    min-height: 54px;
+    padding: 4px 2px;
+  }
+
+  .cal-dia.hoje .cal-dia-num {
+    align-self: center;
+  }
+
+  .cal-pilulas {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .cal-pilula {
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--tipo-cor);
+    font-size: 0;
+  }
+
+  .cal-mais {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cal-mes {
+    padding: 8px 6px;
+  }
+
+  .cal-grade {
+    gap: 2px;
+  }
+
+  .segmentado button {
+    min-width: 0;
+  }
+
+  .cal-barra {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cal-navegar .cal-periodo {
+    flex: 1;
+  }
+}
+
+/* Lista de eventos (dia escolhido, semana e lista) */
+.cal-eventos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cal-evento {
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--toque);
+  padding: 10px 12px 10px 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cal-evento:hover {
+  background: var(--cor-superficie-elevada);
+}
+
+.cal-evento-marca {
+  align-self: stretch;
+  border-radius: 0 4px 4px 0;
+  background: var(--tipo-cor);
+}
+
+.cal-evento-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cal-evento-titulo {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.cal-evento-meta {
+  color: var(--cor-texto-suave);
+  font-size: 0.86rem;
+}
+
+@media (max-width: 480px) {
+  .cal-evento {
+    grid-template-columns: 4px minmax(0, 1fr);
+  }
+
+  .cal-evento .chip {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+/* Semana: cartões lado a lado enquanto couberem (uns 4 por linha no tablet deitado) */
+.cal-semana {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.cal-semana-dia {
+  min-width: 0;
+  padding: 14px;
+}
+
+.cal-semana-dia.hoje {
+  border-color: var(--cor-foco);
+}
+
+.cal-semana-dia .card-titulo {
+  font-size: 0.98rem;
+}
+
+.cal-semana-nome {
+  margin-right: 6px;
+  color: var(--cor-texto-fraco);
+  text-transform: capitalize;
+}
+
+.cal-semana-dia .cal-evento {
+  grid-template-columns: 4px minmax(0, 1fr);
+  gap: 10px;
+  padding-right: 10px;
+}
+
+.cal-semana-dia .cal-evento .chip {
+  grid-column: 2;
+  justify-self: start;
+}
+
+/* Lista */
+.cal-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cal-lista-data {
+  margin: 0 0 8px;
+  color: var(--cor-texto-suave);
+  font-size: 0.95rem;
+}
+
+.cal-lista-data.hoje {
+  color: var(--cor-texto-destaque);
+}
+
+/* Formulário de evento */
+.cal-form-linha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.cal-form-linha[hidden],
+.campo[hidden],
+.campo-marcar[hidden] {
+  display: none;
+}
+
+.cal-form .campo input,
+.cal-form .campo select {
+  max-width: none;
+}
+
+@media (max-width: 480px) {
+  .cal-form-linha {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cal-detalhe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cal-detalhe-titulo {
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+/* Importação do calendário acadêmico */
+.cal-lendo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.carregando {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--cor-trilho);
+  border-top-color: var(--cor-texto-destaque);
+  border-radius: 50%;
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+.importados {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 16px;
+}
+
+.importado {
+  display: grid;
+  grid-template-columns: var(--toque) minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
+  padding: 8px 10px 8px 0;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+}
+
+.importado.desmarcado {
+  opacity: 0.55;
+}
+
+.importado-marcar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--toque);
+  cursor: pointer;
+}
+
+.importado-marcar input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--cor-texto-destaque);
+}
+
+.importado-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.importado-campos input,
+.importado-campos select {
+  min-height: var(--toque);
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.importado-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: var(--cor-texto-fraco);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.importado-titulo {
+  width: 100%;
+  font-weight: 600;
+}
+
+.importado-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+}
+
+@media (max-width: 480px) {
+  .importado-linha {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .importado-linha .importado-campo:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.cal-rodape {
+  margin-top: 16px;
+}
+
+@media (max-width: 480px) {
+  .cal-periodo {
+    min-width: 0;
+    font-size: 1rem;
+  }
+}

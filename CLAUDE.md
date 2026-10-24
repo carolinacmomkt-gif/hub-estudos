@@ -30,7 +30,7 @@ App pessoal de estudos (uso exclusivo da Carol), instalável como PWA no Galaxy 
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pela função `gerar-questoes` |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`gerar-questoes` e `calendario-ler-background`, que lê o calendário acadêmico) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual

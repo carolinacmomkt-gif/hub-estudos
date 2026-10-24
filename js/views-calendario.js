@@ -9,6 +9,7 @@ import {
   mesmoMes, horaLocal, diasDoEvento,
 } from './dados-calendario.js';
 import { nuvemConfigurada, sessaoAtual } from './nuvem.js';
+import { cursoGuardado } from './importar-calendario.js';
 
 export const TIPOS_EVENTO = [
   { id: 'prova', nome: 'Prova' },
@@ -58,9 +59,10 @@ export function situacaoCalendario(estado) {
 // Itens de evento
 // ---------------------------------------------------------------------------
 
-function textoHorario(evento, dia) {
+function textoHorario(evento, dia, resumido = false) {
   if (evento.dia_inteiro) {
     const dias = diasDoEvento(evento);
+    if (dias.length > 1 && resumido) return `Até ${fmtDiaCurto.format(dataDaChave(dias[dias.length - 1])).replace('.', '')} (${dias.length} dias)`;
     if (dias.length > 1) return `Dia ${dias.indexOf(dia) + 1} de ${dias.length}`;
     return 'Dia todo';
   }
@@ -76,9 +78,9 @@ function chipSituacao(evento, agora) {
   return `<span class="chip urg-${urgencia(t, agora)}">${esc(contagemRegressiva(t, agora))}</span>`;
 }
 
-function itemEvento(estado, evento, dia, agora) {
+function itemEvento(estado, evento, dia, agora, resumido = false) {
   const disciplina = nomeDaDisciplina(estado, evento.disciplina_id);
-  const meta = [textoHorario(evento, dia), NOME_TIPO[evento.tipo] || evento.tipo, disciplina || NOME_ORIGEM[evento.origem]]
+  const meta = [textoHorario(evento, dia, resumido), NOME_TIPO[evento.tipo] || evento.tipo, disciplina || NOME_ORIGEM[evento.origem]]
     .filter(Boolean).join(' · ');
   return `
     <li>
@@ -93,9 +95,9 @@ function itemEvento(estado, evento, dia, agora) {
     </li>`;
 }
 
-function listaDoDia(estado, eventos, dia, agora) {
+function listaDoDia(estado, eventos, dia, agora, resumido = false) {
   if (!eventos?.length) return '<p class="texto-suave">Nada marcado.</p>';
-  return `<ul class="cal-eventos">${eventos.map((e) => itemEvento(estado, e, dia, agora)).join('')}</ul>`;
+  return `<ul class="cal-eventos">${eventos.map((e) => itemEvento(estado, e, dia, agora, resumido)).join('')}</ul>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -156,7 +158,12 @@ function visaoSemana(estado, cal, eventos, agora) {
 
 function visaoLista(estado, cal, eventos, agora) {
   const ate = somarDias(cal.foco, DIAS_DA_LISTA - 1);
-  const porDia = eventosPorDia(eventos, cal.foco, ate);
+  // Na lista, um evento de vários dias aparece uma vez só (no primeiro dia do período mostrado).
+  const porDia = new Map();
+  for (const [dia, doDia] of eventosPorDia(eventos, cal.foco, ate)) {
+    const primeiraVez = doDia.filter((e) => dia === cal.foco || diasDoEvento(e)[0] === dia);
+    if (primeiraVez.length) porDia.set(dia, primeiraVez);
+  }
   const dias = [...porDia.keys()].sort();
   if (!dias.length) {
     return `<section class="card"><p class="texto-suave">Nada marcado de ${esc(fmtDataCompleta.format(dataDaChave(cal.foco)))} a ${esc(fmtDataCompleta.format(dataDaChave(ate)))}.</p></section>`;
@@ -167,7 +174,7 @@ function visaoLista(estado, cal, eventos, agora) {
       <ol class="cal-lista">${dias.map((chave) => `
         <li class="cal-lista-dia">
           <h2 class="cal-lista-data${chave === hoje ? ' hoje' : ''}">${esc(maiuscula(fmtDiaLongo.format(dataDaChave(chave))))}${chave === hoje ? ' <span class="selo">Hoje</span>' : ''}</h2>
-          ${listaDoDia(estado, porDia.get(chave), chave, agora)}
+          ${listaDoDia(estado, porDia.get(chave), chave, agora, true)}
         </li>`).join('')}
       </ol>
     </section>`;
@@ -179,7 +186,7 @@ function tituloDoPeriodo(cal) {
     const dias = semanaDe(cal.foco);
     return `${fmtDiaCurto.format(dataDaChave(dias[0])).replace('.', '')} a ${fmtDiaCurto.format(dataDaChave(dias[6])).replace('.', '')}`;
   }
-  return `A partir de ${fmtDiaCurto.format(dataDaChave(cal.foco)).replace('.', '')}`;
+  return `Desde ${fmtDiaCurto.format(dataDaChave(cal.foco)).replace('.', '')}`;
 }
 
 function barra(cal) {
@@ -349,11 +356,14 @@ function revisao(imp) {
         <span class="visualmente-oculto">Incluir ${esc(e.titulo)}</span>
       </label>
       <div class="importado-campos">
-        <input class="importado-titulo" type="text" maxlength="140" value="${esc(e.titulo)}" data-campo="titulo" data-indice="${i}" aria-label="Título">
+        <input class="importado-titulo" type="text" maxlength="140" value="${esc(e.titulo)}" data-campo="titulo" data-indice="${i}" aria-label="Título da data ${i + 1}">
         <div class="importado-linha">
-          <select data-campo="tipo" data-indice="${i}" aria-label="Tipo">${opcoes(TIPOS_EVENTO.filter((t) => t.id !== 'pessoal'), e.tipo)}</select>
-          <input type="date" value="${esc(e.inicio)}" data-campo="inicio" data-indice="${i}" aria-label="Data">
-          <input type="date" value="${esc(e.fim)}" data-campo="fim" data-indice="${i}" aria-label="Até (se durar vários dias)">
+          <label class="importado-campo">Tipo
+            <select data-campo="tipo" data-indice="${i}">${opcoes(TIPOS_EVENTO.filter((t) => t.id !== 'pessoal'), e.tipo)}</select></label>
+          <label class="importado-campo">Data
+            <input type="date" value="${esc(e.inicio)}" data-campo="inicio" data-indice="${i}"></label>
+          <label class="importado-campo">Até
+            <input type="date" value="${esc(e.fim)}" data-campo="fim" data-indice="${i}"></label>
         </div>
         ${e.observacao || e.existe ? `<p class="campo-ajuda">${esc([e.existe ? 'Já está no calendário (vai ser atualizado)' : '', e.observacao].filter(Boolean).join(' · '))}</p>` : ''}
       </div>
@@ -364,7 +374,7 @@ function revisao(imp) {
       <div class="card-topo">
         <h2 class="card-titulo" id="revisar-titulo">Revise antes de salvar${imp.periodo ? ` · ${esc(imp.periodo)}` : ''}</h2>
       </div>
-      <p class="texto-suave">A IA encontrou ${imp.eventos.length} ${imp.eventos.length === 1 ? 'data' : 'datas'}. Confira com o PDF, corrija o que precisar e desmarque o que não quiser.</p>
+      <p class="texto-suave">A IA encontrou ${imp.eventos.length} ${imp.eventos.length === 1 ? 'data' : 'datas'}. Confira com o PDF, corrija o que precisar e desmarque o que não quiser. "Até" só fica preenchido quando a data dura vários dias.</p>
       ${imp.avisos ? `<div class="ava-alerta" role="note"><strong>A IA avisou:</strong> ${esc(imp.avisos)}</div>` : ''}
       <div class="acoes">
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="imp-todos" data-valor="1">Marcar todos</button>
@@ -408,7 +418,7 @@ export function renderImportar(estado) {
         <h2 class="card-titulo" id="importar-titulo">Mande o calendário da UniEVANGÉLICA</h2>
         <p class="texto-suave">A IA lê as provas, os feriados, o início e o fim do semestre e os prazos acadêmicos. Você revisa tudo antes de entrar no calendário.</p>
         ${aviso}
-        ${formImportar(imp.curso ?? estado.cursoImportacao)}
+        ${formImportar(imp.curso ?? cursoGuardado())}
       </section>`;
   }
 
