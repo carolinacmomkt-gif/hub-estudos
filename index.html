@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hub de Estudos</title>
+  <meta name="description" content="Hub de Estudos da Carol: faculdade, estudos, Substack, cadernos, questões e calendário.">
+  <meta name="theme-color" content="#17110D">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icones/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+  <!-- Aplica o tema antes de pintar a tela, para não piscar -->
+  <script src="js/tema-inicial.js"></script>
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/componentes.css">
+</head>
+<body>
+  <a class="pular-link" href="#conteudo">Pular para o conteúdo</a>
+
+  <div class="app">
+    <nav class="nav-lateral" id="nav-lateral" aria-label="Navegação principal"></nav>
+    <main class="conteudo" id="conteudo" tabindex="-1"></main>
+  </div>
+
+  <nav class="nav-inferior" id="nav-inferior" aria-label="Navegação principal"></nav>
+
+  <dialog class="folha" id="folha-mais" aria-labelledby="folha-mais-titulo">
+    <div class="folha-alca" aria-hidden="true"></div>
+    <h2 class="folha-titulo" id="folha-mais-titulo">Mais áreas</h2>
+    <div id="folha-mais-lista"></div>
+    <button class="botao botao-secundario folha-fechar" type="button" data-acao="fechar-mais">Fechar</button>
+  </dialog>
+
+  <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

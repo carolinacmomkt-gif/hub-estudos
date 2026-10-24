@@ -1,0 +1,104 @@
+/*
+  Todas as cores do app moram aqui.
+  Componentes usam só as variáveis (--cor-*, --urg-*, --capa-*), nunca cores diretas.
+  O tema escuro é o padrão (identidade da Central de Conteúdo).
+*/
+
+:root,
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+
+  --cor-fundo: #17110D;
+  --cor-superficie: #221912;
+  --cor-superficie-2: #2D2119;
+  --cor-superficie-elevada: #33261D;
+  --cor-borda: #3E2F25;
+  --cor-trilho: #3A2C22;
+  --cor-veu: rgba(10, 7, 5, 0.6);
+
+  --cor-texto: #F4EADF;
+  --cor-texto-suave: #C7B6A5;
+  --cor-texto-fraco: #A08D7B;
+
+  --cor-destaque: #E8D3BF;
+  --cor-destaque-suave: rgba(232, 211, 191, 0.13);
+  --cor-texto-destaque: #E8D3BF;
+  --cor-sobre-destaque: #2B1E16;
+  --cor-foco: #E8D3BF;
+
+  --cor-sucesso: #A9D3A3;
+
+  /* Urgência dos prazos: atrasado (vermelho), menos de 48h (laranja), semana (bege) */
+  --urg-atrasado: #EC7C66;
+  --urg-atrasado-fundo: rgba(236, 124, 102, 0.16);
+  --urg-atrasado-texto: #F7A593;
+  --urg-urgente: #EDA459;
+  --urg-urgente-fundo: rgba(237, 164, 89, 0.16);
+  --urg-urgente-texto: #F5BE84;
+  --urg-semana: #E8D3BF;
+  --urg-semana-fundo: rgba(232, 211, 191, 0.13);
+  --urg-semana-texto: #E8D3BF;
+  --urg-futuro: #6E5B4C;
+  --urg-futuro-fundo: rgba(199, 182, 165, 0.1);
+  --urg-futuro-texto: #C7B6A5;
+
+  /* Capas de caderno */
+  --capa-1: #8C5A3C;  --capa-1-texto: #FBF4EC;
+  --capa-2: #55704F;  --capa-2-texto: #F6F3EA;
+  --capa-3: #3F5E70;  --capa-3-texto: #F2F4F4;
+  --capa-4: #7D3F4A;  --capa-4-texto: #FAF0EF;
+  --capa-5: #CFAE8C;  --capa-5-texto: #2B1E16;
+  --capa-6: #5E4C70;  --capa-6-texto: #F4F0F7;
+
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.28);
+  --sombra-capa: inset 6px 0 0 rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-tema="claro"] {
+  color-scheme: light;
+
+  --cor-fundo: #F7F1EA;
+  --cor-superficie: #FFFCF8;
+  --cor-superficie-2: #F1E7DC;
+  --cor-superficie-elevada: #FFFFFF;
+  --cor-borda: #E6D8C8;
+  --cor-trilho: #EADDCF;
+  --cor-veu: rgba(43, 30, 22, 0.4);
+
+  --cor-texto: #2B1E16;
+  --cor-texto-suave: #5E4A3B;
+  --cor-texto-fraco: #76604F;
+
+  /* O bege #E8D3BF não tem contraste AA como texto sobre creme:
+     no claro ele vira fundo, e o texto de destaque usa um marrom mais escuro. */
+  --cor-destaque: #E8D3BF;
+  --cor-destaque-suave: rgba(232, 211, 191, 0.5);
+  --cor-texto-destaque: #6F4527;
+  --cor-sobre-destaque: #2B1E16;
+  --cor-foco: #8A5A36;
+
+  --cor-sucesso: #3B7537;
+
+  --urg-atrasado: #C0392B;
+  --urg-atrasado-fundo: #F9DED8;
+  --urg-atrasado-texto: #9B2C20;
+  --urg-urgente: #D2802A;
+  --urg-urgente-fundo: #F8E4CB;
+  --urg-urgente-texto: #8A4A0C;
+  --urg-semana: #B8946F;
+  --urg-semana-fundo: #EFE0D1;
+  --urg-semana-texto: #5A3A22;
+  --urg-futuro: #CDBBA8;
+  --urg-futuro-fundo: #F1E7DC;
+  --urg-futuro-texto: #5E4A3B;
+
+  --capa-1: #9A6544;  --capa-1-texto: #FFF8F0;
+  --capa-2: #5F7B58;  --capa-2-texto: #FBF8F0;
+  --capa-3: #46677A;  --capa-3-texto: #F6F8F8;
+  --capa-4: #87474F;  --capa-4-texto: #FFF4F3;
+  --capa-5: #D9BC9C;  --capa-5-texto: #2B1E16;
+  --capa-6: #685580;  --capa-6-texto: #F8F4FB;
+
+  --sombra: 0 1px 2px rgba(43, 30, 22, 0.06), 0 8px 24px rgba(43, 30, 22, 0.07);
+  --sombra-capa: inset 6px 0 0 rgba(0, 0, 0, 0.14), 0 6px 14px rgba(43, 30, 22, 0.16);
+}

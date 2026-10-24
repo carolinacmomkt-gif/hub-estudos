@@ -1,0 +1,284 @@
+/*
+  Larguras:
+  - 1100px ou mais (tablet na horizontal, computador): barra lateral com nomes
+  - 701px a 1099px (tablet na vertical): barra lateral compacta, ícone + nome curto
+  - até 700px (celular): barra inferior com "Mais"
+*/
+
+.app {
+  --largura-nav: 248px;
+  display: grid;
+  grid-template-columns: var(--largura-nav) minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.conteudo {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px clamp(16px, 4vw, 48px) 56px;
+}
+
+/* Barra lateral */
+.nav-lateral {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 14px;
+  background: var(--cor-superficie);
+  border-right: 1px solid var(--cor-borda);
+  overflow-y: auto;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px 24px;
+  text-decoration: none;
+}
+
+.marca-icone {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.marca-icone svg {
+  width: 22px;
+  height: 22px;
+}
+
+.marca-texto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.marca-nome {
+  font-weight: 700;
+}
+
+.marca-sub {
+  font-size: 0.8rem;
+  color: var(--cor-texto-fraco);
+}
+
+.nav-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--cor-texto-suave);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.nav-link svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.nav-link:hover {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+}
+
+.nav-link[aria-current="page"],
+.nav-link[data-ativo="sim"] {
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto-destaque);
+  font-weight: 600;
+}
+
+.nav-rodape {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.nav-inferior {
+  display: none;
+}
+
+/* Tablet na vertical */
+@media (max-width: 1099px) {
+  .app {
+    --largura-nav: 96px;
+  }
+
+  .nav-lateral {
+    padding: 16px 8px;
+  }
+
+  .marca {
+    justify-content: center;
+    padding: 0 0 16px;
+  }
+
+  .marca-texto {
+    display: none;
+  }
+
+  .nav-link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-height: 62px;
+    padding: 8px 4px;
+    font-size: 0.74rem;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  .conteudo {
+    padding-top: 28px;
+  }
+}
+
+/* Celular */
+@media (max-width: 700px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nav-lateral {
+    display: none;
+  }
+
+  .conteudo {
+    padding: 20px 16px calc(100px + env(safe-area-inset-bottom));
+  }
+
+  .nav-inferior {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    background: var(--cor-superficie);
+    border-top: 1px solid var(--cor-borda);
+  }
+
+  .nav-inferior .nav-lista {
+    flex-direction: row;
+  }
+
+  .nav-inferior li {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .nav-inferior .nav-link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 6px 2px;
+    font-size: 0.72rem;
+    line-height: 1.1;
+    text-align: center;
+  }
+}
+
+/* Folha "Mais" (celular) */
+.folha {
+  width: 100%;
+  max-width: 560px;
+  margin: auto auto 0;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto);
+  box-shadow: var(--sombra);
+}
+
+.folha::backdrop {
+  background: var(--cor-veu);
+}
+
+.folha-alca {
+  width: 40px;
+  height: 4px;
+  margin: 4px auto 14px;
+  border-radius: 999px;
+  background: var(--cor-borda);
+}
+
+.folha-titulo {
+  margin: 0 4px 10px;
+  font-size: 1.05rem;
+}
+
+.folha .nav-lista {
+  margin-bottom: 14px;
+}
+
+.folha .nav-link {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 14px;
+  min-height: 52px;
+  padding: 0 12px;
+  font-size: 1rem;
+  text-align: left;
+}
+
+.folha-fechar {
+  width: 100%;
+}
+
+/* Aviso flutuante (nova versão etc.) */
+.aviso {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 50;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 8px 8px 8px 18px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra);
+}
+
+.aviso[hidden] {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .aviso {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
