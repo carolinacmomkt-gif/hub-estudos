@@ -155,6 +155,21 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - Se uma função vier bloqueada (`accessexception`), o app registra o bloqueio, continua com as outras e mostra no painel o que não está disponível.
 - Tudo do AVA é **somente leitura**. O app nunca envia trabalho, nunca responde quiz e nunca posta no fórum.
 
+## Lyceum (notas oficiais e frequência)
+
+- Portal do aluno: `https://portal.unievangelica.edu.br/aluno/` (AngularJS + Ionic). Login com CPF (só números) e a senha da matrícula.
+- **Investigação feita em 24/10/2026** (só arquivos públicos, sem login):
+  - a página de login carrega o **Google reCAPTCHA** (`render=explicit`), mesmo que ele não apareça sempre;
+  - a API fica em `${API_URL}/api/rest/...` e em caminhos como `/pessoas/...`, `/matricula/...` e `/v2/alunos/...`;
+  - rotas úteis encontradas:
+    - boletim e notas: `/pessoas/{codPessoa}/alunos/{codAluno}/boletim?subperiodo=`, `/pessoas/{codPessoa}/alunos/{codAluno}/disciplinasBoletim`, `/pessoas/{codPessoa}/alunos/{codAluno}/qtddNotas/{n}/ultimasNotas`, `/pessoas/alunos/{codAluno}/listaSubPeriodos`, `.../provasBoletim`;
+    - frequência: `${API_URL}/api/rest/alunos/codAluno/{codAluno}/codPessoa/{codPessoa}/Frequencias`, `/pessoas/lista_detalhes_frequencia`, `/v2/alunos/{codAluno}/detalhes-faltas?ano=&codDisciplina=&codTurma=&semestre=`;
+    - agenda e aulas: `/matricula/listar-agenda-diario`, `${API_URL}/api/rest/alunos/pessoa/{codPessoa}/events`, `.../dia/{diaSemana}/HorariosAula`;
+    - avisos: `/pessoas/{codPessoa}/alunos/{codAluno}/avisos`;
+    - login: `/login`, `/autologin?a&b`, `config-properties/login-oauth2-sso`.
+- **Regra**: o app nunca tenta contornar o reCAPTCHA. Se o login exigir captcha, a conexão usa a sessão que a própria Carol abre no portal.
+- Tudo do Lyceum é **somente leitura**: o app nunca mexe em matrícula, financeiro, serviços ou contratos.
+
 ## Calendário da faculdade (requisito importante)
 
 - Fontes:
