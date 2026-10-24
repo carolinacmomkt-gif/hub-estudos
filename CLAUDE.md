@@ -167,6 +167,13 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
     - agenda e aulas: `/matricula/listar-agenda-diario`, `${API_URL}/api/rest/alunos/pessoa/{codPessoa}/events`, `.../dia/{diaSemana}/HorariosAula`;
     - avisos: `/pessoas/{codPessoa}/alunos/{codAluno}/avisos`;
     - login: `/login`, `/autologin?a&b`, `config-properties/login-oauth2-sso`.
+- **Como o login funciona** (visto no navegador): `POST /aluno/auth` com `username` (matrícula), `password` (só codificada em base64, não é criptografia) e `recaptchaResponse` **vazio**, que é aceito. A resposta devolve o cookie de sessão `JSESSIONID` (HttpOnly, expira sem uso) e o cookie `user-data` (só informações: nome, id da pessoa, matrícula). **Não há token duradouro.**
+- **Decisão da Carol (24/10/2026): sincronização automática guardando a senha do Lyceum criptografada.**
+  - A função `lyceum-conectar` recebe matrícula e senha uma vez e guarda a senha criptografada (AES-256-GCM com `TOKEN_CRYPTO_KEY`) no Supabase; só as funções conseguem abrir.
+  - A senha nunca volta para o front-end, nunca aparece em log e o botão "Desconectar o Lyceum" apaga tudo.
+  - A cada sincronização (ao abrir o app se faz mais de 1h e na Scheduled Function de 6h), a função faz **um** login, lê notas, faltas, agenda e avisos e encerra.
+  - Se o portal passar a exigir captcha ou recusar o login, a função para (sem novas tentativas), registra o motivo e o app pede para a Carol reconectar.
+- Reserva: importar notas e frequência por PDF/print com IA, e o contador de faltas do próprio Hub.
 - **Regra**: o app nunca tenta contornar o reCAPTCHA. Se o login exigir captcha, a conexão usa a sessão que a própria Carol abre no portal.
 - Tudo do Lyceum é **somente leitura**: o app nunca mexe em matrícula, financeiro, serviços ou contratos.
 

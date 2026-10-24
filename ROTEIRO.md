@@ -6,7 +6,8 @@ Os números são os do guia original; a lista está na **ordem combinada** com a
 
 - [x] **Etapa 1 — Base do app e temas**: index.html, PWA (manifest, ícones, service worker offline), navegação lateral (tablet) e inferior (celular), temas claro/escuro/automático, tela Início com saudação, "Próximo passo" e cards de exemplo.
 - [x] **Etapa 3 — Teste de conexão com o AVA**: `ava-conectar` + tela em Configurações que mostra as funções liberadas e bloqueadas. Sem guardar senha nem token ainda (o Supabase chega na etapa seguinte).
-- [ ] **Etapa 2 — Supabase e sincronização**: SQL das tabelas com RLS, login só por e-mail, `persistencia.js` com cache no IndexedDB e sincronização ao voltar a internet, indicador de conexão e **exportar/importar backup**. Depois, guardar o token do AVA criptografado.
+- [ ] **Teste de conexão com o Lyceum**: `lyceum-teste` faz um login, descobre os códigos e mostra quais rotas de notas, faltas, agenda e avisos respondem (só a estrutura, sem valores). Sem guardar nada.
+- [ ] **Etapa 2 — Supabase e sincronização**: SQL das tabelas com RLS, login só por e-mail, `persistencia.js` com cache no IndexedDB e sincronização ao voltar a internet, indicador de conexão e **exportar/importar backup**. Depois, guardar o token do AVA e a senha do Lyceum criptografados.
 - [ ] **Protótipo da caneta**: uma página só, para sentir no Tab S10 Lite a pressão, o atraso do traço e a rejeição da palma antes do editor completo.
 - [ ] **Etapa 4 — Faculdade e calendário**: sincronização completa, painéis da Faculdade e por disciplina, Calendário (mês/semana/lista), importação do calendário acadêmico, eventos manuais, avisos, notificações por **Web Push** (VAPID), sincronização automática e agendada (6h).
 - [ ] **Etapa 5a — Cadernos: editor**: canvas com perfect-freehand, S Pen, rejeição de palma, ferramentas, predefinições de caneta, estabilizador, gestos, desfazer/refazer, zoom, traços em JSON vetorial já com camadas.
@@ -20,7 +21,8 @@ Os números são os do guia original; a lista está na **ordem combinada** com a
 ## Ideias aprovadas para encaixar
 - Botão "+" flutuante (novo caderno, evento, artigo, questão) com **caixa de entrada rápida** para ideias. *(Etapa 2)*
 - Opção de texto maior em Configurações. *(Etapa 2)*
-- **Calculadora de média** com as notas do AVA e pesos configuráveis. *(Etapa 4)*
+- **Lyceum** na Etapa 4: sincronização de notas oficiais, frequência, agenda e avisos; contador de faltas com alerta de limite; importação por PDF/print como reserva.
+- **Calculadora de média** com as notas do Lyceum/AVA e pesos configuráveis. *(Etapa 4)*
 - **Compartilhar para o Hub** (Web Share Target): link compartilhado no Android cai na Biblioteca ou vira pauta. *(Etapa 6)*
 - **Modo véspera de prova**: resumos, cadernos, questões erradas e simulado cronometrado da disciplina. *(Etapa 7)*
 - **Flashcards saindo do caderno**: páginas no modelo flashcards viram baralho na revisão espaçada. *(Etapa 7)*
