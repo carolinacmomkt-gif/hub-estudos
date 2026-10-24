@@ -27,6 +27,7 @@
   --cor-foco: #E8D3BF;
 
   --cor-sucesso: #A9D3A3;
+  --cor-sucesso-fundo: rgba(169, 211, 163, 0.16);
 
   /* Urgência dos prazos: atrasado (vermelho), menos de 48h (laranja), semana (bege) */
   --urg-atrasado: #EC7C66;
@@ -78,6 +79,7 @@
   --cor-foco: #8A5A36;
 
   --cor-sucesso: #3B7537;
+  --cor-sucesso-fundo: #DDEBD9;
 
   --urg-atrasado: #C0392B;
   --urg-atrasado-fundo: #F9DED8;

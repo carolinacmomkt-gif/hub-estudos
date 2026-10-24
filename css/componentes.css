@@ -639,3 +639,146 @@
   gap: 20px;
   max-width: 760px;
 }
+
+/* Formulários */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo-rotulo {
+  font-weight: 600;
+}
+
+.campo-ajuda {
+  color: var(--cor-texto-fraco);
+  font-size: 0.85rem;
+}
+
+.campo input {
+  min-height: var(--toque);
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.campo input:focus-visible {
+  border-color: var(--cor-foco);
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 0;
+}
+
+.botao:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+/* Resultado do teste do AVA */
+.ava-resultado:not(:empty) {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.ava-status {
+  color: var(--cor-texto-suave);
+}
+
+.ava-alerta,
+.ava-sucesso {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--raio);
+}
+
+.ava-alerta {
+  background: var(--urg-atrasado-fundo);
+  color: var(--urg-atrasado-texto);
+  font-weight: 600;
+}
+
+.ava-sucesso {
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto);
+}
+
+.ava-subtitulo {
+  margin: 22px 0 10px;
+  font-size: 0.95rem;
+}
+
+.metodos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metodo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+}
+
+.metodo-marca {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.metodo--ok .metodo-marca {
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso);
+}
+
+.metodo--bloqueado .metodo-marca {
+  background: var(--urg-atrasado-fundo);
+  color: var(--urg-atrasado-texto);
+}
+
+.metodo-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.metodo-descricao {
+  font-weight: 600;
+}
+
+.metodo-detalhe {
+  color: var(--cor-texto-suave);
+  font-size: 0.88rem;
+}
+
+.metodo code {
+  color: var(--cor-texto-fraco);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.ava-resultado .metodos + p {
+  margin-top: 14px;
+}

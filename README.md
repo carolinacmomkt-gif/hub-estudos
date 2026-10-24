@@ -24,6 +24,26 @@ use o Chrome: F12 → ícone de celular → dimensões 1340×800, 800×1340 e 37
 
 O `netlify.toml` já cuida do resto (cabeçalhos e o service worker sem cache).
 
+### Variáveis de ambiente
+
+Na Netlify: **Site configuration → Environment variables → Add a variable**. Nunca coloque esses valores no código.
+
+| Variável | Valor | Desde |
+|---|---|---|
+| `AVA_BASE_URL` | `https://avagrad.unievangelica.edu.br` | Etapa 3 |
+| `HUB_CODIGO_ACESSO` | um código que você inventa (ex.: uma frase longa); protege o teste do AVA até o login existir | Etapa 3 |
+
+Depois de criar ou mudar uma variável, faça um novo deploy (**Deploys → Trigger deploy → Deploy site**).
+
+## Testar a conexão com o AVA (Etapa 3)
+
+1. Com o site publicado e as duas variáveis criadas, abra **Configurações** no app.
+2. Em "Testar a conexão com o AVA", digite matrícula, senha e o código de acesso e toque em **Testar conexão**.
+3. O app mostra o passo a passo, os métodos liberados (✓) e bloqueados (✕), a frequência e os arquivos.
+   A senha e o token não são guardados.
+
+Para rodar as funções no computador: `npx netlify-cli dev` (precisa das variáveis num arquivo `.env`, que nunca vai para o repositório).
+
 ## Estrutura
 
 ```

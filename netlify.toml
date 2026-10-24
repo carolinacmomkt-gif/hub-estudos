@@ -2,6 +2,9 @@
 [build]
   publish = "."
 
+[functions]
+  directory = "netlify/functions"
+
 # O service worker nunca pode ficar preso em cache, senão as atualizações não chegam.
 [[headers]]
   for = "/sw.js"
