@@ -130,7 +130,7 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
   3. o calendário acadêmico da UniEVANGÉLICA (provas, feriados, início e fim do semestre), importado de PDF ou de uma página com a ajuda da IA e revisado pela Carol antes de salvar;
   4. eventos que a Carol cria à mão (provas avisadas em sala, apresentações).
 - Cada evento tem: tipo (prova, trabalho, atividade, aula, feriado, pessoal), disciplina, data/hora, status (pendente / entregue / atrasado, vindo do AVA) e um link para o AVA.
-- **Avisos**: contagem regressiva no Início e destaque vermelho para atrasados, laranja para menos de 48h e bege para a semana. Notificações do PWA 3 dias antes, 1 dia antes e no dia, com horário configurável.
+- **Avisos**: contagem regressiva no Início e destaque vermelho para atrasados, laranja para menos de 48h e bege para a semana. Notificações do PWA 3 dias antes, 1 dia antes e no dia, com horário configurável. Como o PWA fechado não dispara avisos sozinho no Android, elas chegam por **Web Push**: a Scheduled Function verifica os prazos e envia o push (chaves VAPID).
 - **Plano de estudo automático para provas**: ao surgir uma prova, o app sugere sessões de revisão nos dias anteriores, já com os cadernos e as questões daquela disciplina.
 - Opcional: exportar tudo como um link .ics para assinar no Google Agenda.
 
@@ -171,3 +171,5 @@ Todas as tabelas usam RLS ligado ao usuário da Carol.
 - `ANTHROPIC_API_KEY`
 - `AVA_BASE_URL`
 - `TOKEN_CRYPTO_KEY`
+- `VAPID_PUBLIC_KEY` (pode ir para o front-end; é pública)
+- `VAPID_PRIVATE_KEY` (somente nas funções)

@@ -71,6 +71,13 @@
   height: 20px;
 }
 
+/* No celular o tema fica só em Configurações, para o topo ocupar menos espaço */
+@media (max-width: 700px) {
+  .cabecalho .seletor-tema {
+    display: none;
+  }
+}
+
 /* Grade do painel: 12 colunas no computador e tablet deitado */
 .painel {
   display: grid;
@@ -415,9 +422,26 @@
 }
 
 @media (max-width: 700px) {
+  /* No celular os cadernos viram uma fileira que rola para o lado */
   .cadernos {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 128px;
     gap: 14px;
+    margin: 0 -22px;
+    padding: 0 22px 6px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 22px;
+    scrollbar-width: none;
+  }
+
+  .cadernos::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cadernos > li {
+    scroll-snap-align: start;
   }
 }
 
