@@ -173,6 +173,22 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
   - A senha nunca volta para o front-end, nunca aparece em log e o botão "Desconectar o Lyceum" apaga tudo.
   - A cada sincronização (ao abrir o app se faz mais de 1h e na Scheduled Function de 6h), a função faz **um** login, lê notas, faltas, agenda e avisos e encerra.
   - Se o portal passar a exigir captcha ou recusar o login, a função para (sem novas tentativas), registra o motivo e o app pede para a Carol reconectar.
+- **Teste feito em 24/10/2026 (10 de 12 rotas funcionando).** Caminho confirmado, igual ao do portal:
+  1. `POST /aluno/auth` (login);
+  2. código da pessoa = `id` do cookie `user-data`;
+  3. `GET /aluno/apix/pessoas/{codPessoa}/alunos` com `X-Lyceum-Usuario: null` → `codAluno`;
+  4. todos os pedidos seguintes com `X-Lyceum-Usuario: aluno: {codAluno}` e `X-Lyceum-Transacao`.
+  - Todos os endereços ficam em `/aluno/apix` (`Configs.getApiServer()` = `"apix"`), inclusive os de `${API_URL}/api/rest/...`.
+- **Rotas que funcionam** (base `/aluno/apix`):
+  - `/pessoas/{p}/alunos/{a}/boletim`: por disciplina, `nomeDisciplina`, `turma`, `nomeDocente`, `aulasPrevistas`, `aulasMinistradas`, `media`, `situacaoMatricula`, `periodo {ano, semestre}`, `faltas[] {faltasAcumuladas, faltasPermitidas, percentualPresenca}` e `provas[] {nomeProva, ordemProva, nota, notaMaxProva, dataNota, provaOficial}`. **É a rota principal.**
+  - `/pessoas/{p}/alunos/{a}/disciplinasBoletim`: disciplinas do semestre com as faltas.
+  - `/pessoas/{p}/alunos/{a}/qtddNotas/5/ultimasNotas`: últimas notas lançadas.
+  - `/api/rest/alunos/codAluno/{a}/codPessoa/{p}/Frequencias?page=0&size=1000`: `content[] {componenteCurricular, cargaHoraria, numeroFaltas, percentualFrequencia, aulasPrevistas, ano, semestre}`.
+  - `/api/rest/alunos/{a}/pessoa/{p}/boletins`: boletim em outro formato (`aprovado`, `notaFinal`, `provas`).
+  - `/pessoas/codAluno/{a}/obterDadosAcademicos`: curso, turno, série, situação. Tem dados pessoais (celular etc.): **guardar só curso, turno, série e situação**.
+  - `/pessoas/{p}/alunos/{a}/avisos`: `titulo`, `descricao`, `data`, `tipo`, `lido`.
+  - `/pessoas/alunos/{a}/listaSubPeriodos` e `/pessoas/cod_pessoa/{p}/cod_aluno/{a}/lista_ultimas_atividades` (vazias por enquanto).
+- **Ainda sem resposta** (pedem parâmetros, HTTP 400): `/matricula/listar-agenda-diario` e `/api/rest/alunos/pessoa/{p}/events`. Resolver na Etapa 4 lendo no código do portal quais parâmetros vão (provavelmente datas). Não são essenciais: os prazos vêm do AVA.
 - Reserva: importar notas e frequência por PDF/print com IA, e o contador de faltas do próprio Hub.
 - **Regra**: o app nunca tenta contornar o reCAPTCHA. Se o login exigir captcha, a conexão usa a sessão que a própria Carol abre no portal.
 - Tudo do Lyceum é **somente leitura**: o app nunca mexe em matrícula, financeiro, serviços ou contratos.
