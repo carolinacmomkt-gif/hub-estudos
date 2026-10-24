@@ -105,6 +105,55 @@ function acharCodigoAluno(dados) {
   return null;
 }
 
+const PREFIXOS = [
+  '/aluno', '/aluno/api', '/aluno/rest', '/aluno/services', '/aluno/service', '/aluno/ws', '/aluno/backend',
+  '/aluno/app', '/aluno/lyceum', '/api', '/rest', '/services', '/lyceum', '/portal', '/aluno-api', '',
+];
+
+// Testa em que prefixo a rota /pessoas/{p}/alunos existe (404 = não existe ali).
+async function testarPrefixos(origem, codPessoa, usuario, pedir) {
+  return Promise.all(PREFIXOS.map(async (prefixo) => {
+    try {
+      const r = await pedir(`${origem}${prefixo}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, {
+        headers: { 'X-Lyceum-Usuario': usuario },
+      });
+      const tipo = r.headers.get('content-type') || '';
+      await r.arrayBuffer();
+      return { prefixo, status: r.status, json: tipo.includes('json') };
+    } catch {
+      return { prefixo, status: 'erro', json: false };
+    }
+  }));
+}
+
+// Lê o código público do portal (sem dados da Carol) e devolve os trechos onde
+// ele monta os endereços da API, para descobrir o prefixo certo.
+async function lerTrechosDoCodigo(html, base, pedir) {
+  const srcs = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
+    .map((m) => new URL(m[1], `${base}/`).href)
+    .filter((u) => /\/_app\/app-[^/]*\.js/i.test(u) || /\/_app\/[^/]*config[^/]*\.js/i.test(u));
+  const agulhas = ['API_URL', '/pessoas/:codPessoa/alunos', 'obterDadosAcademicos', '/Frequencias', 'disciplinasBoletim'];
+  const trechos = [];
+  for (const url of srcs.slice(0, 3)) {
+    try {
+      const r = await pedir(url);
+      const texto = await r.text();
+      for (const agulha of agulhas) {
+        let i = texto.indexOf(agulha);
+        let vezes = 0;
+        while (i >= 0 && vezes < 3) {
+          trechos.push({ agulha, trecho: texto.slice(Math.max(0, i - 160), i + 60).replace(/\s+/g, ' ') });
+          i = texto.indexOf(agulha, i + agulha.length);
+          vezes += 1;
+        }
+      }
+    } catch {
+      // segue sem os trechos
+    }
+  }
+  return trechos.slice(0, 15);
+}
+
 export default async (req) => {
   if (req.method !== 'POST') return resposta(405, { ok: false, erro: 'Use POST.' });
 
@@ -151,8 +200,10 @@ export default async (req) => {
   };
 
   // 1. Abre o portal (o portal cria uma sessão antes do login)
+  let htmlInicial = '';
   try {
-    await pedir(`${base}/`);
+    const r = await pedir(`${base}/`);
+    htmlInicial = await r.text();
   } catch {
     // segue mesmo assim: o login às vezes funciona sem a sessão prévia
   }
@@ -204,13 +255,28 @@ export default async (req) => {
   ].filter((o) => o.valor);
   let cabecalhoUsuario = { 'X-Lyceum-Usuario': opcoesUsuario[0]?.valor ?? 'null' };
 
+  // Descobre o prefixo da API: lê o código público e testa prefixos comuns.
+  const origem = new URL(base).origin;
+  const [trechos, testesPrefixo] = await Promise.all([
+    lerTrechosDoCodigo(htmlInicial, base, pedir),
+    codPessoa ? testarPrefixos(origem, codPessoa, opcoesUsuario[0]?.valor ?? 'null', pedir) : [],
+  ]);
+  const escolhido = testesPrefixo.find((t) => t.status === 200 && t.json) || testesPrefixo.find((t) => t.json && t.status !== 404);
+  const prefixo = escolhido ? escolhido.prefixo : new URL(base).pathname.replace(/\/+$/, '');
+  const raizApi = `${origem}${prefixo}`;
+  etapas.push({
+    nome: 'Descobrir o endereço da API',
+    ok: Boolean(escolhido),
+    detalhe: escolhido ? `Prefixo encontrado: ${prefixo || '(raiz)'} (HTTP ${escolhido.status}).` : 'Nenhum prefixo comum respondeu. Veja os trechos do código no resultado.',
+  });
+
   let usuarioQueFuncionou = 'nenhum';
   if (codPessoa) {
     for (const opcao of opcoesUsuario) {
       try {
         const cab = { 'X-Lyceum-Usuario': opcao.valor };
-        const r = await pedir(`${base}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, { headers: cab });
-        if (r.status === 401 || r.status === 403) continue;
+        const r = await pedir(`${raizApi}/pessoas/${encodeURIComponent(codPessoa)}/alunos`, { headers: cab });
+        if (r.status === 401 || r.status === 403 || r.status === 404) continue;
         cabecalhoUsuario = cab;
         usuarioQueFuncionou = opcao.rotulo;
         if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
@@ -234,14 +300,14 @@ export default async (req) => {
     detalhe: `Código da pessoa: ${codPessoa ? 'encontrado' : 'não encontrado'}. Código do aluno: ${origemAluno}. Cabeçalho X-Lyceum-Usuario aceito: ${usuarioQueFuncionou}.`,
   });
   if (!codPessoa || !codAluno) {
-    return resposta(200, { ok: false, etapas, erro: 'Entrou no Lyceum, mas não achei os seus códigos. Me mande este resultado.' });
+    return resposta(200, { ok: false, etapas, prefixos: testesPrefixo, trechos, erro: 'Entrou no Lyceum, mas não achei os seus códigos. Me mande este resultado.' });
   }
 
   // 4. Testa as rotas (todas juntas, para caber no tempo da Netlify)
   const rotas = await Promise.all(ROTAS.map(async (rota) => {
     const caminho = rota.caminho.replace('{p}', encodeURIComponent(codPessoa)).replace('{a}', encodeURIComponent(codAluno));
     try {
-      const r = await pedir(`${base}${caminho}`, { headers: cabecalhoUsuario });
+      const r = await pedir(`${raizApi}${caminho}`, { headers: cabecalhoUsuario });
       const tipo = r.headers.get('content-type') || '';
       const texto = await r.text();
       const item = { id: rota.id, descricao: rota.descricao, rota: rota.caminho, status: r.status, ok: r.ok };
@@ -269,5 +335,7 @@ export default async (req) => {
     etapas,
     resumo: `${funcionaram} de ${rotas.length} rotas responderam.`,
     rotas,
+    prefixos: testesPrefixo,
+    trechos,
   });
 };
