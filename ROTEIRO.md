@@ -2,7 +2,7 @@
 
 Cada etapa só começa depois que a anterior foi testada.
 
-- [ ] **Etapa 1 — Base do app e temas**: index.html, PWA (manifest, ícones, service worker offline), navegação lateral (tablet) e inferior (celular), temas claro/escuro/automático, tela Início com saudação, "Próximo passo" e cards de exemplo.
+- [x] **Etapa 1 — Base do app e temas**: index.html, PWA (manifest, ícones, service worker offline), navegação lateral (tablet) e inferior (celular), temas claro/escuro/automático, tela Início com saudação, "Próximo passo" e cards de exemplo.
 - [ ] **Etapa 2 — Supabase e sincronização**: SQL das tabelas com RLS, login só por e-mail, `persistencia.js` com cache no IndexedDB e sincronização ao voltar a internet.
 - [ ] **Etapa 3 — Teste de conexão com o AVA**: `ava-conectar` + tela em Configurações que mostra as funções liberadas e bloqueadas. Sem guardar senha.
 - [ ] **Etapa 4 — Faculdade e calendário**: sincronização completa, painéis da Faculdade e por disciplina, Calendário (mês/semana/lista), importação do calendário acadêmico, eventos manuais, avisos e notificações, sincronização automática e agendada (6h).
