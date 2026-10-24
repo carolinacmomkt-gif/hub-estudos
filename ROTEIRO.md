@@ -5,7 +5,7 @@ Os números são os do guia original; a lista está na **ordem combinada** com a
 (o AVA é testado antes do Supabase, e a caneta é testada antes do editor completo).
 
 - [x] **Etapa 1 — Base do app e temas**: index.html, PWA (manifest, ícones, service worker offline), navegação lateral (tablet) e inferior (celular), temas claro/escuro/automático, tela Início com saudação, "Próximo passo" e cards de exemplo.
-- [ ] **Etapa 3 — Teste de conexão com o AVA**: `ava-conectar` + tela em Configurações que mostra as funções liberadas e bloqueadas. Sem guardar senha nem token ainda (o Supabase chega na etapa seguinte).
+- [x] **Etapa 3 — Teste de conexão com o AVA**: `ava-conectar` + tela em Configurações que mostra as funções liberadas e bloqueadas. Sem guardar senha nem token ainda (o Supabase chega na etapa seguinte).
 - [ ] **Etapa 2 — Supabase e sincronização**: SQL das tabelas com RLS, login só por e-mail, `persistencia.js` com cache no IndexedDB e sincronização ao voltar a internet, indicador de conexão e **exportar/importar backup**. Depois, guardar o token do AVA criptografado.
 - [ ] **Protótipo da caneta**: uma página só, para sentir no Tab S10 Lite a pressão, o atraso do traço e a rejeição da palma antes do editor completo.
 - [ ] **Etapa 4 — Faculdade e calendário**: sincronização completa, painéis da Faculdade e por disciplina, Calendário (mês/semana/lista), importação do calendário acadêmico, eventos manuais, avisos, notificações por **Web Push** (VAPID), sincronização automática e agendada (6h).

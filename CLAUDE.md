@@ -137,6 +137,7 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 ## Integração com o AVA (Moodle 5.1)
 
 - URL base: `https://avagrad.unievangelica.edu.br`
+- **Teste feito em 24/10/2026**: Moodle 5.1.7, 468 funções liberadas, login por usuário e senha. **Todos** os métodos abaixo e todas as reservas estão liberados, e o download de arquivos é permitido. Não há plugin `mod_attendance`: a frequência (e as notas oficiais) ficam no **Lyceum**.
 - O serviço do app mobile está liberado, e o login do app é por usuário/senha (`typeoflogin: 1`).
 - **Geração do token**: a função `ava-conectar` recebe a matrícula e a senha uma única vez, chama `POST /login/token.php` com `service=moodle_mobile_app`, guarda **só o token** (criptografado no Supabase) e descarta a senha.
 - A função `ava-sincronizar` chama `/webservice/rest/server.php?wstoken=...&moodlewsrestformat=json` com estes métodos:
