@@ -82,10 +82,44 @@ function opcoesDoTraco(traco, terminado) {
 
 const estiloRaiz = () => getComputedStyle(document.documentElement);
 
-function corDaTinta(nome) {
+// prefixo "--impressao-tinta-" dá as cores da exportação (papel claro nos dois temas).
+function corDaTinta(nome, prefixo = '--tinta-') {
   if (/^#[0-9a-f]{6}$/i.test(nome || '')) return nome;
   const estilo = estiloRaiz();
-  return estilo.getPropertyValue(`--tinta-${nome}`).trim() || estilo.getPropertyValue('--tinta-tinta').trim();
+  return estilo.getPropertyValue(`${prefixo}${nome}`).trim() || estilo.getPropertyValue(`${prefixo}tinta`).trim();
+}
+
+// Cores do papel no tema atual.
+export function coresDoPapel({ impressao = false } = {}) {
+  const estilo = estiloRaiz();
+  const v = (n) => estilo.getPropertyValue(n).trim();
+  const p = impressao ? '--impressao-' : '--papel-';
+  return { papel: v(impressao ? '--impressao-papel' : '--papel'), linha: v(`${p}linha`), margem: v(`${p}margem`), texto: v(`${p}texto`), tinta: impressao ? '--impressao-tinta-' : '--tinta-' };
+}
+
+function pintarTraco(ctx, traco, caminho, prefixo) {
+  if (!caminho) return;
+  const ferramenta = ferramentaDe(traco);
+  const alfaAntes = ctx.globalAlpha;
+  // Cor própria no marca-texto fica translúcida; o lápis é um pouco mais claro que a caneta.
+  if (ferramenta === 'marca-texto' && traco.tinta?.startsWith('#')) ctx.globalAlpha = alfaAntes * 0.38;
+  if (ferramenta === 'lapis') ctx.globalAlpha = alfaAntes * 0.8;
+  ctx.fillStyle = corDaTinta(traco.tinta, prefixo);
+  ctx.fill(caminho);
+  ctx.globalAlpha = alfaAntes;
+}
+
+// Desenha uma página inteira (fundo + camadas) num contexto já em unidades da página.
+// Serve para miniaturas e exportação, fora do editor.
+export function desenharPaginaEm(ctx, pagina, dim, { imagem = null, cores = coresDoPapel() } = {}) {
+  desenharFolha(ctx, pagina?.modelo || 'branco', dim, cores, { imagem, data: pagina?.fundo?.data });
+  for (const camada of pagina?.camadas || []) {
+    if (camada.tipo !== 'desenho' || camada.visivel === false) continue;
+    ctx.globalAlpha = camada.opacidade ?? 1;
+    const ordem = [...camada.itens.filter((i) => i.ferramenta === 'marca-texto'), ...camada.itens.filter((i) => i.ferramenta !== 'marca-texto')];
+    for (const item of ordem) pintarTraco(ctx, item, caminhoDoContorno(getStroke(item.pontos, opcoesDoTraco(item, true))), cores.tinta);
+  }
+  ctx.globalAlpha = 1;
 }
 
 const arred = (v, casas) => Math.round(v * 10 ** casas) / 10 ** casas;
@@ -259,6 +293,7 @@ export class EditorDeTinta {
 
   carregar(pagina, dim = this.dim) {
     this.pagina = pagina?.camadas ? pagina : novaPaginaVazia();
+    this.imagemFundo = null;
     if (!this.camadaAtiva()) this.pagina.camadas.push({ id: crypto.randomUUID(), nome: 'Camada 1', tipo: 'desenho', visivel: true, bloqueada: false, opacidade: 1, itens: [] });
     this.desfazer = [];
     this.refazer = [];
@@ -352,12 +387,13 @@ export class EditorDeTinta {
   // ---------------------------------------------------------------------------
 
   desenharPapel() {
-    const estilo = estiloRaiz();
-    desenharFolha(this.xPapel, this.pagina.modelo || 'branco', this.dim, {
-      papel: estilo.getPropertyValue('--papel').trim(),
-      linha: estilo.getPropertyValue('--papel-linha').trim(),
-      margem: estilo.getPropertyValue('--papel-margem').trim(),
-    });
+    desenharFolha(this.xPapel, this.pagina.modelo || 'branco', this.dim, coresDoPapel(), { imagem: this.imagemFundo, data: this.pagina.fundo?.data });
+  }
+
+  // Imagem do fundo (modelo próprio ou página de PDF), carregada depois de abrir a página.
+  definirImagemDeFundo(imagem) {
+    this.imagemFundo = imagem || null;
+    if (this.escala) this.desenharTudo();
   }
 
   caminhoDe(traco) {
@@ -373,15 +409,8 @@ export class EditorDeTinta {
     const caminho = terminado && !extras.length
       ? this.caminhoDe(traco)
       : caminhoDoContorno(getStroke(extras.length ? traco.pontos.concat(extras) : traco.pontos, opcoesDoTraco(traco, terminado)));
-    if (!caminho) return;
-    const ferramenta = ferramentaDe(traco);
-    const alfaAntes = ctx.globalAlpha;
-    // Cor própria no marca-texto fica translúcida; o lápis é um pouco mais claro que a caneta.
-    if (ferramenta === 'marca-texto' && traco.tinta?.startsWith('#')) ctx.globalAlpha = alfaAntes * 0.38;
-    if (ferramenta === 'lapis') ctx.globalAlpha = alfaAntes * 0.8;
-    ctx.fillStyle = corDaTinta(traco.tinta);
-    ctx.fill(caminho);
-    ctx.globalAlpha = alfaAntes;
+    // Em cima de PDF ou modelo próprio (papel claro), a tinta usa as cores do papel claro.
+    pintarTraco(ctx, traco, caminho, this.imagemFundo ? '--impressao-tinta-' : '--tinta-');
   }
 
   desenharTudo() {
@@ -399,6 +428,18 @@ export class EditorDeTinta {
     }
     x.globalAlpha = 1;
     this.pedirQuadro();
+  }
+
+  // Miniatura em JPEG (data URL) para o painel de páginas.
+  miniatura(largura = 220) {
+    const fator = largura / this.cPapel.width;
+    const c = document.createElement('canvas');
+    c.width = largura;
+    c.height = Math.max(1, Math.round(this.cPapel.height * fator));
+    const x = c.getContext('2d');
+    x.drawImage(this.cPapel, 0, 0, c.width, c.height);
+    x.drawImage(this.cTinta, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.7);
   }
 
   // A página como imagem PNG (folha + escrita), com no máximo "maxLargura" px de largura.

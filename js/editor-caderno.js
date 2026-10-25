@@ -2,8 +2,12 @@
 // O motor de tinta está em editor-tinta.js; aqui fica só a tela em volta dele.
 
 import { EditorDeTinta, novaPaginaVazia } from './editor-tinta.js';
-import { dimensoes, MODELOS_BASICOS } from './folhas.js';
+import { dimensoes, opcoesDeModelo, modeloComData } from './folhas.js';
 import { listar, salvar, obter } from './persistencia.js';
+import { imagemDoFundo, modelosProprios, imagemParaModelo } from './fundos.js';
+import { renderPainelPaginas, renderAbasSecoes } from './views-paginas.js';
+import { pngDaPagina, pdfDasPaginas, baixar, nomeDeArquivo } from './exportar-caderno.js';
+import { somarPeriodo, segundaDaSemana, primeiroDoMes } from './dados-cadernos.js';
 import { esc } from './utilidades.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 
@@ -62,6 +66,9 @@ let selecionados = 0;
 let prefs = lerPrefs();
 let toqueFavorito = null;
 let montagem = 0; // cada abertura do editor ganha um número; uma abertura antiga para no meio
+let secoes = [];
+let lixeira = null; // páginas excluídas (carregadas quando a Carol abre a lixeira do painel)
+const CRESCER_INFINITO = 700; // unidades que o quadro infinito ganha quando a escrita chega perto do fim
 
 function lerPrefs() {
   const padrao = {
@@ -110,13 +117,22 @@ export function renderEditorCaderno() {
           <span id="editor-pagina" aria-live="polite">…</span>
           <button type="button" class="ferramenta-botao" data-ed="pagina-proxima" aria-label="Próxima página">›</button>
           <button type="button" class="ferramenta-botao" data-ed="pagina-nova">+ Página</button>
+          <button type="button" class="ferramenta-botao" data-ed="painel" aria-controls="editor-painel">Páginas</button>
           <button type="button" class="ferramenta-botao" data-ed="gerar-questoes" aria-label="Gerar questões desta página" title="Manda a imagem desta página para o gerador de questões">Gerar questões</button>
         </div>
       </header>
+      <div class="secoes-abas" id="editor-secoes" role="group" aria-label="Divisórias"></div>
       <div id="editor-barra"></div>
       <div class="selecao-barra" id="editor-selecao" hidden></div>
       <div class="caneta-area" id="caneta-area"></div>
+      <aside class="editor-painel" id="editor-painel" aria-label="Páginas do caderno" hidden></aside>
     </div>`;
+}
+
+// Páginas com fundo de imagem (PDF ou modelo próprio) são claras: a tinta usa as cores do papel claro.
+function prefixoDaTinta() {
+  const modelo = String(paginas[indice]?.modelo_folha || '');
+  return modelo === 'pdf' || modelo.startsWith('proprio:') ? '--impressao-tinta-' : '--tinta-';
 }
 
 function botao(acao, valor, rotulo, ativo, extra = '') {
@@ -149,7 +165,7 @@ function barra() {
     cores = `
       <div class="ferramenta-grupo" role="group" aria-label="Cor">
         ${lista.map((c) => `<button type="button" class="ferramenta-cor" data-ed="cor" data-valor="${c.id}" aria-pressed="${atual === c.id}"
-          aria-label="${c.nome}" title="${c.nome}" style="--cor: var(--tinta-${c.id})"></button>`).join('')}
+          aria-label="${c.nome}" title="${c.nome}" style="--cor: var(${prefixoDaTinta()}${c.id})"></button>`).join('')}
         <label class="ferramenta-cor cor-propria" title="Cor própria" style="--cor: ${esc(propria)}" aria-pressed="${atual?.startsWith('#') || false}">
           <span class="visualmente-oculto">Cor própria</span>
           <input type="color" data-ed="cor-propria" value="${esc(propria)}">
@@ -181,7 +197,12 @@ function barra() {
         <summary class="ferramenta-botao">Ajustes</summary>
         <div class="ferramenta-painel">
           <label class="ferramenta-select"><span>Folha desta página</span>
-            <select data-ed="modelo">${MODELOS_BASICOS.map((m) => `<option value="${m.id}"${pagina?.modelo_folha === m.id ? ' selected' : ''}>${m.nome}</option>`).join('')}</select></label>
+            <select data-ed="modelo">${opcoesDeModelo(pagina?.modelo_folha, modelosProprios())}</select></label>
+          ${modeloComData(pagina?.modelo_folha) ? `<label class="ferramenta-select"><span>${modeloComData(pagina.modelo_folha) === 'mes' ? 'Mês do planner' : 'Semana que começa em'}</span>
+            <input type="date" data-ed="fundo-data" value="${esc(editor?.pagina?.fundo?.data || '')}"></label>` : ''}
+          <label class="botao botao-secundario botao-pequeno">Importar modelo próprio (imagem ou PDF)
+            <input type="file" class="visualmente-oculto" accept="image/*,application/pdf,.pdf" data-ed="modelo-importar"></label>
+          ${String(pagina?.modelo_folha || '').startsWith('proprio:') ? '<button type="button" class="botao botao-secundario botao-pequeno botao-perigo" data-ed="modelo-excluir">Excluir este modelo</button>' : ''}
           <label class="ferramenta-select"><span>Estabilizador</span>
             <select data-ed="suavizacao">${SUAVES.map((s) => `<option value="${s.id}"${prefs.suavizacao === s.id ? ' selected' : ''}>${s.nome}</option>`).join('')}</select></label>
           <label class="campo-marcar"><input type="checkbox" data-ed="formas"${prefs.formasAuto ? ' checked' : ''}><span>Segurar no fim do traço vira forma</span></label>
@@ -198,7 +219,7 @@ function barraSelecao() {
   return `
     <span>${selecionados} ${selecionados === 1 ? 'traço selecionado' : 'traços selecionados'}</span>
     <div class="ferramenta-grupo">
-      ${TINTAS.map((c) => `<button type="button" class="ferramenta-cor" data-ed="selecao-cor" data-valor="${c.id}" aria-label="Mudar para ${c.nome}" style="--cor: var(--tinta-${c.id})"></button>`).join('')}
+      ${TINTAS.map((c) => `<button type="button" class="ferramenta-cor" data-ed="selecao-cor" data-valor="${c.id}" aria-label="Mudar para ${c.nome}" style="--cor: var(${prefixoDaTinta()}${c.id})"></button>`).join('')}
     </div>
     <div class="ferramenta-grupo">
       <button type="button" class="ferramenta-botao" data-ed="selecao-duplicar">Duplicar</button>
@@ -271,19 +292,35 @@ function dimDoCaderno() {
   return dimensoes(caderno?.tamanho || 'A4', caderno?.orientacao || 'retrato');
 }
 
+// Cada página guarda a própria altura (páginas de PDF têm o tamanho do original; o quadro infinito cresce).
+function dimDaPagina(p) {
+  const base = dimDoCaderno();
+  const altura = Number(p?.altura);
+  return altura > 0 ? { ...base, altura } : base;
+}
+
 async function salvarAgora() {
   clearTimeout(tempoSalvar);
   tempoSalvar = null;
   // Folhear o caderno só para ler não salva nada (nem marca o caderno como editado).
   if (!sujo || !editor || !paginas[indice]) return;
   sujo = false;
-  paginas[indice] = await salvar('paginas', { ...paginas[indice], tracos_json: editor.pagina });
+  paginas[indice] = await salvar('paginas', { ...paginas[indice], tracos_json: editor.pagina, miniatura_url: editor.miniatura(), altura: editor.dim.altura });
   // O caderno sobe para o topo da lista e do Início.
   if (caderno) caderno = await salvar('cadernos', { ...caderno });
   mostrarSalvo('Salvo');
 }
 
+// Quadro infinito: quando a escrita chega perto do fim da folha, ela cresce.
+function crescerSePrecisar() {
+  if (caderno?.tipo !== 'infinito') return;
+  let maior = 0;
+  for (const c of editor.pagina.camadas) for (const item of c.itens || []) for (const [, y] of item.pontos) if (y > maior) maior = y;
+  if (maior > editor.dim.altura - 250) editor.definirPapel({ ...editor.dim, altura: Math.ceil((maior + CRESCER_INFINITO) / 100) * 100 });
+}
+
 function aoMudar() {
+  crescerSePrecisar();
   sujo = true;
   mostrarSalvo('Salvando…');
   atualizarHistorico();
@@ -296,23 +333,278 @@ function abrirPagina(n) {
   const p = paginas[indice];
   const json = p.tracos_json?.camadas?.length ? p.tracos_json : novaPaginaVazia(p.modelo_folha);
   json.modelo = p.modelo_folha || json.modelo;
-  editor.carregar(json, dimDoCaderno());
+  editor.carregar(json, dimDaPagina(p));
   document.getElementById('caneta-area').scrollTop = 0;
   atualizarPaginacao();
   atualizarBarra();
+  atualizarSecoes();
+  if (!document.getElementById('editor-painel')?.hidden) atualizarPainel();
+  carregarFundo(p);
 }
 
+function carregarFundo(p) {
+  const minha = montagem;
+  imagemDoFundo(p).then((img) => {
+    if (minha === montagem && paginas[indice]?.id === p.id && editor) editor.definirImagemDeFundo(img);
+    if (!img && (p.modelo_folha === 'pdf' || String(p.modelo_folha).startsWith('proprio:'))) avisar('O fundo desta página não abriu (sem internet?). A escrita continua salva.');
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Divisórias, painel de páginas e ordem
+// ---------------------------------------------------------------------------
+
+function atualizarSecoes() {
+  const el = document.getElementById('editor-secoes');
+  if (!el) return;
+  el.innerHTML = renderAbasSecoes(secoes, paginas[indice]?.secao_id);
+  el.hidden = !secoes.length;
+}
+
+function atualizarPainel() {
+  const el = document.getElementById('editor-painel');
+  if (!el || !caderno) return;
+  const rolagem = el.scrollTop;
+  el.innerHTML = renderPainelPaginas({ caderno, paginas, indice, secoes, lixeira });
+  el.scrollTop = rolagem;
+}
+
+// Grava a ordem atual (0, 1, 2…) só nas páginas em que ela mudou.
+async function renumerar() {
+  for (let i = 0; i < paginas.length; i += 1) {
+    if (paginas[i].ordem !== i) paginas[i] = await salvar('paginas', { ...paginas[i], ordem: i });
+  }
+}
+
+// Páginas de uma divisória ficam juntas, na ordem das divisórias.
+function ordenarPorSecao() {
+  if (!secoes.length) return;
+  const posicao = new Map(secoes.map((s, i) => [s.id, i]));
+  paginas = paginas.map((p, i) => ({ p, i })).sort((a, b) => (posicao.get(a.p.secao_id) ?? secoes.length) - (posicao.get(b.p.secao_id) ?? secoes.length) || a.i - b.i).map((x) => x.p);
+}
+
+const posicaoDe = (id) => paginas.findIndex((p) => p.id === id);
+
+async function moverPagina(de, para) {
+  if (para < 0 || para >= paginas.length || de === para) return;
+  await salvarAgora();
+  const atualId = paginas[indice]?.id;
+  const [p] = paginas.splice(de, 1);
+  paginas.splice(para, 0, p);
+  // Passou para outra divisória: a página passa a ser dela.
+  if (secoes.length) {
+    const nova = (para > de ? paginas[para - 1] : paginas[para + 1])?.secao_id ?? p.secao_id;
+    if ((nova || null) !== (p.secao_id || null)) paginas[para] = await salvar('paginas', { ...p, secao_id: nova || null });
+  }
+  await renumerar();
+  indice = posicaoDe(atualId);
+  atualizarPaginacao();
+  atualizarSecoes();
+  atualizarPainel();
+}
+
+async function duplicarPagina(i) {
+  await salvarAgora();
+  const p = paginas[i];
+  const copia = structuredClone({ ...p.tracos_json, modelo: p.modelo_folha });
+  for (const c of copia.camadas || []) {
+    if (c.tipo === 'desenho') {
+      c.id = crypto.randomUUID();
+      for (const item of c.itens || []) item.id = crypto.randomUUID();
+    }
+  }
+  const nova = await salvar('paginas', {
+    caderno_id: caderno.id, ordem: i + 1, modelo_folha: p.modelo_folha, tracos_json: copia, largura: p.largura, altura: p.altura,
+    secao_id: p.secao_id || null, pdf_path: p.pdf_path || null, pdf_pagina: p.pdf_pagina || null, miniatura_url: p.miniatura_url || null,
+  });
+  paginas.splice(i + 1, 0, nova);
+  await renumerar();
+  abrirPagina(i + 1);
+  avisar('Página duplicada.');
+}
+
+async function excluirPagina(i) {
+  await salvarAgora();
+  const p = paginas[i];
+  if (!p || !window.confirm(`Mandar a página ${i + 1} para a lixeira? Dá para restaurar no painel de páginas.`)) return;
+  await salvar('paginas', { ...p, excluido_em: new Date().toISOString() });
+  paginas.splice(i, 1);
+  lixeira = null;
+  if (!paginas.length) {
+    const dim = dimDoCaderno();
+    paginas.push(await salvar('paginas', { caderno_id: caderno.id, ordem: 0, modelo_folha: p.modelo_folha === 'pdf' ? 'branco' : p.modelo_folha, tracos_json: novaPaginaVazia('branco'), largura: dim.largura, altura: dim.altura }));
+  }
+  await renumerar();
+  abrirPagina(Math.min(i, paginas.length - 1));
+  avisar('Página na lixeira.');
+}
+
+async function abrirLixeira() {
+  lixeira = (await listar('paginas', { incluirExcluidos: true })).filter((p) => p.caderno_id === caderno.id && p.excluido_em)
+    .sort((a, b) => String(b.excluido_em).localeCompare(String(a.excluido_em)));
+  atualizarPainel();
+}
+
+async function restaurarPagina(id) {
+  const p = (lixeira || []).find((x) => x.id === id);
+  if (!p) return;
+  await salvarAgora();
+  const restaurada = await salvar('paginas', { ...p, excluido_em: null, ordem: paginas.length });
+  paginas.push(restaurada);
+  ordenarPorSecao();
+  await renumerar();
+  await abrirLixeira();
+  abrirPagina(posicaoDe(restaurada.id));
+  avisar('Página restaurada.');
+}
+
+async function mudarSecaoDaPagina(i, secaoId) {
+  await salvarAgora();
+  const atualId = paginas[indice]?.id;
+  paginas[i] = await salvar('paginas', { ...paginas[i], secao_id: secaoId || null });
+  ordenarPorSecao();
+  await renumerar();
+  indice = posicaoDe(atualId);
+  atualizarPaginacao();
+  atualizarSecoes();
+  atualizarPainel();
+}
+
+async function novaSecao() {
+  const titulo = window.prompt('Nome da divisória', `Matéria ${secoes.length + 1}`);
+  if (!titulo?.trim()) return;
+  await salvarAgora();
+  const secao = await salvar('secoes', { caderno_id: caderno.id, titulo: titulo.trim().slice(0, 60), ordem: secoes.length, cor: String((secoes.length % 6) + 1) });
+  secoes.push(secao);
+  const dim = dimDoCaderno();
+  const modelo = paginas[indice]?.modelo_folha === 'pdf' ? 'pautada-media' : (paginas[indice]?.modelo_folha || 'pautada-media');
+  const nova = await salvar('paginas', { caderno_id: caderno.id, ordem: paginas.length, modelo_folha: modelo, tracos_json: novaPaginaVazia(modelo), largura: dim.largura, altura: dim.altura, secao_id: secao.id });
+  paginas.push(nova);
+  await renumerar();
+  abrirPagina(paginas.length - 1);
+}
+
+async function moverSecao(id) {
+  const i = secoes.findIndex((s) => s.id === id);
+  if (i <= 0) return;
+  [secoes[i - 1], secoes[i]] = [secoes[i], secoes[i - 1]];
+  for (let k = 0; k < secoes.length; k += 1) if (secoes[k].ordem !== k) secoes[k] = await salvar('secoes', { ...secoes[k], ordem: k });
+  await salvarAgora();
+  const atualId = paginas[indice]?.id;
+  ordenarPorSecao();
+  await renumerar();
+  indice = posicaoDe(atualId);
+  atualizarPaginacao();
+  atualizarSecoes();
+  atualizarPainel();
+}
+
+async function excluirSecao(id) {
+  const s = secoes.find((x) => x.id === id);
+  if (!s || !window.confirm(`Excluir a divisória "${s.titulo}"? As páginas dela continuam no caderno, sem divisória.`)) return;
+  await salvarAgora();
+  await salvar('secoes', { ...s, excluido_em: new Date().toISOString() });
+  secoes = secoes.filter((x) => x.id !== id);
+  for (let i = 0; i < paginas.length; i += 1) if (paginas[i].secao_id === id) paginas[i] = await salvar('paginas', { ...paginas[i], secao_id: null });
+  const atualId = paginas[indice]?.id;
+  ordenarPorSecao();
+  await renumerar();
+  indice = posicaoDe(atualId);
+  atualizarSecoes();
+  atualizarPainel();
+}
+
+let tempoSecao = null;
+function renomearSecao(id, titulo) {
+  clearTimeout(tempoSecao);
+  tempoSecao = setTimeout(async () => {
+    const i = secoes.findIndex((x) => x.id === id);
+    if (i < 0 || !titulo.trim()) return;
+    secoes[i] = await salvar('secoes', { ...secoes[i], titulo: titulo.trim().slice(0, 60) });
+    atualizarSecoes();
+  }, 600);
+}
+
+// ---------------------------------------------------------------------------
+// Exportar e modelos próprios
+// ---------------------------------------------------------------------------
+
+async function exportar(tipo) {
+  await salvarAgora();
+  const nome = nomeDeArquivo(caderno.titulo);
+  try {
+    if (tipo === 'png') {
+      baixar(await pngDaPagina(paginas[indice], dimDaPagina(paginas[indice])), `${nome}-pagina-${indice + 1}.png`);
+    } else {
+      const lista = (tipo === 'pdf' ? paginas : [paginas[indice]]).map((p) => ({ pagina: p, dim: dimDaPagina(p) }));
+      const pdf = await pdfDasPaginas(lista, (n, total) => { if (total > 1) mostrarSalvo(`Exportando ${n} de ${total}…`); });
+      baixar(pdf, tipo === 'pdf' ? `${nome}.pdf` : `${nome}-pagina-${indice + 1}.pdf`);
+    }
+    mostrarSalvo('Salvo');
+    avisar('Arquivo pronto. Ele vai para os downloads do aparelho.');
+  } catch (erro) {
+    console.warn('Exportar:', erro);
+    mostrarSalvo('Salvo');
+    avisar('Não deu para exportar agora. Tente de novo.');
+  }
+}
+
+async function importarModelo(input) {
+  const arquivo = input.files?.[0];
+  input.value = '';
+  if (!arquivo) return;
+  if (arquivo.size > 25 * 1024 * 1024) {
+    avisar('O arquivo passa de 25 MB.');
+    return;
+  }
+  const nome = window.prompt('Nome do modelo', arquivo.name.replace(/\.[^.]+$/, '').slice(0, 60));
+  if (nome === null) return;
+  try {
+    mostrarSalvo('Preparando o modelo…');
+    const { dataUrl } = await imagemParaModelo(arquivo);
+    const id = crypto.randomUUID().slice(0, 12);
+    await salvar('config', { chave: `modelo_folha:${id}`, valor: { nome: (nome || 'Meu modelo').trim().slice(0, 60), imagem: dataUrl } });
+    atualizarEstado({ config: await listar('config') });
+    await mudarModelo(`proprio:${id}`);
+    mostrarSalvo('Salvo');
+    avisar('Modelo importado. Ele aparece em "Meus modelos" para qualquer página.');
+  } catch (erro) {
+    console.warn('Modelo próprio:', erro);
+    mostrarSalvo('Salvo');
+    avisar('Não deu para ler esse arquivo. Tente uma imagem (JPG ou PNG) ou um PDF.');
+  }
+}
+
+async function excluirModelo() {
+  const modelo = paginas[indice]?.modelo_folha || '';
+  const m = modelosProprios().find((x) => `proprio:${x.id}` === modelo);
+  if (!m || !window.confirm(`Excluir o modelo "${m.nome}"? As páginas que usam ele ficam em branco.`)) return;
+  await salvar('config', { ...m.linha, excluido_em: new Date().toISOString() });
+  atualizarEstado({ config: await listar('config') });
+  await mudarModelo('branco');
+}
+
+// Página nova logo depois da atual, com a mesma folha e na mesma divisória.
+// No planner, já com a semana (ou o mês) seguinte; depois de uma página de PDF, uma folha pautada.
 async function novaPagina() {
   await salvarAgora();
-  const modelo = paginas[indice]?.modelo_folha || 'pautada-media';
-  const ordem = (paginas[paginas.length - 1]?.ordem ?? -1) + 1;
-  const dim = dimDoCaderno();
+  const atual = paginas[indice];
+  const modelo = !atual || atual.modelo_folha === 'pdf' ? 'pautada-media' : atual.modelo_folha;
+  const dim = caderno.tipo === 'infinito' || atual?.modelo_folha === 'pdf' ? dimDoCaderno() : dimDaPagina(atual);
+  const tracos = novaPaginaVazia(modelo);
+  const periodo = modeloComData(modelo);
+  if (periodo) {
+    const ultima = paginas.filter((p) => p.modelo_folha === modelo && p.tracos_json?.fundo?.data).map((p) => p.tracos_json.fundo.data).sort().pop();
+    if (ultima) tracos.fundo = { data: somarPeriodo(ultima, periodo, 1) };
+  }
   const nova = await salvar('paginas', {
-    caderno_id: caderno.id, ordem, modelo_folha: modelo, tracos_json: novaPaginaVazia(modelo), largura: dim.largura, altura: dim.altura,
+    caderno_id: caderno.id, ordem: indice + 1, modelo_folha: modelo, tracos_json: tracos, largura: dim.largura, altura: dim.altura,
+    secao_id: atual?.secao_id || null,
   });
-  paginas.push(nova);
-  abrirPagina(paginas.length - 1);
-  avisar(`Página ${paginas.length} criada.`);
+  paginas.splice(indice + 1, 0, nova);
+  await renumerar();
+  abrirPagina(indice + 1);
+  avisar(`Página ${indice + 1} criada.`);
 }
 
 // Leva a imagem da página para Questões → Gerar, já com a disciplina e o tema do caderno.
@@ -338,8 +630,18 @@ async function mudarModelo(modelo) {
   if (!p) return;
   editor.pagina.modelo = modelo;
   paginas[indice] = { ...p, modelo_folha: modelo };
+  // Planner novo: começa na semana (ou no mês) de hoje.
+  const periodo = modeloComData(modelo);
+  if (periodo && !editor.pagina.fundo?.data) {
+    const hoje = new Date();
+    const chave = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+    editor.pagina.fundo = { data: periodo === 'mes' ? primeiroDoMes(chave) : segundaDaSemana(chave) };
+  }
+  editor.definirImagemDeFundo(null);
   editor.desenharTudo();
+  carregarFundo(paginas[indice]);
   aoMudar();
+  atualizarBarra();
 }
 
 async function guardarFavorito(i) {
@@ -394,8 +696,12 @@ export async function montarEditorCaderno(id) {
   if (Array.isArray(configFavoritos?.valor?.favoritos) && configFavoritos.valor.favoritos.length === 5) favoritos = configFavoritos.valor.favoritos;
 
   const todas = (await listar('paginas')).filter((p) => p.caderno_id === caderno.id).sort((a, b) => a.ordem - b.ordem);
+  const todasSecoes = (await listar('secoes')).filter((x) => x.caderno_id === caderno.id).sort((a, b) => a.ordem - b.ordem);
   if (minha !== montagem) return;
   paginas = todas;
+  secoes = todasSecoes;
+  lixeira = null;
+  ordenarPorSecao();
   if (!paginas.length) {
     const dim = dimDoCaderno();
     paginas = [await salvar('paginas', { caderno_id: caderno.id, ordem: 0, modelo_folha: 'pautada-media', tracos_json: novaPaginaVazia('pautada-media'), largura: dim.largura, altura: dim.altura })];
@@ -442,7 +748,7 @@ export function desmontarEditorCaderno() {
   if (sujo && editor) {
     // Salva na hora o que estava esperando (sem aguardar: a tela já está saindo).
     clearTimeout(tempoSalvar);
-    salvar('paginas', { ...paginas[indice], tracos_json: editor.pagina });
+    salvar('paginas', { ...paginas[indice], tracos_json: editor.pagina, miniatura_url: editor.miniatura(), altura: editor.dim.altura });
   }
   tempoSalvar = null;
   sujo = false;
@@ -450,6 +756,8 @@ export function desmontarEditorCaderno() {
   editor = null;
   caderno = null;
   paginas = [];
+  secoes = [];
+  lixeira = null;
   selecionados = 0;
 }
 
@@ -526,6 +834,59 @@ function aoClicar(evento) {
     case 'gerar-questoes':
       gerarQuestoesDaPagina();
       return;
+    case 'painel': {
+      const painel = document.getElementById('editor-painel');
+      painel.hidden = !painel.hidden;
+      if (!painel.hidden) {
+        salvarAgora().then(atualizarPainel);
+        atualizarPainel();
+      }
+      return;
+    }
+    case 'painel-fechar':
+      document.getElementById('editor-painel').hidden = true;
+      return;
+    case 'ir-pagina':
+      salvarAgora().then(() => abrirPagina(Number(valor)));
+      return;
+    case 'ir-secao': {
+      const i = paginas.findIndex((p) => p.secao_id === valor);
+      if (i >= 0) salvarAgora().then(() => abrirPagina(i));
+      return;
+    }
+    case 'pagina-subir':
+      moverPagina(Number(valor), Number(valor) - 1);
+      return;
+    case 'pagina-descer':
+      moverPagina(Number(valor), Number(valor) + 1);
+      return;
+    case 'pagina-duplicar':
+      duplicarPagina(Number(valor));
+      return;
+    case 'pagina-excluir':
+      excluirPagina(Number(valor));
+      return;
+    case 'lixeira-abrir':
+      abrirLixeira();
+      return;
+    case 'pagina-restaurar':
+      restaurarPagina(valor);
+      return;
+    case 'secao-nova':
+      novaSecao();
+      return;
+    case 'secao-subir':
+      moverSecao(valor);
+      return;
+    case 'secao-excluir':
+      excluirSecao(valor);
+      return;
+    case 'exportar':
+      exportar(valor);
+      return;
+    case 'modelo-excluir':
+      excluirModelo();
+      return;
     case 'selecao-cor':
       editor.mudarCorSelecao(valor);
       return;
@@ -570,6 +931,24 @@ function aoMudarCampo(evento) {
       return;
     case 'modelo':
       if (evento.type === 'change') mudarModelo(alvo.value);
+      return;
+    case 'fundo-data':
+      if (evento.type === 'change' && /^\d{4}-\d{2}-\d{2}$/.test(alvo.value)) {
+        const periodo = modeloComData(paginas[indice]?.modelo_folha);
+        editor.pagina.fundo = { ...(editor.pagina.fundo || {}), data: periodo === 'mes' ? primeiroDoMes(alvo.value) : segundaDaSemana(alvo.value) };
+        editor.desenharTudo();
+        aoMudar();
+        atualizarBarra();
+      }
+      return;
+    case 'modelo-importar':
+      if (evento.type === 'change') importarModelo(alvo);
+      return;
+    case 'pagina-secao':
+      if (evento.type === 'change') mudarSecaoDaPagina(Number(alvo.dataset.valor), alvo.value);
+      return;
+    case 'secao-nome':
+      if (evento.type === 'input') renomearSecao(alvo.dataset.valor, alvo.value);
       return;
     case 'suavizacao':
       prefs.suavizacao = alvo.value;

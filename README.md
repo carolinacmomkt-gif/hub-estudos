@@ -75,10 +75,11 @@ Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, 
 index.html, manifest.webmanifest, sw.js, netlify.toml
 icones/             ícones do app
 css/                temas.css (todas as cores), base.css, layout.css, componentes.css, editor.css, calendario.css, inicio.css,
-                    youtube.css, areas.css (Biblioteca, Questões, Substack e Estudos gerais)
+                    youtube.css, areas.css (Biblioteca, Questões, Substack e Estudos gerais), cadernos.css
 js/                 main.js, estado.js, persistencia.js (aparelho + sincronização), nuvem.js (Supabase),
                     funcoes.js, eventos.js, editor-tinta.js (escrita à mão), views-*.js, ...
-js/vendor/          perfect-freehand (MIT), copiado sem alterações
+js/vendor/          perfect-freehand (MIT) e pdfjs/ (pdf.js 5.7.284, Apache-2.0, só os arquivos pdf.min.mjs e
+                    pdf.worker.min.mjs), copiados sem alterações
 netlify/functions/  ava-conectar, lyceum-conectar, desconectar, config-publica, sincronizar, sincronizar-agendado (6h),
                     calendario-ler-background (lê o calendário acadêmico com a IA, em segundo plano),
                     avisos-agendado (de hora em hora: avisos de prazo), avisos-teste, youtube-ia,

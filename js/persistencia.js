@@ -189,6 +189,25 @@ async function contarPendentes() {
 // Sincronização
 // ---------------------------------------------------------------------------
 
+// Apaga de vez (aparelho e nuvem), para o que já está na lixeira. Na nuvem precisa de internet;
+// o que estava esperando na fila para estes registros sai junto.
+export async function apagarDeVez(tabela, ids) {
+  if (!ids.length) return;
+  if (nuvemConfigurada() && sessaoAtual()) {
+    for (let i = 0; i < ids.length; i += 100) {
+      await rest(`${tabela}?id=in.(${ids.slice(i, i + 100).map(encodeURIComponent).join(',')})`, { metodo: 'DELETE', prefer: 'return=minimal' });
+    }
+  }
+  const alvo = new Set(ids);
+  await transacao([tabela, 'fila'], 'readwrite', async (tx) => {
+    for (const id of ids) tx.objectStore(tabela).delete(id);
+    const fila = await comoPromessa(tx.objectStore('fila').getAll());
+    for (const f of fila) if (f.tabela === tabela && alvo.has(f.id)) tx.objectStore('fila').delete(f.seq);
+  });
+  avisar('hub:dados', { tabela });
+  await contarPendentes();
+}
+
 export function agendarSincronizacao(atraso = 0) {
   clearTimeout(temporizador);
   temporizador = setTimeout(() => {

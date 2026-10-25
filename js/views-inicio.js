@@ -210,7 +210,7 @@ function cardCadernos(dados, agora) {
     .map((c) => `
       <li>
         <a class="caderno" href="${/^c\d+$/.test(String(c.id)) ? '#cadernos' : `#cadernos/${esc(c.id)}`}">
-          <div class="caderno-capa capa-${Number(c.capa) || 1}">
+          <div class="caderno-capa capa-${Number(c.capa) || 1} capa-estilo-${esc(c.estilo || 'lisa')}">
             <span class="caderno-capa-titulo">${esc(c.titulo)}</span>
             ${c.disciplina ? `<span class="caderno-capa-disciplina">${esc(c.disciplina)}</span>` : ''}
           </div>

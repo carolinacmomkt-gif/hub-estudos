@@ -59,6 +59,7 @@
   --papel: #221A14;
   --papel-linha: rgba(232, 211, 191, 0.14);
   --papel-margem: rgba(236, 124, 102, 0.35);
+  --papel-texto: rgba(232, 211, 191, 0.5);
   --tinta-tinta: #F4EADF;
   --tinta-azul: #8DB7EC;
   --tinta-vermelho: #F28B77;
@@ -122,6 +123,7 @@
   --papel: #FFFDF9;
   --papel-linha: rgba(43, 30, 22, 0.13);
   --papel-margem: rgba(192, 57, 43, 0.35);
+  --papel-texto: rgba(43, 30, 22, 0.45);
   --tinta-tinta: #2B1E16;
   --tinta-azul: #2C5AA6;
   --tinta-vermelho: #B3372A;
@@ -144,4 +146,18 @@
   --tipo-revisao: var(--capa-3);
   --tipo-youtube: var(--capa-4);
   --tipo-substack: var(--urg-urgente);
+
+  /* Exportação (PNG/PDF): sempre papel claro, para imprimir e compartilhar, nos dois temas */
+  --impressao-papel: #FFFDF9;
+  --impressao-linha: rgba(43, 30, 22, 0.16);
+  --impressao-margem: rgba(192, 57, 43, 0.4);
+  --impressao-texto: rgba(43, 30, 22, 0.5);
+  --impressao-tinta-tinta: #2B1E16;
+  --impressao-tinta-azul: #2C5AA6;
+  --impressao-tinta-vermelho: #B3372A;
+  --impressao-tinta-verde: #3B7537;
+  --impressao-tinta-roxo: #6A47A3;
+  --impressao-tinta-amarelo: rgba(255, 214, 0, 0.42);
+  --impressao-tinta-rosa: rgba(255, 90, 160, 0.3);
+  --impressao-tinta-ciano: rgba(0, 190, 210, 0.28);
 }

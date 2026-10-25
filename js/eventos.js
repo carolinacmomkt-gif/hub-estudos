@@ -17,7 +17,7 @@ import { listar } from './persistencia.js';
 import { ligarCalendario, cliqueCalendario, enviarCalendario, mudancaCalendario } from './eventos-calendario.js';
 import { ligarAvisos, cliqueAvisos, enviarAvisos, mudancaAvisos } from './eventos-avisos.js';
 import { ligarInicio, cliqueInicio, enviarInicio, mudancaInicio } from './eventos-inicio.js';
-import { cliqueCadernos, enviarCadernos } from './eventos-cadernos.js';
+import { ligarCadernos, cliqueCadernos, enviarCadernos, mudancaCadernos } from './eventos-cadernos.js';
 import { ligarYoutube, cliqueYoutube, enviarYoutube, mudancaYoutube } from './eventos-youtube.js';
 import { ligarBiblioteca, cliqueBiblioteca, enviarBiblioteca, mudancaBiblioteca } from './eventos-biblioteca.js';
 import { ligarQuestoes, cliqueQuestoes, enviarQuestoes, mudancaQuestoes } from './eventos-questoes.js';
@@ -25,7 +25,7 @@ import { ligarSubstack, cliqueSubstack, enviarSubstack, mudancaSubstack } from '
 import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './eventos-estudos.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -272,7 +272,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
 

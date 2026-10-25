@@ -13,6 +13,7 @@ import { retomarTrabalhos } from './trabalhos-ia.js';
 import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
 import { filtrarListaNaTela } from './eventos-questoes.js';
 import { salvarSubstackAgora } from './eventos-substack.js';
+import { reaplicarBuscaCadernos } from './eventos-cadernos.js';
 import { renderConfiguracoes, textoSituacao } from './views-configuracoes.js';
 import { renderLogin } from './views-login.js';
 import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
@@ -87,6 +88,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
   if (foco) conteudo.querySelector(`${foco}:not([disabled])`)?.focus({ preventScroll: true });
   // As buscas filtram na tela (sem redesenhar a cada letra): reaplica depois de redesenhar.
   if (rota.id === 'biblioteca') reaplicarBusca();
+  if (rota.id === 'cadernos' && !rota.parametro) reaplicarBuscaCadernos();
   if (rota.id === 'questoes' && !rota.parametro) filtrarListaNaTela('q-lista', document.getElementById('q-busca')?.value);
   if (CICLO[rota.id]) {
     telaMontada = rota.id;
@@ -114,6 +116,7 @@ const TABELAS_NA_MEMORIA = {
   avisos: 'avisos',
   materiais: 'materiais',
   cadernos: 'cadernos',
+  pastas: 'pastas',
   config: 'config',
   videos: 'videos',
   artigos: 'artigos',
@@ -139,6 +142,7 @@ const TELAS_DA_TABELA = {
   caixa_entrada: ['inicio'],
   conexoes: ['configuracoes', 'faculdade'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
+  pastas: ['cadernos'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
   config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack'],

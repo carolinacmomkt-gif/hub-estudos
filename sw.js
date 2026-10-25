@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v28';
+const VERSAO = 'hub-v29';
 
 const ARQUIVOS = [
   './',
@@ -57,6 +57,11 @@ const ARQUIVOS = [
   './js/teleprompter.js',
   './css/youtube.css',
   './css/areas.css',
+  './css/cadernos.css',
+  './js/dados-cadernos.js',
+  './js/views-paginas.js',
+  './js/fundos.js',
+  './js/exportar-caderno.js',
   './js/gravacao.js',
   './js/trabalhos-ia.js',
   './js/dados-biblioteca.js',
@@ -92,7 +97,8 @@ self.addEventListener('install', (evento) => {
 self.addEventListener('activate', (evento) => {
   evento.waitUntil((async () => {
     const nomes = await caches.keys();
-    await Promise.all(nomes.filter((nome) => nome !== VERSAO).map((nome) => caches.delete(nome)));
+    // "hub-arquivos" guarda fundos de página (PDF e modelos) para usar sem internet: nunca é apagado aqui.
+    await Promise.all(nomes.filter((nome) => nome !== VERSAO && nome !== 'hub-arquivos').map((nome) => caches.delete(nome)));
     await self.clients.claim();
   })());
 });

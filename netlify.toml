@@ -26,3 +26,9 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Leitor de PDF (pdf.js) é carregado como módulo: precisa do tipo certo por causa do nosniff.
+[[headers]]
+  for = "/js/vendor/pdfjs/*"
+  [headers.values]
+    Content-Type = "text/javascript; charset=utf-8"
