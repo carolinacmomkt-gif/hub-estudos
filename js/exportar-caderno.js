@@ -1,7 +1,7 @@
 // Exportar páginas de caderno em PNG ou PDF. Tudo no aparelho: cada página é desenhada
 // num canvas (papel claro, para imprimir) e o PDF é montado aqui, com uma imagem JPEG por página.
 
-import { desenharPaginaEm, coresDoPapel } from './editor-tinta.js';
+import { desenharPaginaEm, coresDoPapel, carregarImagensDaPagina } from './editor-tinta.js';
 import { imagemDoFundo } from './fundos.js';
 
 const LARGURA_PX = 1600; // ~190 dpi numa A4
@@ -15,6 +15,7 @@ async function desenharPagina(pagina, dim, largura = LARGURA_PX) {
   const ctx = canvas.getContext('2d');
   ctx.setTransform(escala, 0, 0, escala, 0, 0);
   const json = { ...(pagina.tracos_json || {}), modelo: pagina.modelo_folha || pagina.tracos_json?.modelo };
+  await carregarImagensDaPagina(json);
   desenharPaginaEm(ctx, json, dim, { imagem: await imagemDoFundo(pagina), cores: coresDoPapel({ impressao: true }) });
   return canvas;
 }

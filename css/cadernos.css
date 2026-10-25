@@ -295,3 +295,133 @@
 .secao-linha input {
   width: auto;
 }
+
+/* 5c: caixa de digitar, adesivos e camadas */
+.caixa-texto-edicao {
+  position: absolute;
+  z-index: 5;
+  padding: 2px 4px;
+  overflow: hidden;
+  border: 2px dashed var(--cor-destaque);
+  border-radius: 4px;
+  background: var(--papel);
+  resize: none;
+  field-sizing: content;
+}
+
+.ferramenta-cor.sem-cor {
+  background: repeating-linear-gradient(135deg, var(--cor-borda) 0 3px, transparent 3px 8px);
+}
+
+.adesivos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adesivo-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--toque);
+  height: var(--toque);
+  padding: 0 6px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.adesivo-palavra {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.adesivo-imagem {
+  width: 64px;
+  height: 52px;
+  padding: 4px;
+}
+
+.adesivo-imagem img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.adesivo-proprio {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ferramenta-painel.painel-camadas {
+  width: min(400px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.camadas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.camada {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 8px;
+  padding: 8px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+}
+
+.camada.ativa {
+  border-color: var(--cor-destaque);
+  background: var(--cor-destaque-suave);
+}
+
+.camada-escolha input {
+  width: 22px;
+  height: 22px;
+}
+
+.camada-nome {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.camada-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 4px;
+}
+
+.camada-opacidade {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+}
+
+.camada-opacidade input {
+  flex: 1;
+}
+
+.camada-fundo {
+  display: flex;
+  justify-content: space-between;
+  color: var(--cor-texto-suave);
+}

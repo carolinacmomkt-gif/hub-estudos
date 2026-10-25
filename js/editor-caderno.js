@@ -1,7 +1,8 @@
 // Editor de um caderno (#cadernos/<id>): ferramentas, favoritos, páginas e salvamento.
 // O motor de tinta está em editor-tinta.js; aqui fica só a tela em volta dele.
 
-import { EditorDeTinta, novaPaginaVazia } from './editor-tinta.js';
+import { EditorDeTinta, novaPaginaVazia, ADESIVOS_SIMPLES, fonteDoTexto } from './editor-tinta.js';
+import { grupoLinha, grupoTexto, grupoLaco, painelInserir, painelCamadas, barraDaSelecao } from './views-editor-extras.js';
 import { dimensoes, opcoesDeModelo, modeloComData } from './folhas.js';
 import { listar, salvar, obter } from './persistencia.js';
 import { imagemDoFundo, modelosProprios, imagemParaModelo } from './fundos.js';
@@ -19,6 +20,7 @@ const FERRAMENTAS = [
   { id: 'pincel', nome: 'Pincel' },
   { id: 'lapis', nome: 'Lápis' },
   { id: 'marca-texto', nome: 'Marca-texto' },
+  { id: 'texto', nome: 'Texto' },
   { id: 'borracha', nome: 'Borracha' },
   { id: 'laco', nome: 'Laço' },
 ];
@@ -66,6 +68,8 @@ let selecionados = 0;
 let prefs = lerPrefs();
 let toqueFavorito = null;
 let montagem = 0; // cada abertura do editor ganha um número; uma abertura antiga para no meio
+let configAdesivos = null; // config "adesivos": { lista: [{ id, nome, largura, altura, itens, previa }] }
+let caixaTexto = null; // edição de texto aberta: { el, item, camadaId, x, y }
 let secoes = [];
 let lixeira = null; // páginas excluídas (carregadas quando a Carol abre a lixeira do painel)
 const CRESCER_INFINITO = 700; // unidades que o quadro infinito ganha quando a escrita chega perto do fim
@@ -74,6 +78,8 @@ function lerPrefs() {
   const padrao = {
     ferramenta: 'tinteiro', tinta: 'tinta', tintaMarca: 'amarelo', tamanho: 4, tamanhoMarca: 24, raioBorracha: 16,
     tipoBorracha: 'traco', suavizacao: 'leve', dedo: false, marcaReta: false, formasAuto: true,
+    linha: 'continua', fonteTexto: 'sistema', tamTexto: 26, negritoTexto: false, fundoTexto: 'nenhum',
+    filtroLaco: 'tudo', todasCamadas: false, marcaPropria: false,
   };
   try {
     return { ...padrao, ...JSON.parse(localStorage.getItem(CHAVE_PREFS) || '{}') };
@@ -158,7 +164,7 @@ function barra() {
     </button>`).join('');
 
   let cores = '';
-  if (ehCaneta(f) || f === 'marca-texto' || (f === 'laco' && selecionados)) {
+  if (ehCaneta(f) || f === 'marca-texto' || f === 'texto' || (f === 'laco' && selecionados)) {
     const lista = f === 'marca-texto' ? MARCAS : TINTAS;
     const atual = f === 'marca-texto' ? prefs.tintaMarca : prefs.tinta;
     const propria = atual?.startsWith('#') ? atual : corDoTema('--tinta-azul');
@@ -185,15 +191,18 @@ function barra() {
     <div class="ferramentas" role="toolbar" aria-label="Ferramentas">
       <div class="ferramenta-grupo" role="group" aria-label="Ferramenta">${ferramentas}</div>
       <div class="ferramenta-grupo favoritos" role="group" aria-label="Canetas favoritas">${favs}</div>
-      ${cores}
+      ${f === 'texto' ? grupoTexto(prefs, cores) : cores}
       ${espessuras}
       ${extraBorracha}
-      ${f === 'laco' ? `<div class="ferramenta-grupo">${botao('colar', '', 'Colar', false)}</div>` : ''}
+      ${ehCaneta(f) ? grupoLinha(prefs.linha) : ''}
+      ${f === 'laco' ? grupoLaco(prefs.filtroLaco, Boolean(editor?.area?.length)) : ''}
+      ${painelInserir(adesivosProprios())}
+      ${editor ? painelCamadas(editor.pagina.camadas, editor.camadaAtiva()?.id, { todas: prefs.todasCamadas, marcaPropria: prefs.marcaPropria }) : ''}
       <div class="ferramenta-grupo" role="group" aria-label="Histórico">
         <button type="button" class="ferramenta-botao" data-ed="desfazer" aria-label="Desfazer" title="Desfazer (ou toque com dois dedos)">↶</button>
         <button type="button" class="ferramenta-botao" data-ed="refazer" aria-label="Refazer" title="Refazer (ou toque com três dedos)">↷</button>
       </div>
-      <details class="ferramenta-mais">
+      <details class="ferramenta-mais" data-painel="ajustes">
         <summary class="ferramenta-botao">Ajustes</summary>
         <div class="ferramenta-painel">
           <label class="ferramenta-select"><span>Folha desta página</span>
@@ -209,6 +218,7 @@ function barra() {
           <label class="campo-marcar"><input type="checkbox" data-ed="marca-reta"${prefs.marcaReta ? ' checked' : ''}><span>Marca-texto em linha reta</span></label>
           <label class="campo-marcar"><input type="checkbox" data-ed="dedo"${prefs.dedo ? ' checked' : ''}><span>Desenhar com o dedo</span></label>
           <button type="button" class="botao botao-secundario botao-pequeno" data-ed="zoom-normal">Zoom: <span id="editor-zoom">${Math.round((editor?.zoom || 1) * 100)}%</span> · voltar a 100%</button>
+          <button type="button" class="botao botao-secundario botao-pequeno" data-ed="painel-pronto">Pronto</button>
           <p class="campo-ajuda">Pinça dá zoom. Toque com dois dedos desfaz; com três, refaz. O botão da S Pen vira borracha. Segure um favorito para guardar a caneta atual nele.</p>
         </div>
       </details>
@@ -216,26 +226,17 @@ function barra() {
 }
 
 function barraSelecao() {
-  return `
-    <span>${selecionados} ${selecionados === 1 ? 'traço selecionado' : 'traços selecionados'}</span>
-    <div class="ferramenta-grupo">
-      ${TINTAS.map((c) => `<button type="button" class="ferramenta-cor" data-ed="selecao-cor" data-valor="${c.id}" aria-label="Mudar para ${c.nome}" style="--cor: var(${prefixoDaTinta()}${c.id})"></button>`).join('')}
-    </div>
-    <div class="ferramenta-grupo">
-      <button type="button" class="ferramenta-botao" data-ed="selecao-duplicar">Duplicar</button>
-      <button type="button" class="ferramenta-botao" data-ed="selecao-copiar">Copiar</button>
-      <button type="button" class="ferramenta-botao" data-ed="selecao-excluir">Excluir</button>
-      <button type="button" class="ferramenta-botao" data-ed="selecao-pronto">Pronto</button>
-    </div>
-    <span class="campo-ajuda">Arraste para mover; puxe o quadradinho do canto para mudar o tamanho.</span>`;
+  const cores = TINTAS.map((c) => `<button type="button" class="ferramenta-cor" data-ed="selecao-cor" data-valor="${c.id}" aria-label="Mudar para ${c.nome}" style="--cor: var(${prefixoDaTinta()}${c.id})"></button>`).join('');
+  const itens = editor?.itensSelecionados() || [];
+  return barraDaSelecao({ quantos: selecionados, cores, temTraco: itens.some((i) => !i.tipo || i.tipo === 'traco') });
 }
 
 function atualizarBarra() {
   const el = document.getElementById('editor-barra');
   if (!el) return;
-  const aberto = el.querySelector('details')?.open;
+  const abertos = [...el.querySelectorAll('details')].map((d) => d.open);
   el.innerHTML = barra();
-  if (aberto) el.querySelector('details').open = true;
+  el.querySelectorAll('details').forEach((d, i) => { if (abertos[i]) d.open = true; });
   atualizarHistorico();
 }
 
@@ -285,6 +286,11 @@ function aplicarPrefs() {
   editor.dedoDesenha = prefs.dedo;
   editor.marcaReta = prefs.marcaReta;
   editor.formasAuto = prefs.formasAuto;
+  editor.linha = prefs.linha;
+  editor.filtroLaco = prefs.filtroLaco;
+  editor.todasAsCamadas = prefs.todasCamadas;
+  editor.marcaCamadaPropria = prefs.marcaPropria;
+  if (prefs.ferramenta !== 'texto') fecharCaixaTexto();
   if (prefs.ferramenta !== 'laco') editor.limparSelecao();
 }
 
@@ -329,6 +335,7 @@ function aoMudar() {
 }
 
 function abrirPagina(n) {
+  fecharCaixaTexto();
   indice = Math.max(0, Math.min(paginas.length - 1, n));
   const p = paginas[indice];
   const json = p.tracos_json?.camadas?.length ? p.tracos_json : novaPaginaVazia(p.modelo_folha);
@@ -607,6 +614,146 @@ async function novaPagina() {
   avisar(`Página ${indice + 1} criada.`);
 }
 
+// ---------------------------------------------------------------------------
+// Texto digitado, imagens e adesivos
+// ---------------------------------------------------------------------------
+
+function estiloDoTexto() {
+  return { fonte: prefs.fonteTexto, tamTexto: Number(prefs.tamTexto) || 26, negrito: Boolean(prefs.negritoTexto), tinta: prefs.tinta, fundo: prefs.fundoTexto };
+}
+
+// Caixa de digitar por cima da página (some ao tocar fora; Esc cancela).
+function abrirCaixaTexto({ item = null, camadaId, x, y }) {
+  fecharCaixaTexto();
+  const folha = document.querySelector('.folha-tinta');
+  if (!folha || !editor) return;
+  const estilo = item ? { fonte: item.fonte, tamTexto: item.tamTexto, negrito: item.negrito, tinta: item.tinta, fundo: item.fundo } : estiloDoTexto();
+  const r = item ? editor.retanguloNaTela(item) : { x: x * editor.escala, y: y * editor.escala, largura: Math.min(420, editor.dim.largura - x) * editor.escala, altura: 0, escala: editor.escala };
+  const el = document.createElement('textarea');
+  el.className = 'caixa-texto-edicao';
+  el.value = item?.texto || '';
+  el.setAttribute('aria-label', 'Texto da caixa');
+  el.style.left = `${r.x}px`;
+  el.style.top = `${r.y}px`;
+  el.style.width = `${Math.max(120, r.largura + 12)}px`;
+  el.style.minHeight = `${Math.max(r.altura, (estilo.tamTexto || 26) * 1.4 * r.escala)}px`;
+  el.style.font = fonteDoTexto({ ...estilo, tamTexto: (estilo.tamTexto || 26) * r.escala });
+  el.style.lineHeight = '1.3';
+  el.style.color = `var(${prefixoDaTinta()}${/^#/.test(estilo.tinta) ? 'tinta' : estilo.tinta})`;
+  if (/^#/.test(estilo.tinta)) el.style.color = estilo.tinta;
+  folha.append(el);
+  caixaTexto = { el, item, camadaId, x, y, estilo };
+  // O texto que está sendo editado some do canvas até terminar.
+  if (item) {
+    editor.arrastando = null;
+    editor.selecao = null;
+  }
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      fecharCaixaTexto({ salvar: false });
+    }
+  });
+  el.addEventListener('blur', () => setTimeout(() => fecharCaixaTexto(), 0));
+  setTimeout(() => el.focus(), 0);
+}
+
+function fecharCaixaTexto({ salvar: guardar = true } = {}) {
+  if (!caixaTexto) return;
+  const { el, item, camadaId, x, y, estilo } = caixaTexto;
+  caixaTexto = null;
+  el.remove();
+  if (guardar && editor && (el.value.trim() || item)) {
+    editor.salvarTexto({ item, camadaId, x, y, texto: el.value, estilo: item ? {} : estilo });
+  }
+}
+
+function adesivosProprios() {
+  return Array.isArray(configAdesivos?.valor?.lista) ? configAdesivos.valor.lista : [];
+}
+
+async function guardarAdesivos(lista) {
+  configAdesivos = await salvar('config', { ...(configAdesivos || {}), chave: 'adesivos', valor: { lista } });
+}
+
+// Imagem reduzida (até 1400 px) em data URL; PNG pequeno continua PNG (mantém o fundo transparente).
+async function imagemParaInserir(arquivo) {
+  const bmp = await createImageBitmap(arquivo);
+  const escala = Math.min(1, 1400 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(bmp.width * escala));
+  c.height = Math.max(1, Math.round(bmp.height * escala));
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  bmp.close?.();
+  const png = /png/i.test(arquivo.type) && arquivo.size < 700 * 1024;
+  return { src: png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.82), largura: c.width, altura: c.height };
+}
+
+async function inserirImagem(input) {
+  const arquivo = input.files?.[0];
+  input.value = '';
+  if (!arquivo || !editor) return;
+  if (!/^image\//.test(arquivo.type)) {
+    avisar('Escolha uma imagem (JPG, PNG…).');
+    return;
+  }
+  try {
+    const { src, largura, altura } = await imagemParaInserir(arquivo);
+    const w = Math.min(500, editor.dim.largura * 0.6, largura);
+    editor.inserirCaixa({ tipo: 'imagem', src }, w, Math.round((w * altura) / largura));
+    mudarParaLaco();
+    avisar('Imagem inserida. Arraste para mover; o canto muda o tamanho.');
+  } catch {
+    avisar('Não deu para abrir essa imagem.');
+  }
+}
+
+function inserirAdesivo(i) {
+  const simbolo = ADESIVOS_SIMPLES[i];
+  if (!simbolo || !editor) return;
+  const palavra = simbolo.length > 2;
+  editor.inserirCaixa({ tipo: 'adesivo', simbolo, tinta: palavra ? 'tinta' : undefined, fundo: palavra ? 'amarelo' : undefined }, palavra ? 190 : 80, palavra ? 64 : 80);
+  mudarParaLaco();
+}
+
+function inserirMeuAdesivo(id) {
+  const a = adesivosProprios().find((x) => x.id === id);
+  if (!a || !editor) return;
+  editor.inserirItens(a.itens, a.largura, a.altura);
+  mudarParaLaco();
+}
+
+async function selecaoVirarAdesivo() {
+  const n = editor.selecaoNormalizada();
+  if (!n) return;
+  const nome = window.prompt('Nome do adesivo', 'Meu adesivo');
+  if (nome === null) return;
+  const blob = await editor.imagemDaSelecao(1);
+  const previa = blob ? await new Promise((resolver) => { const r = new FileReader(); r.onload = () => resolver(r.result); r.readAsDataURL(blob); }) : null;
+  await guardarAdesivos([...adesivosProprios(), { id: crypto.randomUUID().slice(0, 10), nome: (nome || 'Meu adesivo').trim().slice(0, 40), ...n, previa }]);
+  atualizarBarra();
+  avisar('Adesivo guardado. Ele fica em Inserir → Meus adesivos.');
+}
+
+async function selecaoCapturarImagem() {
+  const blob = await editor.imagemDaSelecao(3);
+  if (!blob) return;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    avisar('Imagem copiada. Cole onde quiser.');
+  } catch {
+    baixar(blob, `${nomeDeArquivo(caderno?.titulo)}-recorte.png`);
+    avisar('Imagem salva nos downloads.');
+  }
+}
+
+function mudarParaLaco() {
+  prefs.ferramenta = 'laco';
+  guardarPrefs();
+  aplicarPrefs();
+  atualizarBarra();
+}
+
 // Leva a imagem da página para Questões → Gerar, já com a disciplina e o tema do caderno.
 async function gerarQuestoesDaPagina() {
   if (!editor.totalDeTracos()) {
@@ -693,6 +840,7 @@ export async function montarEditorCaderno(id) {
   const configs = await listar('config');
   if (minha !== montagem) return;
   configFavoritos = configs.find((c) => c.chave === 'canetas') || null;
+  configAdesivos = configs.find((c) => c.chave === 'adesivos' && !c.excluido_em) || null;
   if (Array.isArray(configFavoritos?.valor?.favoritos) && configFavoritos.valor.favoritos.length === 5) favoritos = configFavoritos.valor.favoritos;
 
   const todas = (await listar('paginas')).filter((p) => p.caderno_id === caderno.id).sort((a, b) => a.ordem - b.ordem);
@@ -716,7 +864,9 @@ export async function montarEditorCaderno(id) {
       barraSel.hidden = !n;
       barraSel.innerHTML = n ? barraSelecao() : '';
     },
+    aoTexto: (pedido) => abrirCaixaTexto(pedido),
     aoZoom: (z) => {
+      fecharCaixaTexto();
       const el = document.getElementById('editor-zoom');
       if (el) el.textContent = `${Math.round(z * 100)}%`;
     },
@@ -731,10 +881,12 @@ export async function montarEditorCaderno(id) {
   document.addEventListener('pointerdown', aoApertarFavorito);
   document.addEventListener('pointerup', aoSoltarFavorito);
   document.addEventListener('pointercancel', aoSoltarFavorito);
+  document.addEventListener('toggle', ajustarPainel, true);
   window.addEventListener('pagehide', salvarAgora);
 }
 
 export function desmontarEditorCaderno() {
+  fecharCaixaTexto();
   montagem += 1;
   document.body.classList.remove('modo-editor');
   document.removeEventListener('click', aoClicar);
@@ -744,6 +896,7 @@ export function desmontarEditorCaderno() {
   document.removeEventListener('pointerdown', aoApertarFavorito);
   document.removeEventListener('pointerup', aoSoltarFavorito);
   document.removeEventListener('pointercancel', aoSoltarFavorito);
+  document.removeEventListener('toggle', ajustarPainel, true);
   window.removeEventListener('pagehide', salvarAgora);
   if (sujo && editor) {
     // Salva na hora o que estava esperando (sem aguardar: a tela já está saindo).
@@ -764,6 +917,20 @@ export function desmontarEditorCaderno() {
 // ---------------------------------------------------------------------------
 // Eventos da barra
 // ---------------------------------------------------------------------------
+
+// Painéis da barra (Inserir, Camadas, Ajustes): abrem para o lado que tem espaço.
+function ajustarPainel(e) {
+  const det = e.target;
+  if (!det?.matches?.('.ferramenta-mais') || !det.open) return;
+  const painel = det.querySelector('.ferramenta-painel');
+  if (!painel || getComputedStyle(painel).position === 'fixed') return;
+  painel.style.left = '';
+  painel.style.right = '';
+  if (painel.getBoundingClientRect().left < 8) {
+    painel.style.right = 'auto';
+    painel.style.left = '0';
+  }
+}
 
 function aoApertarFavorito(e) {
   // Tocar fora do painel "Ajustes" fecha o painel.
@@ -798,6 +965,82 @@ function aoClicar(evento) {
       toqueFavorito = null;
       usarFavorito(Number(valor));
       break;
+    case 'painel-pronto':
+      alvo.closest('details')?.removeAttribute('open');
+      return;
+    case 'linha':
+      prefs.linha = valor;
+      break;
+    case 'texto-tamanho':
+      prefs.tamTexto = Number(valor);
+      break;
+    case 'texto-negrito':
+      prefs.negritoTexto = !prefs.negritoTexto;
+      break;
+    case 'texto-fundo':
+      prefs.fundoTexto = valor;
+      break;
+    case 'camada-nova':
+      editor.adicionarCamada();
+      atualizarBarra();
+      return;
+    case 'camada-ver':
+      editor.alternarCamada(valor, 'visivel');
+      atualizarBarra();
+      return;
+    case 'camada-travar':
+      editor.alternarCamada(valor, 'bloqueada');
+      atualizarBarra();
+      return;
+    case 'camada-subir':
+      editor.moverCamada(valor, 1);
+      atualizarBarra();
+      return;
+    case 'camada-descer':
+      editor.moverCamada(valor, -1);
+      atualizarBarra();
+      return;
+    case 'camada-mesclar':
+      if (window.confirm('Juntar esta camada com a de baixo? Os traços passam para a de baixo.')) {
+        editor.mesclarComAbaixo(valor);
+        atualizarBarra();
+      }
+      return;
+    case 'camada-excluir': {
+      const c = editor.camada(valor);
+      if (c && window.confirm(`Excluir a camada "${c.nome}"${c.itens.length ? ` e os ${c.itens.length} itens dela` : ''}?`)) {
+        editor.excluirCamada(valor);
+        atualizarBarra();
+      }
+      return;
+    }
+    case 'inserir-adesivo':
+      inserirAdesivo(Number(valor));
+      return;
+    case 'inserir-meu-adesivo':
+      inserirMeuAdesivo(valor);
+      return;
+    case 'excluir-meu-adesivo':
+      if (window.confirm('Excluir este adesivo da sua coleção? O que já está nas páginas continua.')) {
+        guardarAdesivos(adesivosProprios().filter((a) => a.id !== valor)).then(atualizarBarra);
+      }
+      return;
+    case 'selecao-espessura':
+      editor.mudarEspessuraSelecao(Number(valor));
+      return;
+    case 'selecao-girar':
+      editor.girarSelecao((Number(valor) * Math.PI) / 180);
+      return;
+    case 'selecao-recortar':
+      avisar(`${editor.recortarSelecao()} item(ns) recortado(s). Use "Colar" no Laço para pôr em outro lugar.`);
+      atualizarBarra();
+      return;
+    case 'selecao-imagem':
+      selecaoCapturarImagem();
+      return;
+    case 'selecao-adesivo':
+      selecaoVirarAdesivo();
+      return;
     case 'cor':
       if (prefs.ferramenta === 'marca-texto') prefs.tintaMarca = valor;
       else prefs.tinta = valor;
@@ -894,7 +1137,8 @@ function aoClicar(evento) {
       editor.duplicarSelecao();
       return;
     case 'selecao-copiar':
-      avisar(`${editor.copiarSelecao()} traço(s) copiado(s). Use "Colar" no Laço para pôr em outra página.`);
+      avisar(`${editor.copiarSelecao()} item(ns) copiado(s). Use "Colar" no Laço para pôr em outra página.`);
+      atualizarBarra();
       return;
     case 'selecao-excluir':
       editor.excluirSelecao();
@@ -944,6 +1188,39 @@ function aoMudarCampo(evento) {
     case 'modelo-importar':
       if (evento.type === 'change') importarModelo(alvo);
       return;
+    case 'inserir-imagem':
+      if (evento.type === 'change') inserirImagem(alvo);
+      return;
+    case 'texto-fonte':
+      if (evento.type !== 'change') return;
+      prefs.fonteTexto = alvo.value;
+      break;
+    case 'filtro-laco':
+      if (evento.type !== 'change') return;
+      prefs.filtroLaco = alvo.value;
+      editor.limparSelecao();
+      break;
+    case 'camada-ativa':
+      if (evento.type === 'change') {
+        editor.ativarCamada(alvo.value);
+        atualizarBarra();
+      }
+      return;
+    case 'camada-nome':
+      if (evento.type === 'change') editor.renomearCamada(alvo.dataset.valor, alvo.value);
+      return;
+    case 'camada-opacidade':
+      editor.opacidadeDaCamada(alvo.dataset.valor, Number(alvo.value) / 100);
+      return;
+    case 'camadas-todas':
+      if (evento.type !== 'change') return;
+      prefs.todasCamadas = alvo.checked;
+      editor.limparSelecao();
+      break;
+    case 'marca-propria':
+      if (evento.type !== 'change') return;
+      prefs.marcaPropria = alvo.checked;
+      break;
     case 'pagina-secao':
       if (evento.type === 'change') mudarSecaoDaPagina(Number(alvo.dataset.valor), alvo.value);
       return;
