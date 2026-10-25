@@ -758,3 +758,25 @@ textarea.ss-area {
 .campo-inline input[type="number"] {
   max-width: 84px;
 }
+
+.q-ver-gabarito {
+  border-top: 1px solid var(--cor-borda);
+  padding-top: 6px;
+}
+
+.q-ver-gabarito > summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--toque);
+  color: var(--cor-texto-destaque);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.q-ver-gabarito[open] > summary {
+  margin-bottom: 6px;
+}
+
+.q-ver-gabarito > p + p {
+  margin-top: 8px;
+}

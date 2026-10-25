@@ -41,16 +41,22 @@ function fontesHtml(fontes) {
 }
 
 // Enunciado, alternativas com a certa marcada e o gabarito comentado.
-export function gabaritoHtml(q, { resposta } = {}) {
+// oculto: mostra só as alternativas, sem marcar a certa; o gabarito fica num "Ver gabarito" fechado
+// (para a revisão das questões novas e o banco não entregarem a resposta antes da hora).
+export function gabaritoHtml(q, { resposta, oculto = false } = {}) {
   const alternativas = q.tipo === 'multipla' ? `<ol class="q-alternativas q-gabarito">${(q.alternativas || []).map((alt, i) => {
     const letra = LETRAS[i];
-    const certa = letra === q.resposta_correta;
+    const certa = !oculto && letra === q.resposta_correta;
     const marcada = resposta !== undefined && letra === resposta;
     return `<li class="${certa ? 'certa' : ''}${marcada && !certa ? ' errada' : ''}"><span class="q-letra">${letra}</span> ${esc(alt)}${certa ? ' <span class="visualmente-oculto">(correta)</span>' : ''}</li>`;
   }).join('')}</ol>` : '';
+  const certaMultipla = q.tipo === 'multipla' && oculto
+    ? `<p><strong>Resposta:</strong> ${esc(q.resposta_correta)}) ${esc(q.alternativas?.[LETRAS.indexOf(q.resposta_correta)] || '')}</p>` : '';
   const certa = q.tipo === 'vf' ? `<p><strong>Resposta:</strong> ${q.resposta_correta === 'V' ? 'Verdadeiro' : 'Falso'}</p>`
-    : q.tipo === 'dissertativa' ? `<p><strong>Resposta esperada:</strong> ${esc(q.resposta_correta)}</p>` : '';
-  return `${alternativas}${certa}${q.explicacao ? `<p class="q-explicacao"><strong>Por quê:</strong> ${esc(q.explicacao)}</p>` : ''}${fontesHtml(q.fontes)}`;
+    : q.tipo === 'dissertativa' ? `<p><strong>Resposta esperada:</strong> ${esc(q.resposta_correta)}</p>` : certaMultipla;
+  const comentario = `${certa}${q.explicacao ? `<p class="q-explicacao"><strong>Por quê:</strong> ${esc(q.explicacao)}</p>` : ''}${fontesHtml(q.fontes)}`;
+  if (oculto) return `${alternativas}<details class="q-ver-gabarito"><summary>Ver gabarito</summary>${comentario}</details>`;
+  return `${alternativas}${comentario}`;
 }
 
 function itemDoBanco(estado, q) {
@@ -65,7 +71,7 @@ function itemDoBanco(estado, q) {
           <span class="q-item-meta">${esc(meta.join(' · '))}${taxa !== null ? ` · <strong>${Math.round(taxa * 100)}%</strong> de acerto (${Number(q.acertos) || 0}/${(Number(q.acertos) || 0) + (Number(q.erros) || 0)})` : ' · nunca respondida'}${rev ? ` · <span class="chip">revisar ${esc(fmtDia.format(new Date(`${String(rev.proxima_em).slice(0, 10)}T12:00`)))}</span>` : ''}</span>
         </summary>
         <div class="q-item-corpo">
-          ${gabaritoHtml(q)}
+          ${gabaritoHtml(q, { oculto: true })}
           ${(q.tags || []).length ? `<p>${q.tags.map((t) => `<span class="chip">#${esc(t)}</span>`).join(' ')}</p>` : ''}
           <div class="acoes">
             <button class="botao botao-secundario botao-pequeno" type="button" data-acao="q-editar" data-id="${esc(q.id)}">Editar</button>
@@ -268,13 +274,13 @@ function revisarGeradas(estado, t) {
       <div class="card-topo">
         <h2 class="card-titulo">${qs.length} ${qs.length === 1 ? 'questão pronta' : 'questões prontas'}: ${esc(t.rotulo || '')}</h2>
       </div>
-      <p class="campo-ajuda">Desmarque as que não quiser guardar.</p>
+      <p class="campo-ajuda">Desmarque as que não quiser guardar. O gabarito fica escondido para não estragar o simulado; toque em "Ver gabarito" só se quiser conferir.</p>
       <form class="formulario" data-form="q-salvar-geradas" data-id="${esc(t.id)}" novalidate>
         <ol class="q-previa">${qs.map((q, i) => `
           <li class="q-previa-item">
             <label class="campo-marcar"><input type="checkbox" name="incluir" value="${i}"${escolha[i] === false ? '' : ' checked'}><span><strong>${esc(nomeTipo(q.tipo))} · ${esc(nomeNivel(q.nivel))}</strong></span></label>
             <p class="q-enunciado">${esc(q.enunciado)}</p>
-            ${gabaritoHtml(q)}
+            ${gabaritoHtml(q, { oculto: true })}
           </li>`).join('')}</ol>
         <label class="campo"><span class="campo-rotulo">Tags para todas <small>(separe por vírgula)</small></span>
           <input name="tags" type="text" maxlength="300" value="${esc((t.ligado?.tags || []).join(', '))}"></label>
