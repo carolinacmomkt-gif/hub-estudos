@@ -87,14 +87,14 @@ create table if not exists public.eventos (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   disciplina_id uuid references public.disciplinas (id) on delete set null,
-  tipo text not null default 'pessoal' check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao')),
+  tipo text not null default 'pessoal' check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao', 'youtube')),
   titulo text not null,
   descricao text,
   inicio timestamptz not null,
   fim timestamptz,
   dia_inteiro boolean not null default false,
   status text check (status in ('pendente', 'entregue', 'atrasado')),
-  origem text not null default 'manual' check (origem in ('ava', 'ics', 'academico', 'lyceum', 'manual')),
+  origem text not null default 'manual' check (origem in ('ava', 'ics', 'academico', 'lyceum', 'manual', 'youtube')),
   origem_id text,
   link text,
   prova_id uuid,  -- sessão de revisão: a prova a que pertence
@@ -388,6 +388,34 @@ create table if not exists public.importacoes (
   excluido_em timestamptz
 );
 
+-- YouTube: vídeos do canal, da ideia ao publicado.
+create table if not exists public.videos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  titulo text not null,
+  titulos_alternativos text[] not null default '{}',
+  formato text not null default 'longo' check (formato in ('longo', 'short', 'live')),
+  serie text,
+  etapa text not null default 'ideia' check (etapa in ('ideia', 'pesquisa', 'roteiro', 'gravacao', 'edicao', 'pos', 'agendado', 'publicado')),
+  prioridade integer not null default 2 check (prioridade between 1 and 3),
+  data_gravacao date,
+  data_publicacao timestamptz,
+  gancho text,
+  publico text,
+  ideia_thumb text,
+  roteiro jsonb not null default '{"blocos":[]}'::jsonb,
+  descricao text,
+  tags text[] not null default '{}',
+  checklist jsonb not null default '{}'::jsonb,
+  link text,
+  metricas jsonb not null default '{}'::jsonb,
+  notas text,
+  ordem integer not null default 0,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
 -- Aparelhos que recebem avisos (Web Push).
 create table if not exists public.assinaturas_push (
   id uuid primary key default gen_random_uuid(),
@@ -447,7 +475,7 @@ declare
   tabelas text[] := array[
     'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
     'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push'
+    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos'
   ];
 begin
   foreach tabela in array tabelas loop

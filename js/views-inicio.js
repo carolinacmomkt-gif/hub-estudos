@@ -5,6 +5,7 @@ import { cardCaixaEntrada } from './views-criar.js';
 import { cardPlano } from './views-plano.js';
 import { blocosDoInicio, nomeDoBloco, TAMANHOS, TIPOS_PROPRIOS } from './inicio-layout.js';
 import { renderProprio } from './views-inicio-proprios.js';
+import { cardYoutubeInicio } from './views-youtube.js';
 import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas } from './dados-faculdade.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
@@ -351,6 +352,7 @@ export function renderInicio(estado) {
     notas: () => cardNotas(dados, agora),
     faltas: () => (estado.usandoExemplo ? '' : cardFaltas(estado)),
     avisos: () => (estado.usandoExemplo ? '' : cardAvisos(estado, agora)),
+    youtube: () => ((estado.videos || []).some((v) => !v.excluido_em) ? cardYoutubeInicio(estado, agora) : ''),
     caixa: () => cardCaixaEntrada(estado.caixa || [], agora),
     cadernos: () => cardCadernos(dados, agora),
     progresso: () => cardProgresso(dados),

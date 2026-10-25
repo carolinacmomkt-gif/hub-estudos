@@ -1,0 +1,221 @@
+/* Hub do YouTube: resumo, quadro por etapas e página do vídeo. */
+
+.yt-resumo {
+  margin-bottom: 20px;
+}
+
+.yt-resumo .campo-curto select {
+  max-width: 120px;
+}
+
+/* Quadro: uma coluna por etapa, rolando para o lado */
+.yt-quadro {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(250px, 1fr);
+  gap: 12px;
+  margin: 0 -4px;
+  padding: 4px 4px 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.yt-coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  scroll-snap-align: start;
+}
+
+.yt-coluna-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.yt-cartoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.yt-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-left: 4px solid var(--urg-futuro);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+}
+
+.yt-cartao.prioridade-1 { border-left-color: var(--tipo-youtube); }
+.yt-cartao.prioridade-2 { border-left-color: var(--urg-semana); }
+
+.yt-cartao-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--cor-texto);
+  text-decoration: none;
+}
+
+.yt-cartao-titulo {
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.yt-cartao-meta {
+  color: var(--cor-texto-suave);
+  font-size: 0.84rem;
+}
+
+.yt-cartao-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.yt-vazio {
+  font-size: 0.88rem;
+}
+
+/* Lista */
+.yt-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.yt-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  text-decoration: none;
+}
+
+@media (max-width: 700px) {
+  .yt-quadro {
+    grid-auto-columns: 82vw;
+  }
+
+  .yt-linha {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .yt-linha .yt-cartao-meta {
+    grid-column: 1;
+  }
+}
+
+/* Página do vídeo */
+.yt-abas {
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.yt-form {
+  margin-top: 0;
+}
+
+.yt-form .campo input,
+.yt-form .campo select,
+.yt-form .campo textarea {
+  max-width: none;
+}
+
+.yt-data-hora {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 8px;
+}
+
+.campo-com-acao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.yt-contagem {
+  color: var(--cor-texto-destaque);
+  font-weight: 650;
+}
+
+.yt-blocos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.yt-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-left: 4px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+}
+
+.yt-bloco.tipo-bloco-gancho { border-left-color: var(--tipo-youtube); }
+.yt-bloco.tipo-bloco-cta { border-left-color: var(--urg-urgente); }
+.yt-bloco.tipo-bloco-final { border-left-color: var(--tipo-aula); }
+
+.yt-bloco-topo {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.yt-bloco select,
+.yt-bloco input,
+.yt-bloco textarea {
+  min-height: var(--toque);
+  padding: 8px 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.yt-bloco textarea {
+  width: 100%;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.yt-bloco-acoes {
+  display: flex;
+  gap: 4px;
+}
+
+@media (max-width: 700px) {
+  .yt-bloco-topo {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .yt-bloco-topo input {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

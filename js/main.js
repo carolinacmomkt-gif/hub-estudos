@@ -12,6 +12,7 @@ import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
 import { renderFaculdade, textoSituacaoFaculdade } from './views-faculdade.js';
 import { renderCalendario } from './views-calendario.js';
 import { renderCadernos } from './views-cadernos.js';
+import { renderYoutube } from './views-youtube.js';
 import { montarEditorCaderno, desmontarEditorCaderno } from './editor-caderno.js';
 import { retomarImportacao } from './importar-calendario.js';
 import { atualizarSituacaoAvisos } from './eventos-avisos.js';
@@ -28,6 +29,7 @@ const VIEWS = {
   faculdade: renderFaculdade,
   calendario: renderCalendario,
   cadernos: renderCadernos,
+  youtube: renderYoutube,
 };
 
 // Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
@@ -100,6 +102,7 @@ const TABELAS_NA_MEMORIA = {
   materiais: 'materiais',
   cadernos: 'cadernos',
   config: 'config',
+  videos: 'videos',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -119,7 +122,8 @@ const TELAS_DA_TABELA = {
   cadernos: ['inicio', 'cadernos'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes'],
+  config: ['inicio', 'calendario', 'configuracoes', 'youtube'],
+  videos: ['youtube', 'inicio'],
 };
 
 export function mostrarLogin(opcoes = {}) {

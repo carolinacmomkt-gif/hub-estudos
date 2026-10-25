@@ -6,6 +6,7 @@ export const ROTAS = [
   { id: 'faculdade', titulo: 'Faculdade', icone: 'faculdade', fixaCelular: true },
   { id: 'estudos', titulo: 'Estudos gerais', icone: 'estudos' },
   { id: 'substack', titulo: 'Substack', icone: 'substack' },
+  { id: 'youtube', titulo: 'YouTube', icone: 'youtube' },
   { id: 'biblioteca', titulo: 'Biblioteca', icone: 'biblioteca' },
   { id: 'cadernos', titulo: 'Cadernos', icone: 'cadernos', fixaCelular: true },
   { id: 'questoes', titulo: 'Questões', icone: 'questoes' },

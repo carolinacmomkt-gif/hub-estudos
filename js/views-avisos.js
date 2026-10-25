@@ -14,6 +14,7 @@ const TIPOS = [
   { id: 'trabalho', nome: 'Trabalhos' },
   { id: 'atividade', nome: 'Atividades' },
   { id: 'revisao', nome: 'Sessões de revisão' },
+  { id: 'youtube', nome: 'Gravar e publicar vídeos' },
   { id: 'aula', nome: 'Aulas' },
   { id: 'feriado', nome: 'Feriados' },
   { id: 'pessoal', nome: 'Eventos pessoais' },

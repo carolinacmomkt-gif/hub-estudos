@@ -11,7 +11,7 @@ export const AVISOS_PADRAO = {
   hora: '08:00',
   fuso: 'America/Sao_Paulo',
   marcos: { '3d': true, '1d': true, dia: true },
-  tipos: { prova: true, trabalho: true, atividade: true, revisao: true, aula: false, feriado: false, pessoal: false },
+  tipos: { prova: true, trabalho: true, atividade: true, revisao: true, youtube: true, aula: false, feriado: false, pessoal: false },
 };
 
 export function configDeAvisos(estado) {

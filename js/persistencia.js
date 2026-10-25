@@ -15,7 +15,7 @@ const LOTE = 500;
 export const TABELAS = [
   'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
   'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-  'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes',
+  'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'videos',
 ];
 const SOMENTE_LEITURA = new Set(['conexoes']); // quem escreve são as funções da Netlify
 // config tem uma linha por chave ("inicio", "avisos"…). Dois aparelhos podem criar a mesma chave

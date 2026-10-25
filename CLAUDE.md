@@ -6,6 +6,7 @@ App pessoal de estudos (uso exclusivo da Carol), instalável como PWA no Galaxy 
 - **Faculdade**: UniEVANGÉLICA, integrada ao AVA (Moodle).
 - **Estudos gerais**.
 - **Substack**.
+- **YouTube** (planejamento do canal).
 - **Cadernos** com escrita à mão.
 - **Gerador de questões** com IA.
 - **Calendário**.
@@ -61,10 +62,11 @@ A base é a identidade da Central de Conteúdo.
 2. **Faculdade**: painel geral e um painel por disciplina, com materiais, atividades e prazos, notas, frequência (se disponível), avisos, cadernos e questões daquela disciplina.
 3. **Estudos gerais**: painel com trilhas ou temas, a biblioteca filtrada, cadernos, questões e o progresso.
 4. **Substack**: painel com pautas (ideia → rascunho → revisão → publicado), rascunhos com editor de texto, referências da biblioteca ligadas a cada texto e uma meta de publicação.
-5. **Biblioteca**: artigos por link (extrai o texto), por PDF ou por texto colado, com tags, área, status (ler / lendo / lido / fichado), destaques e notas.
-6. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
-7. **Questões**: gerador, banco de questões, modo prova, modo fixação e revisão espaçada.
-8. **Calendário**: visão de mês, semana e lista, com eventos da faculdade e eventos próprios.
+5. **YouTube**: funil por etapas (ideia → pesquisa → roteiro → gravação → edição → thumb e SEO → agendado → publicado), roteiro em blocos com modelos (longo, Short, live), contagem de palavras e duração estimada, capítulos gerados do roteiro, títulos alternativos, ideia de thumbnail, descrição e tags com botão copiar, checklist de produção, resultados (visualizações, CTR, retenção), meta de vídeos por semana. As datas de gravação e de publicação viram eventos do Calendário (com avisos).
+6. **Biblioteca**: artigos por link (extrai o texto), por PDF ou por texto colado, com tags, área, status (ler / lendo / lido / fichado), destaques e notas.
+7. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
+8. **Questões**: gerador, banco de questões, modo prova, modo fixação e revisão espaçada.
+9. **Calendário**: visão de mês, semana e lista, com eventos da faculdade e eventos próprios.
 
 ## Cadernos (requisito importante)
 
@@ -230,6 +232,7 @@ Tabelas:
 - `respostas`
 - `revisoes`
 - `pautas_substack`
+- `videos` (YouTube)
 - `config` (tema, horários de aviso, token do AVA criptografado)
 
 Todas as tabelas usam RLS ligado ao usuário da Carol.

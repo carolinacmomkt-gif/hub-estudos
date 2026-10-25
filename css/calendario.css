@@ -538,6 +538,7 @@ button.atalho-criar:hover {
 }
 
 .tipo-revisao { --tipo-cor: var(--tipo-revisao); }
+.tipo-youtube { --tipo-cor: var(--tipo-youtube); }
 
 /* Grupos de caixas de marcar (avisos e plano de estudo) */
 .grupo-marcar {

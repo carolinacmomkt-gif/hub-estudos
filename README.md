@@ -65,6 +65,7 @@ Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, 
 - `002-faculdade.sql` (Etapa 4a): campos das disciplinas para juntar AVA e Lyceum, pesos da calculadora e média.
 - `003-calendario.sql` (Etapa 4b): tabela `importacoes`, onde fica a leitura do calendário acadêmico até a Carol revisar.
 - `004-avisos.sql` (Etapa 4c): aparelhos que recebem avisos, registro dos avisos enviados e sessões de revisão (tipo `revisao`).
+- `005-youtube.sql`: tabela `videos` do Hub do YouTube e o tipo `youtube` nos eventos do Calendário.
 
 ## Estrutura
 

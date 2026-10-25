@@ -18,6 +18,7 @@ import { ligarCalendario, cliqueCalendario, enviarCalendario, mudancaCalendario 
 import { ligarAvisos, cliqueAvisos, enviarAvisos, mudancaAvisos } from './eventos-avisos.js';
 import { ligarInicio, cliqueInicio, enviarInicio, mudancaInicio } from './eventos-inicio.js';
 import { cliqueCadernos, enviarCadernos } from './eventos-cadernos.js';
+import { ligarYoutube, cliqueYoutube, enviarYoutube, mudancaYoutube } from './eventos-youtube.js';
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -263,6 +264,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarCalendario({ renderizar: () => app.renderizar(), avisoCurto });
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
+  ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
 
@@ -335,7 +337,7 @@ export function ligarEventos(funcoesDoApp) {
         mudarFaltasManuais(alvo.dataset.id, -1);
         return;
       default:
-        if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo))) return;
+        if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -351,12 +353,13 @@ export function ligarEventos(funcoesDoApp) {
 
   document.addEventListener('change', (evento) => {
     if (evento.target.matches('[data-acao="importar-backup"]')) restaurarBackup(evento.target);
-    else if (!mudancaInicio(evento.target) && !mudancaAvisos(evento.target)) mudancaCalendario(evento.target);
+    else if (!mudancaYoutube(evento.target) && !mudancaInicio(evento.target) && !mudancaAvisos(evento.target)) mudancaCalendario(evento.target);
   });
 
   document.addEventListener('input', (evento) => {
     const form = evento.target.closest('[data-form="calculadora"]');
     if (form) aoMudarCalculadora(form);
+    else if (mudancaYoutube(evento.target)) return;
     else if (evento.target.type !== 'checkbox') mudancaCalendario(evento.target);
   });
 
@@ -364,7 +367,7 @@ export function ligarEventos(funcoesDoApp) {
     const form = evento.target.closest('[data-form]');
     if (!form) return;
     evento.preventDefault();
-    if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form)) return;
+    if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form) || enviarYoutube(form)) return;
     switch (form.dataset.form) {
       case 'login':
         entrar(form);

@@ -13,6 +13,7 @@ export const CARDS_DO_APP = [
   { id: 'notas', nome: 'Últimas notas', tamanho: '2/3' },
   { id: 'faltas', nome: 'Atenção às faltas', tamanho: '1/3' },
   { id: 'avisos', nome: 'Avisos da faculdade', tamanho: '2/3' },
+  { id: 'youtube', nome: 'YouTube', tamanho: '1/3' },
   { id: 'caixa', nome: 'Caixa de entrada', tamanho: 'inteiro' },
   { id: 'cadernos', nome: 'Cadernos recentes', tamanho: 'inteiro' },
   { id: 'progresso', nome: 'Progresso por área', tamanho: 'inteiro' },
