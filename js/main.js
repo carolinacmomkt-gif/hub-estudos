@@ -5,7 +5,14 @@ import { ROTAS, rotaAtual } from './rotas.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 import { montarNavegacao, marcarRotaAtiva, atualizarIndicadorSincronizacao } from './views-navegacao.js';
 import { renderInicio } from './views-inicio.js';
-import { criarViewArea, IDS_AREAS } from './views-areas.js';
+import { renderBiblioteca } from './views-biblioteca.js';
+import { renderQuestoes } from './views-questoes.js';
+import { renderSubstack } from './views-substack.js';
+import { renderEstudos } from './views-estudos.js';
+import { retomarTrabalhos } from './trabalhos-ia.js';
+import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
+import { filtrarListaNaTela } from './eventos-questoes.js';
+import { salvarSubstackAgora } from './eventos-substack.js';
 import { renderConfiguracoes, textoSituacao } from './views-configuracoes.js';
 import { renderLogin } from './views-login.js';
 import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
@@ -30,6 +37,10 @@ const VIEWS = {
   calendario: renderCalendario,
   cadernos: renderCadernos,
   youtube: renderYoutube,
+  biblioteca: renderBiblioteca,
+  questoes: renderQuestoes,
+  substack: renderSubstack,
+  estudos: renderEstudos,
 };
 
 // Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
@@ -40,9 +51,6 @@ const CICLO = {
   cadernos: { montar: (id) => id && montarEditorCaderno(id), desmontar: desmontarEditorCaderno },
 };
 let telaMontada = null;
-ROTAS.filter((r) => IDS_AREAS.includes(r.id)).forEach((r) => {
-  VIEWS[r.id] = criarViewArea(r);
-});
 
 const conteudo = document.getElementById('conteudo');
 let noApp = false;
@@ -66,6 +74,7 @@ function seletorDoFoco() {
 export function renderizar({ mudouDeTela = false } = {}) {
   if (!noApp) return;
   const rota = rotaAtual();
+  if (mudouDeTela) salvarSubstackAgora();
   if (telaMontada) {
     CICLO[telaMontada].desmontar();
     telaMontada = null;
@@ -73,8 +82,12 @@ export function renderizar({ mudouDeTela = false } = {}) {
   if (rota.id === 'calendario' && rota.parametro === 'importar') retomarImportacao();
   atualizarEstado({ rota: rota.id, parametro: rota.parametro, sinc: situacaoSincronizacao(), email: emailDaSessao(), faculdade: situacaoFaculdade() });
   const foco = mudouDeTela ? null : seletorDoFoco();
+  conteudo.dataset.tela = rota.id;
   conteudo.innerHTML = VIEWS[rota.id](obterEstado());
   if (foco) conteudo.querySelector(`${foco}:not([disabled])`)?.focus({ preventScroll: true });
+  // As buscas filtram na tela (sem redesenhar a cada letra): reaplica depois de redesenhar.
+  if (rota.id === 'biblioteca') reaplicarBusca();
+  if (rota.id === 'questoes' && !rota.parametro) filtrarListaNaTela('q-lista', document.getElementById('q-busca')?.value);
   if (CICLO[rota.id]) {
     telaMontada = rota.id;
     CICLO[rota.id].montar(rota.parametro);
@@ -103,6 +116,12 @@ const TABELAS_NA_MEMORIA = {
   cadernos: 'cadernos',
   config: 'config',
   videos: 'videos',
+  artigos: 'artigos',
+  questoes: 'questoes',
+  revisoes: 'revisoes',
+  simulados: 'simulados',
+  pautas_substack: 'pautas',
+  areas: 'areas',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -119,12 +138,32 @@ async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
 const TELAS_DA_TABELA = {
   caixa_entrada: ['inicio'],
   conexoes: ['configuracoes', 'faculdade'],
-  cadernos: ['inicio', 'cadernos'],
+  cadernos: ['inicio', 'cadernos', 'estudos'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes', 'youtube'],
+  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack'],
   videos: ['youtube', 'inicio'],
+  artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes'],
+  questoes: ['questoes', 'inicio', 'estudos'],
+  revisoes: ['questoes', 'inicio'],
+  simulados: ['questoes'],
+  pautas_substack: ['substack', 'inicio'],
+  areas: ['estudos', 'inicio', 'biblioteca', 'questoes', 'cadernos'],
 };
+
+// Link ou texto compartilhado de outro app (Web Share Target): abre "Adicionar leitura" preenchido.
+function aplicarCompartilhado() {
+  const p = new URLSearchParams(location.search);
+  if (!['url', 'text', 'title'].some((k) => p.get(k))) return;
+  const texto = p.get('text') || '';
+  const url = p.get('url') || (texto.match(/https?:\/\/\S+/) || [])[0] || '';
+  const sobra = url ? texto.replace(url, '').trim() : texto;
+  atualizarEstado({
+    bibPreenchido: { url, titulo: p.get('title') || '', texto: url ? '' : sobra },
+    bibFonte: url ? 'link' : 'texto',
+  });
+  history.replaceState(null, '', `${location.pathname}#biblioteca/novo`);
+}
 
 export function mostrarLogin(opcoes = {}) {
   noApp = false;
@@ -139,10 +178,13 @@ export async function entrarNoApp() {
   noApp = true;
   document.body.classList.remove('modo-login');
   await carregarDadosLocais();
+  aplicarCompartilhado();
   renderizar();
   if (!sincronizacaoIniciada) {
     sincronizacaoIniciada = true;
     iniciarSincronizacaoAutomatica();
+    retomarTrabalhos();
+    iniciarBiblioteca();
     // Ao abrir: baixa o que mudou e, se faz mais de 1h, atualiza a faculdade (AVA + Lyceum).
     sincronizar().finally(() => sincronizarFaculdade());
     document.addEventListener('visibilitychange', () => {

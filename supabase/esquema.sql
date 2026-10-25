@@ -33,6 +33,11 @@ create table if not exists public.areas (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   nome text not null,
   cor text,
+  descricao text,
+  tipo text not null default 'tema',          -- 'trilha' ou 'tema' (Estudos gerais)
+  itens jsonb not null default '[]'::jsonb,   -- etapas da trilha
+  meta jsonb not null default '{}'::jsonb,
+  icone text,
   ordem integer not null default 0,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
@@ -87,14 +92,14 @@ create table if not exists public.eventos (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   disciplina_id uuid references public.disciplinas (id) on delete set null,
-  tipo text not null default 'pessoal' check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao', 'youtube')),
+  tipo text not null default 'pessoal' check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao', 'youtube', 'substack')),
   titulo text not null,
   descricao text,
   inicio timestamptz not null,
   fim timestamptz,
   dia_inteiro boolean not null default false,
   status text check (status in ('pendente', 'entregue', 'atrasado')),
-  origem text not null default 'manual' check (origem in ('ava', 'ics', 'academico', 'lyceum', 'manual', 'youtube')),
+  origem text not null default 'manual' check (origem in ('ava', 'ics', 'academico', 'lyceum', 'manual', 'youtube', 'substack')),
   origem_id text,
   link text,
   prova_id uuid,  -- sessão de revisão: a prova a que pertence
@@ -194,6 +199,11 @@ create table if not exists public.artigos (
   status text not null default 'ler' check (status in ('ler', 'lendo', 'lido', 'fichado')),
   destaques jsonb not null default '[]'::jsonb,
   notas text,
+  fonte text not null default 'texto',        -- 'link', 'pdf' ou 'texto'
+  resumo text,
+  fichamento jsonb not null default '{}'::jsonb,
+  favorito boolean not null default false,
+  lido_em timestamptz,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
@@ -330,6 +340,12 @@ create table if not exists public.pautas_substack (
   referencias uuid[] not null default '{}',
   link text,
   publicado_em timestamptz,
+  subtitulo text,
+  notas text,
+  tags text[] not null default '{}',
+  agendado_para timestamptz,
+  checklist jsonb not null default '{}'::jsonb,
+  detalhes jsonb not null default '{}'::jsonb,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
@@ -376,13 +392,33 @@ create table if not exists public.conexoes (
 create table if not exists public.importacoes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  tipo text not null default 'calendario' check (tipo in ('calendario')),
+  tipo text not null default 'calendario' check (tipo in ('calendario', 'questoes', 'artigo')),
   status text not null default 'lendo' check (status in ('lendo', 'pronto', 'erro')),
   arquivo text,      -- caminho do PDF no Storage (apagado depois da leitura)
   texto text,        -- ou o texto colado
   curso text,        -- dica opcional para a IA
   resultado jsonb,
   erro text,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+-- Questões: simulados (prova, fixação e revisão).
+create table if not exists public.simulados (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  titulo text not null,
+  modo text not null default 'prova' check (modo in ('prova', 'fixacao', 'revisao')),
+  questoes uuid[] not null default '{}',
+  respostas jsonb not null default '{}'::jsonb,
+  acertos integer,
+  total integer,
+  nota numeric,
+  disciplina_id uuid references public.disciplinas (id) on delete set null,
+  area_id uuid references public.areas (id) on delete set null,
+  iniciado_em timestamptz not null default now(),
+  concluido_em timestamptz,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
@@ -479,7 +515,7 @@ declare
   tabelas text[] := array[
     'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
     'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos'
+    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos', 'simulados'
   ];
 begin
   foreach tabela in array tabelas loop

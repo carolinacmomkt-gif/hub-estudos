@@ -37,15 +37,3 @@ export function barraProgresso(fracao, rotulo) {
       <span class="progresso-valor">${pct}%</span>
     </div>`;
 }
-
-export function emConstrucao({ icone: nomeIcone, titulo, texto, itens = [], etapa, acao }) {
-  return `
-    <section class="card vazio">
-      <div class="vazio-icone">${icone(nomeIcone)}</div>
-      <h2>${esc(titulo)}</h2>
-      <p class="texto-suave">${esc(texto)}</p>
-      ${itens.length ? `<ul class="vazio-lista">${itens.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>` : ''}
-      ${etapa ? `<span class="selo">Chega na etapa ${esc(etapa)}</span>` : ''}
-      ${acao ? `<a class="botao botao-primario" href="${esc(acao.href)}">${esc(acao.rotulo)}</a>` : ''}
-    </section>`;
-}

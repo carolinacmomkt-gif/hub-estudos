@@ -5,6 +5,7 @@ import { EditorDeTinta, novaPaginaVazia } from './editor-tinta.js';
 import { dimensoes, MODELOS_BASICOS } from './folhas.js';
 import { listar, salvar, obter } from './persistencia.js';
 import { esc } from './utilidades.js';
+import { obterEstado, atualizarEstado } from './estado.js';
 
 const CHAVE_PREFS = 'hub.editor.prefs';
 
@@ -109,6 +110,7 @@ export function renderEditorCaderno() {
           <span id="editor-pagina" aria-live="polite">…</span>
           <button type="button" class="ferramenta-botao" data-ed="pagina-proxima" aria-label="Próxima página">›</button>
           <button type="button" class="ferramenta-botao" data-ed="pagina-nova">+ Página</button>
+          <button type="button" class="ferramenta-botao" data-ed="gerar-questoes" aria-label="Gerar questões desta página" title="Manda a imagem desta página para o gerador de questões">Gerar questões</button>
         </div>
       </header>
       <div id="editor-barra"></div>
@@ -313,6 +315,24 @@ async function novaPagina() {
   avisar(`Página ${paginas.length} criada.`);
 }
 
+// Leva a imagem da página para Questões → Gerar, já com a disciplina e o tema do caderno.
+async function gerarQuestoesDaPagina() {
+  if (!editor.totalDeTracos()) {
+    avisar('Esta página ainda está em branco.');
+    return;
+  }
+  await salvarAgora();
+  const blob = await editor.imagemDaPagina();
+  const anterior = obterEstado().questoesImagem;
+  if (anterior?.url) URL.revokeObjectURL(anterior.url);
+  atualizarEstado({
+    questoesImagem: { blob, url: URL.createObjectURL(blob), rotulo: `${caderno.titulo} · página ${indice + 1}`, caderno_id: caderno.id },
+    questoesPreset: { fonte: 'imagem', disciplina: caderno.disciplina_id || '', area: caderno.area_id || '' },
+    qFonte: 'imagem',
+  });
+  location.hash = '#questoes/gerar';
+}
+
 async function mudarModelo(modelo) {
   const p = paginas[indice];
   if (!p) return;
@@ -502,6 +522,9 @@ function aoClicar(evento) {
       return;
     case 'pagina-nova':
       novaPagina();
+      return;
+    case 'gerar-questoes':
+      gerarQuestoesDaPagina();
       return;
     case 'selecao-cor':
       editor.mudarCorSelecao(valor);

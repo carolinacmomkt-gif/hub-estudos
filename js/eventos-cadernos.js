@@ -10,7 +10,7 @@ export function cliqueCadernos(alvo) {
   if (alvo.dataset.acao !== 'caderno-novo') return false;
   document.getElementById('folha-criar')?.close();
   document.getElementById('folha-evento-titulo').textContent = 'Novo caderno';
-  document.getElementById('folha-evento-conteudo').innerHTML = renderFormCaderno(obterEstado());
+  document.getElementById('folha-evento-conteudo').innerHTML = renderFormCaderno(obterEstado(), { area: alvo.dataset.area || '' });
   document.getElementById('folha-evento').showModal();
   document.querySelector('[data-form="caderno-novo"] [name=titulo]')?.focus();
   return true;
@@ -37,6 +37,7 @@ async function criar(form) {
     titulo: titulo.slice(0, 80),
     tipo: 'comum',
     disciplina_id: c.disciplina.value || null,
+    area_id: c.area?.value || null,
     tamanho: c.tamanho.value,
     orientacao: c.orientacao.value,
     capa: { cor: Number(c.capa.value) || 1 },

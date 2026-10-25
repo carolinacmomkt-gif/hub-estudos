@@ -21,9 +21,10 @@ export const TIPOS_EVENTO = [
   { id: 'pessoal', nome: 'Pessoal' },
   { id: 'revisao', nome: 'Revisão' },
   { id: 'youtube', nome: 'YouTube' },
+  { id: 'substack', nome: 'Substack' },
 ];
 const NOME_TIPO = Object.fromEntries(TIPOS_EVENTO.map((t) => [t.id, t.nome]));
-const NOME_ORIGEM = { ava: 'AVA', ics: 'AVA', lyceum: 'Lyceum', academico: 'Calendário acadêmico', manual: 'Seu evento', youtube: 'YouTube' };
+const NOME_ORIGEM = { ava: 'AVA', ics: 'AVA', lyceum: 'Lyceum', academico: 'Calendário acadêmico', manual: 'Seu evento', youtube: 'YouTube', substack: 'Substack' };
 const VISOES = [
   { id: 'mes', nome: 'Mês' },
   { id: 'semana', nome: 'Semana' },
@@ -263,8 +264,12 @@ function detalheSomenteLeitura(estado, evento) {
     </div>`;
 }
 
-function detalheDoYoutube(evento) {
-  const videoId = String(evento.origem_id || '').split(':')[0];
+// Eventos que vêm de outra área do app (YouTube, Substack): a data muda lá.
+function detalheDeOutraArea(evento) {
+  const id = String(evento.origem_id || '').split(':')[0];
+  const area = evento.origem === 'substack'
+    ? { nome: 'Substack', href: `#substack/${id}`, abrir: 'Abrir a pauta', onde: 'a pauta' }
+    : { nome: 'Hub do YouTube', href: `#youtube/${id}`, abrir: 'Abrir o vídeo', onde: 'o vídeo' };
   const quando = evento.dia_inteiro
     ? maiuscula(fmtDiaLongo.format(new Date(evento.inicio)))
     : `${maiuscula(fmtDiaLongo.format(new Date(evento.inicio)))} · ${horaLocal(evento.inicio)}`;
@@ -272,16 +277,16 @@ function detalheDoYoutube(evento) {
     <div class="cal-detalhe">
       <p class="cal-detalhe-titulo">${esc(evento.titulo)}</p>
       <p class="texto-suave">${esc(quando)}</p>
-      <p class="campo-ajuda">Vem do Hub do YouTube. Para mudar a data, abra o vídeo.</p>
+      <p class="campo-ajuda">Vem do ${esc(area.nome)}. Para mudar a data, abra ${esc(area.onde)}.</p>
       <div class="acoes">
-        <a class="botao botao-primario" href="#youtube/${esc(videoId)}" data-acao="cal-fechar">Abrir o vídeo</a>
+        <a class="botao botao-primario" href="${esc(area.href)}" data-acao="cal-fechar">${esc(area.abrir)}</a>
         <button class="botao botao-secundario" type="button" data-acao="cal-fechar">Fechar</button>
       </div>
     </div>`;
 }
 
 export function renderFolhaEvento(estado, { evento = null, dia = null } = {}) {
-  if (evento?.origem === 'youtube') return detalheDoYoutube(evento);
+  if (evento?.origem === 'youtube' || evento?.origem === 'substack') return detalheDeOutraArea(evento);
   if (evento && evento.origem !== 'manual' && evento.origem !== 'academico') return detalheSomenteLeitura(estado, evento);
 
   const e = evento || {};
@@ -302,7 +307,7 @@ export function renderFolhaEvento(estado, { evento = null, dia = null } = {}) {
       <div class="cal-form-linha">
         <label class="campo">
           <span class="campo-rotulo">Tipo</span>
-          <select name="tipo">${opcoes(TIPOS_EVENTO, tipo)}</select>
+          <select name="tipo">${opcoes(TIPOS_EVENTO.filter((t) => t.id !== 'substack'), tipo)}</select>
         </label>
         <label class="campo">
           <span class="campo-rotulo">Disciplina</span>
@@ -388,7 +393,7 @@ function revisao(imp) {
         <input class="importado-titulo" type="text" maxlength="140" value="${esc(e.titulo)}" data-campo="titulo" data-indice="${i}" aria-label="Título da data ${i + 1}">
         <div class="importado-linha">
           <label class="importado-campo">Tipo
-            <select data-campo="tipo" data-indice="${i}">${opcoes(TIPOS_EVENTO.filter((t) => !['pessoal', 'revisao', 'youtube'].includes(t.id)), e.tipo)}</select></label>
+            <select data-campo="tipo" data-indice="${i}">${opcoes(TIPOS_EVENTO.filter((t) => !['pessoal', 'revisao', 'youtube', 'substack'].includes(t.id)), e.tipo)}</select></label>
           <label class="importado-campo">Data
             <input type="date" value="${esc(e.inicio)}" data-campo="inicio" data-indice="${i}"></label>
           <label class="importado-campo">Até

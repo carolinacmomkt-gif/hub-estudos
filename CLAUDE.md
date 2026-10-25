@@ -31,7 +31,7 @@ App pessoal de estudos (uso exclusivo da Carol), instalável como PWA no Galaxy 
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`gerar-questoes`, `calendario-ler-background`, que lê o calendário acadêmico, e `youtube-ia`) |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que gera questões e lê PDFs da Biblioteca, `questoes-corrigir`, `calendario-ler-background`, que lê o calendário acadêmico, e `youtube-ia`) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -213,7 +213,7 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - Configurações: quantidade, dificuldade, área/disciplina e modo.
   - **Prova**: múltipla escolha (4 ou 5 alternativas) e verdadeiro/falso, com nota final.
   - **Fixação**: perguntas dissertativas; a IA corrige a resposta da Carol, com nota de 0 a 10 e um comentário.
-- A função `gerar-questoes` usa a web search da Anthropic para pesquisar o tema e devolve **JSON validado** com: enunciado, alternativas, resposta correta, explicação comentada, fontes (título + URL) e nível.
+- A função `ia-background` (pedido do tipo `questoes`) usa a web search da Anthropic para pesquisar o tema e devolve **JSON validado** com: enunciado, alternativas, resposta correta, explicação comentada, fontes (título + URL) e nível.
 - Questões salvas no banco, com tags, acertos/erros e **revisão espaçada** (refazer as erradas em 1, 3, 7 e 15 dias).
 
 ## Modelo de dados (Supabase)
@@ -232,6 +232,7 @@ Tabelas:
 - `respostas`
 - `revisoes`
 - `pautas_substack`
+- `simulados` (Questões)
 - `videos` (YouTube)
 - `config` (tema, horários de aviso, token do AVA criptografado)
 

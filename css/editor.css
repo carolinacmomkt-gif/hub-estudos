@@ -402,7 +402,9 @@
 
 @media (max-width: 700px) {
   .editor-paginas {
+    flex-wrap: wrap;
     margin-left: 0;
+    white-space: normal;
   }
 
   .editor-caderno .caneta-topo {

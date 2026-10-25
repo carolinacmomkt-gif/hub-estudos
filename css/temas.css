@@ -143,4 +143,5 @@
   --tipo-pessoal: var(--tinta-roxo);
   --tipo-revisao: var(--capa-3);
   --tipo-youtube: var(--capa-4);
+  --tipo-substack: var(--urg-urgente);
 }

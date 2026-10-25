@@ -1,20 +1,9 @@
 // Botão "+": caixa de entrada rápida (ideias em 2 segundos) e atalhos para criar coisas.
-// Os atalhos ganham vida nas etapas de cada área.
 
 import { icone } from './icones.js';
 import { esc, haQuantoTempo } from './utilidades.js';
 
-const EM_BREVE = [
-  { icone: 'biblioteca', rotulo: 'Novo artigo', etapa: '6' },
-  { icone: 'questoes', rotulo: 'Gerar questões', etapa: '7' },
-];
-
 export function renderFolhaCriar() {
-  const atalhos = EM_BREVE.map((a) => `
-    <li class="atalho-criar" aria-disabled="true">
-      ${icone(a.icone)}<span>${esc(a.rotulo)}</span><span class="selo">Etapa ${esc(a.etapa)}</span>
-    </li>`).join('');
-
   return `
     <form class="formulario" data-form="caixa-entrada" novalidate>
       <label class="campo">
@@ -28,9 +17,11 @@ export function renderFolhaCriar() {
       <li><button class="atalho-criar" type="button" data-acao="cal-novo">${icone('calendario')}<span>Novo evento</span></button></li>
       <li><button class="atalho-criar" type="button" data-acao="caderno-novo">${icone('cadernos')}<span>Novo caderno</span></button></li>
       <li><button class="atalho-criar" type="button" data-acao="yt-novo">${icone('youtube')}<span>Ideia de vídeo</span></button></li>
-    </ul>
-    <h3 class="ava-subtitulo">Em breve</h3>
-    <ul class="atalhos-criar">${atalhos}</ul>`;
+      <li><a class="atalho-criar" href="#biblioteca/novo" data-acao="fechar-criar">${icone('biblioteca')}<span>Nova leitura</span></a></li>
+      <li><a class="atalho-criar" href="#questoes/gerar" data-acao="fechar-criar">${icone('questoes')}<span>Gerar questões</span></a></li>
+      <li><button class="atalho-criar" type="button" data-acao="ss-nova">${icone('substack')}<span>Pauta do Substack</span></button></li>
+      <li><button class="atalho-criar" type="button" data-acao="est-nova">${icone('estudos')}<span>Trilha ou tema</span></button></li>
+    </ul>`;
 }
 
 export function cardCaixaEntrada(itens, agora = Date.now()) {

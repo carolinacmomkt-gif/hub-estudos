@@ -1,6 +1,10 @@
 // Cálculos sobre os dados da faculdade (AVA + Lyceum) que as telas usam.
 
 import { DIA } from './utilidades.js';
+import { revisoesPorGrupo } from './dados-questoes.js';
+import { areasAtivas, nomeDaArea, progressoDaArea } from './dados-estudos.js';
+import { filtrarArtigos } from './dados-biblioteca.js';
+import { pautasAtivas, configSubstack, publicadosNoMesSubstack } from './dados-substack.js';
 
 const tempo = (iso) => (iso ? new Date(iso).getTime() : null);
 
@@ -14,8 +18,10 @@ export function nomeDaDisciplina(estado, id) {
   return (estado.disciplinas || []).find((d) => d.id === id)?.nome || '';
 }
 
+// Dados reais = qualquer coisa que a Carol já guardou (disciplinas, leituras, questões, pautas…).
 export function temDadosReais(estado) {
-  return disciplinasAtivas(estado).length > 0;
+  if (disciplinasAtivas(estado).length) return true;
+  return ['cadernos', 'artigos', 'questoes', 'pautas', 'areas', 'videos'].some((k) => (estado[k] || []).some((x) => !x.excluido_em));
 }
 
 // Situação efetiva de um evento: "pendente" com prazo vencido conta como atrasado.
@@ -164,15 +170,22 @@ export function dadosReaisDoInicio(estado, agora = Date.now()) {
   return {
     nome: estado.dados?.nome || 'Carol',
     eventos,
-    revisoes: [],
+    revisoes: revisoesPorGrupo(estado, (q) => (q?.disciplina_id ? nome(q.disciplina_id) : nomeDaArea(estado, q?.area_id))),
     notas,
     cadernos,
     areas: [
       { id: 'faculdade', nome: 'Faculdade', detalhe: doSemestre.length ? `${entregues} de ${doSemestre.length} atividades entregues` : 'Sem atividades com prazo ainda', progresso: doSemestre.length ? entregues / doSemestre.length : 0 },
-      { id: 'estudos', nome: 'Estudos gerais', detalhe: 'Trilhas chegam na etapa 8', progresso: 0 },
-      { id: 'substack', nome: 'Substack', detalhe: 'Meta de publicação chega na etapa 8', progresso: 0 },
+      ...areasAtivas(estado).slice(0, 4).map((a) => {
+        const p = progressoDaArea(estado, a);
+        return { id: a.id, nome: a.nome, detalhe: p.detalhe, progresso: p.fracao, destino: `#estudos/${a.id}` };
+      }),
+      ...(pautasAtivas(estado).length ? [(() => {
+        const meta = configSubstack(estado).porMes;
+        const feitos = publicadosNoMesSubstack(estado, agora).length;
+        return { id: 'substack', nome: 'Substack', detalhe: `${feitos} de ${meta} textos publicados no mês`, progresso: feitos / meta, destino: '#substack' };
+      })()] : []),
     ],
-    leituras: [],
+    leituras: filtrarArtigos(estado, {}).filter((a) => a.status === 'lendo' || a.status === 'ler').map((a) => ({ id: a.id, titulo: a.titulo, status: a.status })),
   };
 }
 

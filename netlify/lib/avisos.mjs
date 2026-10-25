@@ -10,7 +10,7 @@ export const AVISOS_PADRAO = {
   hora: '08:00',
   fuso: 'America/Sao_Paulo',
   marcos: { '3d': true, '1d': true, dia: true },
-  tipos: { prova: true, trabalho: true, atividade: true, revisao: true, youtube: true, aula: false, feriado: false, pessoal: false },
+  tipos: { prova: true, trabalho: true, atividade: true, revisao: true, youtube: true, substack: true, aula: false, feriado: false, pessoal: false },
 };
 
 const DIAS_DO_MARCO = { 3: '3d', 1: '1d', 0: 'dia' };

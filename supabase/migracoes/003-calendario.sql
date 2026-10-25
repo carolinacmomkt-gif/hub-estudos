@@ -7,7 +7,7 @@
 create table if not exists public.importacoes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  tipo text not null default 'calendario' check (tipo in ('calendario')),
+  tipo text not null default 'calendario' check (tipo in ('calendario', 'questoes', 'artigo')),
   status text not null default 'lendo' check (status in ('lendo', 'pronto', 'erro')),
   arquivo text,      -- caminho do PDF no Storage (apagado depois da leitura)
   texto text,        -- ou o texto colado

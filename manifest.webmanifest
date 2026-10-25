@@ -19,6 +19,12 @@
   "shortcuts": [
     { "name": "Cadernos", "url": "./#cadernos", "icons": [{ "src": "icones/icone-192.png", "sizes": "192x192" }] },
     { "name": "Calendário", "url": "./#calendario", "icons": [{ "src": "icones/icone-192.png", "sizes": "192x192" }] },
-    { "name": "Questões", "url": "./#questoes", "icons": [{ "src": "icones/icone-192.png", "sizes": "192x192" }] }
-  ]
+    { "name": "Questões", "url": "./#questoes", "icons": [{ "src": "icones/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Nova leitura", "url": "./#biblioteca/novo", "icons": [{ "src": "icones/icone-192.png", "sizes": "192x192" }] }
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
 }

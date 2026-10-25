@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v26';
+const VERSAO = 'hub-v27';
 
 const ARQUIVOS = [
   './',
@@ -56,13 +56,27 @@ const ARQUIVOS = [
   './js/thumbs-youtube.js',
   './js/teleprompter.js',
   './css/youtube.css',
+  './css/areas.css',
+  './js/gravacao.js',
+  './js/trabalhos-ia.js',
+  './js/dados-biblioteca.js',
+  './js/views-biblioteca.js',
+  './js/eventos-biblioteca.js',
+  './js/dados-questoes.js',
+  './js/views-questoes.js',
+  './js/eventos-questoes.js',
+  './js/dados-substack.js',
+  './js/views-substack.js',
+  './js/eventos-substack.js',
+  './js/dados-estudos.js',
+  './js/views-estudos.js',
+  './js/eventos-estudos.js',
   './js/folhas.js',
   './css/inicio.css',
   './js/editor-tinta.js',
   './js/vendor/perfect-freehand.js',
   './js/views-navegacao.js',
   './js/views-inicio.js',
-  './js/views-areas.js',
   './js/views-configuracoes.js',
   './icones/icone.svg',
   './icones/icone-192.png',

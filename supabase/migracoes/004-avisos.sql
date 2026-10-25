@@ -3,10 +3,10 @@
 -- Pode rodar de novo sem problema.
 
 -- Sessões de revisão do plano de estudo viram eventos do tipo "revisao", ligados à prova.
--- (A lista já inclui "youtube", da migração 005, para rodar esta de novo não desfazer aquela.)
+-- (A lista já inclui os tipos das migrações 005 e 007, para rodar esta de novo não desfazer aquelas.)
 alter table public.eventos drop constraint if exists eventos_tipo_check;
 alter table public.eventos add constraint eventos_tipo_check
-  check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao', 'youtube'));
+  check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao', 'youtube', 'substack'));
 alter table public.eventos add column if not exists prova_id uuid;
 create index if not exists eventos_prova_idx on public.eventos (prova_id) where prova_id is not null;
 

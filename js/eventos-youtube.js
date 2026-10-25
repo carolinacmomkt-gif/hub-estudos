@@ -42,7 +42,14 @@ function videoPeloId(id) {
 }
 
 // As datas do vídeo viram eventos do Calendário (tipo "youtube"), atualizados quando mudam.
-async function sincronizarEventos(video) {
+// Em fila: duas gravações seguidas não podem criar o mesmo evento duas vezes.
+let filaEventos = Promise.resolve();
+function sincronizarEventos(video) {
+  filaEventos = filaEventos.then(() => atualizarEventos(video)).catch((erro) => console.warn('Eventos do vídeo:', erro));
+  return filaEventos;
+}
+
+async function atualizarEventos(video) {
   const prefixo = `${video.id}:`;
   const existentes = (await listar('eventos', { incluirExcluidos: true })).filter((e) => e.origem === 'youtube' && String(e.origem_id).startsWith(prefixo));
   const desejados = eventosDoVideo(video);

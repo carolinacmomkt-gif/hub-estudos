@@ -6,6 +6,8 @@ import { cardPlano } from './views-plano.js';
 import { blocosDoInicio, nomeDoBloco, TAMANHOS, TIPOS_PROPRIOS } from './inicio-layout.js';
 import { renderProprio } from './views-inicio-proprios.js';
 import { cardYoutubeInicio } from './views-youtube.js';
+import { cardLeiturasInicio } from './views-biblioteca.js';
+import { cardSubstackInicio } from './views-substack.js';
 import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas } from './dados-faculdade.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
@@ -58,7 +60,7 @@ export function escolherProximoPasso(dados, agora = Date.now()) {
     return {
       titulo: `Revisar ${totalRevisoes} ${totalRevisoes === 1 ? 'questão' : 'questões'}`,
       texto: 'Refazer as que você errou é o que mais fixa o conteúdo.',
-      acao: 'Revisar agora',
+      acao: 'Abrir Questões',
       destino: '#questoes',
     };
   }
@@ -68,8 +70,8 @@ export function escolherProximoPasso(dados, agora = Date.now()) {
     return {
       titulo: `Continuar a leitura: ${leitura.titulo}`,
       texto: 'Nada urgente por agora. Bom momento para ler com calma.',
-      acao: 'Abrir a Biblioteca',
-      destino: '#biblioteca',
+      acao: 'Abrir a leitura',
+      destino: leitura.id ? `#biblioteca/${leitura.id}` : '#biblioteca',
     };
   }
 
@@ -161,7 +163,8 @@ function cardRevisoes(dados) {
     return `
       <section class="card" aria-labelledby="revisoes-titulo">
         <div class="card-topo"><h2 class="card-titulo" id="revisoes-titulo">Revisões pendentes</h2></div>
-        <p class="texto-suave">Nenhuma questão para revisar. O gerador de questões e a revisão espaçada chegam na etapa 7.</p>
+        <p class="texto-suave">Nenhuma questão para revisar hoje. As que você errar voltam aqui em 1, 3, 7 e 15 dias.</p>
+        <a class="botao botao-secundario" href="#questoes/gerar">Gerar questões</a>
       </section>`;
   }
   const itens = dados.revisoes.map((r) => `
@@ -174,7 +177,7 @@ function cardRevisoes(dados) {
       </div>
       <p class="revisao-total"><strong>${total}</strong><span class="texto-suave">${total === 1 ? 'questão para revisar hoje' : 'questões para revisar hoje'}</span></p>
       <ul class="revisao-lista">${itens}</ul>
-      <a class="botao botao-secundario" href="#questoes">Revisar agora</a>
+      <button class="botao botao-secundario" type="button" data-acao="q-revisar">Revisar agora</button>
     </section>`;
 }
 
@@ -229,7 +232,7 @@ function cardProgresso(dados) {
   const itens = dados.areas.map((a, i) => `
     <li class="numerado">
       <span class="numerado-num">${String(i + 1).padStart(2, '0')}</span>
-      <p class="numerado-titulo">${esc(a.nome)}</p>
+      <p class="numerado-titulo">${a.destino ? `<a href="${esc(a.destino)}">${esc(a.nome)}</a>` : esc(a.nome)}</p>
       <p class="numerado-detalhe">${esc(a.detalhe)}</p>
       ${barraProgresso(a.progresso, `Progresso em ${a.nome}`)}
     </li>`).join('');
@@ -353,6 +356,8 @@ export function renderInicio(estado) {
     faltas: () => (estado.usandoExemplo ? '' : cardFaltas(estado)),
     avisos: () => (estado.usandoExemplo ? '' : cardAvisos(estado, agora)),
     youtube: () => ((estado.videos || []).some((v) => !v.excluido_em) ? cardYoutubeInicio(estado, agora) : ''),
+    leituras: () => (estado.usandoExemplo ? '' : cardLeiturasInicio(estado)),
+    substack: () => (estado.usandoExemplo ? '' : cardSubstackInicio(estado, agora)),
     caixa: () => cardCaixaEntrada(estado.caixa || [], agora),
     cadernos: () => cardCadernos(dados, agora),
     progresso: () => cardProgresso(dados),

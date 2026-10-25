@@ -13,9 +13,9 @@ Os números são os do guia original; a lista está na **ordem combinada** com a
 - [ ] **Etapa 5a — Cadernos: editor** ✓ código pronto, aguardando teste: canvas com perfect-freehand, S Pen, rejeição de palma, ferramentas, predefinições de caneta, estabilizador, gestos, desfazer/refazer, zoom, traços em JSON vetorial já com camadas.
 - [ ] **Etapa 5b — Cadernos: organização e modelos**: tipos, capas, tamanhos, todos os modelos de folha, modelos próprios, miniaturas, seções, estantes, pastas, caderno de PDF, exportação PDF/PNG.
 - [ ] **Etapa 5c — Cadernos: recursos avançados (GoodNotes)**: camadas, melhorar letra, alinhar à pauta, janela de zoom, converter em texto e ortografia, régua, fita de estudo, laser e apresentação, laço avançado, elementos, digitalização, abas, índice, marcadores e links.
-- [ ] **Etapa 6 — Biblioteca**: link (extração de texto), PDF, texto colado; tags, área, status, destaques, notas, filtros.
-- [ ] **Etapa 7 — Gerador de questões**: função `gerar-questoes`, modos prova e fixação, gabarito com fontes, banco e revisão espaçada, JSON validado.
-- [ ] **Etapa 8 — Painéis e Substack**: Início completo, Estudos gerais, Substack (pautas, editor, referências, meta), "Próximo passo" ligado ao mais urgente.
+- [ ] **Etapa 6 — Biblioteca** ✓ código pronto, aguardando teste: link (extração de texto), PDF (texto e resumo pela IA), texto colado; tags, área, status, favoritos, destaques com notas, fichamento, filtros e busca; compartilhar um link de outro app abre "Adicionar leitura".
+- [ ] **Etapa 7 — Gerador de questões** ✓ código pronto, aguardando teste: gerar a partir de tema (com pesquisa na web), leitura, texto, foto ou página de caderno (função `ia-background`); modos prova, fixação (correção pela IA) e revisão; gabarito comentado com fontes, banco com filtros, simulados e revisão espaçada (1, 3, 7 e 15 dias), JSON validado.
+- [ ] **Etapa 8 — Painéis e Substack** ✓ código pronto, aguardando teste: Início com revisões, leituras, Substack e progresso por área; Estudos gerais (trilhas com etapas e temas); Substack (quadro com arrastar, editor com formatação e prévia, notas de margem, referências, checklist, data no Calendário, copiar para o Substack, meta do mês); "Próximo passo" ligado ao mais urgente.
 - [ ] **Etapa 9 — Acabamento**: revisão de temas e larguras, offline, backup, instalação no Galaxy Tab S10 Lite.
 
 ## Ideias aprovadas para encaixar
@@ -23,7 +23,7 @@ Os números são os do guia original; a lista está na **ordem combinada** com a
 - Opção de texto maior em Configurações. *(Etapa 2)*
 - **Lyceum** na Etapa 4: sincronização de notas oficiais, frequência, agenda e avisos; contador de faltas com alerta de limite; importação por PDF/print como reserva.
 - **Calculadora de média** com as notas do Lyceum/AVA e pesos configuráveis. *(Etapa 4)*
-- **Compartilhar para o Hub** (Web Share Target): link compartilhado no Android cai na Biblioteca ou vira pauta. *(Etapa 6)*
+- **Compartilhar para o Hub** (Web Share Target) ✓: link compartilhado no Android abre "Adicionar leitura" na Biblioteca.
 - **Modo véspera de prova**: resumos, cadernos, questões erradas e simulado cronometrado da disciplina. *(Etapa 7)*
 - **Flashcards saindo do caderno**: páginas no modelo flashcards viram baralho na revisão espaçada. *(Etapa 7)*
 - **Hub do YouTube** ✓ código pronto, aguardando teste: funil por etapas, roteiro em blocos com modelos, capítulos, pacote de publicação, checklist, resultados, meta semanal e datas no Calendário.

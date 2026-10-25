@@ -67,20 +67,25 @@ Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, 
 - `004-avisos.sql` (Etapa 4c): aparelhos que recebem avisos, registro dos avisos enviados e sessões de revisão (tipo `revisao`).
 - `005-youtube.sql`: tabela `videos` do Hub do YouTube e o tipo `youtube` nos eventos do Calendário.
 - `006-youtube-completo.sql`: pilares, cortes para Shorts, thumbnails, gravação e edição dos vídeos.
+- `007-areas.sql`: Biblioteca (fonte, resumo, fichamento, favoritos), tabela `simulados` das Questões, campos do Substack (subtítulo, notas, tags, agendamento, checklist), trilhas e temas dos Estudos gerais e o tipo `substack` nos eventos.
 
 ## Estrutura
 
 ```
 index.html, manifest.webmanifest, sw.js, netlify.toml
 icones/             ícones do app
-css/                temas.css (todas as cores), base.css, layout.css, componentes.css, editor.css, calendario.css, inicio.css
+css/                temas.css (todas as cores), base.css, layout.css, componentes.css, editor.css, calendario.css, inicio.css,
+                    youtube.css, areas.css (Biblioteca, Questões, Substack e Estudos gerais)
 js/                 main.js, estado.js, persistencia.js (aparelho + sincronização), nuvem.js (Supabase),
                     funcoes.js, eventos.js, editor-tinta.js (escrita à mão), views-*.js, ...
 js/vendor/          perfect-freehand (MIT), copiado sem alterações
 netlify/functions/  ava-conectar, lyceum-conectar, desconectar, config-publica, sincronizar, sincronizar-agendado (6h),
                     calendario-ler-background (lê o calendário acadêmico com a IA, em segundo plano),
-                    avisos-agendado (de hora em hora: avisos de prazo), avisos-teste, youtube-ia
-netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http, faculdade, sincronizar-ava, sincronizar-lyceum, sincronizacao, ia-calendario, ia-youtube, avisos
+                    avisos-agendado (de hora em hora: avisos de prazo), avisos-teste, youtube-ia,
+                    ia-background (gera questões e lê PDFs da Biblioteca com a IA, em segundo plano),
+                    questoes-corrigir (corrige a resposta dissertativa), biblioteca-extrair (tira o texto de um link)
+netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http, faculdade, sincronizar-ava, sincronizar-lyceum, sincronizacao, ia-calendario, ia-youtube, avisos,
+                    ia-comum, ia-questoes, ia-artigo, extrair-link
 supabase/           esquema.sql
 ```
 

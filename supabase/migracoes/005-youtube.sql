@@ -41,7 +41,7 @@ create policy "dona" on public.videos for all to authenticated
 -- As datas de gravação e de publicação viram eventos do Calendário (com avisos).
 alter table public.eventos drop constraint if exists eventos_tipo_check;
 alter table public.eventos add constraint eventos_tipo_check
-  check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao', 'youtube'));
+  check (tipo in ('prova', 'trabalho', 'atividade', 'aula', 'feriado', 'pessoal', 'revisao', 'youtube', 'substack'));
 alter table public.eventos drop constraint if exists eventos_origem_check;
 alter table public.eventos add constraint eventos_origem_check
-  check (origem in ('ava', 'ics', 'academico', 'lyceum', 'manual', 'youtube'));
+  check (origem in ('ava', 'ics', 'academico', 'lyceum', 'manual', 'youtube', 'substack'));

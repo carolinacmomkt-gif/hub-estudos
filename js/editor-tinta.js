@@ -401,6 +401,18 @@ export class EditorDeTinta {
     this.pedirQuadro();
   }
 
+  // A página como imagem PNG (folha + escrita), com no máximo "maxLargura" px de largura.
+  imagemDaPagina(maxLargura = 1400) {
+    const fator = Math.min(1, maxLargura / this.cPapel.width);
+    const c = document.createElement('canvas');
+    c.width = Math.round(this.cPapel.width * fator);
+    c.height = Math.round(this.cPapel.height * fator);
+    const x = c.getContext('2d');
+    x.drawImage(this.cPapel, 0, 0, c.width, c.height);
+    x.drawImage(this.cTinta, 0, 0, c.width, c.height);
+    return new Promise((resolver) => c.toBlob(resolver, 'image/png'));
+  }
+
   corDoContorno() {
     return estiloRaiz().getPropertyValue('--borracha-contorno').trim();
   }

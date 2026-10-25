@@ -7,6 +7,7 @@ import { esc, haQuantoTempo } from './utilidades.js';
 import { disciplinasAtivas, nomeDaDisciplina } from './dados-faculdade.js';
 import { TAMANHOS_PAPEL, MODELOS_BASICOS } from './folhas.js';
 import { renderEditorCaderno } from './editor-caderno.js';
+import { areasAtivas } from './dados-estudos.js';
 
 export const CORES_CAPA = [1, 2, 3, 4, 5, 6];
 
@@ -47,8 +48,9 @@ export function renderCadernos(estado) {
     ${lista}`;
 }
 
-export function renderFormCaderno(estado) {
+export function renderFormCaderno(estado, { area = '' } = {}) {
   const disciplinas = disciplinasAtivas(estado);
+  const areas = areasAtivas(estado);
   const opcoes = (lista, atual) => lista.map((o) => `<option value="${esc(o.id)}"${o.id === atual ? ' selected' : ''}>${esc(o.nome)}</option>`).join('');
   return `
     <form class="formulario" data-form="caderno-novo" novalidate>
@@ -56,6 +58,8 @@ export function renderFormCaderno(estado) {
         <input name="titulo" type="text" maxlength="80" required placeholder="Ex.: Estatística — anotações de aula"></label>
       <label class="campo"><span class="campo-rotulo">Disciplina <small>(opcional)</small></span>
         <select name="disciplina"><option value="">Nenhuma</option>${opcoes(disciplinas.map((d) => ({ id: d.id, nome: d.nome })), '')}</select></label>
+      ${areas.length ? `<label class="campo"><span class="campo-rotulo">Trilha ou tema <small>(opcional)</small></span>
+        <select name="area"><option value="">Nenhum</option>${opcoes(areas.map((a) => ({ id: a.id, nome: a.nome })), area)}</select></label>` : ''}
       <div class="cal-form-linha">
         <label class="campo"><span class="campo-rotulo">Tamanho</span>
           <select name="tamanho">${opcoes(Object.entries(TAMANHOS_PAPEL).map(([id, t]) => ({ id, nome: t.nome })), 'A4')}</select></label>
