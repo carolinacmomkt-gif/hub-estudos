@@ -86,6 +86,12 @@ async function pedirStorage(caminho, { metodo = 'GET' } = {}) {
 const filtroUsuaria = (userId, servico) =>
   `user_id=eq.${encodeURIComponent(userId)}&servico=eq.${encodeURIComponent(servico)}`;
 
+// O arquivo precisa estar na pasta da usuária, sem "..", "." ou barras vazias no caminho.
+function daUsuaria(userId, caminho) {
+  const partes = String(caminho || '').split('/');
+  return partes[0] === userId && partes.length > 1 && partes.every((p) => p && p !== '.' && p !== '..' && !p.includes('\\'));
+}
+
 export const banco = {
   async salvarCredencial(userId, servico, dadosCifrados) {
     await pedirRest('credenciais?on_conflict=user_id,servico', {
@@ -134,12 +140,12 @@ export const banco = {
 
   // Só arquivos dentro da pasta da usuária ("{user_id}/...").
   async baixarArquivo(userId, caminho) {
-    if (!String(caminho).startsWith(`${userId}/`)) throw new Error('Arquivo fora da pasta da usuária.');
+    if (!daUsuaria(userId, caminho)) throw new Error('Arquivo fora da pasta da usuária.');
     return Buffer.from(await (await pedirStorage(caminho)).arrayBuffer());
   },
 
   async apagarArquivo(userId, caminho) {
-    if (!String(caminho).startsWith(`${userId}/`)) return;
+    if (!daUsuaria(userId, caminho)) return;
     await pedirStorage(caminho, { metodo: 'DELETE' });
   },
 

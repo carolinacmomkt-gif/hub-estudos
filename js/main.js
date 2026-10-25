@@ -62,6 +62,23 @@ function digitando() {
   return conteudo.contains(ativo) && /^(INPUT|TEXTAREA|SELECT)$/.test(ativo.tagName);
 }
 
+// Um formulário da tela foi mexido (arquivo escolhido, texto digitado, opção trocada) e ainda não
+// foi enviado: redesenhar por fora apagaria o que a Carol preencheu.
+function formularioMexido() {
+  for (const campo of conteudo.querySelectorAll('form[data-form] input, form[data-form] textarea, form[data-form] select')) {
+    if (campo.type === 'file') {
+      if (campo.files?.length) return true;
+    } else if (campo.type === 'checkbox' || campo.type === 'radio') {
+      if (campo.checked !== campo.defaultChecked) return true;
+    } else if (campo.tagName === 'SELECT') {
+      if ([...campo.options].some((o) => o.selected !== o.defaultSelected)) return true;
+    } else if (campo.type !== 'search' && campo.value !== campo.defaultValue) return true;
+  }
+  return false;
+}
+
+const podeRedesenharPorFora = () => !digitando() && !formularioMexido() && !obterEstado().ocupado;
+
 // Identifica o controle com foco para devolver o foco a ele depois de redesenhar a tela.
 function seletorDoFoco() {
   const ativo = document.activeElement;
@@ -206,7 +223,7 @@ window.addEventListener('hub:dados', async (evento) => {
   // O editor de caderno nunca é redesenhado por fora: ele perderia o traço em andamento.
   const { id: rotaVista, parametro: parametroVisto } = rotaAtual();
   if (rotaVista === 'cadernos' && parametroVisto) return;
-  if (noApp && telas.includes(obterEstado().rota) && !digitando() && !obterEstado().ocupado) renderizar();
+  if (noApp && telas.includes(obterEstado().rota) && podeRedesenharPorFora()) renderizar();
 });
 
 window.addEventListener('hub:faculdade', (evento) => {
@@ -294,7 +311,7 @@ async function iniciar() {
 
 // A contagem regressiva do Início se atualiza a cada minuto.
 setInterval(() => {
-  if (noApp && obterEstado().rota === 'inicio' && !document.hidden && !digitando()) renderizar();
+  if (noApp && obterEstado().rota === 'inicio' && !document.hidden && podeRedesenharPorFora()) renderizar();
 }, 60 * 1000);
 
 iniciar();
