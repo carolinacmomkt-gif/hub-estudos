@@ -17,18 +17,16 @@ async function atualizarConexao(userId, servico, campos, detalheExtra) {
   });
 }
 
-// Se a chave TOKEN_CRYPTO_KEY mudou, o segredo guardado não abre mais: em vez de dar erro
-// a cada sincronização, a conexão passa a pedir para a Carol conectar de novo.
+// Se o segredo não abrir (TOKEN_CRYPTO_KEY ausente ou diferente neste deploy), a sincronização
+// só avisa o motivo. A conexão NUNCA é marcada como desconectada por isso: o problema está na
+// configuração da Netlify, e o acesso guardado continua valendo quando a chave certa voltar.
 async function lerSegredo(userId, servico) {
   const cifrado = await banco.lerCredencial(userId, servico);
   if (!cifrado) return null;
   try {
     return decifrar(cifrado);
-  } catch {
-    const nome = servico === 'ava' ? 'AVA' : 'Lyceum';
-    await atualizarConexao(userId, servico, { status: 'reconectar' }, {
-      mensagem: `O acesso guardado do ${nome} não abre mais (a chave de criptografia mudou). Conecte de novo.`,
-    });
+  } catch (erro) {
+    console.error(`segredo do ${servico} não abriu:`, erro.message);
     return { invalido: true };
   }
 }
@@ -37,7 +35,7 @@ async function lerSegredo(userId, servico) {
 export async function sincronizarAva(userId, { parte = 'geral', cursos = [] } = {}) {
   const base = (process.env.AVA_BASE_URL || '').replace(/\/+$/, '');
   const segredo = await lerSegredo(userId, 'ava');
-  if (segredo?.invalido) return { ok: false, reconectar: true, erro: 'Conecte o AVA de novo em Configurações.' };
+  if (segredo?.invalido) return { ok: false, erro: 'O acesso guardado do AVA não abriu neste momento (confira a TOKEN_CRYPTO_KEY na Netlify). A conexão continua guardada.' };
   if (!segredo?.token) return { ok: false, erro: 'O AVA não está conectado.' };
 
   try {
@@ -83,7 +81,7 @@ export async function sincronizarAva(userId, { parte = 'geral', cursos = [] } = 
 
 export async function sincronizarLyceumDaUsuaria(userId) {
   const segredo = await lerSegredo(userId, 'lyceum');
-  if (segredo?.invalido) return { ok: false, reconectar: true, erro: 'Conecte o Lyceum de novo em Configurações.' };
+  if (segredo?.invalido) return { ok: false, erro: 'O acesso guardado do Lyceum não abriu neste momento (confira a TOKEN_CRYPTO_KEY na Netlify). A conexão continua guardada.' };
   if (!segredo?.matricula) return { ok: false, erro: 'O Lyceum não está conectado.' };
 
   try {
