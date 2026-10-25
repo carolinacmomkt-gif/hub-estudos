@@ -26,7 +26,7 @@ const CHAVE_DE_CONFLITO = { config: 'user_id,chave' };
 
 // Tabelas e tipos que dependem de uma migração (supabase/migracoes). Se a migração ainda não
 // foi rodada, só aquela tabela espera; as outras continuam sincronizando normalmente.
-const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql' };
+const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)' };
 const tabelaNaoExiste = (erro) => erro instanceof ErroNuvem && (erro.codigo === 'PGRST205' || erro.codigo === '42P01' || erro.status === 404);
 // Tipo novo recusado pela regra do banco (23514) ou coluna nova que não existe (PGRST204/42703):
 // sinal de migração que falta rodar.

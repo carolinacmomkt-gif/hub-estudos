@@ -31,7 +31,7 @@ App pessoal de estudos (uso exclusivo da Carol), instalável como PWA no Galaxy 
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`gerar-questoes` e `calendario-ler-background`, que lê o calendário acadêmico) |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`gerar-questoes`, `calendario-ler-background`, que lê o calendário acadêmico, e `youtube-ia`) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -62,7 +62,7 @@ A base é a identidade da Central de Conteúdo.
 2. **Faculdade**: painel geral e um painel por disciplina, com materiais, atividades e prazos, notas, frequência (se disponível), avisos, cadernos e questões daquela disciplina.
 3. **Estudos gerais**: painel com trilhas ou temas, a biblioteca filtrada, cadernos, questões e o progresso.
 4. **Substack**: painel com pautas (ideia → rascunho → revisão → publicado), rascunhos com editor de texto, referências da biblioteca ligadas a cada texto e uma meta de publicação.
-5. **YouTube**: funil por etapas (ideia → pesquisa → roteiro → gravação → edição → thumb e SEO → agendado → publicado), roteiro em blocos com modelos (longo, Short, live), contagem de palavras e duração estimada, capítulos gerados do roteiro, títulos alternativos, ideia de thumbnail, descrição e tags com botão copiar, checklist de produção, resultados (visualizações, CTR, retenção), meta de vídeos por semana. As datas de gravação e de publicação viram eventos do Calendário (com avisos).
+5. **YouTube**: painel do canal (próximo vídeo, meta semanal, "precisa de atenção"), quadro por etapas com arrastar (ideia → pesquisa → roteiro → gravação → edição → thumb e SEO → agendado → publicado), calendário de publicação, banco de ideias com nota (potencial × esforço) e pilares de conteúdo, desempenho (médias de CTR, retenção e visualizações). Cada vídeo: ideia, roteiro em blocos com modelos e teleprompter, gravação (cenas e takes), edição (marcações), thumbnail (até 3 imagens no Storage para comparar), publicação (título final, descrição pelo modelo do canal, tags, hashtags, capítulos, comentário fixado, tudo com copiar), cortes que viram Shorts ligados ao vídeo, checklist (com itens próprios) e resultados. A IA sugere títulos, ganchos, roteiro, descrição e tags, conceitos de thumbnail e cortes, só quando a Carol pede. As datas de gravação e de publicação viram eventos do Calendário (com avisos).
 6. **Biblioteca**: artigos por link (extrai o texto), por PDF ou por texto colado, com tags, área, status (ler / lendo / lido / fichado), destaques e notas.
 7. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
 8. **Questões**: gerador, banco de questões, modo prova, modo fixação e revisão espaçada.

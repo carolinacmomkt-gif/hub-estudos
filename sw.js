@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v25';
+const VERSAO = 'hub-v26';
 
 const ARQUIVOS = [
   './',
@@ -52,6 +52,9 @@ const ARQUIVOS = [
   './js/dados-youtube.js',
   './js/views-youtube.js',
   './js/eventos-youtube.js',
+  './js/views-youtube-video.js',
+  './js/thumbs-youtube.js',
+  './js/teleprompter.js',
   './css/youtube.css',
   './js/folhas.js',
   './css/inicio.css',

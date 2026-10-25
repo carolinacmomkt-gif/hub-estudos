@@ -265,3 +265,28 @@ export async function enviarArquivo(caminho, arquivo) {
     throw new ErroNuvem(`Não foi possível enviar o arquivo (${r.status}).`, r.status, '', texto.slice(0, 160));
   }
 }
+
+// Baixa um arquivo do Storage (bucket privado: precisa do login) e devolve um Blob.
+export async function baixarArquivo(caminho) {
+  const token = await tokenDeAcesso();
+  if (!token) throw new ErroNuvem('Entre no app para ver os arquivos.', 401, 'sem_sessao');
+  let r;
+  try {
+    r = await fetch(`${config.supabaseUrl}/storage/v1/object/arquivos/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
+      headers: { apikey: config.supabaseAnonKey, Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new ErroNuvem('Sem conexão com a internet.', 0, 'rede');
+  }
+  if (!r.ok) throw new ErroNuvem(`Não foi possível abrir o arquivo (${r.status}).`, r.status);
+  return r.blob();
+}
+
+export async function apagarArquivo(caminho) {
+  const token = await tokenDeAcesso();
+  if (!token) return;
+  await fetch(`${config.supabaseUrl}/storage/v1/object/arquivos/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
+    method: 'DELETE',
+    headers: { apikey: config.supabaseAnonKey, Authorization: `Bearer ${token}` },
+  }).catch(() => {});
+}

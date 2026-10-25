@@ -157,12 +157,17 @@ export function eventosDoVideo(video) {
   return lista;
 }
 
-export function novoVideo({ titulo, formato = 'longo', etapa = 'ideia' }) {
+export function novoVideo({ titulo, formato = 'longo', etapa = 'ideia', pilar = null, detalhes = {}, data_publicacao = null, video_origem_id = null }) {
   const modelo = MODELOS_ROTEIRO[formato] || MODELOS_ROTEIRO.longo;
   return {
     titulo,
     formato,
     etapa,
+    pilar,
+    video_origem_id,
+    data_publicacao,
+    detalhes: { potencial: 3, esforco: 3, ...detalhes },
+    thumbs: [],
     prioridade: 2,
     titulos_alternativos: [],
     tags: [],
@@ -170,4 +175,124 @@ export function novoVideo({ titulo, formato = 'longo', etapa = 'ideia' }) {
     metricas: {},
     roteiro: { blocos: modelo.map((b) => ({ ...b, id: crypto.randomUUID() })) },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Canal: pilares de conteúdo, modelo de descrição, checklist extra (config "youtube")
+// ---------------------------------------------------------------------------
+
+export const PILARES_PADRAO = [
+  { id: 'estudos', nome: 'Estudos', cor: 1 },
+  { id: 'rotina', nome: 'Rotina', cor: 2 },
+  { id: 'faculdade', nome: 'Faculdade', cor: 3 },
+];
+
+export const MODELO_DESCRICAO_PADRAO = `{{resumo}}
+
+Capítulos
+{{capitulos}}
+
+Links citados no vídeo:
+
+Me acompanhe:
+`;
+
+export function configDoCanal(estado) {
+  const v = (estado.config || []).find((c) => c.chave === 'youtube' && !c.excluido_em)?.valor || {};
+  return {
+    meta: Number(v.meta) > 0 ? Number(v.meta) : 1,
+    visao: ['quadro', 'calendario', 'ideias', 'desempenho', 'canal'].includes(v.visao) ? v.visao : 'quadro',
+    pilares: Array.isArray(v.pilares) && v.pilares.length ? v.pilares : PILARES_PADRAO,
+    modeloDescricao: typeof v.modeloDescricao === 'string' ? v.modeloDescricao : MODELO_DESCRICAO_PADRAO,
+    checklistExtra: Array.isArray(v.checklistExtra) ? v.checklistExtra : [],
+    hashtags: typeof v.hashtags === 'string' ? v.hashtags : '',
+  };
+}
+
+// Checklist completo do vídeo: o padrão mais os itens que a Carol criou.
+export function checklistDoCanal(cfg) {
+  return [...CHECKLIST, ...cfg.checklistExtra.map((nome, i) => ({ id: `extra-${i}-${slug(nome)}`, nome, etapa: 'pos', extra: true }))];
+}
+
+const slug = (t) => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+
+export function progressoDoVideo(video, cfg) {
+  const itens = checklistDoCanal(cfg);
+  const feitos = itens.filter((c) => video.checklist?.[c.id]).length;
+  return { feitos, total: itens.length, fracao: itens.length ? feitos / itens.length : 0 };
+}
+
+// Nota da ideia: potencial alto e esforço baixo vêm primeiro (1 a 5 cada).
+export function notaDaIdeia(video) {
+  const d = video.detalhes || {};
+  const potencial = Number(d.potencial) || 3;
+  const esforco = Number(d.esforco) || 3;
+  return Math.round(((potencial * 2 - esforco + 5) / 14) * 100);
+}
+
+export function ideiasOrdenadas(estado, pilar = '') {
+  return videosAtivos(estado)
+    .filter((v) => v.etapa === 'ideia' && (!pilar || v.pilar === pilar))
+    .sort((a, b) => notaDaIdeia(b) - notaDaIdeia(a) || a.prioridade - b.prioridade || String(b.criado_em).localeCompare(String(a.criado_em)));
+}
+
+// Descrição a partir do modelo do canal: {{resumo}}, {{capitulos}} e {{titulo}}.
+export function descricaoDoModelo(video, cfg) {
+  return cfg.modeloDescricao
+    .replace(/\{\{resumo\}\}/g, video.gancho || '')
+    .replace(/\{\{titulo\}\}/g, video.titulo || '')
+    .replace(/\{\{capitulos\}\}/g, capitulos(video) || '0:00 Introdução')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// Precisa de atenção: data de publicação passou sem publicar, ou gravação marcada para hoje/atrasada.
+export function precisaDeAtencao(estado, agora = Date.now()) {
+  const hoje = new Date(agora);
+  const chaveHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  const lista = [];
+  for (const v of videosAtivos(estado)) {
+    if (v.etapa === 'publicado') continue;
+    if (v.data_publicacao && new Date(v.data_publicacao).getTime() < agora) lista.push({ video: v, motivo: 'A data de publicação passou' });
+    else if (v.data_gravacao && v.data_gravacao <= chaveHoje && ['ideia', 'pesquisa', 'roteiro', 'gravacao'].includes(v.etapa)) {
+      lista.push({ video: v, motivo: v.data_gravacao === chaveHoje ? 'Gravar hoje' : 'A gravação estava marcada para antes' });
+    }
+  }
+  return lista;
+}
+
+// Desempenho: vídeos publicados com números e as médias do canal.
+export function desempenho(estado) {
+  const publicados = videosAtivos(estado)
+    .filter((v) => v.etapa === 'publicado')
+    .sort((a, b) => String(b.data_publicacao || '').localeCompare(String(a.data_publicacao || '')));
+  const media = (campo) => {
+    const valores = publicados.map((v) => Number(v.metricas?.[campo])).filter((n) => Number.isFinite(n) && n > 0);
+    return valores.length ? valores.reduce((s, n) => s + n, 0) / valores.length : null;
+  };
+  const melhor = [...publicados].sort((a, b) => (Number(b.metricas?.views7d) || 0) - (Number(a.metricas?.views7d) || 0))[0] || null;
+  return {
+    publicados,
+    medias: { ctr: media('ctr'), retencao: media('retencao'), views7d: media('views7d'), inscritos: media('inscritos') },
+    melhor: melhor && Number(melhor.metricas?.views7d) > 0 ? melhor : null,
+  };
+}
+
+export function publicadosNoMes(estado, agora = Date.now()) {
+  const d = new Date(agora);
+  return videosAtivos(estado).filter((v) => {
+    if (v.etapa !== 'publicado' || !v.data_publicacao) return false;
+    const p = new Date(v.data_publicacao);
+    return p.getFullYear() === d.getFullYear() && p.getMonth() === d.getMonth();
+  }).length;
+}
+
+// Teleprompter: o roteiro inteiro, bloco a bloco, sem os títulos internos.
+export function textoDoTeleprompter(video) {
+  return (video.roteiro?.blocos || []).map((b) => String(b.texto || '').trim()).filter(Boolean).join('\n\n');
+}
+
+// Tempo de fala estimado de cada bloco ("0:45").
+export function tempoDoBloco(bloco) {
+  return duracao((contarPalavras(bloco.texto) / PALAVRAS_POR_MINUTO) * 60);
 }

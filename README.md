@@ -66,6 +66,7 @@ Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, 
 - `003-calendario.sql` (Etapa 4b): tabela `importacoes`, onde fica a leitura do calendário acadêmico até a Carol revisar.
 - `004-avisos.sql` (Etapa 4c): aparelhos que recebem avisos, registro dos avisos enviados e sessões de revisão (tipo `revisao`).
 - `005-youtube.sql`: tabela `videos` do Hub do YouTube e o tipo `youtube` nos eventos do Calendário.
+- `006-youtube-completo.sql`: pilares, cortes para Shorts, thumbnails, gravação e edição dos vídeos.
 
 ## Estrutura
 
@@ -78,8 +79,8 @@ js/                 main.js, estado.js, persistencia.js (aparelho + sincronizaç
 js/vendor/          perfect-freehand (MIT), copiado sem alterações
 netlify/functions/  ava-conectar, lyceum-conectar, desconectar, config-publica, sincronizar, sincronizar-agendado (6h),
                     calendario-ler-background (lê o calendário acadêmico com a IA, em segundo plano),
-                    avisos-agendado (de hora em hora: avisos de prazo), avisos-teste
-netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http, faculdade, sincronizar-ava, sincronizar-lyceum, sincronizacao, ia-calendario, avisos
+                    avisos-agendado (de hora em hora: avisos de prazo), avisos-teste, youtube-ia
+netlify/lib/        peças das funções: supabase, cripto, ava, lyceum, http, faculdade, sincronizar-ava, sincronizar-lyceum, sincronizacao, ia-calendario, ia-youtube, avisos
 supabase/           esquema.sql
 ```
 
