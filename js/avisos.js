@@ -100,6 +100,7 @@ export async function ativarAvisos() {
     if (!atual || atual.valor?.fuso !== fusoDoAparelho()) await salvarConfigAvisos({ ...AVISOS_PADRAO, ...(atual?.valor || {}) });
     return null;
   } catch (erro) {
+    if (erro.codigo === 'PGRST205' || erro.status === 404) return 'Falta rodar a migração 004-avisos.sql no SQL Editor do Supabase. Depois tente de novo.';
     return `Não foi possível ativar agora. ${erro.message || ''}`.trim();
   }
 }

@@ -84,7 +84,8 @@ const estiloRaiz = () => getComputedStyle(document.documentElement);
 
 function corDaTinta(nome) {
   if (/^#[0-9a-f]{6}$/i.test(nome || '')) return nome;
-  return estiloRaiz().getPropertyValue(`--tinta-${nome}`).trim() || '#888';
+  const estilo = estiloRaiz();
+  return estilo.getPropertyValue(`--tinta-${nome}`).trim() || estilo.getPropertyValue('--tinta-tinta').trim();
 }
 
 const arred = (v, casas) => Math.round(v * 10 ** casas) / 10 ** casas;
@@ -220,8 +221,9 @@ export class EditorDeTinta {
     this.escala = base * this.zoom;
     const largCss = Math.floor(this.dim.largura * this.escala);
     const altCss = Math.floor(this.dim.altura * this.escala);
-    // Canvas muito grande estoura a memória do tablet: limita os pixels do zoom alto.
-    this.dpr = Math.min(window.devicePixelRatio || 1, 3, 4096 / Math.max(largCss, altCss) * 1.5);
+    // Canvas muito grande estoura a memória do tablet: no zoom alto, cada canvas fica com no
+    // máximo 4096 px de lado e uns 8 milhões de pixels (são três canvas empilhados).
+    this.dpr = Math.max(0.5, Math.min(window.devicePixelRatio || 1, 3, 4096 / Math.max(largCss, altCss), Math.sqrt(8e6 / (largCss * altCss))));
     this.folha.style.width = `${largCss}px`;
     this.folha.style.height = `${altCss}px`;
     for (const canvas of [this.cPapel, this.cTinta, this.cVivo]) {

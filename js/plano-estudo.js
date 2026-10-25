@@ -50,7 +50,8 @@ export function provasParaPlanejar(estado, agora = Date.now()) {
       const sessoes = sessoesDaProva(estado, prova.id);
       const plano = reg.planos?.[prova.id];
       if (!sessoes.length) return { prova, situacao: 'novo' };
-      if (plano && plano.inicio !== prova.inicio && sessoes.some((s) => new Date(s.inicio).getTime() > agora)) return { prova, situacao: 'remarcar' };
+      // Compara o instante, não o texto: o Supabase devolve a mesma data em outro formato.
+      if (plano && Date.parse(plano.inicio) !== Date.parse(prova.inicio) && sessoes.some((s) => new Date(s.inicio).getTime() > agora)) return { prova, situacao: 'remarcar' };
       return null;
     })
     .filter(Boolean)

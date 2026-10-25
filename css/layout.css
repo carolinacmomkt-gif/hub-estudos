@@ -364,6 +364,7 @@
 .situacao-sinc[data-estado="local"] .situacao-ponto,
 .situacao-sinc[data-estado="sair"] .situacao-ponto { background: var(--urg-urgente); }
 .situacao-sinc[data-estado="erro"] .situacao-ponto { background: var(--urg-atrasado); }
+.situacao-sinc[data-estado="aviso"] .situacao-ponto { background: var(--urg-urgente); }
 
 @media (max-width: 1099px) {
   .nav-lateral .situacao-sinc {

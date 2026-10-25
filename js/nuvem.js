@@ -224,12 +224,15 @@ export async function rest(caminho, { metodo = 'GET', corpo, prefer } = {}) {
   const texto = await r.text();
   if (!r.ok) {
     let mensagem = texto.slice(0, 200);
+    let codigo = '';
     try {
-      mensagem = JSON.parse(texto).message || mensagem;
+      const dados = JSON.parse(texto);
+      mensagem = dados.message || mensagem;
+      codigo = dados.code || '';
     } catch {
       // texto puro
     }
-    throw new ErroNuvem(`O Supabase recusou (${r.status}): ${mensagem}`, r.status);
+    throw new ErroNuvem(`O Supabase recusou (${r.status}): ${mensagem}`, r.status, codigo, mensagem);
   }
   return texto ? JSON.parse(texto) : null;
 }

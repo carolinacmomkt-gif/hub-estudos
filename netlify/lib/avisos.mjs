@@ -84,6 +84,7 @@ export function montarNotificacoes(devidos, { nomeDisciplina = () => '', fuso = 
     const prova = eventos.some((e) => e.tipo === 'prova');
     const titulo = `${ROTULO_MARCO[marco]}: ${eventos.length === 1 ? (prova ? 'prova' : 'prazo') : `${eventos.length} prazos`}`;
     return {
+      marco,
       titulo,
       texto: linhas.join('\n'),
       tag: `prazos-${marco}-${noFuso(eventos[0].inicio, fuso).data}`,

@@ -6,6 +6,7 @@ import { renderFormIdeia, configYoutube, LIMITE_TAGS } from './views-youtube.js'
 import {
   novoVideo, etapaVizinha, eventosDoVideo, MODELOS_ROTEIRO, palavrasDoRoteiro, duracaoEstimada, duracao, capitulos,
 } from './dados-youtube.js';
+import { instanteLocal } from './dados-calendario.js';
 
 let app; // { renderizar, avisoCurto }
 let tempoSalvar = null;
@@ -32,7 +33,7 @@ async function sincronizarEventos(video) {
   const desejados = eventosDoVideo(video);
   for (const d of desejados) {
     const atual = existentes.find((e) => e.origem_id === d.origem_id);
-    if (atual && !atual.excluido_em && atual.titulo === d.titulo && atual.inicio === d.inicio && atual.dia_inteiro === d.dia_inteiro) continue;
+    if (atual && !atual.excluido_em && atual.titulo === d.titulo && Date.parse(atual.inicio) === Date.parse(d.inicio) && atual.dia_inteiro === d.dia_inteiro) continue;
     await salvar('eventos', {
       ...(atual || {}), ...d, tipo: 'youtube', origem: 'youtube', status: null, disciplina_id: null, link: null, excluido_em: null,
     });
@@ -155,12 +156,6 @@ export function cliqueYoutube(alvo) {
 // Página do vídeo: salva sozinha enquanto a Carol digita (sem redesenhar a tela).
 // ---------------------------------------------------------------------------
 
-function instanteLocal(data, hora) {
-  const [a, m, d] = data.split('-').map(Number);
-  const [h, min] = (hora || '12:00').split(':').map(Number);
-  return new Date(a, m - 1, d, h, min).toISOString();
-}
-
 function lerFormulario(form, video) {
   const c = form.elements;
   const m = {};
@@ -172,7 +167,7 @@ function lerFormulario(form, video) {
   }
   if (c.prioridade) m.prioridade = Number(c.prioridade.value) || 2;
   if (c.data_gravacao) m.data_gravacao = c.data_gravacao.value || null;
-  if (c.data_publicacao) m.data_publicacao = c.data_publicacao.value ? instanteLocal(c.data_publicacao.value, c.hora_publicacao.value) : null;
+  if (c.data_publicacao) m.data_publicacao = c.data_publicacao.value ? instanteLocal(c.data_publicacao.value, c.hora_publicacao.value || '12:00') : null;
   if (c.tags) m.tags = c.tags.value.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 60);
   const checks = form.querySelectorAll('input[name="check"]');
   if (checks.length) m.checklist = { ...(video.checklist || {}), ...Object.fromEntries([...checks].map((k) => [k.value, k.checked])) };

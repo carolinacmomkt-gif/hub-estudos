@@ -21,6 +21,7 @@ export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.no
   const disciplinas = new Map((await banco.listar('disciplinas', userId)).map((d) => [d.id, d.nome]));
   const notificacoes = montarNotificacoes(devidos, { nomeDisciplina: (id) => disciplinas.get(id) || '', fuso: config.fuso });
   let entregues = 0;
+  const marcosEntregues = new Set();
   for (const assinatura of assinaturas) {
     for (const n of notificacoes) {
       const r = await enviarPush(assinatura, n);
@@ -28,12 +29,16 @@ export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.no
         await banco.apagar('assinaturas_push', `user_id=eq.${userId}&id=eq.${assinatura.id}`);
         break;
       }
-      if (r === 'ok') entregues += 1;
+      if (r === 'ok') {
+        entregues += 1;
+        marcosEntregues.add(n.marco);
+      }
     }
   }
-  // Só anota como enviado se chegou a pelo menos um aparelho; senão tenta de novo na próxima hora.
-  if (entregues) {
-    await banco.gravar('avisos_enviados', devidos.map((d) => ({
+  // Só anota o que chegou a pelo menos um aparelho; o resto tenta de novo na próxima hora.
+  const anotar = devidos.filter((d) => marcosEntregues.has(d.marco));
+  if (anotar.length) {
+    await banco.gravar('avisos_enviados', anotar.map((d) => ({
       user_id: userId, evento_id: d.evento.id, marco: d.marco, data_evento: d.evento.inicio,
     })), 'user_id,evento_id,marco,data_evento');
   }
@@ -42,7 +47,14 @@ export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.no
 
 export default async () => {
   const agora = Date.now();
-  const assinaturas = await banco.listarTodas('assinaturas_push', 'excluido_em=is.null');
+  let assinaturas;
+  try {
+    assinaturas = await banco.listarTodas('assinaturas_push', 'excluido_em=is.null');
+  } catch (erro) {
+    // Sem a migração 004 (ou Supabase fora do ar): nada a avisar nesta hora.
+    console.error('avisos: não deu para ler os aparelhos:', erro.message);
+    return new Response('sem aparelhos');
+  }
   const porUsuaria = new Map();
   for (const a of assinaturas) {
     if (!porUsuaria.has(a.user_id)) porUsuaria.set(a.user_id, []);

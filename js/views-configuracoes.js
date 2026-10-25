@@ -15,6 +15,7 @@ export function textoSituacao(s) {
   if (!s.online || s.estado === 'offline') return 'Sem internet. Salvando neste aparelho; sincroniza quando a conexão voltar.';
   if (s.estado === 'sincronizando') return 'Sincronizando…';
   if (s.estado === 'erro') return `A última sincronização falhou. ${s.erro || ''}`.trim();
+  if (s.estado === 'aviso') return `Sincronizado, mas uma parte ficou esperando: ${s.erro || ''}`.trim();
   if (s.ultima) return `Sincronizado ${haQuantoTempo(new Date(s.ultima).getTime())}.`;
   return 'Ainda não sincronizado.';
 }

@@ -119,7 +119,8 @@ export async function iniciarImportacao({ arquivo, texto, curso }) {
     const r = await dispararSegundoPlano('calendario-ler-background', { id });
     if (!r.ok) throw new Error(r.erro);
   } catch (erro) {
-    mudar({ status: 'erro', erro: erro.message || 'Não deu certo agora.', curso });
+    const semTabela = erro.codigo === 'PGRST205' || (erro.status === 404 && /importacoes|schema cache/i.test(erro.message));
+    mudar({ status: 'erro', erro: semTabela ? 'Falta rodar a migração 003-calendario.sql no SQL Editor do Supabase. Depois tente de novo.' : (erro.message || 'Não deu certo agora.'), curso });
     return null;
   }
   guardado(CHAVE_GUARDADA, id);

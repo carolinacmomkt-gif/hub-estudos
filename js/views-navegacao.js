@@ -54,6 +54,7 @@ const TEXTO_CURTO = {
   offline: 'Sem internet',
   sincronizando: 'Sincronizando…',
   erro: 'Erro ao sincronizar',
+  aviso: 'Falta atualizar o banco',
   ok: 'Sincronizado',
   ocioso: 'Sincronizado',
   sair: 'Entre para sincronizar',

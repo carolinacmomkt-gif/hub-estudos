@@ -5,6 +5,9 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  # Estes pacotes vão inteiros (sem empacotar): o web-push usa require() do Node, que
+  # quebra dentro de um pacote ESM na hora de mandar o aviso.
+  external_node_modules = ["web-push", "@anthropic-ai/sdk"]
 
 # O service worker nunca pode ficar preso em cache, senão as atualizações não chegam.
 [[headers]]

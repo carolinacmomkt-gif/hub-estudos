@@ -54,6 +54,7 @@ let caderno = null;
 let paginas = [];
 let indice = 0;
 let tempoSalvar = null;
+let sujo = false; // a página mudou desde o último salvamento
 let favoritos = FAVORITOS_PADRAO;
 let configFavoritos = null;
 let selecionados = 0;
@@ -79,6 +80,12 @@ function guardarPrefs() {
   } catch {
     // vale só nesta sessão
   }
+}
+
+// O seletor de cor (input type=color) precisa de um #rrggbb: pega a cor do tema.
+function corDoTema(variavel) {
+  const valor = getComputedStyle(document.documentElement).getPropertyValue(variavel).trim();
+  return /^#[0-9a-f]{6}$/i.test(valor) ? valor : '#000000';
 }
 
 const ehCaneta = (f) => ['tinteiro', 'esferografica', 'pincel', 'lapis'].includes(f);
@@ -136,7 +143,7 @@ function barra() {
   if (ehCaneta(f) || f === 'marca-texto' || (f === 'laco' && selecionados)) {
     const lista = f === 'marca-texto' ? MARCAS : TINTAS;
     const atual = f === 'marca-texto' ? prefs.tintaMarca : prefs.tinta;
-    const propria = atual?.startsWith('#') ? atual : '#2c5aa6';
+    const propria = atual?.startsWith('#') ? atual : corDoTema('--tinta-azul');
     cores = `
       <div class="ferramenta-grupo" role="group" aria-label="Cor">
         ${lista.map((c) => `<button type="button" class="ferramenta-cor" data-ed="cor" data-valor="${c.id}" aria-pressed="${atual === c.id}"
@@ -265,7 +272,9 @@ function dimDoCaderno() {
 async function salvarAgora() {
   clearTimeout(tempoSalvar);
   tempoSalvar = null;
-  if (!editor || !paginas[indice]) return;
+  // Folhear o caderno só para ler não salva nada (nem marca o caderno como editado).
+  if (!sujo || !editor || !paginas[indice]) return;
+  sujo = false;
   paginas[indice] = await salvar('paginas', { ...paginas[indice], tracos_json: editor.pagina });
   // O caderno sobe para o topo da lista e do Início.
   if (caderno) caderno = await salvar('cadernos', { ...caderno });
@@ -273,6 +282,7 @@ async function salvarAgora() {
 }
 
 function aoMudar() {
+  sujo = true;
   mostrarSalvo('Salvando…');
   atualizarHistorico();
   clearTimeout(tempoSalvar);
@@ -409,12 +419,13 @@ export function desmontarEditorCaderno() {
   document.removeEventListener('pointerup', aoSoltarFavorito);
   document.removeEventListener('pointercancel', aoSoltarFavorito);
   window.removeEventListener('pagehide', salvarAgora);
-  if (tempoSalvar && editor) {
+  if (sujo && editor) {
     // Salva na hora o que estava esperando (sem aguardar: a tela já está saindo).
     clearTimeout(tempoSalvar);
     salvar('paginas', { ...paginas[indice], tracos_json: editor.pagina });
   }
   tempoSalvar = null;
+  sujo = false;
   editor?.destruir();
   editor = null;
   caderno = null;

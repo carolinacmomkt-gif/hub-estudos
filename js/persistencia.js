@@ -9,7 +9,9 @@
 import { rest, sessaoAtual, nuvemConfigurada, ErroNuvem } from './nuvem.js';
 
 const NOME_BANCO = 'hub-estudos';
-const VERSAO_BANCO = 1;
+// Aumente sempre que TABELAS ganhar uma tabela nova (o aparelho só cria lojas novas numa versão nova).
+// Se mesmo assim faltar alguma, abrir() sobe a versão sozinho.
+const VERSAO_BANCO = 2;
 const LOTE = 500;
 
 export const TABELAS = [
@@ -21,6 +23,33 @@ const SOMENTE_LEITURA = new Set(['conexoes']); // quem escreve são as funções
 // config tem uma linha por chave ("inicio", "avisos"…). Dois aparelhos podem criar a mesma chave
 // antes de se verem: o envio junta pela chave em vez de dar erro de duplicidade.
 const CHAVE_DE_CONFLITO = { config: 'user_id,chave' };
+
+// Tabelas e tipos que dependem de uma migração (supabase/migracoes). Se a migração ainda não
+// foi rodada, só aquela tabela espera; as outras continuam sincronizando normalmente.
+const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql' };
+const tabelaNaoExiste = (erro) => erro instanceof ErroNuvem && (erro.codigo === 'PGRST205' || erro.codigo === '42P01' || erro.status === 404);
+// Tipo novo recusado pela regra do banco (23514) ou coluna nova que não existe (PGRST204/42703):
+// sinal de migração que falta rodar.
+const faltaMigracao = (erro) => erro instanceof ErroNuvem && ['23514', 'PGRST204', '42703'].includes(erro.codigo);
+// Qualquer outra recusa do banco para os dados (não é falta de internet nem de login).
+const recusaDeDados = (erro) => erro instanceof ErroNuvem && erro.status >= 400 && erro.status < 500 && erro.status !== 401 && erro.status !== 403;
+
+// { tipo: 'aviso' | 'erro', texto } ou null (erro que deve parar a sincronização inteira).
+function explicar(tabela, erro) {
+  if (tabelaNaoExiste(erro)) {
+    const migracao = MIGRACAO_DA_TABELA[tabela];
+    return { tipo: 'aviso', texto: `A tabela "${tabela}" ainda não existe no Supabase.${migracao ? ` Rode a migração ${migracao} no SQL Editor.` : ' Rode as migrações em supabase/migracoes.'}` };
+  }
+  if (faltaMigracao(erro)) {
+    return { tipo: 'aviso', texto: `O Supabase ainda não aceita alguns dados de "${tabela}" (${erro.detalhe || erro.message}). Rode no SQL Editor as migrações que faltam em supabase/migracoes, na ordem.` };
+  }
+  if (recusaDeDados(erro)) {
+    return { tipo: 'erro', texto: `O Supabase recusou um registro de "${tabela}": ${erro.detalhe || erro.message}` };
+  }
+  return null;
+}
+
+let problemas = new Map(); // tabela → { tipo, texto } (da última sincronização)
 
 let bancoAberto = null;
 let sincronizando = null;
@@ -36,20 +65,49 @@ function lerUltima() {
   }
 }
 
+const LOJAS = [...TABELAS, 'fila', 'meta'];
+
+function abrirVersao(versao) {
+  return new Promise((resolver, rejeitar) => {
+    const pedido = indexedDB.open(NOME_BANCO, versao);
+    pedido.onupgradeneeded = () => {
+      const db = pedido.result;
+      for (const tabela of TABELAS) {
+        if (!db.objectStoreNames.contains(tabela)) db.createObjectStore(tabela, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('fila')) db.createObjectStore('fila', { keyPath: 'seq', autoIncrement: true });
+      if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'chave' });
+    };
+    pedido.onsuccess = () => {
+      const db = pedido.result;
+      // Outra aba (ou o app atualizado) precisa subir a versão: esta aba solta o banco.
+      db.onversionchange = () => {
+        db.close();
+        bancoAberto = null;
+      };
+      resolver(db);
+    };
+    pedido.onerror = () => rejeitar(pedido.error);
+  });
+}
+
 function abrir() {
   if (!bancoAberto) {
-    bancoAberto = new Promise((resolver, rejeitar) => {
-      const pedido = indexedDB.open(NOME_BANCO, VERSAO_BANCO);
-      pedido.onupgradeneeded = () => {
-        const db = pedido.result;
-        for (const tabela of TABELAS) {
-          if (!db.objectStoreNames.contains(tabela)) db.createObjectStore(tabela, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('fila')) db.createObjectStore('fila', { keyPath: 'seq', autoIncrement: true });
-        if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'chave' });
-      };
-      pedido.onsuccess = () => resolver(pedido.result);
-      pedido.onerror = () => rejeitar(pedido.error);
+    bancoAberto = (async () => {
+      let db = await abrirVersao(VERSAO_BANCO).catch(async (erro) => {
+        // O aparelho já tem uma versão maior (ex.: subida automática abaixo): abre a que existe.
+        if (erro?.name !== 'VersionError') throw erro;
+        return abrirVersao(undefined);
+      });
+      if (LOJAS.some((l) => !db.objectStoreNames.contains(l))) {
+        const versao = db.version + 1;
+        db.close();
+        db = await abrirVersao(versao);
+      }
+      return db;
+    })();
+    bancoAberto.catch(() => {
+      bancoAberto = null;
     });
   }
   return bancoAberto;
@@ -160,19 +218,47 @@ async function enviarFila() {
   }
 
   for (const [tabela, ids] of porTabela) {
+    try {
+      await enviarTabela(tabela, ids);
+    } catch (erro) {
+      // Problema de estrutura do banco: esta tabela espera na fila; as outras seguem.
+      const explicacao = explicar(tabela, erro);
+      if (!explicacao) throw erro;
+      problemas.set(`envio:${tabela}`, explicacao);
+    }
+  }
+}
+
+async function enviarTabela(tabela, ids) {
+  {
     const registros = (await Promise.all([...ids.keys()].map((id) => obter(tabela, id)))).filter(Boolean);
     // user_id é preenchido pelo banco (auth.uid()); atualizado_em também.
     const corpo = registros.map(({ user_id: _u, atualizado_em: _a, ...resto }) => resto);
 
     const devolvidos = [];
+    const enviarLote = (lote) => rest(`${tabela}?on_conflict=${CHAVE_DE_CONFLITO[tabela] || 'id'}`, {
+      metodo: 'POST',
+      corpo: lote,
+      prefer: 'resolution=merge-duplicates,return=representation',
+    });
+    let primeiraRecusa = null;
     for (const grupo of agruparPorColunas(corpo)) {
       for (let i = 0; i < grupo.length; i += LOTE) {
-        const linhas = await rest(`${tabela}?on_conflict=${CHAVE_DE_CONFLITO[tabela] || 'id'}`, {
-          metodo: 'POST',
-          corpo: grupo.slice(i, i + LOTE),
-          prefer: 'resolution=merge-duplicates,return=representation',
-        });
-        devolvidos.push(...(linhas || []));
+        const lote = grupo.slice(i, i + LOTE);
+        try {
+          devolvidos.push(...((await enviarLote(lote)) || []));
+        } catch (erro) {
+          if (!explicar(tabela, erro) || tabelaNaoExiste(erro)) throw erro;
+          // Um registro recusado não segura os outros: manda um por um e só o recusado espera.
+          for (const linha of lote) {
+            try {
+              devolvidos.push(...((await enviarLote([linha])) || []));
+            } catch (erroDaLinha) {
+              if (!explicar(tabela, erroDaLinha)) throw erroDaLinha;
+              primeiraRecusa ??= erroDaLinha;
+            }
+          }
+        }
       }
     }
 
@@ -185,16 +271,30 @@ async function enviarFila() {
         const mudouDepois = atuais.some((f) => f.tabela === tabela && f.id === linha.id && f.seq > ultimoSeq);
         if (!mudouDepois) tx.objectStore(tabela).put(linha);
       }
+      const enviados = new Set(devolvidos.map((l) => l.id));
       for (const f of atuais) {
-        if (f.tabela === tabela && ids.has(f.id) && f.seq <= ids.get(f.id)) loja.delete(f.seq);
+        if (f.tabela === tabela && enviados.has(f.id) && f.seq <= ids.get(f.id)) loja.delete(f.seq);
       }
     });
     avisar('hub:dados', { tabela });
+    if (primeiraRecusa) throw primeiraRecusa;
   }
 }
 
 async function receberMudancas() {
   for (const tabela of TABELAS) {
+    try {
+      await receberTabela(tabela);
+    } catch (erro) {
+      const explicacao = explicar(tabela, erro);
+      if (!explicacao) throw erro;
+      problemas.set(`recebimento:${tabela}`, explicacao);
+    }
+  }
+}
+
+async function receberTabela(tabela) {
+  {
     const meta = await transacao(['meta'], 'readonly', (tx) => comoPromessa(tx.objectStore('meta').get(`cursor:${tabela}`)));
     let cursor = meta?.valor || '1970-01-01T00:00:00Z';
     let mudou = false;
@@ -254,6 +354,7 @@ export async function sincronizar() {
 
   sincronizando = (async () => {
     mudarSituacao({ estado: 'sincronizando', erro: null });
+    problemas = new Map();
     try {
       await enviarFila();
       await receberMudancas();
@@ -264,7 +365,11 @@ export async function sincronizar() {
         // sem armazenamento
       }
       await contarPendentes();
-      mudarSituacao({ estado: 'ok', ultima });
+      // Sincronizou, mas alguma tabela ficou esperando uma migração: avisa qual.
+      const lista = [...problemas.values()];
+      const textos = [...new Set(lista.map((p) => p.texto))];
+      const estado = lista.some((p) => p.tipo === 'erro') ? 'erro' : (lista.length ? 'aviso' : 'ok');
+      mudarSituacao({ estado, ultima, erro: textos.length ? textos.join(' ') : null });
     } catch (erro) {
       const offline = erro instanceof ErroNuvem && erro.codigo === 'rede';
       mudarSituacao({ estado: offline ? 'offline' : 'erro', erro: erro.message });
