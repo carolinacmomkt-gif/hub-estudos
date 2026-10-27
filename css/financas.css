@@ -295,3 +295,15 @@
     flex: 1;
   }
 }
+
+.fin-livre {
+  border-left: 4px solid var(--cor-sucesso);
+}
+
+.fin-livre.apertado {
+  border-left-color: var(--urg-atrasado);
+}
+
+.fin-livre .fin-grande {
+  font-size: clamp(1.5rem, 0.9rem + 2.6vw, 2.4rem);
+}

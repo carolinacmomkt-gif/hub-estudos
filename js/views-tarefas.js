@@ -52,7 +52,7 @@ export function itemTarefa(t, { projetos = [], hoje = hojeIso(), mostrarData = t
     t.notas && '<span aria-label="Tem notas">✎</span>',
   ].filter(Boolean);
   return `
-    <li class="tarefa prio-${t.prioridade || 0}${feita ? ' feita' : ''}" data-tarefa="${esc(t.id)}">
+    <li class="tarefa prio-${t.prioridade || 0}${feita ? ' feita' : ''}" data-tarefa="${esc(t.id)}"${feita ? '' : ` data-deslizar="tarefa" data-id="${esc(t.id)}"`}>
       <button class="tarefa-check" type="button" data-acao="${feita ? 'tarefa-reabrir' : 'tarefa-feita'}" data-id="${esc(t.id)}"
         aria-label="${feita ? 'Reabrir' : 'Concluir'}: ${esc(t.titulo)}" aria-pressed="${feita}"><span aria-hidden="true"></span></button>
       <button class="tarefa-corpo" type="button" data-acao="tarefa-abrir" data-id="${esc(t.id)}">

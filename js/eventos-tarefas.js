@@ -2,13 +2,36 @@
 
 import { obterEstado, atualizarEstado } from './estado.js';
 import { gravar } from './gravacao.js';
-import { lerTarefaRapida, aoConcluir, aoDesfazer } from './dados-tarefas.js';
+import { lerTarefaRapida, aoConcluir, aoDesfazer, iso } from './dados-tarefas.js';
+import { registrarDeslize, ligarDeslizar } from './deslizar.js';
 import { formTarefa, lerFormTarefa, formProjeto, lerFormProjeto, textoPrevia, hojeIso } from './views-tarefas.js';
 
 let app; // { renderizar, avisoCurto }
 
 export function ligarTarefas(funcoes) {
   app = funcoes;
+  // No celular e no tablet: deslizar para a direita conclui, para a esquerda passa para amanhã.
+  ligarDeslizar();
+  registrarDeslize('tarefa', {
+    direita: { rotulo: 'Feito', fn: (id) => concluir(id, null) },
+    esquerda: { rotulo: 'Amanhã', fn: (id) => paraAmanha(id) },
+  });
+}
+
+async function paraAmanha(id) {
+  const t = tarefa(id);
+  if (!t) return;
+  const antes = t.data;
+  const amanha = iso(new Date(Date.now() + 864e5));
+  await salvarTarefa({ ...t, data: amanha });
+  app.renderizar();
+  app.avisoCurto('Passou para amanhã.', {
+    rotulo: 'Desfazer',
+    fn: async () => {
+      await salvarTarefa({ ...tarefa(id), data: antes });
+      app.renderizar();
+    },
+  });
 }
 
 const tarefa = (id) => (obterEstado().tarefas || []).find((t) => t.id === id);

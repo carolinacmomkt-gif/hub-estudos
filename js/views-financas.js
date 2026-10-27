@@ -5,7 +5,7 @@ import { cabecalho, barraProgresso } from './componentes.js';
 import { esc } from './utilidades.js';
 import {
   ORIGENS_PADRAO, CATEGORIAS_PADRAO, iso, mesDe, somarMeses, lerLancamento, lancamentos, contasFixas, caixinhas,
-  resumoDoMes, variacao, situacaoDasContas, contasDaSemana, progressoCaixinha,
+  resumoDoMes, variacao, situacaoDasContas, contasDaSemana, progressoCaixinha, livreParaGastar,
 } from './dados-financas.js';
 
 export const ABAS_FINANCAS = [
@@ -64,7 +64,7 @@ function navegarMes(mes, aba) {
     <div class="fin-mes" role="group" aria-label="Mês">
       <button class="botao-icone" type="button" data-acao="fin-mes" data-valor="${somarMeses(mes, -1)}" aria-label="Mês anterior">‹</button>
       <strong>${esc(nomeMes(mes))}</strong>
-      <button class="botao-icone" type="button" data-acao="fin-mes" data-valor="${somarMeses(mes, 1)}" aria-label="Próximo mês"${mes >= atual ? ' disabled' : ''}>›</button>
+      <button class="botao-icone" type="button" data-acao="fin-mes" data-valor="${somarMeses(mes, 1)}" aria-label="Próximo mês">›</button>
       ${mes !== atual ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="fin-mes" data-valor="${atual}">Este mês</button>` : ''}
       <button class="botao-icone fin-olho" type="button" data-acao="fin-ocultar" aria-pressed="${valoresOcultos()}" aria-label="${valoresOcultos() ? 'Mostrar os valores' : 'Esconder os valores'}" title="${valoresOcultos() ? 'Mostrar os valores' : 'Esconder os valores (para usar em público)'}">${valoresOcultos() ? '◌' : '◉'}</button>
     </div>`;
@@ -151,13 +151,21 @@ function abaMes(estado, mes, prefs) {
   const limites = Object.fromEntries(prefs.categorias.filter((c) => Number(c.limite) > 0).map((c) => [c.id, Number(c.limite)]));
   const contas = situacaoDasContas(estado.financas, mes, hojeIso());
   const cx = caixinhas(estado.financas);
+  const futuro = mes > mesDe(hojeIso());
+  const previstas = contas.filter((x) => x.estado !== 'paga').reduce((t, x) => t + (Number(x.conta.valor) || 0), 0);
   return `
+    ${futuro ? `<section class="card fin-livre">
+      <p class="proximo-rotulo">Previsão de ${esc(nomeMes(mes).toLowerCase())}</p>
+      <p class="fin-grande">${dinheiro(previstas)}</p>
+      <p class="campo-ajuda">em ${contas.length} ${contas.length === 1 ? 'conta fixa' : 'contas fixas'}${r.quantidade ? ` · e ${r.quantidade} ${r.quantidade === 1 ? 'lançamento já marcado' : 'lançamentos já marcados'} para este mês` : ''}. Para planejar uma entrada ou um gasto futuro, lance com a data (ex.: "+3500 sensus 05/${esc(mes.slice(5, 7))}").</p>
+    </section>` : ''}
     <div class="fin-resumo">
       <section class="card fin-numero"><p class="proximo-rotulo">Entrou</p><p class="fin-grande positivo">${dinheiro(r.entrou)}</p>${textoVariacao(variacao(r.entrou, ant.entrou))}</section>
       <section class="card fin-numero"><p class="proximo-rotulo">Saiu</p><p class="fin-grande">${dinheiro(r.saiu)}</p>${textoVariacao(variacao(r.saiu, ant.saiu), true)}</section>
       <section class="card fin-numero"><p class="proximo-rotulo">Sobrou</p><p class="fin-grande ${r.sobrou < 0 ? 'negativo' : 'positivo'}">${r.sobrou < 0 ? '−' : ''}${dinheiro(Math.abs(r.sobrou))}</p>
         <small class="campo-ajuda">${r.quantidade} ${r.quantidade === 1 ? 'lançamento' : 'lançamentos'}</small></section>
     </div>
+    ${mes === mesDe(hojeIso()) && r.entrou > 0 ? cardLivre(estado) : ''}
     <div class="fin-duas">
       <section class="card"><h2 class="card-titulo">De onde veio</h2>${barras(r.porOrigem, r.entrou)}</section>
       <section class="card"><div class="card-topo"><h2 class="card-titulo">Para onde foi</h2><a class="card-link" href="#financas/ajustes">Limites</a></div>${barras(r.porCategoria, r.saiu, { limites })}</section>
@@ -169,6 +177,19 @@ function abaMes(estado, mes, prefs) {
         ${cx.length ? `<ul class="lista-simples">${cx.slice(0, 4).map((c) => { const pr = progressoCaixinha(c); return `<li class="fin-caixinha-linha"><span>${esc(c.descricao)}</span>${barraProgresso(pr.fracao, `Caixinha ${c.descricao}`)}</li>`; }).join('')}</ul>`
           : '<p class="texto-suave">Uma caixinha guarda dinheiro para um objetivo: viagem para Brasília, reserva, um curso.</p>'}</section>
     </div>`;
+}
+
+function cardLivre(estado) {
+  const l = livreParaGastar(estado.financas, hojeIso());
+  const detalhes = [l.contasAbertas > 0 && `${dinheiro(l.contasAbertas)} de contas que ainda vão vencer`, l.guardadoNoMes > 0 && `${dinheiro(l.guardadoNoMes)} guardados nas caixinhas`].filter(Boolean);
+  return `
+    <section class="card fin-livre${l.livre < 0 ? ' apertado' : ''}">
+      <div>
+        <p class="proximo-rotulo">Livre para gastar até o fim do mês</p>
+        <p class="fin-grande ${l.livre < 0 ? 'negativo' : 'positivo'}">${l.livre < 0 ? '−' : ''}${dinheiro(Math.abs(l.livre))}</p>
+        <p class="campo-ajuda">${l.livre > 0 ? `Dá ${dinheiro(l.porDia)} por dia nos ${l.diasRestantes} ${l.diasRestantes === 1 ? 'dia que falta' : 'dias que faltam'}.` : 'As contas do mês já passam do que entrou. Vale segurar os gastos.'}${detalhes.length ? ` Já descontados: ${detalhes.join(' e ')}.` : ''}</p>
+      </div>
+    </section>`;
 }
 
 function abaLancamentos(estado, mes, prefs) {
@@ -373,6 +394,7 @@ export function cardFinancasHoje(estado) {
         <li><span>Entrou</span><strong class="fin-valor positivo">${dinheiro(r.entrou)}</strong></li>
         <li><span>Saiu</span><strong>${dinheiro(r.saiu)}</strong></li>
         <li><span>${r.sobrou < 0 ? 'Faltou' : 'Sobrou'}</span><strong class="${r.sobrou < 0 ? 'fin-negativo' : ''}">${dinheiro(Math.abs(r.sobrou))}</strong></li>
+        ${r.entrou > 0 ? (() => { const l = livreParaGastar(estado.financas, hojeIso()); return `<li><span>Livre por dia</span><strong class="${l.livre < 0 ? 'fin-negativo' : 'fin-valor positivo'}">${l.livre < 0 ? '−' : ''}${dinheiro(Math.abs(l.porDia))}</strong></li>`; })() : ''}
         ${maior ? `<li><span class="campo-ajuda">Mais gasto: ${esc(maior.nome)}</span><span class="campo-ajuda">${dinheiro(maior.total)}</span></li>` : ''}
       </ul>
     </section>`;

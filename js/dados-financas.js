@@ -80,7 +80,8 @@ export function lerLancamento(texto, hoje, { categorias = CATEGORIAS_PADRAO, ori
   else if ((m = tirar(/\s(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?=\s)/))) {
     const ano = m[3] ? (m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3])) : deIso(hoje).getFullYear();
     let s = `${ano}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-    if (!m[3] && s > hoje) s = `${ano - 1}${s.slice(4)}`;
+    // Data mais de 6 meses à frente sem ano: é do ano passado; até lá, é planejamento.
+    if (!m[3] && s > somarDias(hoje, 183)) s = `${ano - 1}${s.slice(4)}`;
     if (!Number.isNaN(Date.parse(`${s}T12:00:00`))) r.data = s;
   } else if ((m = tirar(/\sdia (\d{1,2})(?=\s)/))) {
     let s = diaNoMes(mesDe(hoje), Number(m[1]));
@@ -195,4 +196,19 @@ export function paraCSV(linhas, { categorias = CATEGORIAS_PADRAO, origens = ORIG
     (l.tipo === 'entrada' ? '' : '-') + Number(l.valor).toFixed(2).replace('.', ','),
   ].join(';'));
   return ['Data;Tipo;Descrição;Origem ou categoria;Valor', ...corpo].join('\n');
+}
+
+// Quanto ainda dá para gastar no mês (ideia do "seguro para gastar" do Copilot e do PocketGuard):
+// o que entrou, menos o que já saiu, menos as contas fixas que ainda vão vencer, menos o que foi
+// guardado nas caixinhas neste mês. Dividido pelos dias que faltam, vira um valor por dia.
+export function livreParaGastar(linhas, hoje) {
+  const mes = mesDe(hoje);
+  const r = resumoDoMes(linhas, mes);
+  const contasAbertas = situacaoDasContas(linhas, mes, hoje).filter((x) => x.estado !== 'paga')
+    .reduce((t, x) => t + (Number(x.conta.valor) || 0), 0);
+  const guardadoNoMes = caixinhas(linhas).reduce((t, c) => t + (c.dados?.historico || [])
+    .filter((h) => mesDe(h.data) === mes).reduce((s, h) => s + (Number(h.valor) || 0), 0), 0);
+  const livre = Math.round((r.entrou - r.saiu - contasAbertas - guardadoNoMes) * 100) / 100;
+  const diasRestantes = ultimoDia(mes) - Number(hoje.slice(8, 10)) + 1;
+  return { livre, porDia: diasRestantes > 0 ? Math.floor((livre / diasRestantes) * 100) / 100 : livre, diasRestantes, contasAbertas, guardadoNoMes };
 }
