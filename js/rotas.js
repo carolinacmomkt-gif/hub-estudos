@@ -1,16 +1,19 @@
 // Rotas por #hash: funcionam offline e sem configuração no servidor.
 // "fixaCelular" indica o que aparece direto na barra inferior; o resto vai para "Mais".
 
+// "grupo" é onde a rota começa no menu (a Carol pode mudar em "Editar menu").
 export const ROTAS = [
-  { id: 'inicio', titulo: 'Início', icone: 'inicio', fixaCelular: true },
-  { id: 'faculdade', titulo: 'Faculdade', icone: 'faculdade', fixaCelular: true },
-  { id: 'estudos', titulo: 'Estudos gerais', icone: 'estudos' },
-  { id: 'substack', titulo: 'Substack', icone: 'substack' },
-  { id: 'youtube', titulo: 'YouTube', icone: 'youtube' },
-  { id: 'biblioteca', titulo: 'Biblioteca', icone: 'biblioteca' },
-  { id: 'cadernos', titulo: 'Cadernos', icone: 'cadernos', fixaCelular: true },
-  { id: 'questoes', titulo: 'Questões', icone: 'questoes' },
-  { id: 'calendario', titulo: 'Calendário', icone: 'calendario', fixaCelular: true },
+  { id: 'inicio', titulo: 'Hoje', icone: 'inicio', fixaCelular: true, grupo: 'dia' },
+  { id: 'calendario', titulo: 'Calendário', icone: 'calendario', fixaCelular: true, grupo: 'dia' },
+  { id: 'foco', titulo: 'Sessão de foco', icone: 'foco', grupo: 'dia' },
+  { id: 'faculdade', titulo: 'Faculdade', icone: 'faculdade', fixaCelular: true, grupo: 'faculdade' },
+  { id: 'cadernos', titulo: 'Cadernos', icone: 'cadernos', fixaCelular: true, grupo: 'faculdade' },
+  { id: 'questoes', titulo: 'Questões', icone: 'questoes', grupo: 'faculdade' },
+  { id: 'estudos', titulo: 'Estudos gerais', icone: 'estudos', grupo: 'estudos' },
+  { id: 'biblioteca', titulo: 'Biblioteca', icone: 'biblioteca', grupo: 'estudos' },
+  { id: 'youtube', titulo: 'YouTube', icone: 'youtube', grupo: 'criacao' },
+  { id: 'substack', titulo: 'Substack', icone: 'substack', grupo: 'criacao' },
+  { id: 'resumo', titulo: 'Resumo da semana', icone: 'calendario', grupo: 'dia' },
 ];
 
 export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configurações', icone: 'configuracoes' };
@@ -18,8 +21,6 @@ export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configuraçõe
 // Telas que não aparecem no menu (abertas por um botão).
 const ROTAS_INTERNAS = [
   { id: 'caneta', titulo: 'Testar a caneta', icone: 'cadernos' },
-  { id: 'foco', titulo: 'Sessão de foco', icone: 'estudos' },
-  { id: 'resumo', titulo: 'Resumo da semana', icone: 'calendario' },
 ];
 
 const TODAS = [...ROTAS, ROTA_CONFIGURACOES, ...ROTAS_INTERNAS];

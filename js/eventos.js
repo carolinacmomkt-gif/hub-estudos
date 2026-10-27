@@ -23,10 +23,11 @@ import { ligarYoutube, cliqueYoutube, enviarYoutube, mudancaYoutube } from './ev
 import { ligarBiblioteca, cliqueBiblioteca, enviarBiblioteca, mudancaBiblioteca } from './eventos-biblioteca.js';
 import { ligarQuestoes, cliqueQuestoes, enviarQuestoes, mudancaQuestoes } from './eventos-questoes.js';
 import { ligarSubstack, cliqueSubstack, enviarSubstack, mudancaSubstack } from './eventos-substack.js';
+import { cliqueMenu, mudancaMenu, alternarMenu } from './views-navegacao.js';
 import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './eventos-estudos.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -346,6 +347,10 @@ export function ligarEventos(funcoesDoApp) {
         mudarFaltasManuais(alvo.dataset.id, -1);
         return;
       default:
+        if (alvo.dataset.acao?.startsWith('menu-') && cliqueMenu(alvo)) {
+          if (folhaMais.open) folhaMais.close();
+          return;
+        }
         if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo)
           || cliqueFoco(alvo) || cliqueBiblioteca(alvo) || cliqueQuestoes(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
     }
@@ -360,6 +365,14 @@ export function ligarEventos(funcoesDoApp) {
       if (evento.target === folha) folha.close();
     });
   }
+
+  // Ctrl + \ esconde e mostra o menu (como no Notion).
+  document.addEventListener('keydown', (evento) => {
+    if ((evento.ctrlKey || evento.metaKey) && evento.key === '\\') {
+      evento.preventDefault();
+      alternarMenu();
+    }
+  });
 
   document.addEventListener('change', (evento) => {
     if (evento.target.matches('[data-acao="importar-backup"]')) restaurarBackup(evento.target);

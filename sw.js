@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v31';
+const VERSAO = 'hub-v32';
 
 const ARQUIVOS = [
   './',
@@ -87,6 +87,7 @@ const ARQUIVOS = [
   './js/editor-tinta.js',
   './js/vendor/perfect-freehand.js',
   './js/views-navegacao.js',
+  './js/menu.js',
   './js/views-inicio.js',
   './js/views-configuracoes.js',
   './icones/icone.svg',

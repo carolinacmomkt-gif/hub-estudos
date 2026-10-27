@@ -122,6 +122,10 @@ export function renderizar({ mudouDeTela = false } = {}) {
   document.title = rota.id === 'inicio' ? 'Hub de Estudos' : `${rota.titulo} · Hub de Estudos`;
 
   if (mudouDeTela) {
+    // Entrada suave só na troca de tela (redesenhos por fora não piscam).
+    conteudo.classList.remove('tela-nova');
+    void conteudo.offsetWidth;
+    conteudo.classList.add('tela-nova');
     window.scrollTo(0, 0);
     conteudo.querySelector('h1')?.focus({ preventScroll: true });
   }
@@ -210,6 +214,7 @@ export async function entrarNoApp() {
   document.body.classList.remove('modo-login');
   await carregarDadosLocais();
   aplicarCompartilhado();
+  montarNavegacao(); // o menu guardado só chega com a config
   renderizar();
   if (!sincronizacaoIniciada) {
     sincronizacaoIniciada = true;
@@ -229,6 +234,10 @@ window.addEventListener('hub:dados', async (evento) => {
   const { tabela } = evento.detail || {};
   if (!TABELAS_NA_MEMORIA[tabela]) return;
   await carregarDadosLocais([tabela]);
+  if (tabela === 'config') {
+    montarNavegacao();
+    marcarRotaAtiva(obterEstado().rota);
+  }
   const telas = TELAS_DA_TABELA[tabela] || ['inicio', 'faculdade'];
   // O editor de caderno nunca é redesenhado por fora: ele perderia o traço em andamento.
   const { id: rotaVista, parametro: parametroVisto } = rotaAtual();

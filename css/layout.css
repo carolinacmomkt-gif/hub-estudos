@@ -1,7 +1,8 @@
 /*
   Larguras:
   - 1100px ou mais (tablet na horizontal, computador): barra lateral com nomes
-  - 701px a 1099px (tablet na vertical): barra lateral compacta, ícone + nome curto
+  - o menu lateral tem três jeitos (aberto, só ícones, escondido), escolhidos em cada aparelho;
+    no tablet em pé começa só com ícones
   - até 700px (celular): barra inferior com "Mais"
 */
 
@@ -124,39 +125,265 @@
   display: none;
 }
 
-/* Tablet na vertical */
-@media (max-width: 1099px) {
-  .app {
-    --largura-nav: 96px;
+/* Topo do menu: marca + botão de recolher */
+.nav-topo {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.nav-topo .marca {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-recolher {
+  border-color: transparent;
+  background: none;
+  color: var(--cor-texto-fraco);
+}
+
+.nav-recolher svg,
+.menu-voltar svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Grupos com título que abrem e fecham */
+.nav-grupos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-favoritos {
+  margin-bottom: 10px;
+}
+
+.nav-grupo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--cor-texto-fraco);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-grupo-titulo span {
+  flex: 1;
+}
+
+.nav-grupo-titulo svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.15s;
+}
+
+button.nav-grupo-titulo:hover {
+  color: var(--cor-texto);
+}
+
+.nav-grupo.fechado .nav-grupo-titulo svg {
+  transform: rotate(-90deg);
+}
+
+.nav-grupo.fechado .nav-lista {
+  display: none;
+}
+
+.nav-grupo-fixo {
+  cursor: default;
+}
+
+.nav-grupo-fixo svg {
+  order: -1;
+}
+
+.folha .nav-grupo-titulo svg {
+  display: none;
+}
+
+/* Botão ☰ que traz o menu escondido de volta */
+#menu-voltar {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 30;
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra);
+}
+
+body[data-menu="oculto"] .app {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body[data-menu="oculto"] .nav-lateral {
+  display: none;
+}
+
+body[data-menu="oculto"] #menu-voltar {
+  display: inline-flex;
+}
+
+body[data-menu="oculto"] .conteudo {
+  padding-top: 64px;
+}
+
+/* Só os ícones (padrão do tablet em pé) */
+body[data-menu="icones"] .app {
+  --largura-nav: 76px;
+}
+
+body[data-menu="icones"] .nav-lateral {
+  padding: 16px 10px;
+  overflow-x: hidden;
+}
+
+body[data-menu="icones"] .nav-topo {
+  flex-direction: column;
+  align-items: center;
+}
+
+body[data-menu="icones"] .marca {
+  padding: 0 0 8px;
+}
+
+body[data-menu="icones"] .marca-texto,
+body[data-menu="icones"] .nav-nome,
+body[data-menu="icones"] .nav-grupo-titulo span,
+body[data-menu="icones"] .situacao-texto {
+  display: none;
+}
+
+body[data-menu="icones"] .nav-recolher {
+  margin-bottom: 8px;
+}
+
+body[data-menu="icones"] .nav-link {
+  justify-content: center;
+  padding: 0;
+}
+
+/* Sem nome, o título do grupo vira um risquinho e o grupo fica sempre aberto */
+body[data-menu="icones"] .nav-grupo-titulo {
+  min-height: 0;
+  height: 1px;
+  margin: 4px 8px 6px;
+  padding: 0;
+  width: auto;
+  background: var(--cor-borda);
+  pointer-events: none;
+}
+
+body[data-menu="icones"] .nav-grupo-titulo svg {
+  display: none;
+}
+
+body[data-menu="icones"] .nav-grupo.fechado .nav-lista {
+  display: flex;
+}
+
+body[data-menu="icones"] .situacao-sinc {
+  justify-content: center;
+}
+
+/* Nome da área ao passar o mouse */
+@media (hover: hover) {
+  body[data-menu="icones"] .nav-lateral .nav-link {
+    position: relative;
   }
 
-  .nav-lateral {
-    padding: 16px 8px;
+  body[data-menu="icones"] .nav-lateral .nav-link:hover::after {
+    content: attr(data-rotulo);
+    position: fixed;
+    left: 80px;
+    z-index: 40;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--cor-superficie-elevada);
+    color: var(--cor-texto);
+    box-shadow: var(--sombra);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    pointer-events: none;
   }
+}
 
-  .marca {
-    justify-content: center;
-    padding: 0 0 16px;
-  }
+/* Editar menu */
+.editar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
-  .marca-texto {
-    display: none;
-  }
+.editar-grupo {
+  padding: 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 14px;
+}
 
-  .nav-link {
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    min-height: 62px;
-    padding: 8px 4px;
-    font-size: 0.74rem;
-    line-height: 1.15;
-    text-align: center;
-  }
+.editar-grupo-topo,
+.editar-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 
-  .conteudo {
-    padding-top: 28px;
-  }
+.editar-grupo-topo input {
+  flex: 1 1 140px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.editar-itens {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.editar-item {
+  padding: 6px 0;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.editar-item > svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.editar-item-nome {
+  flex: 1 1 100px;
+  min-width: 0;
+}
+
+.editar-item select {
+  flex: 0 1 140px;
+  min-width: 0;
+}
+
+.editar-item.escondido .editar-item-nome,
+.editar-item.escondido > svg {
+  opacity: 0.5;
+}
+
+.conteudo {
+  transition: padding 0.15s;
 }
 
 /* Celular */
@@ -165,11 +392,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .nav-lateral {
+  .nav-lateral,
+  body[data-menu] #menu-voltar {
     display: none;
   }
 
-  .conteudo {
+  body[data-menu] .conteudo {
     padding: 20px 16px calc(100px + env(safe-area-inset-bottom));
   }
 
@@ -290,6 +518,7 @@
 
 .modo-login .nav-lateral,
 .modo-login .nav-inferior,
+.modo-login #menu-voltar,
 .modo-login .fab {
   display: none;
 }
@@ -366,17 +595,6 @@
 .situacao-sinc[data-estado="erro"] .situacao-ponto { background: var(--urg-atrasado); }
 .situacao-sinc[data-estado="aviso"] .situacao-ponto { background: var(--urg-urgente); }
 
-@media (max-width: 1099px) {
-  .nav-lateral .situacao-sinc {
-    justify-content: center;
-    padding: 0 0 8px;
-  }
-
-  .nav-lateral .situacao-texto {
-    display: none;
-  }
-}
-
 /* Faixa "sem internet" */
 .faixa-offline {
   position: fixed;
@@ -395,4 +613,46 @@
 
 .faixa-offline[hidden] {
   display: none;
+}
+
+/* Movimento: o menu desliza ao recolher, os toques respondem e cada tela entra de leve */
+.app {
+  transition: grid-template-columns 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.nav-link,
+.nav-grupo-titulo,
+.nav-recolher,
+#menu-voltar {
+  transition: background-color 0.15s, color 0.15s, transform 0.12s;
+}
+
+.nav-link:active,
+.nav-recolher:active,
+#menu-voltar:active {
+  transform: scale(0.96);
+}
+
+.nav-grupo .nav-lista {
+  animation: menu-abrir 0.18s ease-out;
+}
+
+body[data-menu="oculto"] #menu-voltar {
+  animation: menu-surgir 0.2s ease-out;
+}
+
+.conteudo.tela-nova > * {
+  animation: tela-entrar 0.2s ease-out;
+}
+
+@keyframes menu-abrir {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes menu-surgir {
+  from { opacity: 0; transform: scale(0.9); }
+}
+
+@keyframes tela-entrar {
+  from { opacity: 0; }
 }
