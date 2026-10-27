@@ -48,6 +48,17 @@ export function cardAvisos(estado) {
           <legend class="campo-rotulo">Avisar sobre</legend>
           ${TIPOS.map((t) => marcar('tipo', t.id, t.nome, cfg.tipos[t.id])).join('')}
         </fieldset>
+        <fieldset class="grupo-marcar">
+          <legend class="campo-rotulo">Resumo da semana</legend>
+          ${marcar('resumo-ativo', '1', 'Mandar um resumo da semana (foco, questões, leituras e os prazos da semana seguinte)', cfg.resumo.ativo)}
+          <div class="cal-form-linha">
+            <label class="campo"><span class="campo-rotulo">Quando</span>
+              <select name="resumo-dia"><option value="0"${Number(cfg.resumo.dia) === 0 ? ' selected' : ''}>Domingo</option><option value="1"${Number(cfg.resumo.dia) === 1 ? ' selected' : ''}>Segunda de manhã</option></select></label>
+            <label class="campo"><span class="campo-rotulo">Horário</span>
+              <input name="resumo-hora" type="time" value="${esc(cfg.resumo.hora)}"></label>
+          </div>
+          <a class="card-link" href="#resumo">Ver o resumo desta semana</a>
+        </fieldset>
       </form>
     </section>`;
 }

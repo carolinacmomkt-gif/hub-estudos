@@ -5,6 +5,7 @@
 import { chaveDosAvisos, rest, idDaUsuaria } from './nuvem.js';
 import { chamar } from './funcoes.js';
 import { listar, salvar } from './persistencia.js';
+import { RESUMO_PADRAO } from './dados-resumo.js';
 
 // Igual a AVISOS_PADRAO em netlify/lib/avisos.mjs.
 export const AVISOS_PADRAO = {
@@ -21,6 +22,7 @@ export function configDeAvisos(estado) {
     fuso: v.fuso || AVISOS_PADRAO.fuso,
     marcos: { ...AVISOS_PADRAO.marcos, ...(v.marcos || {}) },
     tipos: { ...AVISOS_PADRAO.tipos, ...(v.tipos || {}) },
+    resumo: { ...RESUMO_PADRAO, ...(v.resumo || {}) },
   };
 }
 

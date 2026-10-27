@@ -8,6 +8,8 @@ import { renderProprio } from './views-inicio-proprios.js';
 import { cardYoutubeInicio } from './views-youtube.js';
 import { cardLeiturasInicio } from './views-biblioteca.js';
 import { cardSubstackInicio } from './views-substack.js';
+import { cardFocoInicio } from './views-foco.js';
+import { cardResumoInicio } from './views-resumo.js';
 import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas } from './dados-faculdade.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
@@ -91,7 +93,10 @@ function cardProximoPasso(passo) {
         <h2 class="proximo-titulo" id="proximo-titulo">${esc(passo.titulo)}</h2>
         <p class="proximo-texto">${esc(passo.texto)}</p>
       </div>
-      <a class="botao" href="${esc(passo.destino)}">${esc(passo.acao)}</a>
+      <div class="proximo-acoes">
+        <a class="botao" href="${esc(passo.destino)}">${esc(passo.acao)}</a>
+        <button class="botao botao-secundario" type="button" data-acao="foco-iniciar" data-titulo="${esc(passo.titulo)}">Focar nisso</button>
+      </div>
     </section>`;
 }
 
@@ -356,6 +361,8 @@ export function renderInicio(estado) {
     faltas: () => (estado.usandoExemplo ? '' : cardFaltas(estado)),
     avisos: () => (estado.usandoExemplo ? '' : cardAvisos(estado, agora)),
     youtube: () => ((estado.videos || []).some((v) => !v.excluido_em) ? cardYoutubeInicio(estado, agora) : ''),
+    foco: () => cardFocoInicio(estado),
+    resumo: () => (estado.usandoExemplo ? '' : cardResumoInicio(estado)),
     leituras: () => (estado.usandoExemplo ? '' : cardLeiturasInicio(estado)),
     substack: () => (estado.usandoExemplo ? '' : cardSubstackInicio(estado, agora)),
     caixa: () => cardCaixaEntrada(estado.caixa || [], agora),

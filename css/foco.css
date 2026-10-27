@@ -1,0 +1,157 @@
+/* Sessão de foco (barrinha em todas as telas e a tela #foco) e o resumo da semana. */
+
+.foco-barra {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(640px, calc(100vw - 120px));
+  padding: 8px 10px 8px 16px;
+  transform: translateX(-50%);
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra);
+}
+
+.foco-barra[hidden] {
+  display: none;
+}
+
+.foco-barra-fase {
+  flex: none;
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.foco-barra-fase.fase-foco {
+  color: var(--cor-texto-destaque);
+}
+
+.foco-barra-tempo {
+  flex: none;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.foco-barra-titulo {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* No editor do caderno a barrinha fica no canto, para não cobrir a folha. */
+.modo-editor .foco-barra {
+  left: auto;
+  right: 16px;
+  transform: none;
+}
+
+.modo-editor .foco-barra .foco-barra-titulo {
+  display: none;
+}
+
+.foco-relogio {
+  text-align: center;
+}
+
+.foco-tempo {
+  margin: 8px 0 14px;
+  font-size: clamp(3.5rem, 2rem + 8vw, 6.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.foco-relogio.fase-pausa .foco-tempo,
+.foco-relogio.fase-longa .foco-tempo {
+  color: var(--cor-sucesso);
+}
+
+.foco-trilho {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.foco-titulo {
+  margin-top: 14px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.foco-acoes {
+  justify-content: center;
+}
+
+.proximo-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.proximo .proximo-acoes .botao-secundario {
+  border-color: var(--cor-sobre-destaque);
+  background: transparent;
+  color: var(--cor-sobre-destaque);
+}
+
+/* Resumo: minutos de foco por dia */
+.resumo-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  align-items: end;
+  height: 110px;
+  margin-top: 12px;
+}
+
+.resumo-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  height: 100%;
+}
+
+.resumo-coluna {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px 6px 2px 2px;
+  background: var(--cor-destaque);
+}
+
+.resumo-dia small {
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+}
+
+.conteudo:is([data-tela="foco"], [data-tela="resumo"]) > * + *:not(.cal-acoes) {
+  margin-top: 16px;
+}
+
+@media (max-width: 700px) {
+  .foco-barra {
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    left: 16px;
+    max-width: calc(100vw - 104px);
+    transform: none;
+  }
+
+  .foco-barra-titulo {
+    display: none;
+  }
+
+  .modo-editor .foco-barra {
+    bottom: 16px;
+  }
+}

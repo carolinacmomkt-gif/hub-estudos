@@ -21,6 +21,8 @@ export function renderFolhaCriar() {
       <li><a class="atalho-criar" href="#questoes/gerar" data-acao="fechar-criar">${icone('questoes')}<span>Gerar questões</span></a></li>
       <li><button class="atalho-criar" type="button" data-acao="ss-nova">${icone('substack')}<span>Pauta do Substack</span></button></li>
       <li><button class="atalho-criar" type="button" data-acao="est-nova">${icone('estudos')}<span>Trilha ou tema</span></button></li>
+      <li><a class="atalho-criar" href="#foco" data-acao="fechar-criar">${icone('estudos')}<span>Sessão de foco</span></a></li>
+      <li><a class="atalho-criar" href="#resumo" data-acao="fechar-criar">${icone('calendario')}<span>Resumo da semana</span></a></li>
     </ul>`;
 }
 

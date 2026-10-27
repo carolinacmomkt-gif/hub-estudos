@@ -9,11 +9,14 @@ import { renderBiblioteca } from './views-biblioteca.js';
 import { renderQuestoes } from './views-questoes.js';
 import { renderSubstack } from './views-substack.js';
 import { renderEstudos } from './views-estudos.js';
+import { renderFoco } from './views-foco.js';
+import { renderResumo } from './views-resumo.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
 import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
 import { filtrarListaNaTela } from './eventos-questoes.js';
 import { salvarSubstackAgora } from './eventos-substack.js';
 import { reaplicarBuscaCadernos } from './eventos-cadernos.js';
+import { atualizarTela as atualizarFoco } from './foco.js';
 import { renderConfiguracoes, textoSituacao } from './views-configuracoes.js';
 import { renderLogin } from './views-login.js';
 import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
@@ -42,6 +45,8 @@ const VIEWS = {
   questoes: renderQuestoes,
   substack: renderSubstack,
   estudos: renderEstudos,
+  foco: renderFoco,
+  resumo: renderResumo,
 };
 
 // Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
@@ -113,6 +118,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
   }
   atualizarBotoesTema();
   marcarRotaAtiva(rota.id);
+  atualizarFoco({ soRelogio: true }); // a barrinha do foco some na tela do foco e aparece nas outras
   document.title = rota.id === 'inicio' ? 'Hub de Estudos' : `${rota.titulo} · Hub de Estudos`;
 
   if (mudouDeTela) {
@@ -142,6 +148,8 @@ const TABELAS_NA_MEMORIA = {
   simulados: 'simulados',
   pautas_substack: 'pautas',
   areas: 'areas',
+  respostas: 'respostas',
+  sessoes_foco: 'sessoesFoco',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -160,6 +168,8 @@ const TELAS_DA_TABELA = {
   conexoes: ['configuracoes', 'faculdade'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
+  sessoes_foco: ['foco', 'inicio', 'resumo'],
+  respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
   config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack'],

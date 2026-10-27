@@ -4,12 +4,42 @@
 
 import { banco } from '../lib/supabase.mjs';
 import { avisosDevidos, montarNotificacoes, enviarPush, configDeAvisos, chaveEnviado, ErroPush } from '../lib/avisos.mjs';
+import { resumoDevido, resumoDaSemana, textoDaNotificacao } from '../../js/dados-resumo.js';
 
 const DIA = 24 * 60 * 60 * 1000;
+
+// Resumo da semana (domingo à noite, ou segunda de manhã): uma notificação por semana.
+export async function enviarResumoDaUsuaria(userId, assinaturas, valorAvisos, agora = Date.now()) {
+  const fuso = configDeAvisos(valorAvisos).fuso;
+  const [marca] = await banco.listar('config', userId, 'chave=eq.resumo_enviado');
+  const semana = resumoDevido({ config: valorAvisos?.resumo, agora, fuso, ultimaSemana: marca?.valor?.semana });
+  if (!semana) return { enviado: false };
+  const de = new Date(semana.inicio).toISOString();
+  const ate = new Date(semana.fim).toISOString();
+  const depois = new Date(semana.fim + 7 * DIA).toISOString();
+  const entre = (campo, a = de, b = ate) => `${campo}=gte.${a}&${campo}=lt.${b}`;
+  const ler = (tabela, filtro) => banco.listar(tabela, userId, filtro).catch(() => []); // tabela que ainda não existe: segue sem ela
+  const [sessoes, respostas, artigos, pautas, videos, eventos, disciplinas, areas, cadernos] = await Promise.all([
+    ler('sessoes_foco', entre('inicio')), ler('respostas', entre('respondida_em')), ler('artigos', entre('lido_em')),
+    ler('pautas_substack', entre('publicado_em')), ler('videos', entre('data_publicacao')), ler('eventos', entre('inicio', de, depois)),
+    ler('disciplinas', ''), ler('areas', ''), ler('cadernos', entre('atualizado_em')),
+  ]);
+  const r = resumoDaSemana({ sessoes, respostas, artigos, pautas, videos, eventos, disciplinas, areas, cadernos }, semana);
+  const n = { ...textoDaNotificacao(r), tag: `resumo-${semana.chave}`, url: `/#resumo/${semana.chave}` };
+  let entregue = false;
+  for (const assinatura of assinaturas) {
+    if ((await enviarPush(assinatura, n)) === 'ok') entregue = true;
+  }
+  if (entregue) {
+    await banco.gravar('config', [{ user_id: userId, chave: 'resumo_enviado', valor: { semana: semana.chave } }], 'user_id,chave');
+  }
+  return { enviado: entregue };
+}
 
 export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.now()) {
   const [linhaConfig] = await banco.listar('config', userId, 'chave=eq.avisos');
   const config = configDeAvisos(linhaConfig?.valor);
+  await enviarResumoDaUsuaria(userId, assinaturas, linhaConfig?.valor, agora).catch((erro) => console.error('resumo:', erro?.message));
   const janela = `inicio=gte.${new Date(agora - DIA).toISOString()}&inicio=lt.${new Date(agora + 5 * DIA).toISOString()}`;
   const eventos = await banco.listar('eventos', userId, janela);
   const enviados = new Set((await banco.listarTodas('avisos_enviados', `user_id=eq.${userId}&enviado_em=gte.${new Date(agora - 10 * DIA).toISOString()}`))

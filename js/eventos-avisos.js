@@ -132,7 +132,9 @@ export function mudancaAvisos(alvo) {
     const tipos = Object.fromEntries(Object.keys(atual.tipos).map((t) => [t, false]));
     marcados(form, 'marco').forEach((m) => { marcos[m] = true; });
     marcados(form, 'tipo').forEach((t) => { tipos[t] = true; });
-    salvarConfigAvisos({ hora, marcos, tipos }).then(() => app.avisoCurto('Preferências dos avisos salvas.'));
+    const horaResumo = /^\d{2}:\d{2}$/.test(form.elements['resumo-hora']?.value || '') ? form.elements['resumo-hora'].value : atual.resumo.hora;
+    const resumo = { ativo: Boolean(form.querySelector('[name="resumo-ativo"]')?.checked), dia: Number(form.elements['resumo-dia']?.value) || 0, hora: horaResumo };
+    salvarConfigAvisos({ hora, marcos, tipos, resumo }).then(() => app.avisoCurto('Preferências dos avisos salvas.'));
   } else {
     const dias = marcados(form, 'dias').map(Number);
     if (!dias.length) {

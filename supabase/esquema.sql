@@ -424,6 +424,23 @@ create table if not exists public.simulados (
   excluido_em timestamptz
 );
 
+-- Sessões de foco (cronômetro) para o resumo da semana.
+create table if not exists public.sessoes_foco (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  titulo text,
+  disciplina_id uuid references public.disciplinas (id) on delete set null,
+  area_id uuid references public.areas (id) on delete set null,
+  inicio timestamptz not null,
+  fim timestamptz not null,
+  minutos integer not null default 0,
+  concluida boolean not null default true,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create index if not exists sessoes_foco_inicio_idx on public.sessoes_foco (user_id, inicio);
+
 -- YouTube: vídeos do canal, da ideia ao publicado.
 create table if not exists public.videos (
   id uuid primary key default gen_random_uuid(),
@@ -515,7 +532,7 @@ declare
   tabelas text[] := array[
     'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
     'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos', 'simulados'
+    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos', 'simulados', 'sessoes_foco'
   ];
 begin
   foreach tabela in array tabelas loop
