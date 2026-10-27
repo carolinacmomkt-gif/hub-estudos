@@ -91,7 +91,7 @@ export function renderFormProprio(tipo, c = {}, id = '') {
       ${campos}
       <p class="ava-alerta" role="alert" data-erro hidden></p>
       <div class="acoes">
-        <button class="botao botao-primario" type="submit">${id ? 'Salvar' : 'Adicionar ao Início'}</button>
+        <button class="botao botao-primario" type="submit">${id ? 'Salvar' : 'Adicionar ao Hoje'}</button>
         ${id ? `<button class="botao botao-secundario" type="button" data-acao="inicio-remover" data-id="${esc(id)}">Excluir card</button>` : ''}
         <button class="botao botao-secundario" type="button" data-acao="cal-fechar">Cancelar</button>
       </div>

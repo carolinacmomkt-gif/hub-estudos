@@ -522,6 +522,200 @@ create index if not exists eventos_prova_idx on public.eventos (prova_id) where 
 create index if not exists paginas_caderno_idx on public.paginas (caderno_id, ordem);
 create index if not exists revisoes_proxima_idx on public.revisoes (user_id, proxima_em) where concluida_em is null;
 
+-- Áreas de vida (Bússola): cada tabela tem um campo "dados" para os detalhes.
+create table if not exists public.projetos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  titulo text not null,
+  area text not null default 'pessoal',
+  status text not null default 'ativo',
+  cor text,
+  prazo date,
+  notas text,
+  ordem integer not null default 0,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+create table if not exists public.tarefas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  titulo text not null,
+  notas text,
+  projeto_id uuid references public.projetos (id) on delete set null,
+  area text not null default 'pessoal',
+  data date,
+  prazo date,
+  hora text,
+  prioridade smallint not null default 0,
+  feita_em timestamptz,
+  recorrencia jsonb,
+  ordem integer not null default 0,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create index if not exists tarefas_data_idx on public.tarefas (user_id, data);
+
+create table if not exists public.habitos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  nome text not null,
+  icone text,
+  cor text,
+  periodo text not null default 'qualquer',
+  frequencia jsonb not null default '{"tipo": "diario"}'::jsonb,
+  meta numeric,
+  unidade text,
+  ativo boolean not null default true,
+  ordem integer not null default 0,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+create table if not exists public.habito_registros (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  habito_id uuid not null references public.habitos (id) on delete cascade,
+  data date not null,
+  valor numeric not null default 1,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create index if not exists habito_registros_data_idx on public.habito_registros (user_id, data);
+
+create table if not exists public.diario (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  data date not null,
+  humor smallint,
+  energia smallint,
+  texto text,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create index if not exists diario_data_idx on public.diario (user_id, data);
+
+create table if not exists public.saude (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  tipo text not null,
+  data date not null,
+  inicio timestamptz,
+  valor numeric,
+  unidade text,
+  notas text,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create index if not exists saude_data_idx on public.saude (user_id, data);
+
+create table if not exists public.clientes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  nome text not null,
+  status text not null default 'ativo',
+  inicio date,
+  fim date,
+  valor_mensal numeric(12, 2),
+  notas text,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+create table if not exists public.consultoria (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  cliente_id uuid references public.clientes (id) on delete set null,
+  tipo text not null,
+  data date not null,
+  titulo text not null,
+  texto text,
+  valor numeric(12, 2),
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+create table if not exists public.financas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  tipo text not null default 'saida',
+  valor numeric(12, 2) not null,
+  data date not null,
+  descricao text,
+  categoria text,
+  origem text,
+  conta text,
+  cliente_id uuid references public.clientes (id) on delete set null,
+  pago boolean not null default true,
+  recorrencia jsonb,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create index if not exists financas_data_idx on public.financas (user_id, data);
+
+create table if not exists public.casa (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  tipo text not null,
+  titulo text not null,
+  lista text,
+  data date,
+  feito_em timestamptz,
+  recorrencia jsonb,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+create table if not exists public.metas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  titulo text not null,
+  area text,
+  prazo date,
+  alvo numeric,
+  atual numeric,
+  unidade text,
+  status text not null default 'ativa',
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+create table if not exists public.lazer (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  tipo text not null,
+  titulo text not null,
+  status text not null default 'quero',
+  nota smallint,
+  data date,
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
 -- ---------------------------------------------------------------------------
 -- Gatilho, índice de sincronização e RLS em todas as tabelas do app
 -- ---------------------------------------------------------------------------
@@ -532,7 +726,8 @@ declare
   tabelas text[] := array[
     'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
     'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos', 'simulados', 'sessoes_foco'
+    'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos', 'simulados', 'sessoes_foco',
+    'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer'
   ];
 begin
   foreach tabela in array tabelas loop

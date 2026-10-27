@@ -82,7 +82,9 @@ function formularioMexido() {
   return false;
 }
 
-const podeRedesenharPorFora = () => !digitando() && !formularioMexido() && !obterEstado().ocupado;
+// Também não redesenha no meio de um arraste nem enquanto a Carol arruma o Hoje (os botões pulariam).
+const podeRedesenharPorFora = () => !digitando() && !formularioMexido() && !obterEstado().ocupado
+  && !obterEstado().editandoInicio && !document.querySelector('.arrastando, .redimensionando');
 
 // Identifica o controle com foco para devolver o foco a ele depois de redesenhar a tela.
 function seletorDoFoco() {
@@ -98,6 +100,8 @@ export function renderizar({ mudouDeTela = false } = {}) {
   if (!noApp) return;
   const rota = rotaAtual();
   if (mudouDeTela) salvarSubstackAgora();
+  // Sair do Hoje no meio da arrumação encerra o modo de personalizar (as mudanças já estão salvas).
+  if (mudouDeTela && rota.id !== 'inicio' && obterEstado().editandoInicio) atualizarEstado({ editandoInicio: false });
   if (telaMontada) {
     CICLO[telaMontada].desmontar();
     telaMontada = null;
@@ -119,7 +123,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
   atualizarBotoesTema();
   marcarRotaAtiva(rota.id);
   atualizarFoco({ soRelogio: true }); // a barrinha do foco some na tela do foco e aparece nas outras
-  document.title = rota.id === 'inicio' ? 'Hub de Estudos' : `${rota.titulo} · Hub de Estudos`;
+  document.title = rota.id === 'inicio' ? 'Bússola' : `${rota.titulo} · Bússola`;
 
   if (mudouDeTela) {
     // Entrada suave só na troca de tela (redesenhos por fora não piscam).
@@ -154,6 +158,7 @@ const TABELAS_NA_MEMORIA = {
   areas: 'areas',
   respostas: 'respostas',
   sessoes_foco: 'sessoesFoco',
+  diario: 'diario',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -173,6 +178,7 @@ const TELAS_DA_TABELA = {
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
+  diario: ['inicio'],
   respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
@@ -205,7 +211,7 @@ export function mostrarLogin(opcoes = {}) {
   document.body.classList.add('modo-login');
   document.querySelectorAll('dialog[open]').forEach((d) => d.close());
   conteudo.innerHTML = renderLogin(opcoes);
-  document.title = 'Entrar · Hub de Estudos';
+  document.title = 'Entrar · Bússola';
   conteudo.querySelector('input:not([type="hidden"])')?.focus();
 }
 
@@ -231,7 +237,7 @@ export async function entrarNoApp() {
 
 // Dados mudaram (no aparelho ou vindos do Supabase): atualiza a tela que mostra esses dados.
 window.addEventListener('hub:dados', async (evento) => {
-  const { tabela } = evento.detail || {};
+  const { tabela, daNuvem } = evento.detail || {};
   if (!TABELAS_NA_MEMORIA[tabela]) return;
   await carregarDadosLocais([tabela]);
   if (tabela === 'config') {
@@ -242,8 +248,21 @@ window.addEventListener('hub:dados', async (evento) => {
   // O editor de caderno nunca é redesenhado por fora: ele perderia o traço em andamento.
   const { id: rotaVista, parametro: parametroVisto } = rotaAtual();
   if (rotaVista === 'cadernos' && parametroVisto) return;
-  if (noApp && telas.includes(obterEstado().rota) && podeRedesenharPorFora()) renderizar();
+  if (!noApp || !telas.includes(obterEstado().rota)) return;
+  // Mudança feita aqui aparece na hora; o que chega da nuvem em leva vira um redesenho só.
+  if (daNuvem) redesenharEmBreve();
+  else if (podeRedesenharPorFora()) renderizar();
 });
+
+// Várias tabelas chegam juntas na sincronização: um redesenho só, no fim da leva.
+let redesenhoMarcado = null;
+function redesenharEmBreve() {
+  clearTimeout(redesenhoMarcado);
+  redesenhoMarcado = setTimeout(() => {
+    redesenhoMarcado = null;
+    if (podeRedesenharPorFora()) renderizar();
+  }, 120);
+}
 
 window.addEventListener('hub:faculdade', (evento) => {
   atualizarEstado({ faculdade: evento.detail });

@@ -1,6 +1,6 @@
-# Hub de Estudos da Carol
+# Bússola (antigo Hub de Estudos da Carol)
 
-App pessoal de estudos (uso exclusivo da Carol), instalável como PWA no Galaxy Tab S10 Lite (S Pen) e usado também no computador e no celular.
+App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como PWA no Galaxy Tab S10 Lite (S Pen) e usado também no computador e no celular.
 
 Áreas do app:
 - **Faculdade**: UniEVANGÉLICA, integrada ao AVA (Moodle).
@@ -10,6 +10,7 @@ App pessoal de estudos (uso exclusivo da Carol), instalável como PWA no Galaxy 
 - **Cadernos** com escrita à mão.
 - **Gerador de questões** com IA.
 - **Calendário**.
+- **Vida** (fase 2, ver ROTEIRO.md): Hoje, tarefas e projetos, hábitos e rotinas, saúde, finanças, diário, casa, consultoria (carteira de clientes e produto), metas e lazer.
 
 ## Regras gerais
 
@@ -19,6 +20,7 @@ App pessoal de estudos (uso exclusivo da Carol), instalável como PWA no Galaxy 
   - Código dividido em módulos pequenos e com nomes em português, como `estado.js`, `persistencia.js`, `views-*.js`, `eventos.js` e `main.js`.
 - Nunca coloque chaves, tokens ou senhas no front-end ou no repositório. Tudo que é secreto fica em variáveis de ambiente da Netlify e é usado só nas Netlify Functions.
 - Antes de cada módulo novo, descreva o plano em poucas linhas e espere o OK da Carol. Ao terminar, diga como testar.
+- A usabilidade precisa ser fluida e gostosa: resposta imediata ao toque, movimento leve (respeitando "reduzir animações") e nada de tela pulando com a sincronização.
 - Teste sempre em largura de tablet na horizontal e na vertical (1340×800 / 800×1340) e no celular (375px).
 
 ## Stack
@@ -235,6 +237,7 @@ Tabelas:
 - `simulados` (Questões)
 - `videos` (YouTube)
 - `config` (tema, horários de aviso, token do AVA criptografado)
+- áreas de vida (migração 009): `projetos`, `tarefas`, `habitos`, `habito_registros`, `diario`, `saude`, `clientes`, `consultoria`, `financas`, `casa`, `metas`, `lazer`, cada uma com um campo `dados` (jsonb) para os detalhes
 
 Todas as tabelas usam RLS ligado ao usuário da Carol.
 

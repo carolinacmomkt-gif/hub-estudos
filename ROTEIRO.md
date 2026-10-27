@@ -1,4 +1,4 @@
-# Roteiro de construção do Hub de Estudos
+# Roteiro de construção da Bússola (antigo Hub de Estudos)
 
 Cada etapa só começa depois que a anterior foi testada.
 Os números são os do guia original; a lista está na **ordem combinada** com a Carol
@@ -17,6 +17,23 @@ Os números são os do guia original; a lista está na **ordem combinada** com a
 - [ ] **Etapa 7 — Gerador de questões** ✓ código pronto, aguardando teste: gerar a partir de tema (com pesquisa na web), leitura, texto, foto ou página de caderno (função `ia-background`); modos prova, fixação (correção pela IA) e revisão; gabarito comentado com fontes, banco com filtros, simulados e revisão espaçada (1, 3, 7 e 15 dias), JSON validado.
 - [ ] **Etapa 8 — Painéis e Substack** ✓ código pronto, aguardando teste: Início com revisões, leituras, Substack e progresso por área; Estudos gerais (trilhas com etapas e temas); Substack (quadro com arrastar, editor com formatação e prévia, notas de margem, referências, checklist, data no Calendário, copiar para o Substack, meta do mês); "Próximo passo" ligado ao mais urgente.
 - [ ] **Etapa 9 — Acabamento**: revisão de temas e larguras, offline, backup, instalação no Galaxy Tab S10 Lite.
+
+## Fase 2 — Bússola: app de vida e rotina (combinado em 27/10/2026)
+Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criação é só a parte individual (consultoria, YouTube, Substack), sem a agência. Sem senha nem PIN.
+- [x] **0 — Sessão de foco e resumo da semana.**
+- [x] **1 — Menu novo** ✓ código pronto, aguardando teste: grupos com título que abrem e fecham (como no Notion), favoritos, esconder áreas, menu aberto / só ícones / escondido (Ctrl + \), editar menu, 4 atalhos do celular (no "⋯" os nomes aparecem ao lado dos ícones). Nome novo: **Bússola**.
+- [x] **2 — Hoje** ✓ código pronto, aguardando teste: Início vira Hoje, resumo do dia embaixo da saudação, "Agenda de hoje" (linha do tempo) e "Como estou hoje" (humor, energia e uma linha, no diário). Personalizar sem tela pulando e, no celular, em linhas curtas. Migração `009-vida.sql` cria de uma vez as tabelas das próximas áreas.
+- [ ] **3 — Tarefas e projetos** (separados da Faculdade).
+- [ ] **4 — Hábitos e rotinas.**
+- [ ] **5 — Saúde.**
+- [ ] **6 — Finanças**: hub completo, dinheiro num lugar só mas categorizado pela origem.
+- [ ] **7 — Diário.**
+- [ ] **8 — Casa.**
+- [ ] **9 — Consultoria**: carteira de clientes (começa com a Census), evolução da consultoria e controle do produto e das mudanças.
+- [ ] **10 — Metas e lazer.**
+- [ ] **Cadernos por aparelho**: no computador, documento digitado (tipo Google Docs); no celular, notas; no tablet, escrita à mão.
+- [ ] **11 — Acabamento e instalação no tablet.**
+- Regra de toda a fase: usabilidade fluida e gostosa (resposta ao toque, movimento leve, sem tela pulando), com as cores e a identidade de sempre.
 
 ## Ideias aprovadas para encaixar
 - Botão "+" flutuante (novo caderno, evento, artigo, questão) com **caixa de entrada rápida** para ideias. *(Etapa 2)*

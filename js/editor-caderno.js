@@ -836,7 +836,7 @@ export async function montarEditorCaderno(id) {
     return;
   }
   document.getElementById('editor-titulo').textContent = caderno.titulo;
-  document.title = `${caderno.titulo} · Hub de Estudos`;
+  document.title = `${caderno.titulo} · Bússola`;
   const configs = await listar('config');
   if (minha !== montagem) return;
   configFavoritos = configs.find((c) => c.chave === 'canetas') || null;

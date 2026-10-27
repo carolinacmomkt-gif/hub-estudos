@@ -255,3 +255,255 @@
 .catalogo[open] > summary::before {
   content: "−";
 }
+
+/* Celular: ao personalizar, cada card vira uma linha curta (fácil de arrastar com o dedo).
+   A largura não muda nada no celular, então o seletor e o canto somem. */
+@media (max-width: 700px) {
+  .painel-editando {
+    gap: 8px;
+  }
+
+  .painel-editando .bloco-conteudo,
+  .painel-editando .bloco-canto,
+  .painel-editando .bloco-tamanho {
+    display: none;
+  }
+
+  .painel-editando .bloco.com-altura {
+    height: auto;
+  }
+
+  .painel-editando .bloco-barra {
+    flex-wrap: nowrap;
+  }
+
+  /* Só o ⠿ segura o card; deslizar no nome rola a lista normalmente */
+  .painel-editando .bloco-alca {
+    flex: 1;
+    min-width: 0;
+    padding-left: 0;
+    touch-action: pan-y;
+  }
+
+  .painel-editando .bloco-alca-pontos {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: var(--toque);
+    height: var(--toque);
+    touch-action: none;
+  }
+
+  .painel-editando .bloco-nome {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .painel-editando .bloco-controles {
+    flex-wrap: nowrap;
+  }
+}
+
+/* Agenda de hoje: linha do tempo */
+.agenda-hoje {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-item {
+  --cor-tipo: var(--cor-destaque);
+  position: relative;
+  display: grid;
+  grid-template-columns: 74px 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.agenda-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 90px;
+  width: 2px;
+  background: var(--cor-trilho);
+}
+
+.agenda-item:first-child::before { top: 16px; }
+.agenda-item:last-child::before { bottom: calc(100% - 16px); }
+
+.agenda-hora {
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  line-height: 1.5;
+}
+
+.agenda-ponto {
+  position: relative;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  border: 3px solid var(--cor-tipo);
+  border-radius: 50%;
+  background: var(--cor-superficie);
+}
+
+.agenda-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.agenda-titulo {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.agenda-item.passou .agenda-titulo,
+.agenda-item.passou .agenda-hora {
+  color: var(--cor-texto-fraco);
+}
+
+.agenda-item.passou .agenda-ponto {
+  background: var(--cor-tipo);
+  opacity: 0.5;
+}
+
+.agenda-item.acontecendo .agenda-ponto {
+  background: var(--cor-tipo);
+  box-shadow: 0 0 0 4px var(--cor-destaque-suave);
+}
+
+.agenda-agora {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0;
+  color: var(--cor-texto-destaque);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.agenda-agora::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--cor-foco);
+}
+
+.agenda-item.tipo-prova { --cor-tipo: var(--tipo-prova); }
+.agenda-item.tipo-trabalho { --cor-tipo: var(--tipo-trabalho); }
+.agenda-item.tipo-atividade { --cor-tipo: var(--tipo-atividade); }
+.agenda-item.tipo-aula { --cor-tipo: var(--tipo-aula); }
+.agenda-item.tipo-feriado { --cor-tipo: var(--tipo-feriado); }
+.agenda-item.tipo-pessoal { --cor-tipo: var(--tipo-pessoal); }
+.agenda-item.tipo-revisao { --cor-tipo: var(--tipo-revisao); }
+.agenda-item.tipo-youtube { --cor-tipo: var(--tipo-youtube); }
+.agenda-item.tipo-substack { --cor-tipo: var(--tipo-substack); }
+
+/* Como estou hoje */
+.humor-escala {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+
+.humor-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 6px 2px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, background-color 0.15s, border-color 0.15s;
+}
+
+.humor-opcao small {
+  font-size: 0.7rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.humor-rosto {
+  font-size: 1.6rem;
+  line-height: 1.1;
+  filter: grayscale(0.6);
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.humor-opcao:active {
+  transform: scale(0.94);
+}
+
+.humor-opcao[aria-pressed="true"] {
+  border-color: var(--cor-foco);
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto);
+}
+
+.humor-opcao[aria-pressed="true"] .humor-rosto {
+  filter: none;
+  transform: scale(1.12);
+}
+
+.energia-escala {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+
+.energia-opcao {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.energia-opcao::before {
+  content: "";
+  display: block;
+  width: 26px;
+  height: 26px;
+  margin: auto;
+  border: 2px solid var(--cor-borda);
+  border-radius: 50%;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.12s;
+}
+
+.energia-opcao.cheia::before {
+  border-color: var(--cor-foco);
+  background: var(--cor-destaque);
+}
+
+.energia-opcao:active::before {
+  transform: scale(0.88);
+}
+
+.hoje-linha {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  resize: vertical;
+}

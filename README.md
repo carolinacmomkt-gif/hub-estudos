@@ -1,6 +1,6 @@
-# Hub de Estudos da Carol
+# Bússola (antigo Hub de Estudos da Carol)
 
-App pessoal de estudos em HTML, CSS e JavaScript puro (sem build), instalável como PWA.
+App pessoal de vida, rotina e estudos em HTML, CSS e JavaScript puro (sem build), instalável como PWA.
 As regras do projeto estão em [CLAUDE.md](CLAUDE.md) e as etapas em [ROTEIRO.md](ROTEIRO.md).
 
 ## Rodar no computador
@@ -69,6 +69,7 @@ Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, 
 - `006-youtube-completo.sql`: pilares, cortes para Shorts, thumbnails, gravação e edição dos vídeos.
 - `007-areas.sql`: Biblioteca (fonte, resumo, fichamento, favoritos), tabela `simulados` das Questões, campos do Substack (subtítulo, notas, tags, agendamento, checklist), trilhas e temas dos Estudos gerais e o tipo `substack` nos eventos.
 - `008-foco.sql`: tabela `sessoes_foco` (sessão de foco e resumo da semana).
+- `009-vida.sql`: tabelas das áreas de vida da Bússola (`projetos`, `tarefas`, `habitos`, `habito_registros`, `diario`, `saude`, `clientes`, `consultoria`, `financas`, `casa`, `metas`, `lazer`). O Hoje já usa o `diario`.
 
 ## Estrutura
 

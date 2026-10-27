@@ -11,13 +11,14 @@ import { rest, sessaoAtual, nuvemConfigurada, ErroNuvem } from './nuvem.js';
 const NOME_BANCO = 'hub-estudos';
 // Aumente sempre que TABELAS ganhar uma tabela nova (o aparelho só cria lojas novas numa versão nova).
 // Se mesmo assim faltar alguma, abrir() sobe a versão sozinho.
-const VERSAO_BANCO = 4;
+const VERSAO_BANCO = 5;
 const LOTE = 500;
 
 export const TABELAS = [
   'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
   'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
   'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'videos', 'simulados', 'sessoes_foco',
+  'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer',
 ];
 const SOMENTE_LEITURA = new Set(['conexoes']); // quem escreve são as funções da Netlify
 // config tem uma linha por chave ("inicio", "avisos"…). Dois aparelhos podem criar a mesma chave
@@ -26,7 +27,9 @@ const CHAVE_DE_CONFLITO = { config: 'user_id,chave' };
 
 // Tabelas e tipos que dependem de uma migração (supabase/migracoes). Se a migração ainda não
 // foi rodada, só aquela tabela espera; as outras continuam sincronizando normalmente.
-const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)', simulados: '007-areas.sql', sessoes_foco: '008-foco.sql' };
+const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)', simulados: '007-areas.sql', sessoes_foco: '008-foco.sql',
+  ...Object.fromEntries(['projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer'].map((t) => [t, '009-vida.sql'])),
+};
 const tabelaNaoExiste = (erro) => erro instanceof ErroNuvem && (erro.codigo === 'PGRST205' || erro.codigo === '42P01' || erro.status === 404);
 // Tipo novo recusado pela regra do banco (23514) ou coluna nova que não existe (PGRST204/42703):
 // sinal de migração que falta rodar.
@@ -295,7 +298,7 @@ async function enviarTabela(tabela, ids) {
         if (f.tabela === tabela && enviados.has(f.id) && f.seq <= ids.get(f.id)) loja.delete(f.seq);
       }
     });
-    avisar('hub:dados', { tabela });
+    avisar('hub:dados', { tabela, daNuvem: true });
     if (primeiraRecusa) throw primeiraRecusa;
   }
 }
@@ -328,9 +331,14 @@ async function receberTabela(tabela) {
       await transacao([tabela, 'fila'], 'readwrite', async (tx) => {
         const fila = await comoPromessa(tx.objectStore('fila').getAll());
         const pendentes = new Set(fila.filter((f) => f.tabela === tabela).map((f) => f.id));
+        const loja = tx.objectStore(tabela);
         for (const linha of linhas) {
           if (pendentes.has(linha.id)) continue;
-          tx.objectStore(tabela).put(linha);
+          // O cursor é "maior ou igual": a última linha sempre volta. Só conta como mudança se for nova.
+          const guardada = await comoPromessa(loja.get(linha.id));
+          if (guardada?.atualizado_em === linha.atualizado_em && Boolean(guardada?.excluido_em) === Boolean(linha.excluido_em)) continue;
+          loja.put(linha);
+          mudou = true;
         }
         // Uma chave de config só pode ter uma linha: a que veio da nuvem substitui as cópias locais.
         if (tabela === 'config') {
@@ -343,7 +351,6 @@ async function receberTabela(tabela) {
           }
         }
       });
-      mudou = true;
       const novoCursor = linhas[linhas.length - 1].atualizado_em;
       if (linhas.length < LOTE || novoCursor === cursor) {
         cursor = novoCursor;
@@ -353,7 +360,7 @@ async function receberTabela(tabela) {
     }
 
     await transacao(['meta'], 'readwrite', (tx) => tx.objectStore('meta').put({ chave: `cursor:${tabela}`, valor: cursor }));
-    if (mudou) avisar('hub:dados', { tabela });
+    if (mudou) avisar('hub:dados', { tabela, daNuvem: true });
   }
 }
 
@@ -446,7 +453,7 @@ export async function importarBackup(arquivo) {
     throw new Error('Esse arquivo não é um backup válido.');
   }
   if (conteudo?.app !== 'hub-estudos' || typeof conteudo.tabelas !== 'object') {
-    throw new Error('Esse arquivo não é um backup do Hub de Estudos.');
+    throw new Error('Esse arquivo não é um backup da Bússola.');
   }
 
   let total = 0;

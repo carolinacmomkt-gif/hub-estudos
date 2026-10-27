@@ -1,5 +1,6 @@
-// Tela Início: saudação, "Próximo passo" e cards de resumo.
+// Tela Hoje: saudação, "Próximo passo" e cards de resumo.
 
+import { cardAgendaHoje, cardHumor, resumoDoDia } from './hoje.js';
 import { cabecalho, barraProgresso } from './componentes.js';
 import { cardCaixaEntrada } from './views-criar.js';
 import { cardPlano } from './views-plano.js';
@@ -303,7 +304,7 @@ function barraDoBloco(bloco, indice, total, proprios) {
           ${TAMANHOS.map((t) => `<option value="${t.id}"${t.id === bloco.tamanho ? ' selected' : ''}>${t.nome}</option>`).join('')}
         </select>
         ${proprio ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-editar" data-id="${esc(bloco.id)}">Editar</button>` : ''}
-        <button class="botao-icone botao-icone-p bloco-remover" type="button" data-acao="inicio-remover-bloco" data-id="${esc(bloco.id)}" aria-label="Remover ${esc(nome)} do Início" title="Remover do Início">×</button>
+        <button class="botao-icone botao-icone-p bloco-remover" type="button" data-acao="inicio-remover-bloco" data-id="${esc(bloco.id)}" aria-label="Remover ${esc(nome)} do Hoje" title="Tirar do Hoje">×</button>
       </div>
     </div>`;
 }
@@ -322,17 +323,17 @@ function painelPersonalizar(blocos, proprios) {
           <button class="botao botao-primario botao-pequeno" type="button" data-acao="inicio-adicionar" data-id="${esc(b.id)}">Adicionar</button>
           ${proprios[b.id] ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-remover" data-id="${esc(b.id)}">Excluir de vez</button>` : ''}
         </span>
-      </li>`).join('')}</ul>` : '<p class="texto-suave">Todos os cards do app já estão no Início.</p>';
+      </li>`).join('')}</ul>` : '<p class="texto-suave">Todos os cards do app já estão no Hoje.</p>';
   return `
     <section class="card personalizar" aria-labelledby="personalizar-titulo">
       <div class="card-topo">
-        <h2 class="card-titulo" id="personalizar-titulo">Personalizar o Início</h2>
+        <h2 class="card-titulo" id="personalizar-titulo">Personalizar o Hoje</h2>
         <button class="botao botao-primario botao-pequeno" type="button" data-acao="inicio-pronto">Pronto</button>
       </div>
-      <p class="texto-suave">Segure <strong>⠿</strong> e arraste o card para onde quiser. Puxe o canto de baixo, à direita, para mudar a largura e a altura (toque duas vezes no canto para a altura voltar ao automático). O <strong>×</strong> tira o card do Início; ele fica aqui embaixo para adicionar de volta.</p>
+      <p class="texto-suave">Segure <strong>⠿</strong> e arraste o card para onde quiser, ou use <strong>↑ ↓</strong>. No tablet e no computador, puxe o canto de baixo, à direita, para mudar a largura e a altura (dois toques no canto voltam a altura ao automático). O <strong>×</strong> tira o card do Hoje; ele fica em "Adicionar ao Hoje" para pôr de volta.</p>
       <details class="catalogo">
-        <summary>Adicionar ao Início</summary>
-        <h3 class="ava-subtitulo">Cards fora do Início</h3>
+        <summary>Adicionar ao Hoje</summary>
+        <h3 class="ava-subtitulo">Cards fora do Hoje</h3>
         ${listaFora}
         <h3 class="ava-subtitulo">Criar um card seu</h3>
         <ul class="atalhos-criar">${TIPOS_PROPRIOS.map((t) => `
@@ -347,12 +348,15 @@ function painelPersonalizar(blocos, proprios) {
 export function renderInicio(estado) {
   const agora = Date.now();
   const dados = estado.usandoExemplo ? estado.dados : dadosReaisDoInicio(estado, agora);
-  const sub = `<span>${esc(dataLonga(new Date(agora)))}</span>${estado.usandoExemplo ? '<span class="selo">Dados de exemplo</span>' : ''}`;
+  const resumo = estado.usandoExemplo ? '' : resumoDoDia(estado, agora);
+  const sub = `<span>${esc(dataLonga(new Date(agora)))}${resumo ? ` · ${esc(resumo)}` : ''}</span>${estado.usandoExemplo ? '<span class="selo">Dados de exemplo</span>' : ''}`;
   const editando = Boolean(estado.editandoInicio);
   const { blocos, proprios } = blocosDoInicio(estado);
 
   const doApp = {
     proximo: () => cardProximoPasso(escolherProximoPasso(dados, agora)),
+    agenda: () => (estado.usandoExemplo ? '' : cardAgendaHoje(estado, agora)),
+    humor: () => cardHumor(estado, agora),
     prazos: () => cardPrazos(dados, agora),
     provas: () => cardProvas(dados, agora),
     plano: () => (estado.usandoExemplo ? '' : cardPlano(estado, { agora })),
@@ -387,6 +391,6 @@ export function renderInicio(estado) {
 
   return `
     ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
-    ${editando ? painelPersonalizar(blocos, proprios) : '<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar o Início</button></div>'}
+    ${editando ? painelPersonalizar(blocos, proprios) : '<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar</button></div>'}
     <div class="painel${editando ? ' painel-editando' : ''}">${html}</div>`;
 }

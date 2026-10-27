@@ -77,7 +77,12 @@ export function modoDoMenu() {
   return tipoDeTela() === 'largo' ? 'aberto' : 'icones';
 }
 
+let animacao = null;
+
 export function definirModoDoMenu(modo) {
+  document.body.classList.add('menu-animando');
+  clearTimeout(animacao);
+  animacao = setTimeout(() => document.body.classList.remove('menu-animando'), 300);
   try {
     localStorage.setItem(`${CHAVE_MODO}.${tipoDeTela()}`, modo);
   } catch {

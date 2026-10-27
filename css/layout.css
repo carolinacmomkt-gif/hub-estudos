@@ -253,33 +253,33 @@ body[data-menu="icones"] .nav-lateral {
   overflow-x: hidden;
 }
 
-body[data-menu="icones"] .nav-topo {
+body[data-menu="icones"] .nav-lateral .nav-topo {
   flex-direction: column;
   align-items: center;
 }
 
-body[data-menu="icones"] .marca {
+body[data-menu="icones"] .nav-lateral .marca {
   padding: 0 0 8px;
 }
 
-body[data-menu="icones"] .marca-texto,
-body[data-menu="icones"] .nav-nome,
-body[data-menu="icones"] .nav-grupo-titulo span,
-body[data-menu="icones"] .situacao-texto {
+body[data-menu="icones"] .nav-lateral .marca-texto,
+body[data-menu="icones"] .nav-lateral .nav-nome,
+body[data-menu="icones"] .nav-lateral .nav-grupo-titulo span,
+body[data-menu="icones"] .nav-lateral .situacao-texto {
   display: none;
 }
 
-body[data-menu="icones"] .nav-recolher {
+body[data-menu="icones"] .nav-lateral .nav-recolher {
   margin-bottom: 8px;
 }
 
-body[data-menu="icones"] .nav-link {
+body[data-menu="icones"] .nav-lateral .nav-link {
   justify-content: center;
   padding: 0;
 }
 
 /* Sem nome, o título do grupo vira um risquinho e o grupo fica sempre aberto */
-body[data-menu="icones"] .nav-grupo-titulo {
+body[data-menu="icones"] .nav-lateral .nav-grupo-titulo {
   min-height: 0;
   height: 1px;
   margin: 4px 8px 6px;
@@ -289,15 +289,15 @@ body[data-menu="icones"] .nav-grupo-titulo {
   pointer-events: none;
 }
 
-body[data-menu="icones"] .nav-grupo-titulo svg {
+body[data-menu="icones"] .nav-lateral .nav-grupo-titulo svg {
   display: none;
 }
 
-body[data-menu="icones"] .nav-grupo.fechado .nav-lista {
+body[data-menu="icones"] .nav-lateral .nav-grupo.fechado .nav-lista {
   display: flex;
 }
 
-body[data-menu="icones"] .situacao-sinc {
+body[data-menu="icones"] .nav-lateral .situacao-sinc {
   justify-content: center;
 }
 
@@ -423,14 +423,24 @@ body[data-menu="icones"] .situacao-sinc {
   }
 
   .nav-inferior .nav-link {
-    flex-direction: column;
     justify-content: center;
-    gap: 3px;
     min-height: 56px;
     padding: 6px 2px;
-    font-size: 0.72rem;
-    line-height: 1.1;
-    text-align: center;
+  }
+
+  .nav-inferior .nav-link svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Na barra só os ícones; os nomes aparecem ao lado de cada ícone no "⋯" */
+  .nav-inferior .nav-nome {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 
@@ -615,8 +625,9 @@ body[data-menu="icones"] .situacao-sinc {
   display: none;
 }
 
-/* Movimento: o menu desliza ao recolher, os toques respondem e cada tela entra de leve */
-.app {
+/* Movimento: o menu desliza ao recolher (só quando a Carol troca o modo, nunca ao abrir o app),
+   os toques respondem e cada tela entra de leve */
+body.menu-animando .app {
   transition: grid-template-columns 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 

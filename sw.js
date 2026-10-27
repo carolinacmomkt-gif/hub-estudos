@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v32';
+const VERSAO = 'hub-v33';
 
 const ARQUIVOS = [
   './',
@@ -88,6 +88,7 @@ const ARQUIVOS = [
   './js/vendor/perfect-freehand.js',
   './js/views-navegacao.js',
   './js/menu.js',
+  './js/hoje.js',
   './js/views-inicio.js',
   './js/views-configuracoes.js',
   './icones/icone.svg',
@@ -163,7 +164,7 @@ self.addEventListener('push', (evento) => {
   } catch {
     aviso = { texto: evento.data?.text() };
   }
-  evento.waitUntil(self.registration.showNotification(aviso.titulo || 'Hub de Estudos', {
+  evento.waitUntil(self.registration.showNotification(aviso.titulo || 'Bússola', {
     body: aviso.texto || '',
     tag: aviso.tag,
     icon: './icones/icone-192.png',

@@ -42,10 +42,10 @@ export function montarNavegacao() {
   document.body.dataset.menu = modo;
   document.getElementById('nav-lateral').innerHTML = `
     <div class="nav-topo">
-      <a class="marca" href="#inicio" aria-label="Hub de Estudos, ir para Hoje">
+      <a class="marca" href="#inicio" aria-label="Bússola, ir para Hoje">
         <span class="marca-icone">${icone('marca')}</span>
         <span class="marca-texto">
-          <span class="marca-nome">Hub de Estudos</span>
+          <span class="marca-nome">Bússola</span>
           <span class="marca-sub">da Carol</span>
         </span>
       </a>
@@ -87,15 +87,14 @@ export function montarNavegacao() {
     <ul class="nav-lista">
       ${org.celular.map(rotaPeloId).map((r) => link(r)).join('')}
       <li>
-        <button class="nav-link" type="button" data-acao="abrir-mais" aria-haspopup="dialog">
+        <button class="nav-link" type="button" data-acao="abrir-mais" aria-haspopup="dialog" title="Todas as áreas">
           ${icone('mais')}<span class="nav-nome">Mais</span>
         </button>
       </li>
     </ul>`;
 
-  // Folha "Mais" (celular): tudo, em grupos, menos o que já está na barra de baixo.
-  const naBarra = new Set(org.celular);
-  const resto = { ...org, grupos: org.grupos.map((g) => ({ ...g, aberto: true, itens: g.itens.filter((id) => !naBarra.has(id)) })) };
+  // Folha "⋯" (celular): todas as áreas, em grupos, com o nome ao lado do ícone.
+  const resto = { ...org, grupos: org.grupos.map((g) => ({ ...g, aberto: true })) };
   document.getElementById('folha-mais-lista').innerHTML = `
     ${grupos(resto).replaceAll('data-acao="menu-grupo"', 'disabled')}
     <ul class="nav-lista">${link(ROTA_CONFIGURACOES)}

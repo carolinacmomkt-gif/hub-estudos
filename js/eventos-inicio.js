@@ -1,4 +1,4 @@
-// Cliques e formulários do modo "Personalizar o Início".
+// Cliques e formulários do modo "Personalizar o Hoje".
 
 import { obterEstado, atualizarEstado } from './estado.js';
 import {
@@ -36,6 +36,8 @@ function aoApertar(e) {
   if (!alca && !canto) return;
   const el = (alca || canto).closest('.bloco');
   if (!el) return;
+  // No celular, com o dedo, só o ⠿ arrasta: deslizar no nome rola a página.
+  if (alca && e.pointerType === 'touch' && window.matchMedia('(max-width: 700px)').matches && !e.target.closest('.bloco-alca-pontos')) return;
   e.preventDefault();
   try {
     (alca || canto).setPointerCapture(e.pointerId);
@@ -162,7 +164,6 @@ function aoCancelar(e) {
   gesto.el.style.transform = '';
   gesto = null;
   limparAlvos();
-  redesenhar();
 }
 
 // Redesenha e devolve o foco ao mesmo controle (as setas continuam na mão).
@@ -189,7 +190,7 @@ export function cliqueInicio(alvo) {
     case 'inicio-pronto':
       atualizarEstado({ editandoInicio: false });
       redesenhar();
-      app.avisoCurto('Início salvo. Vale para todos os seus aparelhos.');
+      app.avisoCurto('Hoje salvo. Vale para todos os seus aparelhos.');
       return true;
     case 'inicio-mover': {
       const passo = alvo.dataset.passo;
@@ -199,7 +200,7 @@ export function cliqueInicio(alvo) {
     case 'inicio-remover-bloco':
       removerBloco(id).then(() => {
         redesenhar();
-        app.avisoCurto('Card tirado do Início. Para pôr de volta, use "Adicionar ao Início".');
+        app.avisoCurto('Card tirado do Hoje. Para pôr de volta, use "Adicionar ao Hoje".');
       });
       return true;
     case 'inicio-adicionar':
@@ -225,7 +226,7 @@ export function cliqueInicio(alvo) {
       });
       return true;
     case 'inicio-padrao':
-      if (!window.confirm('Voltar o Início ao padrão? Seus cards próprios ficam guardados, só que ocultos.')) return true;
+      if (!window.confirm('Voltar o Hoje ao padrão? Seus cards próprios ficam guardados, só que ocultos.')) return true;
       voltarAoPadrao().then(() => redesenhar());
       return true;
     case 'inicio-marcar':
@@ -256,7 +257,7 @@ export function enviarInicio(form) {
   (id ? editarProprio(id, dados) : adicionarProprio(form.dataset.tipo, dados)).then(() => {
     document.getElementById('folha-evento').close();
     redesenhar();
-    app.avisoCurto(id ? 'Card atualizado.' : 'Card adicionado no topo do Início.');
+    app.avisoCurto(id ? 'Card atualizado.' : 'Card adicionado no topo do Hoje.');
   });
   return true;
 }
