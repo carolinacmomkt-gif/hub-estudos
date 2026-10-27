@@ -41,7 +41,8 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 A base é a identidade da Central de Conteúdo.
 
 - **Tema escuro (padrão da Central)**: fundo marrom bem escuro (`#17110D`), cards em marrom quente, destaque bege/areia (`#E8D3BF`) e texto creme.
-- **Tema claro (novo)**: fundo creme/papel (`#F7F1EA`), cards brancos quentes, texto marrom-café (`#2B1E16`) e o mesmo bege como destaque, com contraste mínimo AA.
+- **Tema claro (novo)**: fundo creme/papel (`#F5EEE5`), cards brancos quentes, texto marrom-café (`#2B1E16`) e o mesmo bege como destaque, com contraste mínimo AA.
+- Contraste revisado em 27/10/2026: texto principal ~13:1 (não no máximo, para não cansar), campos com borda de 3:1 (`--cor-borda-campo`), cards um pouco mais claros que o fundo no escuro.
 - Alternância entre **claro, escuro e automático** (segue o sistema), com a escolha salva no aparelho.
 - Todas as cores ficam definidas como variáveis CSS em `:root` e `[data-tema="claro"]` / `[data-tema="escuro"]`. Nenhuma cor deve ficar escrita direto nos componentes.
 - Padrões da Central que se repetem no app:

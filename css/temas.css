@@ -9,16 +9,19 @@
   color-scheme: dark;
 
   --cor-fundo: #17110D;
-  --cor-superficie: #221912;
-  --cor-superficie-2: #2D2119;
-  --cor-superficie-elevada: #33261D;
-  --cor-borda: #3E2F25;
-  --cor-trilho: #3A2C22;
+  /* Profundidade no escuro: quanto mais "alto" o elemento, um pouco mais claro (cards se destacam do fundo) */
+  --cor-superficie: #281E16;
+  --cor-superficie-2: #352820;
+  --cor-superficie-elevada: #3D2F24;
+  --cor-borda: #514034;
+  --cor-borda-campo: #86705D; /* campos de formulário: 3:1 com o card (WCAG 1.4.11) */
+  --cor-trilho: #45362A;
   --cor-veu: rgba(10, 7, 5, 0.6);
 
-  --cor-texto: #F4EADF;
+  /* Texto creme um pouco abaixo do máximo (13:1 em vez de 16:1): lê bem e não "brilha" nem cansa */
+  --cor-texto: #E6D9CB;
   --cor-texto-suave: #C7B6A5;
-  --cor-texto-fraco: #A08D7B;
+  --cor-texto-fraco: #B19E8B;
 
   --cor-destaque: #E8D3BF;
   --cor-destaque-suave: rgba(232, 211, 191, 0.13);
@@ -74,12 +77,13 @@
 :root[data-tema="claro"] {
   color-scheme: light;
 
-  --cor-fundo: #F7F1EA;
+  --cor-fundo: #F5EEE5;
   --cor-superficie: #FFFCF8;
   --cor-superficie-2: #F1E7DC;
   --cor-superficie-elevada: #FFFFFF;
-  --cor-borda: #E6D8C8;
-  --cor-trilho: #EADDCF;
+  --cor-borda: #D6C3AE;
+  --cor-borda-campo: #957C68; /* campos de formulário: 3:1 com o card (WCAG 1.4.11) */
+  --cor-trilho: #E3D4C3;
   --cor-veu: rgba(43, 30, 22, 0.4);
 
   --cor-texto: #2B1E16;
@@ -100,7 +104,7 @@
   --urg-atrasado: #C0392B;
   --urg-atrasado-fundo: #F9DED8;
   --urg-atrasado-texto: #9B2C20;
-  --urg-urgente: #D2802A;
+  --urg-urgente: #B0640F;
   --urg-urgente-fundo: #F8E4CB;
   --urg-urgente-texto: #8A4A0C;
   --urg-semana: #B8946F;

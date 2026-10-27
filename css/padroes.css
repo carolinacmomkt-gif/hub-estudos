@@ -167,3 +167,8 @@
 .conteudo[data-tela="recompensas"] > * + * {
   margin-top: 16px;
 }
+
+/* Campos de formulário com borda visível (3:1), em todas as telas e folhas */
+body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
+  border-color: var(--cor-borda-campo);
+}
