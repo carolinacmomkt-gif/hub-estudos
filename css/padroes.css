@@ -181,3 +181,59 @@ body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):no
   outline: none;
   box-shadow: inset 0 -3px 0 var(--cor-foco), 0 0 0 3px var(--cor-destaque-suave);
 }
+
+/* ---------------------------------------------------------------------------
+   Celular: densidade compacta (padrão dos apps de rotina, Material 3 e iOS)
+   Texto 15px, respiro de 16px nos cards, títulos menores e espaços mais curtos.
+   Campos de digitação ficam em 16px (abaixo disso o celular dá zoom ao tocar).
+   A área de toque continua com 44px.
+   --------------------------------------------------------------------------- */
+@media (max-width: 700px) {
+  html { font-size: 93.75%; }
+  html[data-texto="grande"] { font-size: 105%; }
+  html[data-texto="maior"] { font-size: 117%; }
+
+  body[data-menu] .conteudo,
+  .conteudo {
+    padding-top: 14px;
+  }
+
+  .cabecalho {
+    gap: 10px 16px;
+    margin-bottom: 16px;
+  }
+
+  .cabecalho h1 {
+    font-size: 1.6rem;
+  }
+
+  .cabecalho-sub {
+    margin-top: 4px;
+    font-size: 0.93rem;
+  }
+
+  .painel {
+    gap: 12px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: var(--raio);
+  }
+
+  .card-topo {
+    margin-bottom: 10px;
+  }
+
+  .card-titulo {
+    font-size: 1.07rem;
+  }
+
+  .proximo-titulo {
+    font-size: 1.27rem;
+  }
+
+  body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
+    font-size: max(16px, 1rem);
+  }
+}

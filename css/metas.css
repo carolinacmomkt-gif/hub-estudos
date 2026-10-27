@@ -350,7 +350,15 @@ button.lazer-corpo {
     grid-template-columns: 1fr;
   }
 
-  /* Player compacto do Spotify, para o quadro aparecer logo */
+  /* Frase e player compactos, para o quadro aparecer logo */
+  .meta-frase blockquote p {
+    font-size: 1rem;
+  }
+
+  .meta-trilha .card-topo {
+    margin-bottom: 6px;
+  }
+
   .meta-trilha .spotify {
     height: 80px;
   }

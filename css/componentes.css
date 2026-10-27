@@ -196,11 +196,7 @@
 @media (max-width: 700px) {
   .proximo {
     grid-template-columns: minmax(0, 1fr);
-    padding: 22px;
-  }
-
-  .proximo .botao {
-    width: 100%;
+    padding: 18px;
   }
 }
 
