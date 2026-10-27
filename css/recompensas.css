@@ -19,8 +19,8 @@
   width: 92px;
   height: 92px;
   border-radius: 50%;
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
   line-height: 1;
 }
 

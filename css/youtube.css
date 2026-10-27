@@ -409,8 +409,8 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
   font-size: 1.05rem;
   font-weight: 800;
 }

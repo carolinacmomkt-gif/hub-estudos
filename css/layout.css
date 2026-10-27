@@ -567,8 +567,8 @@ body[data-menu="icones"] .nav-lateral .situacao-sinc {
   height: 60px;
   border: 0;
   border-radius: 20px;
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
   box-shadow: var(--sombra);
   cursor: pointer;
   transition: transform 0.12s;

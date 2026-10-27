@@ -82,8 +82,8 @@
 }
 
 .tarefa-abas a[aria-current="page"] {
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
 }
 
 .tarefa-filtros {
@@ -418,8 +418,8 @@
 }
 
 .segmentado-opcao input:checked + span {
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
 }
 
 .segmentado-opcao input:focus-visible + span {
@@ -432,8 +432,8 @@
   padding: 0 14px;
   border: 0;
   border-radius: 999px;
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -481,7 +481,7 @@
   display: flex;
   align-items: center;
   padding: 0 18px;
-  color: var(--cor-sobre-destaque);
+  color: var(--cor-sobre-preenchido);
   font-weight: 700;
 }
 
@@ -495,7 +495,7 @@
 .tarefa[data-lado="esquerda"]::before {
   content: "Amanhã →";
   justify-content: flex-end;
-  background: var(--cor-destaque);
+  background: var(--cor-preenchido);
 }
 
 .tarefa.deslizando > * {

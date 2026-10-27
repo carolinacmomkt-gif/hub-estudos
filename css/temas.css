@@ -25,11 +25,16 @@
   --cor-texto-suave: #C7B6A5;
   --cor-texto-fraco: #B19E8B;
 
-  --cor-destaque: #E8D3BF;
-  --cor-destaque-suave: rgba(232, 211, 191, 0.13);
-  --cor-texto-destaque: #E8D3BF;
+  /* Bege em dois papéis (escolha da Carol, 27/10/2026): nas superfícies grandes (botão principal,
+     "+", Próximo passo, aba ativa) um tom quente escuro com texto creme, para o escuro ficar homogêneo;
+     nos detalhes pequenos (barras, bolinhas, dia de hoje) um bege apagado, visível sem acender. */
+  --cor-destaque: #C9B7A4;
+  --cor-destaque-suave: rgba(217, 198, 179, 0.13);
+  --cor-texto-destaque: #D9C6B3;
   --cor-sobre-destaque: #2B1E16;
-  --cor-foco: #E8D3BF;
+  --cor-foco: #D9C6B3;
+  --cor-preenchido: #4A4038;
+  --cor-sobre-preenchido: #EBDCCB;
 
   --cor-sucesso: #A9D3A3;
   --cor-sucesso-fundo: rgba(169, 211, 163, 0.16);
@@ -101,6 +106,8 @@
   --cor-texto-destaque: #6F4527;
   --cor-sobre-destaque: #2B1E16;
   --cor-foco: #8A5A36;
+  --cor-preenchido: #E8D3BF;
+  --cor-sobre-preenchido: #2B1E16;
 
   --cor-sucesso: #3B7537;
   --cor-sucesso-fundo: #DDEBD9;

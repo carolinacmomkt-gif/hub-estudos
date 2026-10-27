@@ -62,8 +62,8 @@
 }
 
 .seletor-tema button[aria-pressed="true"] {
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
 }
 
 .seletor-tema svg {
@@ -162,8 +162,8 @@
   padding: 28px;
   border: 0;
   border-radius: var(--raio-lg);
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
 }
 
 .proximo-rotulo {
@@ -189,8 +189,8 @@
 }
 
 .proximo .botao {
-  background: var(--cor-sobre-destaque);
-  color: var(--cor-destaque);
+  background: var(--cor-sobre-preenchido);
+  color: var(--cor-preenchido);
 }
 
 @media (max-width: 700px) {

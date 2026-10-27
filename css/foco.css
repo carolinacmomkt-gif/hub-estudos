@@ -99,9 +99,9 @@
 }
 
 .proximo .proximo-acoes .botao-secundario {
-  border-color: var(--cor-sobre-destaque);
+  border-color: var(--cor-sobre-preenchido);
   background: transparent;
-  color: var(--cor-sobre-destaque);
+  color: var(--cor-sobre-preenchido);
 }
 
 /* Resumo: minutos de foco por dia */

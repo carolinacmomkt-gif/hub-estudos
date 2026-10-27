@@ -85,8 +85,8 @@ svg {
   z-index: 100;
   padding: 10px 16px;
   border-radius: var(--raio-sm);
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
   font-weight: 600;
 }
 
@@ -115,8 +115,8 @@ svg {
 }
 
 .botao-primario {
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
 }
 
 .botao-secundario {

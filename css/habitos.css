@@ -34,12 +34,12 @@
 
 .hab-dia[aria-pressed="true"] {
   border-color: var(--cor-foco);
-  background: var(--cor-destaque);
-  color: var(--cor-sobre-destaque);
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
 }
 
 .hab-dia[aria-pressed="true"] strong {
-  color: var(--cor-sobre-destaque);
+  color: var(--cor-sobre-preenchido);
 }
 
 .hab-dia:active {
