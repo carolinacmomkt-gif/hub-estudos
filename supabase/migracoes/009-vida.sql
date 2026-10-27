@@ -2,7 +2,8 @@
 -- casa, consultoria, metas e lazer). Cada uma tem as colunas principais e um campo "dados"
 -- (jsonb) para os detalhes, assim o app cresce sem precisar de migração nova a cada ajuste.
 -- Como usar: Supabase → SQL Editor → New query → cole este arquivo → Run.
--- Pode rodar de novo sem problema.
+-- Pode rodar de novo sem problema. Se o Supabase avisar de "destructive operations", é só o
+-- "drop ... if exists" que recria gatilhos e regras: nenhum dado é apagado.
 
 create table if not exists public.projetos (
   id uuid primary key default gen_random_uuid(),
@@ -196,6 +197,20 @@ create table if not exists public.lazer (
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
 );
+
+-- RLS ligado em cada tabela (só a Carol lê e escreve; as regras vêm no bloco abaixo).
+alter table public.projetos enable row level security;
+alter table public.tarefas enable row level security;
+alter table public.habitos enable row level security;
+alter table public.habito_registros enable row level security;
+alter table public.diario enable row level security;
+alter table public.saude enable row level security;
+alter table public.clientes enable row level security;
+alter table public.consultoria enable row level security;
+alter table public.financas enable row level security;
+alter table public.casa enable row level security;
+alter table public.metas enable row level security;
+alter table public.lazer enable row level security;
 
 do $$
 declare
