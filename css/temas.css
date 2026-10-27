@@ -167,6 +167,9 @@
   --flip-cartao-baixo: #251B15;
   --flip-texto: #F4E9DC;
   --flip-dobra: rgba(0, 0, 0, 0.45);
+  /* Marca-texto do texto digitado nos cadernos */
+  --cor-marca-texto: rgba(255, 214, 102, 0.55);
+
   /* Texto sobre as fotos do quadro dos sonhos (igual nos dois temas) */
   --sonho-veu: rgba(14, 9, 6, 0.78);
   --sonho-texto: #FBF4EC;
