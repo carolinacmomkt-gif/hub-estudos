@@ -11,6 +11,7 @@ import { renderSubstack } from './views-substack.js';
 import { renderEstudos } from './views-estudos.js';
 import { renderFoco } from './views-foco.js';
 import { renderTarefas } from './views-tarefas.js';
+import { renderFinancas } from './views-financas.js';
 import { renderResumo } from './views-resumo.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
 import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
@@ -48,6 +49,7 @@ const VIEWS = {
   estudos: renderEstudos,
   foco: renderFoco,
   tarefas: renderTarefas,
+  financas: renderFinancas,
   resumo: renderResumo,
 };
 
@@ -168,6 +170,7 @@ const TABELAS_NA_MEMORIA = {
   diario: 'diario',
   tarefas: 'tarefas',
   projetos: 'projetos',
+  financas: 'financas',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -190,10 +193,11 @@ const TELAS_DA_TABELA = {
   diario: ['inicio'],
   tarefas: ['tarefas', 'inicio'],
   projetos: ['tarefas', 'inicio'],
+  financas: ['financas', 'inicio'],
   respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco'],
+  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas'],
   videos: ['youtube', 'inicio'],
   artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes'],
   questoes: ['questoes', 'inicio', 'estudos'],

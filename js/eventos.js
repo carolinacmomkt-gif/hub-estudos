@@ -26,10 +26,11 @@ import { ligarSubstack, cliqueSubstack, enviarSubstack, mudancaSubstack } from '
 import { cliqueMenu, mudancaMenu, alternarMenu } from './views-navegacao.js';
 import { cliqueHoje, mudancaHoje } from './hoje.js';
 import { ligarTarefas, cliqueTarefas, enviarTarefas, mudancaTarefas } from './eventos-tarefas.js';
+import { ligarFinancas, cliqueFinancas, enviarFinancas, mudancaFinancas } from './eventos-financas.js';
 import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './eventos-estudos.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -283,7 +284,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarTarefas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarTarefas, ligarFinancas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
 
@@ -361,7 +362,7 @@ export function ligarEventos(funcoesDoApp) {
           return;
         }
         if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo)
-          || cliqueFoco(alvo) || cliqueHoje(alvo) || cliqueTarefas(alvo) || cliqueBiblioteca(alvo) || cliqueQuestoes(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
+          || cliqueFoco(alvo) || cliqueHoje(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueBiblioteca(alvo) || cliqueQuestoes(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -403,7 +404,7 @@ export function ligarEventos(funcoesDoApp) {
     evento.preventDefault();
     // Qual botão enviou (ex.: "Salvar e fazer agora" ou "Só salvar").
     form.dataset.enviadoPor = evento.submitter?.value || '';
-    if (enviarTarefas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarQuestoes(form) || enviarSubstack(form) || enviarEstudos(form)) return;
+    if (enviarTarefas(form) || enviarFinancas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarQuestoes(form) || enviarSubstack(form) || enviarEstudos(form)) return;
     if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form) || enviarYoutube(form)) return;
     switch (form.dataset.form) {
       case 'login':

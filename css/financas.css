@@ -1,0 +1,297 @@
+/* Finanças: reaproveita a linha rápida, as abas e os filtros das Tarefas. */
+
+.fin-mes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.fin-mes strong {
+  min-width: 150px;
+  text-align: center;
+}
+
+.fin-olho {
+  margin-left: auto;
+}
+
+.fin-resumo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.fin-numero .proximo-rotulo {
+  margin-bottom: 2px;
+}
+
+.fin-grande {
+  margin: 0 0 4px;
+  font-size: clamp(1.15rem, 0.6rem + 2.6vw, 2.1rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.fin-grande.positivo,
+.fin-valor.positivo {
+  color: var(--cor-sucesso);
+}
+
+.fin-grande.negativo,
+.fin-negativo {
+  color: var(--urg-atrasado-texto);
+}
+
+.fin-var {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.fin-var.bom { color: var(--cor-sucesso); }
+.fin-var.ruim { color: var(--urg-atrasado-texto); }
+
+.fin-duas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Barras de origem e categoria */
+.fin-barras {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-barra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+}
+
+.fin-barra-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fin-barra-valor {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.fin-barra-valor small {
+  color: var(--cor-texto-suave);
+  font-weight: 400;
+}
+
+.fin-trilho {
+  grid-column: 1 / -1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--cor-trilho);
+}
+
+.fin-trilho span {
+  display: block;
+  height: 100%;
+  border-radius: 8px;
+  background: var(--cor-destaque);
+  transition: width 0.4s ease;
+}
+
+.fin-barra.perto .fin-trilho span { background: var(--urg-urgente); }
+.fin-barra.passou .fin-trilho span { background: var(--urg-atrasado); }
+.fin-barra.passou .fin-barra-valor { color: var(--urg-atrasado-texto); }
+
+/* Contas fixas */
+.fin-contas,
+.fin-lancs,
+.fin-ajustes {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-conta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.fin-conta:last-child,
+.fin-lancs li:last-child .fin-lanc {
+  border-bottom: 0;
+}
+
+.fin-conta-corpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: var(--toque);
+  justify-content: center;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--cor-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fin-conta-nome {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.fin-conta-meta {
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+}
+
+.fin-conta.estado-atrasada .fin-conta-meta {
+  color: var(--urg-atrasado-texto);
+  font-weight: 600;
+}
+
+.fin-conta.estado-paga .fin-conta-nome {
+  color: var(--cor-texto-fraco);
+}
+
+.fin-conta.estado-paga .fin-conta-meta {
+  color: var(--cor-sucesso);
+}
+
+.fin-valor {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+/* Lançamentos */
+.fin-dia .card-titulo {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.fin-lanc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 6px 0;
+  border: 0;
+  border-bottom: 1px solid var(--cor-borda);
+  background: none;
+  color: var(--cor-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fin-lanc-marca {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+  font-weight: 700;
+}
+
+.fin-lanc.eh-entrada .fin-lanc-marca {
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso);
+}
+
+.fin-lanc-texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fin-lanc-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Caixinhas */
+.fin-caixinha {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+}
+
+.fin-caixinha .acoes {
+  margin-top: auto;
+}
+
+.fin-caixinha-linha {
+  flex-wrap: wrap;
+}
+
+.fin-caixinha-linha .progresso {
+  flex: 1 1 140px;
+}
+
+/* Categorias e fontes */
+.fin-ajuste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.fin-ajuste > input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.fin-limite {
+  display: flex;
+  flex-direction: column;
+  width: 130px;
+}
+
+@media (max-width: 1099px) {
+  .fin-duas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .fin-resumo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .fin-resumo .fin-numero:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .fin-mes strong {
+    min-width: 0;
+    flex: 1;
+  }
+}

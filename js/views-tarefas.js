@@ -106,7 +106,7 @@ function vazio(texto) {
 function visaoHoje(tarefas, op) {
   const h = tarefasDeHoje(tarefas, op.hoje);
   if (!h.atrasadas.length && !h.hoje.length && !h.feitas.length) {
-    return vazio('Nada para hoje. Escreva acima o que precisa fazer, do jeito que falaria: "ligar para a Census amanhã 10h".');
+    return vazio('Nada para hoje. Escreva acima o que precisa fazer, do jeito que falaria: "ligar para a Sensus amanhã 10h".');
   }
   return `
     ${h.atrasadas.length ? `<section class="card"><h2 class="card-titulo tarefa-grupo-titulo atraso">Atrasadas <span class="selo">${h.atrasadas.length}</span></h2>${lista(h.atrasadas, op)}

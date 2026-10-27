@@ -15,6 +15,7 @@ export function renderFolhaCriar() {
     <h3 class="ava-subtitulo">Criar</h3>
     <ul class="atalhos-criar">
       <li><button class="atalho-criar" type="button" data-acao="tarefa-nova">${icone('tarefas')}<span>Nova tarefa</span></button></li>
+      <li><button class="atalho-criar" type="button" data-acao="fin-novo">${icone('financas')}<span>Novo lançamento</span></button></li>
       <li><button class="atalho-criar" type="button" data-acao="cal-novo">${icone('calendario')}<span>Novo evento</span></button></li>
       <li><button class="atalho-criar" type="button" data-acao="caderno-novo">${icone('cadernos')}<span>Novo caderno</span></button></li>
       <li><button class="atalho-criar" type="button" data-acao="yt-novo">${icone('youtube')}<span>Ideia de vídeo</span></button></li>

@@ -15,6 +15,7 @@ export const ROTAS = [
   { id: 'youtube', titulo: 'YouTube', icone: 'youtube', grupo: 'criacao' },
   { id: 'substack', titulo: 'Substack', icone: 'substack', grupo: 'criacao' },
   { id: 'resumo', titulo: 'Resumo da semana', icone: 'calendario', grupo: 'dia' },
+  { id: 'financas', titulo: 'Finanças', icone: 'financas', grupo: 'vida' },
 ];
 
 export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configurações', icone: 'configuracoes' };

@@ -27,10 +27,10 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 - [x] **Foco em tela cheia** ✓ código pronto, aguardando teste: relógio flip com barra de progresso, tela cheia ao começar, tela sempre acesa, controles que somem em 3 s, fundo preto para a noite, som ambiente (chuva, ruído marrom, lareira) que some na pausa, respiração na pausa, sino e comemoração no fim do foco.
 - [ ] **4 — Hábitos e rotinas.**
 - [ ] **5 — Saúde.**
-- [ ] **6 — Finanças**: hub completo, dinheiro num lugar só mas categorizado pela origem.
+- [x] **6 — Finanças** ✓ código pronto, aguardando teste: lançamento rápido em uma linha ("mercado 120 ontem", "+3500 sensus"), painel do mês (entrou, saiu, sobrou, comparação com o mês anterior), de onde veio (consultoria, freelas, salário da agência, salário da Confluir, criação) e para onde foi (categorias com limite), contas fixas com "Paguei", caixinhas, esconder valores, planilha CSV e cards no Hoje.
 - [ ] **7 — Diário.**
 - [ ] **8 — Casa.**
-- [ ] **9 — Consultoria**: carteira de clientes (começa com a Census), evolução da consultoria e controle do produto e das mudanças.
+- [ ] **9 — Consultoria**: carteira de clientes (começa com a Sensus), evolução da consultoria e controle do produto e das mudanças.
 - [ ] **10 — Metas e lazer.**
 - [ ] **Cadernos por aparelho**: no computador, documento digitado (tipo Google Docs); no celular, notas; no tablet, escrita à mão.
 - [ ] **11 — Acabamento e instalação no tablet.**
