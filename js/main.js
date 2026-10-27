@@ -12,6 +12,8 @@ import { renderEstudos } from './views-estudos.js';
 import { renderFoco } from './views-foco.js';
 import { renderTarefas } from './views-tarefas.js';
 import { renderFinancas } from './views-financas.js';
+import { montarEditorTexto, desmontarEditorTexto } from './editor-texto.js';
+import { formatoDoCaderno } from './dados-texto.js';
 import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
@@ -63,7 +65,18 @@ const CICLO = {
   caneta: { montar: montarCaneta, desmontar: desmontarCaneta },
   configuracoes: { montar: atualizarSituacaoAvisos, desmontar: () => {} },
   // Só o editor (#cadernos/<id>) tem partes vivas; a lista não.
-  cadernos: { montar: (id) => id && montarEditorCaderno(id), desmontar: desmontarEditorCaderno },
+  cadernos: {
+    montar: (id) => {
+      if (!id) return;
+      const formato = formatoDoCaderno((obterEstado().cadernos || []).find((c) => c.id === id) || { id });
+      if (formato === 'tinta') montarEditorCaderno(id);
+      else montarEditorTexto(id, formato);
+    },
+    desmontar: () => {
+      desmontarEditorCaderno();
+      desmontarEditorTexto();
+    },
+  },
 };
 let telaMontada = null;
 

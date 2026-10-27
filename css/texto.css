@@ -1,0 +1,573 @@
+/* Páginas digitadas dos cadernos: documento (computador) e notas (celular).
+   A tipografia da folha usa "unidades da página" (--u): a página tem 1000 de largura, a letra
+   tem 20 (12 pt numa A4) e a linha tem 33,33 (7 mm, a pauta média). Assim o texto cai nas linhas
+   do caderno e fica no mesmo lugar no computador, no tablet e na imagem que vai para a tinta. */
+
+.folha-texto {
+  --u: 1px;
+  box-sizing: border-box;
+  min-height: calc(var(--u) * 300);
+  padding: calc(var(--u) * 119) calc(var(--u) * 71) calc(var(--u) * 95) calc(var(--u) * 95);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: calc(var(--u) * 20);
+  line-height: calc(var(--u) * 33.333);
+  overflow-wrap: anywhere;
+  outline: none;
+}
+
+.folha-texto p,
+.folha-texto ul,
+.folha-texto ol,
+.folha-texto blockquote,
+.folha-texto pre,
+.folha-texto table {
+  margin: 0;
+}
+
+.folha-texto h1,
+.folha-texto h2,
+.folha-texto h3 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.folha-texto h1 {
+  font-size: calc(var(--u) * 34);
+  line-height: calc(var(--u) * 66.667);
+}
+
+.folha-texto h2 {
+  font-size: calc(var(--u) * 27);
+  line-height: calc(var(--u) * 66.667);
+}
+
+.folha-texto h3 {
+  font-size: calc(var(--u) * 22);
+  line-height: calc(var(--u) * 33.333);
+}
+
+.folha-texto ul,
+.folha-texto ol {
+  padding-left: calc(var(--u) * 40);
+}
+
+.folha-texto ul[data-check] {
+  padding-left: calc(var(--u) * 36);
+  list-style: none;
+}
+
+.folha-texto ul[data-check] li {
+  position: relative;
+}
+
+.folha-texto ul[data-check] li::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--u) * -32);
+  top: calc(var(--u) * 7);
+  width: calc(var(--u) * 18);
+  height: calc(var(--u) * 18);
+  border: calc(var(--u) * 2) solid currentColor;
+  border-radius: calc(var(--u) * 5);
+  opacity: 0.7;
+}
+
+.folha-texto ul[data-check] li[data-feito="1"] {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.folha-texto ul[data-check] li[data-feito="1"]::before {
+  content: "✓";
+  font-size: calc(var(--u) * 16);
+  line-height: calc(var(--u) * 16);
+  text-align: center;
+  font-weight: 800;
+}
+
+.folha-texto blockquote {
+  padding-left: calc(var(--u) * 18);
+  border-left: calc(var(--u) * 4) solid currentColor;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.folha-texto pre,
+.folha-texto code {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: calc(var(--u) * 18);
+}
+
+.folha-texto hr {
+  height: 0;
+  margin: calc(var(--u) * 16.666) 0;
+  border: 0;
+  border-top: calc(var(--u) * 1.5) solid currentColor;
+  opacity: 0.35;
+}
+
+.folha-texto a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.folha-texto mark {
+  padding: 0 calc(var(--u) * 2);
+  border-radius: calc(var(--u) * 3);
+  background: rgba(255, 214, 102, 0.55);
+  color: inherit;
+}
+
+.folha-texto img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: calc(var(--u) * 8) 0;
+  border-radius: calc(var(--u) * 8);
+}
+
+.folha-texto table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.folha-texto td,
+.folha-texto th {
+  padding: 0 calc(var(--u) * 8);
+  border: calc(var(--u) * 1.5) solid currentColor;
+  vertical-align: top;
+  text-align: left;
+}
+
+/* ---------------------------------------------------------------------------
+   Tela do caderno digitado
+   --------------------------------------------------------------------------- */
+
+.editor-texto {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.texto-topo {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 0;
+  background: var(--cor-fundo);
+}
+
+.texto-topo h1 {
+  flex: 1 1 160px;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.texto-salvo {
+  font-size: 0.85rem;
+  color: var(--cor-texto-fraco);
+}
+
+/* Barra de formatação */
+.texto-barra {
+  position: sticky;
+  top: 64px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 6px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-card);
+}
+
+.texto-barra .ferramenta-botao {
+  min-width: var(--toque);
+  min-height: var(--toque);
+  padding: 0 10px;
+  font-weight: 600;
+}
+
+.texto-barra select {
+  min-height: var(--toque);
+  max-width: 150px;
+}
+
+.texto-barra .separador {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 4px;
+  background: var(--cor-linha);
+}
+
+.texto-corpo {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.texto-corpo.sem-indice {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Índice automático (títulos do documento) */
+.texto-indice {
+  position: sticky;
+  top: 140px;
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  font-size: 0.9rem;
+}
+
+.texto-indice h2 {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+}
+
+.texto-indice ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.texto-indice button {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: none;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.texto-indice button:hover {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+}
+
+.texto-indice .nivel-2 { padding-left: 20px; }
+.texto-indice .nivel-3 { padding-left: 32px; font-size: 0.85rem; }
+
+/* Folhas do documento: largura de papel, letra proporcional à folha */
+.doc-paginas {
+  display: grid;
+  gap: 24px;
+  justify-items: center;
+}
+
+.doc-folha {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  max-width: 816px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-card);
+}
+
+.doc-folha .folha-texto {
+  --u: calc(100cqw / 1000);
+  min-height: calc(100cqw * 1.414);
+  color: var(--cor-texto);
+  cursor: text;
+}
+
+.folha-texto.vazia > :first-child::before {
+  content: attr(data-vazio);
+  color: var(--cor-texto-fraco);
+  pointer-events: none;
+}
+
+.doc-rodape {
+  position: absolute;
+  right: 16px;
+  bottom: 10px;
+  font-size: 0.8rem;
+  color: var(--cor-texto-fraco);
+}
+
+.doc-selo {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+}
+
+.doc-tinta {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  justify-items: center;
+}
+
+.doc-tinta img {
+  display: block;
+  width: 100%;
+  border-radius: var(--raio-sm);
+}
+
+.doc-nova {
+  width: 100%;
+  max-width: 816px;
+  min-height: 56px;
+  border: 2px dashed var(--cor-borda);
+  border-radius: var(--raio);
+  background: none;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.doc-nova:hover {
+  border-color: var(--cor-foco);
+  color: var(--cor-texto);
+}
+
+/* ---------------------------------------------------------------------------
+   Notas (celular)
+   --------------------------------------------------------------------------- */
+
+.notas-topo {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.notas-topo input {
+  flex: 1;
+  min-width: 0;
+}
+
+.notas-grupo {
+  margin: 16px 0 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+}
+
+.notas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nota-cartao {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 96px;
+  padding: 14px 48px 14px 14px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.nota-cartao:active {
+  transform: scale(0.98);
+}
+
+.nota-cartao strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.nota-cartao .resumo {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.nota-cartao img {
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  object-position: top;
+  border-radius: var(--raio-sm);
+}
+
+.nota-item {
+  position: relative;
+}
+
+.nota-fixar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: var(--toque);
+  height: var(--toque);
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--cor-texto-fraco);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.nota-fixar[aria-pressed="true"] {
+  color: var(--cor-texto-destaque);
+}
+
+/* Nota aberta: tela cheia, barra curta acima do teclado */
+.nota-aberta-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.nota-aberta-topo .espaco {
+  flex: 1;
+}
+
+.nota-editor {
+  min-height: 50vh;
+  padding: 4px 2px 120px;
+}
+
+.nota-editor .folha-texto {
+  --u: 0.8px;
+  min-height: 50vh;
+  padding: 0;
+  font-size: 1.07rem;
+  line-height: 1.6;
+}
+
+.nota-editor .folha-texto h1 { font-size: 1.6rem; line-height: 1.3; margin: 6px 0; }
+.nota-editor .folha-texto h2 { font-size: 1.3rem; line-height: 1.35; margin: 6px 0; }
+.nota-editor .folha-texto h3 { font-size: 1.12rem; line-height: 1.4; }
+
+.nota-barra {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  gap: 2px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  overflow-x: auto;
+  border-top: 1px solid var(--cor-linha);
+  background: var(--cor-superficie-elevada);
+  scrollbar-width: none;
+}
+
+.nota-barra .ferramenta-botao {
+  flex: none;
+  min-width: var(--toque);
+  min-height: var(--toque);
+  font-weight: 600;
+}
+
+.nota-tinta-aviso {
+  margin: 6px 0 12px;
+  font-size: 0.88rem;
+  color: var(--cor-texto-suave);
+}
+
+/* No celular, a nota aberta esconde a barra de navegação e o "+" (a barra de formatação fica no lugar) */
+body.nota-aberta .nav-inferior,
+body.nota-aberta .fab {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .texto-corpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .texto-indice {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .texto-topo {
+    padding: 6px 0;
+  }
+
+  .texto-barra {
+    top: 56px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .doc-paginas {
+    gap: 14px;
+  }
+
+  .notas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nota-cartao:active {
+    transform: none;
+  }
+}
+
+/* Acabamentos */
+.texto-barra label.ferramenta-botao,
+.nota-barra label.ferramenta-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.doc-folha {
+  scroll-margin-top: 150px;
+}
+
+/* Como no app de notas do celular: a primeira linha é o título */
+.nota-editor .folha-texto > :first-child {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.35;
+}

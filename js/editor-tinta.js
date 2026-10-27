@@ -238,8 +238,8 @@ export async function carregarImagensDaPagina(pagina) {
 
 // Desenha uma página inteira (fundo + camadas) num contexto já em unidades da página.
 // Serve para miniaturas e exportação, fora do editor.
-export function desenharPaginaEm(ctx, pagina, dim, { imagem = null, cores = coresDoPapel() } = {}) {
-  desenharFolha(ctx, pagina?.modelo || 'branco', dim, cores, { imagem, data: pagina?.fundo?.data });
+export function desenharPaginaEm(ctx, pagina, dim, { imagem = null, texto = null, cores = coresDoPapel() } = {}) {
+  desenharFolha(ctx, pagina?.modelo || 'branco', dim, cores, { imagem, texto, data: pagina?.fundo?.data });
   for (const camada of pagina?.camadas || []) {
     if (camada.tipo !== 'desenho' || camada.visivel === false) continue;
     ctx.globalAlpha = camada.opacidade ?? 1;
@@ -430,6 +430,7 @@ export class EditorDeTinta {
   carregar(pagina, dim = this.dim) {
     this.pagina = pagina?.camadas ? pagina : novaPaginaVazia();
     this.imagemFundo = null;
+    this.imagemTexto = null;
     this.camadaAtivaId = null;
     if (!this.camadaAtiva()) this.pagina.camadas.push({ id: crypto.randomUUID(), nome: 'Camada 1', tipo: 'desenho', visivel: true, bloqueada: false, opacidade: 1, itens: [] });
     this.desfazer = [];
@@ -648,12 +649,18 @@ export class EditorDeTinta {
   // ---------------------------------------------------------------------------
 
   desenharPapel() {
-    desenharFolha(this.xPapel, this.pagina.modelo || 'branco', this.dim, coresDoPapel(), { imagem: this.imagemFundo, data: this.pagina.fundo?.data });
+    desenharFolha(this.xPapel, this.pagina.modelo || 'branco', this.dim, coresDoPapel(), { imagem: this.imagemFundo, texto: this.imagemTexto, data: this.pagina.fundo?.data });
   }
 
   // Imagem do fundo (modelo próprio ou página de PDF), carregada depois de abrir a página.
   definirImagemDeFundo(imagem) {
     this.imagemFundo = imagem || null;
+    if (this.escala) this.desenharTudo();
+  }
+
+  // Texto digitado da página (no computador ou no celular), como imagem: a tinta fica por cima.
+  definirImagemDoTexto(imagem) {
+    this.imagemTexto = imagem || null;
     if (this.escala) this.desenharTudo();
   }
 

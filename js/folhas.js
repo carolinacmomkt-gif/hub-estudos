@@ -488,7 +488,13 @@ function desenharImagem(x, dim, imagem) {
 }
 
 // Desenha o fundo no contexto (já em unidades da página).
+// Folha do modelo e, por cima, o texto digitado da página (quando tem), já como imagem.
 export function desenharFolha(x, modelo, dim, cores, extras = {}) {
+  desenharModelo(x, modelo, dim, cores, extras);
+  if (extras.texto) x.drawImage(extras.texto, 0, 0, dim.largura, extras.texto.naturalHeight || extras.texto.height || dim.altura);
+}
+
+function desenharModelo(x, modelo, dim, cores, extras) {
   x.clearRect(0, 0, dim.largura, dim.altura);
   x.fillStyle = cores.papel;
   x.fillRect(0, 0, dim.largura, dim.altura);

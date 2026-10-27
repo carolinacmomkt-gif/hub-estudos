@@ -83,6 +83,7 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
   - caderno de PDF (anotar por cima de slides ou artigos importados do AVA ou da Biblioteca);
   - quadro infinito (canvas sem limite, para mapas mentais);
   - planner (semanal/mensal com datas).
+- **Por aparelho** (decisão da Carol, 27/10/2026): o mesmo caderno abre **à mão** no tablet, como **documento** no computador e como **notas** no celular, com troca rápida lembrada por aparelho (`dados-texto.js`, `editor-texto.js`). O texto digitado fica na página, em `tracos_json.texto` (`html` limpo + `plano`), ao lado das camadas; no tablet ele vira imagem da folha (`texto-imagem.js`, tipografia em unidades da página que caem na pauta média) e a tinta fica por cima. PDF, quadro infinito e planner são só à mão.
 - **Capas**: várias cores e estilos dentro da paleta do app, com título e disciplina.
 - **Tamanhos e orientação**: A4, A5, Carta e "tela do tablet"; retrato ou paisagem.
 - **Modelos de folha**:

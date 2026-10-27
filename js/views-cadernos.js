@@ -8,6 +8,8 @@ import { esc, haQuantoTempo } from './utilidades.js';
 import { disciplinasAtivas, nomeDaDisciplina } from './dados-faculdade.js';
 import { TAMANHOS_PAPEL, opcoesDeModelo } from './folhas.js';
 import { renderEditorCaderno } from './editor-caderno.js';
+import { renderEditorTexto } from './editor-texto.js';
+import { formatoDoCaderno } from './dados-texto.js';
 import { areasAtivas } from './dados-estudos.js';
 import { artigosAtivos } from './dados-biblioteca.js';
 import { modelosProprios } from './fundos.js';
@@ -105,7 +107,12 @@ function visaoLixeira(estado, agora) {
 }
 
 export function renderCadernos(estado) {
-  if (estado.parametro) return renderEditorCaderno(estado);
+  if (estado.parametro) {
+    // O mesmo caderno abre à mão no tablet, como documento no computador e como notas no celular.
+    const caderno = (estado.cadernos || []).find((c) => c.id === estado.parametro);
+    const formato = formatoDoCaderno(caderno || { id: estado.parametro });
+    return formato === 'tinta' ? renderEditorCaderno(estado) : renderEditorTexto(caderno, formato);
+  }
   const agora = Date.now();
   const total = cadernosAtivos(estado).length;
   const visao = VISOES.some((v) => v.id === estado.cadVisao) ? estado.cadVisao : 'estantes';

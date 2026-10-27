@@ -3,6 +3,7 @@
 
 import { desenharPaginaEm, coresDoPapel, carregarImagensDaPagina } from './editor-tinta.js';
 import { imagemDoFundo } from './fundos.js';
+import { imagemDoTexto, corDoTextoNoPapel } from './texto-imagem.js';
 
 const LARGURA_PX = 1600; // ~190 dpi numa A4
 
@@ -16,7 +17,8 @@ async function desenharPagina(pagina, dim, largura = LARGURA_PX) {
   ctx.setTransform(escala, 0, 0, escala, 0, 0);
   const json = { ...(pagina.tracos_json || {}), modelo: pagina.modelo_folha || pagina.tracos_json?.modelo };
   await carregarImagensDaPagina(json);
-  desenharPaginaEm(ctx, json, dim, { imagem: await imagemDoFundo(pagina), cores: coresDoPapel({ impressao: true }) });
+  const texto = await imagemDoTexto(pagina.tracos_json?.texto?.html, dim, corDoTextoNoPapel({ impressao: true }));
+  desenharPaginaEm(ctx, json, dim, { imagem: await imagemDoFundo(pagina), texto: texto?.imagem, cores: coresDoPapel({ impressao: true }) });
   return canvas;
 }
 

@@ -10,6 +10,8 @@ import { renderPainelPaginas, renderAbasSecoes } from './views-paginas.js';
 import { pngDaPagina, pdfDasPaginas, baixar, nomeDeArquivo } from './exportar-caderno.js';
 import { somarPeriodo, segundaDaSemana, primeiroDoMes } from './dados-cadernos.js';
 import { esc } from './utilidades.js';
+import { imagemDoTexto, corDoTextoNoPapel } from './texto-imagem.js';
+import { seletorDeFormato, trocarFormato } from './editor-texto.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 
 const CHAVE_PREFS = 'hub.editor.prefs';
@@ -118,6 +120,7 @@ export function renderEditorCaderno() {
         <a class="botao botao-secundario botao-pequeno" href="#cadernos" aria-label="Voltar para os cadernos">←</a>
         <h1 tabindex="-1" id="editor-titulo">Caderno</h1>
         <span class="caneta-salvo" id="caneta-salvo" aria-live="polite"></span>
+        <span id="editor-formatos"></span>
         <div class="editor-paginas" role="group" aria-label="Páginas">
           <button type="button" class="ferramenta-botao" data-ed="pagina-anterior" aria-label="Página anterior">‹</button>
           <span id="editor-pagina" aria-live="polite">…</span>
@@ -311,7 +314,8 @@ async function salvarAgora() {
   // Folhear o caderno só para ler não salva nada (nem marca o caderno como editado).
   if (!sujo || !editor || !paginas[indice]) return;
   sujo = false;
-  paginas[indice] = await salvar('paginas', { ...paginas[indice], tracos_json: editor.pagina, miniatura_url: editor.miniatura(), altura: editor.dim.altura });
+  const texto = paginas[indice].tracos_json?.texto;
+  paginas[indice] = await salvar('paginas', { ...paginas[indice], tracos_json: texto ? { ...editor.pagina, texto } : editor.pagina, miniatura_url: editor.miniatura(), altura: editor.dim.altura });
   // O caderno sobe para o topo da lista e do Início.
   if (caderno) caderno = await salvar('cadernos', { ...caderno });
   mostrarSalvo('Salvo');
@@ -338,7 +342,7 @@ function abrirPagina(n) {
   fecharCaixaTexto();
   indice = Math.max(0, Math.min(paginas.length - 1, n));
   const p = paginas[indice];
-  const json = p.tracos_json?.camadas?.length ? p.tracos_json : novaPaginaVazia(p.modelo_folha);
+  const json = p.tracos_json?.camadas?.length ? p.tracos_json : { ...novaPaginaVazia(p.modelo_folha), ...(p.tracos_json?.texto ? { texto: p.tracos_json.texto } : {}) };
   json.modelo = p.modelo_folha || json.modelo;
   editor.carregar(json, dimDaPagina(p));
   document.getElementById('caneta-area').scrollTop = 0;
@@ -347,6 +351,17 @@ function abrirPagina(n) {
   atualizarSecoes();
   if (!document.getElementById('editor-painel')?.hidden) atualizarPainel();
   carregarFundo(p);
+  carregarTexto(p);
+}
+
+// Texto digitado no computador ou no celular: aparece na folha, e a tinta fica por cima.
+function carregarTexto(p) {
+  const html = p.tracos_json?.texto?.html;
+  if (!html) return;
+  const minha = montagem;
+  imagemDoTexto(html, dimDaPagina(p), corDoTextoNoPapel()).then((r) => {
+    if (r && minha === montagem && paginas[indice]?.id === p.id && editor) editor.definirImagemDoTexto(r.imagem);
+  });
 }
 
 function carregarFundo(p) {
@@ -836,6 +851,7 @@ export async function montarEditorCaderno(id) {
     return;
   }
   document.getElementById('editor-titulo').textContent = caderno.titulo;
+  document.getElementById('editor-formatos').innerHTML = seletorDeFormato(caderno, 'tinta');
   document.title = `${caderno.titulo} · Bússola`;
   const configs = await listar('config');
   if (minha !== montagem) return;
@@ -901,7 +917,8 @@ export function desmontarEditorCaderno() {
   if (sujo && editor) {
     // Salva na hora o que estava esperando (sem aguardar: a tela já está saindo).
     clearTimeout(tempoSalvar);
-    salvar('paginas', { ...paginas[indice], tracos_json: editor.pagina, miniatura_url: editor.miniatura(), altura: editor.dim.altura });
+    const texto = paginas[indice].tracos_json?.texto;
+    salvar('paginas', { ...paginas[indice], tracos_json: texto ? { ...editor.pagina, texto } : editor.pagina, miniatura_url: editor.miniatura(), altura: editor.dim.altura });
   }
   tempoSalvar = null;
   sujo = false;
@@ -950,6 +967,11 @@ function aoSoltarFavorito() {
 }
 
 function aoClicar(evento) {
+  const formato = evento.target.closest('#editor-formatos [data-tx="formato"]');
+  if (formato && caderno) {
+    salvarAgora().then(() => trocarFormato(caderno.id, formato.dataset.valor));
+    return;
+  }
   const alvo = evento.target.closest('[data-ed]');
   if (!alvo || !editor) return;
   const { ed: acao, valor } = alvo.dataset;
