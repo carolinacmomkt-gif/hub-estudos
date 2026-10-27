@@ -68,6 +68,7 @@ Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, 
 - `005-youtube.sql`: tabela `videos` do Hub do YouTube e o tipo `youtube` nos eventos do Calendário.
 - `006-youtube-completo.sql`: pilares, cortes para Shorts, thumbnails, gravação e edição dos vídeos.
 - `007-areas.sql`: Biblioteca (fonte, resumo, fichamento, favoritos), tabela `simulados` das Questões, campos do Substack (subtítulo, notas, tags, agendamento, checklist), trilhas e temas dos Estudos gerais e o tipo `substack` nos eventos.
+- `008-foco.sql`: tabela `sessoes_foco` (sessão de foco e resumo da semana).
 
 ## Estrutura
 

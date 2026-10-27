@@ -203,6 +203,8 @@ async function conferirAgora() {
     if (recente) alarme('A pausa acabou', 'Bora para o próximo foco?');
   }
   atualizarTela();
+  // Com o app fechado por muito tempo, várias fases podem ter acabado: resolve todas.
+  if (sessao && !sessao.pausadoEm && sessao.fase !== 'aguardando' && Date.now() >= sessao.inicio + sessao.duracao) await conferirAgora();
 }
 
 // ---------------------------------------------------------------------------
@@ -291,10 +293,11 @@ export function atualizarTela({ soRelogio = false } = {}) {
     const mostrar = s.ativa && !naTelaDoFoco;
     barra.hidden = !mostrar;
     document.body.classList.toggle('com-foco', mostrar);
-    if (mostrar && (!soRelogio || !barra.querySelector('[data-foco-relogio]') || barra.dataset.fase !== s.fase || barra.dataset.pausado !== String(s.pausado))) {
+    // Redesenha a barrinha quando muda a fase, a pausa ou a sessão; no resto, só o relógio.
+    const assinatura = `${s.fase}|${s.pausado}|${s.titulo}|${sessao?.inicio}`;
+    if (mostrar && (!soRelogio || barra.dataset.assinatura !== assinatura)) {
       barra.innerHTML = barraDoFoco();
-      barra.dataset.fase = s.fase;
-      barra.dataset.pausado = String(s.pausado);
+      barra.dataset.assinatura = assinatura;
     }
   }
   document.querySelectorAll('[data-foco-relogio]').forEach((el) => { el.textContent = relogioTexto(s.restante || 0); });

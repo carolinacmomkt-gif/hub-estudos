@@ -28,8 +28,8 @@ Os números são os do guia original; a lista está na **ordem combinada** com a
 - **Flashcards saindo do caderno**: páginas no modelo flashcards viram baralho na revisão espaçada. *(Etapa 7)*
 - **Hub do YouTube** ✓ código pronto, aguardando teste: funil por etapas, roteiro em blocos com modelos, capítulos, pacote de publicação, checklist, resultados, meta semanal e datas no Calendário.
 - **Início personalizável** ✓ código pronto, aguardando teste: ordem, tamanho e ocultar cada card, e cards próprios (nota, atalhos, checklist, contagem regressiva).
-- Sessão de foco (cronômetro tipo Pomodoro) a partir do "Próximo passo". *(Etapa 8)*
-- **Resumo da semana** no domingo à noite, com notificação. *(Etapa 8)*
+- **Sessão de foco** ✓ código pronto, aguardando teste: foco e pausas (curta e longa), barrinha em todas as telas, "Focar nisso" no Próximo passo, sessões registradas (migração `008-foco.sql`).
+- **Resumo da semana** ✓ código pronto, aguardando teste: tela #resumo, card no Início e notificação no domingo à noite (ou segunda de manhã).
 
 ## Para depois (ideias grandes)
 - Busca na letra: transcrever os cadernos inteiros para buscar dentro da escrita à mão.
