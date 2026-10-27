@@ -5,6 +5,7 @@
 export const ROTAS = [
   { id: 'inicio', titulo: 'Hoje', icone: 'inicio', fixaCelular: true, grupo: 'dia' },
   { id: 'tarefas', titulo: 'Tarefas e projetos', icone: 'tarefas', fixaCelular: true, grupo: 'dia' },
+  { id: 'habitos', titulo: 'Hábitos e rotinas', icone: 'habitos', grupo: 'dia' },
   { id: 'calendario', titulo: 'Calendário', icone: 'calendario', fixaCelular: true, grupo: 'dia' },
   { id: 'foco', titulo: 'Sessão de foco', icone: 'foco', grupo: 'dia' },
   { id: 'faculdade', titulo: 'Faculdade', icone: 'faculdade', fixaCelular: true, grupo: 'faculdade' },

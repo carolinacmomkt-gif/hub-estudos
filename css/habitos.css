@@ -1,0 +1,254 @@
+/* Hábitos e rotinas: anel de progresso no emoji, semana em bolinhas e mapa do mês */
+
+.hab-dias {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.hab-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.12s;
+}
+
+.hab-dia small {
+  font-size: 0.72rem;
+  text-transform: lowercase;
+}
+
+.hab-dia strong {
+  font-size: 1.05rem;
+  color: var(--cor-texto);
+}
+
+.hab-dia[aria-pressed="true"] {
+  border-color: var(--cor-foco);
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.hab-dia[aria-pressed="true"] strong {
+  color: var(--cor-sobre-destaque);
+}
+
+.hab-dia:active {
+  transform: scale(0.95);
+}
+
+.hab-periodo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.habitos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.habito {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.habito:last-child {
+  border-bottom: 0;
+}
+
+/* Botão com o emoji e o anel que enche conforme a meta do dia */
+.habito-marcar {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.habito-marcar:active {
+  transform: scale(0.9);
+}
+
+.habito-anel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--cor-sucesso) calc(var(--fracao, 0) * 360deg), var(--cor-trilho) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  transition: background 0.3s;
+}
+
+.habito-icone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--cor-superficie-2);
+  font-size: 1.3rem;
+  line-height: 1;
+  filter: grayscale(0.4);
+  transition: background-color 0.2s, filter 0.2s;
+}
+
+.habito.feito .habito-icone {
+  background: var(--cor-sucesso-fundo);
+  filter: none;
+}
+
+.habito.marcando .habito-icone {
+  animation: habito-pulo 0.35s ease-out;
+}
+
+@keyframes habito-pulo {
+  50% { transform: scale(1.2); }
+}
+
+.habito-corpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: var(--toque);
+  justify-content: center;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--cor-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.habito-nome {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.habito.feito .habito-nome {
+  color: var(--cor-texto-suave);
+}
+
+.habito-detalhe {
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+}
+
+.habito-qtd {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.habito-semana {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(7, 8px);
+  gap: 3px;
+}
+
+.habito-semana i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cor-trilho);
+}
+
+.habito-semana i.sim { background: var(--cor-sucesso); }
+.habito-semana i.futuro { background: transparent; box-shadow: inset 0 0 0 1px var(--cor-trilho); }
+
+.habitos.compactos .habito {
+  min-height: 56px;
+}
+
+.hab-sugestoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.hab-sugestoes .chip-filtro {
+  min-height: var(--toque);
+}
+
+/* Mapa: 5 semanas, um quadradinho por dia */
+.hab-mapas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.hab-grade {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  margin: 8px 0;
+}
+
+.hab-grade i {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: var(--cor-trilho);
+}
+
+.hab-grade .m-feito { background: var(--cor-sucesso); }
+.hab-grade .m-parcial { background: color-mix(in srgb, var(--cor-sucesso) 45%, var(--cor-trilho)); }
+.hab-grade .m-perdido { background: var(--cor-trilho); box-shadow: inset 0 0 0 1px var(--urg-atrasado-fundo); }
+.hab-grade .m-livre { background: transparent; box-shadow: inset 0 0 0 1px var(--cor-linha); }
+.hab-grade .m-antes { background: transparent; }
+
+/* Rotina: um passo grande por vez */
+.rotina {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+
+.rotina-passo {
+  margin: 12px 0;
+  font-size: clamp(1.4rem, 1rem + 2vw, 2rem);
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.rotina .acoes {
+  justify-content: center;
+}
+
+@media (max-width: 700px) {
+  .habito-semana {
+    display: none;
+  }
+
+  .hab-dia {
+    min-height: 52px;
+  }
+}

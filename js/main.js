@@ -13,6 +13,7 @@ import { renderFoco } from './views-foco.js';
 import { renderTarefas } from './views-tarefas.js';
 import { renderFinancas } from './views-financas.js';
 import { renderRecompensas } from './views-recompensas.js';
+import { renderHabitos } from './views-habitos.js';
 import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
@@ -53,6 +54,7 @@ const VIEWS = {
   tarefas: renderTarefas,
   financas: renderFinancas,
   recompensas: renderRecompensas,
+  habitos: renderHabitos,
   resumo: renderResumo,
 };
 
@@ -174,6 +176,8 @@ const TABELAS_NA_MEMORIA = {
   tarefas: 'tarefas',
   projetos: 'projetos',
   financas: 'financas',
+  habitos: 'habitos',
+  habito_registros: 'habitoRegistros',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -197,6 +201,8 @@ const TELAS_DA_TABELA = {
   tarefas: ['tarefas', 'inicio', 'recompensas'],
   projetos: ['tarefas', 'inicio', 'recompensas'],
   financas: ['financas', 'inicio', 'recompensas'],
+  habitos: ['habitos', 'inicio', 'recompensas'],
+  habito_registros: ['habitos', 'inicio', 'recompensas'],
   respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
@@ -258,7 +264,7 @@ window.addEventListener('hub:dados', async (evento) => {
   const { tabela, daNuvem } = evento.detail || {};
   if (!TABELAS_NA_MEMORIA[tabela]) return;
   await carregarDadosLocais([tabela]);
-  if (['tarefas', 'sessoes_foco', 'projetos', 'financas', 'diario'].includes(tabela) && noApp) conferirConquistas();
+  if (['tarefas', 'sessoes_foco', 'projetos', 'financas', 'diario', 'habito_registros'].includes(tabela) && noApp) conferirConquistas();
   if (tabela === 'config') {
     montarNavegacao();
     marcarRotaAtiva(obterEstado().rota);

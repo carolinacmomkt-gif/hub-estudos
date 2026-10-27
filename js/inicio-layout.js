@@ -10,6 +10,7 @@ export const CARDS_DO_APP = [
   { id: 'humor', nome: 'Como estou hoje', tamanho: '1/3' },
   { id: 'recompensas', nome: 'Nível e recompensas', tamanho: '1/3' },
   { id: 'tarefas', nome: 'Tarefas de hoje', tamanho: '2/3' },
+  { id: 'habitos', nome: 'Hábitos de hoje', tamanho: '1/3' },
   { id: 'projetos', nome: 'Projetos em andamento', tamanho: '1/3' },
   { id: 'contas', nome: 'Contas da semana', tamanho: '1/3' },
   { id: 'financas', nome: 'Finanças do mês', tamanho: '1/3' },

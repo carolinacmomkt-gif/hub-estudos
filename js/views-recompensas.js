@@ -11,6 +11,7 @@ export function dadosGamificacao(estado) {
   return {
     tarefas: estado.tarefas, sessoes: estado.sessoesFoco, projetos: estado.projetos,
     financas: estado.financas, diario: estado.diario, config: estado.config,
+    habitos: estado.habitos, habitoRegistros: estado.habitoRegistros,
   };
 }
 
@@ -63,6 +64,8 @@ export function renderRecompensas(estado) {
         <li><span>Tarefa concluída</span><strong>+${PONTOS.tarefa}</strong></li>
         <li><span>… importante / urgente</span><strong>+${PONTOS.importante} / +${PONTOS.urgente} a mais</strong></li>
         <li><span>Tarefa que repete, a cada vez</span><strong>+${PONTOS.repeticao}</strong></li>
+        <li><span>Hábito feito no dia</span><strong>+${PONTOS.habito}</strong></li>
+        <li><span>Rotina completa</span><strong>+${PONTOS.rotina}</strong></li>
         <li><span>Sessão de foco de 25 min</span><strong>+15</strong></li>
         <li><span>Projeto concluído</span><strong>+${PONTOS.projeto}</strong></li>
         <li><span>Meta de caixinha batida</span><strong>+${PONTOS.caixinha}</strong></li>

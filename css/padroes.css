@@ -164,7 +164,7 @@
 }
 
 /* Telas montadas em blocos soltos: o mesmo respiro entre eles */
-.conteudo[data-tela="recompensas"] > * + * {
+.conteudo:is([data-tela="recompensas"], [data-tela="habitos"]) > * + * {
   margin-top: 16px;
 }
 

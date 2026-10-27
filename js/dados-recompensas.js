@@ -3,7 +3,7 @@
 // um dia parado não pune (ideia do Finch, ao contrário do Habitica, que tira vida).
 
 export const PONTOS = {
-  tarefa: 10, importante: 5, urgente: 10, repeticao: 5, projeto: 50, caixinha: 30, humor: 2, lancamento: 1,
+  tarefa: 10, importante: 5, urgente: 10, repeticao: 5, projeto: 50, caixinha: 30, humor: 2, lancamento: 1, habito: 5, rotina: 10,
 };
 
 export const RECOMPENSAS_PADRAO = [
@@ -15,6 +15,8 @@ export const RECOMPENSAS_PADRAO = [
   { id: 'goiania', emoji: '🚗', nome: 'Passeio em Goiânia', custo: 500, valor: 0 },
   { id: 'brasilia', emoji: '🏛️', nome: 'Passeio em Brasília', custo: 800, valor: 0 },
 ];
+
+import { sequenciaDoHabito } from './dados-habitos.js';
 
 const TITULOS = ['Começando', 'No ritmo', 'Constante', 'Focada', 'Determinada', 'Imparável', 'Inspiradora', 'Lendária'];
 
@@ -46,6 +48,14 @@ export function ganhos(dados) {
       lista.push({ dia: diaDe(f.atualizado_em || Date.now()), pontos: PONTOS.caixinha, tipo: 'caixinha' });
     } else if ((f.tipo === 'entrada' || f.tipo === 'saida') && !f.dados?.recompensa) {
       lista.push({ dia: f.data, pontos: PONTOS.lancamento, tipo: 'lancamento' });
+    }
+  }
+  const habitos = new Map(vivos(dados.habitos).map((h) => [h.id, h]));
+  for (const r of vivos(dados.habitoRegistros)) {
+    const h = habitos.get(r.habito_id);
+    if (h && Number(r.valor) >= Math.max(1, Number(h.meta) || 1)) {
+      const rotina = Array.isArray(h.dados?.passos) && h.dados.passos.length > 0;
+      lista.push({ dia: r.data, pontos: rotina ? PONTOS.rotina : PONTOS.habito, tipo: 'habito' });
     }
   }
   for (const d of vivos(dados.diario)) {
@@ -107,6 +117,7 @@ export function conquistas(dados, lista) {
     return [...meses].filter(([m, saldo]) => m < atual && saldo > 0).length;
   })();
   const seq = sequencia(lista, iso(new Date())).dias;
+  const melhorHabito = Math.max(0, ...vivos(dados.habitos).map((h) => sequenciaDoHabito(dados.habitoRegistros, h, iso(new Date())).valor));
   const lista_ = [
     { id: 'tarefa-1', emoji: '✅', nome: 'Primeiro passo', texto: 'Concluir a primeira tarefa', atual: tarefas, meta: 1 },
     { id: 'tarefa-10', emoji: '📋', nome: 'Pegando o jeito', texto: '10 tarefas concluídas', atual: tarefas, meta: 10 },
@@ -120,6 +131,8 @@ export function conquistas(dados, lista) {
     { id: 'projeto-1', emoji: '🏁', nome: 'Projeto entregue', texto: 'Concluir um projeto', atual: projetos, meta: 1 },
     { id: 'caixinha-1', emoji: '🐷', nome: 'Meta guardada', texto: 'Bater a meta de uma caixinha', atual: caixinhas, meta: 1 },
     { id: 'mes-azul', emoji: '💚', nome: 'Mês no azul', texto: 'Fechar um mês com sobra', atual: mesesAzul, meta: 1 },
+    { id: 'habito-7', emoji: '🌱', nome: 'Hábito brotando', texto: 'Um hábito feito 7 vezes seguidas', atual: melhorHabito, meta: 7 },
+    { id: 'habito-30', emoji: '🌳', nome: 'Hábito firme', texto: 'Um hábito feito 30 vezes seguidas', atual: melhorHabito, meta: 30 },
     { id: 'diario-7', emoji: '📓', nome: 'Me conhecendo', texto: 'Registrar como está em 7 dias', atual: diasHumor, meta: 7 },
   ];
   return lista_.map((c) => ({ ...c, feita: c.atual >= c.meta, fracao: Math.min(1, c.atual / c.meta) }));
