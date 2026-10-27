@@ -6,6 +6,7 @@ import { disciplinasAtivas, nomeDaDisciplina } from './dados-faculdade.js';
 import { areasAtivas, nomeDaArea } from './dados-estudos.js';
 import { semanaDe, textoMinutos } from './dados-resumo.js';
 import { situacaoFoco, relogioTexto, prefsFoco, sessoesDoPeriodo, OPCOES_FOCO } from './foco.js';
+import { relogioFlip, conquistaAtual, AMBIENTES } from './foco-palco.js';
 
 const opcoes = (lista, atual) => lista.map((o) => `<option value="${esc(o.id)}"${String(o.id) === String(atual ?? '') ? ' selected' : ''}>${esc(o.nome)}</option>`).join('');
 const fuso = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo';
@@ -20,22 +21,51 @@ function hojeEsemana(estado, agora = Date.now()) {
   return { hoje, minHoje: soma(hoje), minSemana: soma(daSemana) };
 }
 
-function relogioGrande(s, p) {
+const fmtHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+// Palco: a sessão em tela cheia, sem distrações. Os controles somem sozinhos e voltam com um toque.
+function palco(s, p) {
   const aguardando = s.fase === 'aguardando';
+  const pausa = s.fase === 'pausa' || s.fase === 'longa';
+  const fimDaFase = s.pausado ? null : Date.now() + s.restante;
+  const ambiente = AMBIENTES.find((a) => a.id === p.ambiente) || AMBIENTES[0];
+  const festa = conquistaAtual();
+  const sub = aguardando ? `Próximo foco: ${p.foco} min`
+    : s.pausado ? 'Pausado. Toque em Retomar quando quiser voltar.'
+      : `${pausa ? 'Volta ao foco' : 'Pausa'} às ${fmtHora.format(fimDaFase)}`;
   return `
-    <section class="card foco-relogio fase-${esc(s.fase)}" aria-live="polite">
-      <p class="proximo-rotulo">${esc(s.nomeFase)}${s.fase === 'foco' ? ` · ${s.ciclo} de ${s.ciclos}` : ''}${s.pausado ? ' · pausado' : ''}</p>
-      ${aguardando ? '<p class="foco-tempo">✓</p>' : `<p class="foco-tempo" data-foco-relogio>${relogioTexto(s.restante)}</p>`}
-      <div class="progresso-trilho foco-trilho" aria-hidden="true"><div class="progresso-barra" data-foco-progresso style="width: ${s.total ? Math.round(((s.total - s.restante) / s.total) * 100) : 0}%"></div></div>
-      <p class="foco-titulo">${esc(s.titulo)}</p>
-      <div class="acoes foco-acoes">
+    <section class="foco-palco foco-relogio fase-${esc(s.fase)} fundo-${esc(p.fundo)}${s.pausado ? ' pausado' : ''}" data-palco aria-label="Sessão de foco">
+      <div class="palco-topo palco-controles">
+        <p class="proximo-rotulo">${esc(s.nomeFase)}${s.fase === 'foco' ? ` · ${s.ciclo} de ${s.ciclos}` : ''}${s.pausado ? ' · pausado' : ''}</p>
+        <div class="palco-botoes">
+          <button class="palco-botao" type="button" data-acao="foco-som" aria-label="Som ambiente: ${esc(ambiente.nome)}" title="Trocar o som ambiente">♪ <span>${esc(ambiente.nome)}</span></button>
+          ${p.ambiente ? `<label class="visualmente-oculto" for="foco-volume">Volume</label><input id="foco-volume" class="palco-volume" type="range" min="0" max="100" value="${Math.round(p.volume * 100)}" data-acao-mudar="foco-volume">` : ''}
+          <button class="palco-botao" type="button" data-acao="foco-fundo" aria-pressed="${p.fundo === 'preto'}" aria-label="Fundo preto para a noite" title="Fundo preto para a noite">☾</button>
+          <button class="palco-botao" type="button" data-acao="foco-tela-cheia" aria-pressed="false" aria-label="Tela cheia" title="Tela cheia">⛶</button>
+          <a class="palco-botao" href="#inicio" aria-label="Minimizar (o foco continua)" title="Minimizar (o foco continua)">—</a>
+        </div>
+      </div>
+      <div class="palco-centro">
+        ${aguardando
+          ? '<p class="palco-feito" aria-hidden="true">✓</p>'
+          : `<div class="flip-relogio" data-flip aria-hidden="true">${relogioFlip(relogioTexto(s.restante))}</div>`}
+        <span class="visualmente-oculto" data-foco-relogio>${relogioTexto(s.restante)}</span>
+        ${aguardando ? '' : `<div class="palco-trilho" aria-hidden="true"><div class="palco-barra" data-foco-progresso style="width: ${s.total ? Math.round(((s.total - s.restante) / s.total) * 100) : 0}%"></div></div>`}
+        <p class="foco-titulo">${esc(s.titulo)}</p>
+        <p class="palco-sub">${esc(sub)}</p>
+        ${pausa && !s.pausado ? `
+          <div class="respiracao" aria-hidden="true"><span class="respiracao-circulo"></span>
+            <span class="respiracao-texto"><span class="inspira">Inspira</span><span class="solta">Solta</span></span></div>
+          <p class="palco-sub">Levante, beba água, olhe para longe.</p>` : ''}
+      </div>
+      <div class="palco-base palco-controles foco-acoes">
         ${aguardando
           ? '<button class="botao botao-primario" type="button" data-acao="foco-proximo">Começar o próximo foco</button>'
           : `<button class="botao botao-primario" type="button" data-acao="${s.pausado ? 'foco-retomar' : 'foco-pausar'}">${s.pausado ? 'Retomar' : 'Pausar'}</button>
              <button class="botao botao-secundario" type="button" data-acao="foco-pular">${s.fase === 'foco' ? 'Terminar este foco' : 'Pular a pausa'}</button>`}
         <button class="botao botao-secundario botao-perigo" type="button" data-acao="foco-encerrar">Encerrar sessão</button>
       </div>
-      ${s.fase === 'foco' ? '' : `<p class="campo-ajuda">Próximo foco: ${p.foco} min.</p>`}
+      ${festa ? `<div class="palco-conquista" role="status"><span class="conquista-brilho" aria-hidden="true">✦</span><strong>${esc(festa.titulo)}</strong><span>${esc(festa.texto)}</span></div>` : ''}
     </section>`;
 }
 
@@ -59,7 +89,7 @@ function formInicio(estado, p) {
           ${OPCOES_FOCO.map((m) => `<label class="campo-marcar"><input type="radio" name="minutos" value="${m}"${m === p.foco ? ' checked' : ''}><span>${m} min</span></label>`).join('')}
         </fieldset>
         <div class="acoes"><button class="botao botao-primario" type="submit">Começar</button></div>
-        <p class="campo-ajuda">Com o app aberto, toca um som e o celular vibra no fim de cada fase. Com o app fechado, o tempo continua certo e você vê ao voltar.</p>
+        <p class="campo-ajuda">Ao começar, a tela fica cheia e sem distrações (toque para ver os controles). No fim de cada fase toca um sino e o celular vibra. Com o app fechado, o tempo continua certo.</p>
       </form>
     </section>`;
 }
@@ -74,8 +104,9 @@ function formPrefs(p) {
           <label class="campo"><span class="campo-rotulo">Pausa longa (min)</span><input name="longa" type="number" min="1" max="90" value="${p.longa}" inputmode="numeric"></label>
           <label class="campo"><span class="campo-rotulo">Pausa longa a cada</span><input name="ciclos" type="number" min="2" max="12" value="${p.ciclos}" inputmode="numeric"></label>
         </div>
-        <label class="campo-marcar"><input type="checkbox" name="som"${p.som ? ' checked' : ''}><span>Tocar um som no fim de cada fase</span></label>
+        <label class="campo-marcar"><input type="checkbox" name="som"${p.som ? ' checked' : ''}><span>Tocar um sino no fim de cada fase</span></label>
         <label class="campo-marcar"><input type="checkbox" name="seguir"${p.seguir ? ' checked' : ''}><span>Começar a pausa sozinha quando o foco acabar</span></label>
+        <label class="campo-marcar"><input type="checkbox" name="telaCheia"${p.telaCheia ? ' checked' : ''}><span>Entrar em tela cheia ao começar</span></label>
       </form>
     </details>`;
 }
@@ -86,7 +117,7 @@ export function renderFoco(estado) {
   const { hoje, minHoje, minSemana } = hojeEsemana(estado);
   return `
     ${cabecalho('Sessão de foco', 'Foco e pausas no seu ritmo')}
-    ${s.ativa ? relogioGrande(s, p) : formInicio(estado, p)}
+    ${s.ativa ? palco(s, p) : formInicio(estado, p)}
     <section class="card">
       <div class="card-topo"><h2 class="card-titulo">Hoje: ${esc(textoMinutos(minHoje))} de foco</h2>
         <a class="card-link" href="#resumo">Semana: ${esc(textoMinutos(minSemana))}</a></div>

@@ -134,6 +134,9 @@ export function renderizar({ mudouDeTela = false } = {}) {
     conteudo.classList.remove('tela-nova');
     void conteudo.offsetWidth;
     conteudo.classList.add('tela-nova');
+    // Tira a classe logo depois: um redesenho por fora não pode fazer a tela piscar de novo.
+    clearTimeout(renderizar.entrada);
+    renderizar.entrada = setTimeout(() => conteudo.classList.remove('tela-nova'), 260);
     window.scrollTo(0, 0);
     conteudo.querySelector('h1')?.focus({ preventScroll: true });
   }
@@ -190,7 +193,7 @@ const TELAS_DA_TABELA = {
   respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack'],
+  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco'],
   videos: ['youtube', 'inicio'],
   artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes'],
   questoes: ['questoes', 'inicio', 'estudos'],

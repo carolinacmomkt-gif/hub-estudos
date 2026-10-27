@@ -6,8 +6,12 @@
 import { obterEstado } from './estado.js';
 import { listar, salvar } from './persistencia.js';
 import { esc } from './utilidades.js';
+import {
+  atualizarFlip, entrarEmTelaCheia, sairDaTelaCheia, emTelaCheia, telaAcesa, controlesSomem, somAmbiente,
+  sino, comemorar, ligarPalco, AMBIENTES,
+} from './foco-palco.js';
 
-export const FOCO_PADRAO = { foco: 25, pausa: 5, longa: 15, ciclos: 4, som: true, seguir: true };
+export const FOCO_PADRAO = { foco: 25, pausa: 5, longa: 15, ciclos: 4, som: true, seguir: true, telaCheia: true, fundo: 'tema', ambiente: '', volume: 0.5 };
 export const OPCOES_FOCO = [15, 25, 50, 90];
 const CHAVE = 'hub.foco';
 const NOME_FASE = { foco: 'Foco', pausa: 'Pausa', longa: 'Pausa longa', aguardando: 'Pronta para o próximo foco' };
@@ -44,6 +48,10 @@ export function prefsFoco(estado = obterEstado()) {
     ciclos: num(v.ciclos, FOCO_PADRAO.ciclos, 2, 12),
     som: v.som !== false,
     seguir: v.seguir !== false,
+    telaCheia: v.telaCheia !== false,
+    fundo: v.fundo === 'preto' ? 'preto' : 'tema',
+    ambiente: AMBIENTES.some((a) => a.id === v.ambiente) ? v.ambiente : '',
+    volume: Math.max(0, Math.min(1, Number(v.volume ?? FOCO_PADRAO.volume))),
   };
 }
 
@@ -148,6 +156,7 @@ export async function encerrarFoco() {
   sessao = null;
   guardar();
   desligarRelogio();
+  sairDaTelaCheia();
   atualizarTela();
 }
 
@@ -190,6 +199,7 @@ async function conferirAgora() {
   if (sessao.fase === 'foco') {
     await registrarFoco(sessao.duracao, true, fim);
     const longa = (sessao.ciclo || 1) % p.ciclos === 0;
+    if (recente) comemorar(`${Math.round(sessao.duracao / MIN)} min de ${sessao.titulo}`, `Foco ${sessao.ciclo || 1} de ${p.ciclos} feito. ${longa ? 'Agora, uma pausa longa.' : 'Respira um pouco.'}`);
     avancarDepoisDoFoco(fim);
     if (recente) alarme('Fim do foco!', `${longa ? 'Pausa longa' : 'Pausa'} de ${longa ? p.longa : p.pausa} min. Levante, beba água.`);
     if (!p.seguir) {
@@ -219,30 +229,8 @@ function pedirPermissaoDeAviso() {
   }
 }
 
-function tocar() {
-  try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    [0, 0.35, 0.7].forEach((t) => {
-      const osc = ctx.createOscillator();
-      const vol = ctx.createGain();
-      osc.frequency.value = 880;
-      vol.gain.setValueAtTime(0.0001, ctx.currentTime + t);
-      vol.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + t + 0.02);
-      vol.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.25);
-      osc.connect(vol).connect(ctx.destination);
-      osc.start(ctx.currentTime + t);
-      osc.stop(ctx.currentTime + t + 0.3);
-    });
-    setTimeout(() => ctx.close().catch(() => {}), 1500);
-  } catch {
-    // sem som
-  }
-}
-
 function alarme(titulo, texto) {
-  if (prefsFoco().som) tocar();
+  if (prefsFoco().som) sino();
   try {
     navigator.vibrate?.([200, 120, 200]);
   } catch {
@@ -301,6 +289,7 @@ export function atualizarTela({ soRelogio = false } = {}) {
     }
   }
   document.querySelectorAll('[data-foco-relogio]').forEach((el) => { el.textContent = relogioTexto(s.restante || 0); });
+  atualizarPalco(s, naTelaDoFoco);
   document.querySelectorAll('[data-foco-progresso]').forEach((el) => {
     el.style.width = `${s.total ? Math.round(((s.total - s.restante) / s.total) * 100) : 0}%`;
   });
@@ -313,8 +302,25 @@ export function atualizarTela({ soRelogio = false } = {}) {
   }
 }
 
+// Palco (tela imersiva): tela cheia só no #foco, tela acesa e controles que somem enquanto o
+// tempo corre, e o som ambiente que some na pausa.
+function atualizarPalco(s, naTelaDoFoco) {
+  const p = prefsFoco();
+  const correndo = s.ativa && !s.pausado && s.fase !== 'aguardando';
+  document.body.classList.toggle('foco-imersivo', s.ativa && naTelaDoFoco);
+  if (s.ativa && naTelaDoFoco && s.fase !== 'aguardando') atualizarFlip(relogioTexto(s.restante || 0));
+  const assinatura = `${s.ativa}|${s.fase}|${s.pausado}|${naTelaDoFoco}|${p.ambiente}|${p.volume}`;
+  if (assinatura === atualizarPalco.assinatura) return;
+  atualizarPalco.assinatura = assinatura;
+  telaAcesa(naTelaDoFoco && correndo);
+  controlesSomem(naTelaDoFoco && correndo);
+  somAmbiente(s.ativa ? p.ambiente : '', p.volume, { baixo: !correndo || s.fase !== 'foco' });
+  if (!naTelaDoFoco && emTelaCheia()) sairDaTelaCheia();
+}
+
 export function ligarFoco(funcoes) {
   app = funcoes;
+  ligarPalco();
   const barra = document.createElement('div');
   barra.id = 'foco-barra';
   barra.className = 'foco-barra';
@@ -341,12 +347,29 @@ export function sessoesDoPeriodo(estado, inicio, fim) {
 export function cliqueFoco(alvo) {
   switch (alvo.dataset.acao) {
     case 'foco-iniciar':
+      if (prefsFoco().telaCheia) entrarEmTelaCheia();
       iniciarFoco({ titulo: alvo.dataset.titulo || '', disciplina_id: alvo.dataset.disciplina || null, area_id: alvo.dataset.area || null, minutos: Number(alvo.dataset.minutos) || null });
       if (obterEstado().rota !== 'foco') location.hash = '#foco';
       return true;
     case 'foco-pausar': pausarFoco(); return true;
     case 'foco-retomar': retomarFoco(); return true;
-    case 'foco-proximo': proximoFoco(); return true;
+    case 'foco-proximo':
+      if (prefsFoco().telaCheia && obterEstado().rota === 'foco') entrarEmTelaCheia();
+      proximoFoco();
+      return true;
+    case 'foco-tela-cheia':
+      if (emTelaCheia()) sairDaTelaCheia();
+      else entrarEmTelaCheia();
+      return true;
+    case 'foco-fundo':
+      salvarPrefsFoco({ fundo: prefsFoco().fundo === 'preto' ? 'tema' : 'preto' });
+      return true;
+    case 'foco-som': {
+      const i = AMBIENTES.findIndex((a) => a.id === prefsFoco().ambiente);
+      const proximo = AMBIENTES[(i + 1) % AMBIENTES.length];
+      salvarPrefsFoco({ ambiente: proximo.id }).then(() => app?.avisoCurto(proximo.id ? `Som: ${proximo.nome}.` : 'Som desligado.'));
+      return true;
+    }
     case 'foco-pular': pularFase(); return true;
     case 'foco-encerrar':
       if (window.confirm('Encerrar a sessão de foco? O tempo que já passou fica registrado.')) encerrarFoco();
@@ -359,6 +382,7 @@ export function cliqueFoco(alvo) {
 export function enviarFoco(form) {
   if (form.dataset.form === 'foco-iniciar') {
     const el = form.elements;
+    if (prefsFoco().telaCheia) entrarEmTelaCheia();
     iniciarFoco({
       titulo: el.titulo.value, disciplina_id: el.disciplina?.value || null, area_id: el.area?.value || null,
       minutos: Number(form.querySelector('[name="minutos"]:checked')?.value) || null,
@@ -370,11 +394,17 @@ export function enviarFoco(form) {
 
 // Ajustes do foco salvam sozinhos a cada mudança.
 export function mudancaFoco(alvo, tipo) {
+  if (alvo.dataset?.acaoMudar === 'foco-volume') {
+    const volume = Number(alvo.value) / 100;
+    somAmbiente(prefsFoco().ambiente, volume);
+    if (tipo === 'change') salvarPrefsFoco({ volume });
+    return true;
+  }
   const form = alvo.closest?.('[data-form="foco-prefs"]');
   if (!form) return false;
   if (tipo !== 'change') return true;
   const el = form.elements;
-  salvarPrefsFoco({ pausa: Number(el.pausa.value), longa: Number(el.longa.value), ciclos: Number(el.ciclos.value), som: el.som.checked, seguir: el.seguir.checked })
+  salvarPrefsFoco({ pausa: Number(el.pausa.value), longa: Number(el.longa.value), ciclos: Number(el.ciclos.value), som: el.som.checked, seguir: el.seguir.checked, telaCheia: el.telaCheia.checked })
     .then(() => app?.avisoCurto('Ajustes do foco salvos.'));
   return true;
 }

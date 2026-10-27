@@ -155,3 +155,398 @@
     bottom: 16px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Palco: sessão de foco em tela cheia, sem distrações
+   --------------------------------------------------------------------------- */
+.foco-imersivo {
+  overflow: hidden;
+}
+
+.foco-imersivo :is(.nav-lateral, .nav-inferior, .fab, #menu-voltar, #foco-barra, .faixa-offline) {
+  display: none !important;
+}
+
+/* A regra de espaçamento entre os cards da tela não vale para o palco (ele cobre a tela toda) */
+#conteudo > .foco-palco {
+  margin: 0;
+}
+
+.foco-palco {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: max(16px, env(safe-area-inset-top)) clamp(16px, 4vw, 48px) max(20px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  text-align: center;
+  transition: background-color 1.2s ease;
+}
+
+.foco-palco.fase-pausa,
+.foco-palco.fase-longa {
+  background: color-mix(in srgb, var(--cor-fundo) 88%, var(--cor-sucesso));
+}
+
+.foco-palco.fundo-preto,
+.foco-palco.fundo-preto:is(.fase-pausa, .fase-longa) {
+  --cor-texto: var(--palco-preto-texto);
+  --cor-texto-suave: var(--palco-preto-texto);
+  background: var(--palco-preto);
+}
+
+.foco-palco.fundo-preto .palco-barra {
+  opacity: 0.6;
+}
+
+/* Controles: somem depois de 3 s com o tempo correndo; um toque traz de volta */
+.palco-controles {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.foco-palco.calmo {
+  cursor: none;
+}
+
+.foco-palco.calmo .palco-controles {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.foco-palco.calmo .palco-topo {
+  transform: translateY(-8px);
+}
+
+.foco-palco.calmo .palco-base {
+  transform: translateY(8px);
+}
+
+.palco-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.palco-topo .proximo-rotulo {
+  margin: 0;
+}
+
+.palco-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.palco-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: var(--toque);
+  min-height: var(--toque);
+  padding: 0 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.12s;
+}
+
+.palco-botao:hover,
+.palco-botao[aria-pressed="true"] {
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto);
+}
+
+.palco-botao:active {
+  transform: scale(0.94);
+}
+
+.palco-botao span {
+  font-size: 0.85rem;
+}
+
+.palco-volume {
+  width: 110px;
+  accent-color: var(--cor-destaque);
+}
+
+.palco-centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 16px 0;
+}
+
+.palco-base {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.palco-trilho {
+  width: min(560px, 80vw);
+  height: 4px;
+  margin-top: 18px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--cor-trilho);
+}
+
+.palco-barra {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--cor-destaque);
+  transition: width 1s linear;
+}
+
+.foco-palco .foco-titulo {
+  max-width: 32ch;
+  margin: 10px 0 0;
+  font-size: clamp(1.1rem, 0.9rem + 1vw, 1.6rem);
+  overflow-wrap: anywhere;
+}
+
+.palco-sub {
+  margin: 0;
+  color: var(--cor-texto-suave);
+}
+
+.palco-feito {
+  margin: 0;
+  color: var(--cor-sucesso);
+  font-size: clamp(5rem, 3rem + 10vw, 9rem);
+  line-height: 1;
+}
+
+/* Relógio flip */
+.flip-relogio {
+  --tam: clamp(4.2rem, 1rem + 15vw, 12rem);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--tam) * 0.06);
+  font-size: var(--tam);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  perspective: 6em;
+}
+
+@media (orientation: portrait) {
+  .flip-relogio {
+    --tam: clamp(3.6rem, 1rem + 17vw, 10rem);
+  }
+}
+
+.flip {
+  position: relative;
+  width: 0.78em;
+  height: 1.12em;
+  border-radius: 0.09em;
+  box-shadow: 0 0.06em 0.12em var(--flip-dobra);
+}
+
+.flip-cima,
+.flip-baixo,
+.flip-folha {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: var(--flip-cartao);
+  color: var(--flip-texto);
+  backface-visibility: hidden;
+}
+
+.flip-cima,
+.folha-cima {
+  top: 0;
+  border-radius: 0.09em 0.09em 0 0;
+}
+
+.flip-baixo,
+.folha-baixo {
+  bottom: 0;
+  border-radius: 0 0 0.09em 0.09em;
+  background: var(--flip-cartao-baixo);
+}
+
+.flip b {
+  display: block;
+  height: 200%;
+  font-weight: inherit;
+  line-height: 1.12em;
+  text-align: center;
+}
+
+.flip-baixo b,
+.folha-baixo b {
+  transform: translateY(-50%);
+}
+
+/* A dobra no meio do cartão */
+.flip::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  top: calc(50% - 0.01em);
+  height: 0.02em;
+  background: var(--flip-dobra);
+}
+
+.folha-cima {
+  z-index: 2;
+  transform-origin: bottom;
+  animation: flip-cair 0.3s ease-in forwards;
+}
+
+.folha-baixo {
+  z-index: 2;
+  transform-origin: top;
+  transform: rotateX(90deg);
+  animation: flip-chegar 0.3s ease-out 0.3s forwards;
+}
+
+@keyframes flip-cair {
+  to { transform: rotateX(-90deg); }
+}
+
+@keyframes flip-chegar {
+  to { transform: rotateX(0deg); }
+}
+
+.flip-sep {
+  margin: 0 -0.04em;
+  color: var(--cor-texto-suave);
+  font-size: 0.7em;
+  transform: translateY(-0.06em);
+}
+
+.foco-palco.pausado .flip-relogio {
+  opacity: 0.55;
+}
+
+/* Respiração na pausa: 4 s inspira, 4 s solta */
+.respiracao {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 140px;
+  height: 140px;
+  margin-top: 14px;
+}
+
+.respiracao-circulo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--cor-sucesso-fundo);
+  box-shadow: 0 0 0 2px var(--cor-sucesso);
+  animation: respirar 8s ease-in-out infinite;
+}
+
+.respiracao-texto {
+  position: relative;
+  display: grid;
+  color: var(--cor-texto);
+  font-weight: 600;
+}
+
+.respiracao-texto span {
+  grid-area: 1 / 1;
+  animation: respirar-texto 8s ease-in-out infinite;
+}
+
+.respiracao-texto .solta {
+  animation-delay: -4s;
+}
+
+@keyframes respirar {
+  0%, 100% { transform: scale(0.6); }
+  50% { transform: scale(1); }
+}
+
+@keyframes respirar-texto {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0; }
+}
+
+/* Comemoração no fim do foco */
+.palco-conquista {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 46;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 24px 28px;
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: conquista 6.5s ease forwards;
+}
+
+.palco-conquista strong {
+  font-size: 1.2rem;
+}
+
+.palco-conquista span:last-child {
+  color: var(--cor-texto-suave);
+}
+
+.conquista-brilho {
+  color: var(--cor-destaque);
+  font-size: 2.2rem;
+  animation: brilho 1.2s ease-in-out 2;
+}
+
+@keyframes conquista {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.92); }
+  8%, 85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.98); visibility: hidden; }
+}
+
+@keyframes brilho {
+  50% { transform: scale(1.3) rotate(20deg); }
+}
+
+@media (max-width: 700px) {
+  .palco-botao span {
+    display: none;
+  }
+
+  .palco-volume {
+    width: 80px;
+  }
+
+  .palco-base .botao {
+    flex: 1 1 140px;
+  }
+}
+
+/* Com o palco aberto, o conteúdo de trás ocupa a largura toda (o menu está escondido) */
+.foco-imersivo .app {
+  grid-template-columns: minmax(0, 1fr);
+}

@@ -147,6 +147,14 @@
   --tipo-youtube: var(--capa-4);
   --tipo-substack: var(--urg-urgente);
 
+  /* Sessão de foco: cartões do relógio flip e o fundo preto da noite (iguais nos dois temas) */
+  --flip-cartao: #2B2019;
+  --flip-cartao-baixo: #251B15;
+  --flip-texto: #F4E9DC;
+  --flip-dobra: rgba(0, 0, 0, 0.45);
+  --palco-preto: #000000;
+  --palco-preto-texto: #CDBFAF;
+
   /* Exportação (PNG/PDF): sempre papel claro, para imprimir e compartilhar, nos dois temas */
   --impressao-papel: #FFFDF9;
   --impressao-linha: rgba(43, 30, 22, 0.16);
