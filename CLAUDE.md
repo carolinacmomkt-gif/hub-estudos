@@ -10,7 +10,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 - **Cadernos** com escrita à mão.
 - **Gerador de questões** com IA.
 - **Calendário**.
-- **Vida** (fase 2, ver ROTEIRO.md): Hoje, tarefas e projetos, hábitos e rotinas, saúde, finanças, diário, casa, consultoria (carteira de clientes e produto), metas e lazer.
+- **Vida** (fase 2, ver ROTEIRO.md): Hoje, tarefas e projetos, hábitos e rotinas, finanças (com gamificação e recompensas), diário, casa, consultoria (carteira de clientes e produto), metas e lazer.
 
 ## Regras gerais
 
