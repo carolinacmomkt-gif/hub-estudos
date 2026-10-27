@@ -3,6 +3,7 @@
 import { cardAgendaHoje, cardHumor, resumoDoDia } from './hoje.js';
 import { cardTarefasHoje, cardProjetosHoje } from './views-tarefas.js';
 import { cardFinancasHoje, cardContasHoje } from './views-financas.js';
+import { cardRecompensasHoje } from './views-recompensas.js';
 import { cabecalho, barraProgresso } from './componentes.js';
 import { cardCaixaEntrada } from './views-criar.js';
 import { cardPlano } from './views-plano.js';
@@ -359,6 +360,7 @@ export function renderInicio(estado) {
     proximo: () => cardProximoPasso(escolherProximoPasso(dados, agora)),
     agenda: () => (estado.usandoExemplo ? '' : cardAgendaHoje(estado, agora)),
     humor: () => cardHumor(estado, agora),
+    recompensas: () => cardRecompensasHoje(estado),
     tarefas: () => cardTarefasHoje(estado),
     projetos: () => cardProjetosHoje(estado),
     contas: () => cardContasHoje(estado),

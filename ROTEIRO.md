@@ -28,6 +28,7 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 - [ ] **4 — Hábitos e rotinas.**
 - [ ] **5 — Saúde.**
 - [x] **6 — Finanças** ✓ código pronto, aguardando teste: lançamento rápido em uma linha ("mercado 120 ontem", "+3500 sensus"), painel do mês (entrou, saiu, sobrou, comparação com o mês anterior), de onde veio (consultoria, freelas, salário da agência, salário da Confluir, criação) e para onde foi (categorias com limite), contas fixas com "Paguei", caixinhas, esconder valores, planilha CSV e cards no Hoje.
+- [x] **Gamificação** ✓ código pronto, aguardando teste: pontos calculados do que foi feito (tarefas, focos, projetos, caixinhas, diário, lançamentos), nível com títulos, sequência sem culpa (uma folga por semana), 13 conquistas, recompensas da Carol (drive-thru, café, cinema, shopping, livro, Goiânia, Brasília) com resgate e gasto opcional em Finanças, "+10" na hora ao concluir e comemoração de nível e conquista. Nada tira pontos.
 - [ ] **7 — Diário.**
 - [ ] **8 — Casa.**
 - [ ] **9 — Consultoria**: carteira de clientes (começa com a Sensus), evolução da consultoria e controle do produto e das mudanças.

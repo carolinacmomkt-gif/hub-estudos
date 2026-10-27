@@ -12,6 +12,8 @@ import { renderEstudos } from './views-estudos.js';
 import { renderFoco } from './views-foco.js';
 import { renderTarefas } from './views-tarefas.js';
 import { renderFinancas } from './views-financas.js';
+import { renderRecompensas } from './views-recompensas.js';
+import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
 import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
@@ -50,6 +52,7 @@ const VIEWS = {
   foco: renderFoco,
   tarefas: renderTarefas,
   financas: renderFinancas,
+  recompensas: renderRecompensas,
   resumo: renderResumo,
 };
 
@@ -189,15 +192,15 @@ const TELAS_DA_TABELA = {
   conexoes: ['configuracoes', 'faculdade'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
-  sessoes_foco: ['foco', 'inicio', 'resumo'],
-  diario: ['inicio'],
-  tarefas: ['tarefas', 'inicio'],
-  projetos: ['tarefas', 'inicio'],
-  financas: ['financas', 'inicio'],
+  sessoes_foco: ['foco', 'inicio', 'resumo', 'recompensas'],
+  diario: ['inicio', 'recompensas'],
+  tarefas: ['tarefas', 'inicio', 'recompensas'],
+  projetos: ['tarefas', 'inicio', 'recompensas'],
+  financas: ['financas', 'inicio', 'recompensas'],
   respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas'],
+  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'recompensas'],
   videos: ['youtube', 'inicio'],
   artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes'],
   questoes: ['questoes', 'inicio', 'estudos'],
@@ -255,6 +258,7 @@ window.addEventListener('hub:dados', async (evento) => {
   const { tabela, daNuvem } = evento.detail || {};
   if (!TABELAS_NA_MEMORIA[tabela]) return;
   await carregarDadosLocais([tabela]);
+  if (['tarefas', 'sessoes_foco', 'projetos', 'financas', 'diario'].includes(tabela) && noApp) conferirConquistas();
   if (tabela === 'config') {
     montarNavegacao();
     marcarRotaAtiva(obterEstado().rota);

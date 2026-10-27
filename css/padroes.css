@@ -103,3 +103,67 @@
   gap: 2px;
   text-align: left;
 }
+
+/* Comemorações (celebracao.js): "+10" que sobe e o cartão de conquista */
+.ponto-flutuante {
+  position: fixed;
+  z-index: 70;
+  color: var(--cor-sucesso);
+  font-weight: 800;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  animation: ponto-subir 1s ease-out forwards;
+}
+
+@keyframes ponto-subir {
+  0% { opacity: 0; transform: translate(-50%, -60%) scale(0.8); }
+  20% { opacity: 1; transform: translate(-50%, -110%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -260%) scale(1); }
+}
+
+.celebracao {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: min(380px, calc(100vw - 32px));
+  padding: 26px 30px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra);
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: celebracao 4s ease forwards;
+  pointer-events: none; /* nunca atrapalha um toque no que está embaixo */
+}
+
+.celebracao strong {
+  font-size: 1.25rem;
+}
+
+.celebracao span:last-child:not(.celebracao-emoji) {
+  color: var(--cor-texto-suave);
+}
+
+.celebracao-emoji {
+  font-size: 3rem;
+  line-height: 1.1;
+  animation: brilho 1.2s ease-in-out 2;
+}
+
+@keyframes celebracao {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+  8%, 85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.98); visibility: hidden; }
+}
+
+/* Telas montadas em blocos soltos: o mesmo respiro entre eles */
+.conteudo[data-tela="recompensas"] > * + * {
+  margin-top: 16px;
+}

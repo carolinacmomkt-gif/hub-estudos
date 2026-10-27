@@ -1,0 +1,206 @@
+/* Recompensas: nível, pontos, recompensas para resgatar e conquistas */
+
+.rec-topo {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.rec-nivel {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.rec-nivel-numero {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  line-height: 1;
+}
+
+.rec-nivel-numero span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  align-self: end;
+}
+
+.rec-nivel-numero strong {
+  font-size: 2.4rem;
+  align-self: start;
+}
+
+.rec-nivel-texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.rec-grande {
+  margin: 0;
+  color: var(--cor-texto-destaque);
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rec-como > summary {
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rec-secao {
+  margin-top: 8px;
+}
+
+.rec-secao > .card-topo,
+.rec-secao > .card-titulo {
+  margin-bottom: 12px;
+}
+
+.recompensas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recompensa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  text-align: center;
+}
+
+.recompensa .progresso {
+  width: 100%;
+}
+
+.recompensa .botao {
+  margin-top: auto;
+  width: 100%;
+}
+
+.recompensa.pode {
+  border-color: var(--cor-foco);
+  box-shadow: 0 0 0 1px var(--cor-foco);
+}
+
+.recompensa-editar {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 0.8rem;
+}
+
+.recompensa-emoji {
+  font-size: 2.4rem;
+  line-height: 1.2;
+}
+
+.recompensa:not(.pode) .recompensa-emoji {
+  filter: grayscale(0.5);
+}
+
+.recompensa-nome {
+  font-size: 1.02rem;
+}
+
+.recompensa-falta {
+  margin-top: auto;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+}
+
+.conquistas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conquista {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  opacity: 0.6;
+}
+
+.conquista.feita {
+  border-color: var(--cor-foco);
+  background: var(--cor-destaque-suave);
+  opacity: 1;
+}
+
+.conquista-emoji {
+  flex: none;
+  font-size: 1.8rem;
+}
+
+.conquista:not(.feita) .conquista-emoji {
+  filter: grayscale(1);
+}
+
+.conquista-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.conquista-progresso {
+  color: var(--cor-texto-destaque);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.rec-resgate-resumo {
+  font-size: 1.05rem;
+}
+
+@media (max-width: 1099px) {
+  .rec-topo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rec-nivel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .recompensas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .rec-nivel-numero {
+    width: 72px;
+    height: 72px;
+  }
+
+  .rec-nivel-numero strong {
+    font-size: 1.9rem;
+  }
+}
