@@ -307,3 +307,67 @@
 .fin-livre .fin-grande {
   font-size: clamp(1.5rem, 0.9rem + 2.6vw, 2.4rem);
 }
+
+/* Busca, cartões, faturas, entradas fixas, metas com prazo e reserva */
+.fin-busca {
+  width: 100%;
+  min-height: var(--toque);
+  margin-bottom: 10px;
+  padding: 0 14px;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.fin-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 5px solid var(--cor-projeto);
+}
+
+.fin-fatura {
+  padding: 12px 14px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+}
+
+.fin-fatura .proximo-rotulo,
+.fin-fatura .fin-grande {
+  margin-bottom: 2px;
+}
+
+.fin-cartao details > summary {
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fin-entrada .fin-conta-nome {
+  color: var(--cor-texto);
+}
+
+.fin-plano {
+  margin: 0;
+  color: var(--cor-texto-destaque);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.fin-plano.atrasada {
+  color: var(--urg-atrasado-texto);
+}
+
+.fin-reserva {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-sucesso-fundo);
+}
+
+.fin-sugestoes {
+  border-left: 4px solid var(--cor-destaque);
+}

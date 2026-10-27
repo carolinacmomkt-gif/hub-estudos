@@ -54,6 +54,13 @@ export function ganhos(dados, hoje = iso(new Date())) {
     }
   }
 
+  // Fatura do cartão paga até o vencimento.
+  const cartoes = new Map(linhas.filter((c) => c.tipo === 'cartao').map((c) => [c.id, c]));
+  for (const pg of linhas.filter((x) => x.tipo === 'pagamento' && x.dados?.cartao_id && x.dados?.mes)) {
+    const c = cartoes.get(pg.dados.cartao_id);
+    if (c && pg.data <= diaNoMes(pg.dados.mes, Number(c.dados?.vencimento) || 10)) lista.push({ dia: pg.data, pontos: PONTOS.contaEmDia, tipo: 'conta' });
+  }
+
   // Semana fechada sem passar de nenhum limite (o limite do mês, proporcional à semana).
   const limites = limitesDe(dados.config);
   if (Object.keys(limites).length) {

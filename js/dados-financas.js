@@ -62,7 +62,7 @@ const DIAS = { domingo: 0, dom: 0, segunda: 1, seg: 1, terca: 2, ter: 2, quarta:
 
 // Uma linha digitada → { tipo, valor, data, descricao, categoria, origem, cliente }
 // Dinheiro olha para trás: "sexta" é a última sexta (gasto já feito).
-export function lerLancamento(texto, hoje, { categorias = CATEGORIAS_PADRAO, origens = ORIGENS_PADRAO } = {}) {
+export function lerLancamento(texto, hoje, { categorias = CATEGORIAS_PADRAO, origens = ORIGENS_PADRAO, cartoes = [] } = {}) {
   let resto = ` ${String(texto || '').trim()} `;
   const tirar = (re) => {
     const m = semAcento(resto).match(re);
@@ -70,9 +70,25 @@ export function lerLancamento(texto, hoje, { categorias = CATEGORIAS_PADRAO, ori
     resto = `${resto.slice(0, m.index)} ${resto.slice(m.index + m[0].length)}`;
     return m;
   };
-  const r = { tipo: 'saida', valor: NaN, data: hoje, descricao: '', categoria: null, origem: null, cliente: null };
+  const r = { tipo: 'saida', valor: NaN, data: hoje, descricao: '', categoria: null, origem: null, cliente: null, parcelas: 1, conta: null };
 
   let m;
+  // Parcelas: "em 10x", "10x", "em 10 vezes"
+  if ((m = tirar(/\s(?:em\s)?(\d{1,2})\s?(?:x|vezes)(?=\s)/))) r.parcelas = Math.min(48, Math.max(1, Number(m[1])));
+  // Forma de pagamento: "no cartão nubank", "nubank", "pix", "débito", "dinheiro"
+  for (const c of cartoes) {
+    const nome = semAcento(c.descricao).trim();
+    if (nome && (m = tirar(new RegExp(`\\s(?:no |com o |pelo )?(?:cartao |credito )?${nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=\\s)`)))) {
+      r.conta = `cartao:${c.id}`;
+      break;
+    }
+  }
+  if (!r.conta) {
+    if (tirar(/\s(?:no |pelo |via )?pix(?=\s)/)) r.conta = 'pix';
+    else if (tirar(/\s(?:no )?debito(?=\s)/)) r.conta = 'debito';
+    else if (tirar(/\s(?:em |no )?dinheiro(?=\s)/)) r.conta = 'dinheiro';
+    else if (tirar(/\s(?:no )?(?:cartao|credito)(?=\s)/)) r.conta = cartoes[0] ? `cartao:${cartoes[0].id}` : 'credito';
+  }
   // Data
   if (tirar(/\santeontem(?=\s)/)) r.data = somarDias(hoje, -2);
   else if (tirar(/\sontem(?=\s)/)) r.data = somarDias(hoje, -1);
@@ -211,4 +227,161 @@ export function livreParaGastar(linhas, hoje) {
   const livre = Math.round((r.entrou - r.saiu - contasAbertas - guardadoNoMes) * 100) / 100;
   const diasRestantes = ultimoDia(mes) - Number(hoje.slice(8, 10)) + 1;
   return { livre, porDia: diasRestantes > 0 ? Math.floor((livre / diasRestantes) * 100) / 100 : livre, diasRestantes, contasAbertas, guardadoNoMes };
+}
+
+// --- Formas de pagamento, cartões e faturas -----------------------------------------------
+export const FORMAS = [
+  { id: '', nome: 'Não informar' },
+  { id: 'pix', nome: 'Pix' },
+  { id: 'debito', nome: 'Débito' },
+  { id: 'dinheiro', nome: 'Dinheiro' },
+];
+export const cartoes = (linhas) => vivos(linhas).filter((l) => l.tipo === 'cartao');
+const cartaoDoLancamento = (l) => (String(l.conta || '').startsWith('cartao:') ? l.conta.slice(7) : null);
+
+// Mês de vencimento da fatura em que uma compra cai. Compra depois do fechamento vai para a próxima.
+export function mesDaFatura(cartao, data) {
+  const fecha = Number(cartao.dados?.fechamento) || 1;
+  const vence = Number(cartao.dados?.vencimento) || 10;
+  const dia = Number(String(data).slice(8, 10));
+  let mesFechamento = mesDe(data);
+  if (dia > fecha) mesFechamento = somarMeses(mesFechamento, 1);
+  return vence > fecha ? mesFechamento : somarMeses(mesFechamento, 1);
+}
+
+export function fatura(linhas, cartao, mes) {
+  const itens = lancamentos(linhas).filter((l) => l.tipo === 'saida' && cartaoDoLancamento(l) === cartao.id && mesDaFatura(cartao, l.data) === mes)
+    .sort((a, b) => a.data.localeCompare(b.data));
+  const total = Math.round(itens.reduce((t, l) => t + (Number(l.valor) || 0), 0) * 100) / 100;
+  const paga = vivos(linhas).some((l) => l.tipo === 'pagamento' && l.dados?.cartao_id === cartao.id && l.dados?.mes === mes);
+  const vencimento = diaNoMes(mes, Number(cartao.dados?.vencimento) || 10);
+  return { mes, itens, total, paga, vencimento };
+}
+
+// Limite usado: tudo que ainda não foi pago (faturas abertas, inclusive parcelas futuras).
+export function limiteDoCartao(linhas, cartao) {
+  const pagas = new Set(vivos(linhas).filter((l) => l.tipo === 'pagamento' && l.dados?.cartao_id === cartao.id).map((l) => l.dados.mes));
+  const usado = lancamentos(linhas).filter((l) => l.tipo === 'saida' && cartaoDoLancamento(l) === cartao.id && !pagas.has(mesDaFatura(cartao, l.data)))
+    .reduce((t, l) => t + (Number(l.valor) || 0), 0);
+  const limite = Number(cartao.valor) || 0;
+  return { usado: Math.round(usado * 100) / 100, limite, livre: Math.round((limite - usado) * 100) / 100, fracao: limite ? Math.min(1, usado / limite) : 0 };
+}
+
+// Faturas a pagar (abertas) que vencem até "ate" — para o Hoje e as contas da semana.
+export function faturasAVencer(linhas, hoje, dias = 7) {
+  const ate = (() => { const d = new Date(`${hoje}T12:00:00`); d.setDate(d.getDate() + dias); return iso(d); })();
+  const lista = [];
+  for (const c of cartoes(linhas)) {
+    for (const mes of [somarMeses(mesDe(hoje), -1), mesDe(hoje), somarMeses(mesDe(hoje), 1)]) {
+      const f = fatura(linhas, c, mes);
+      if (f.total > 0 && !f.paga && f.vencimento <= ate) lista.push({ cartao: c, ...f, atrasada: f.vencimento < hoje });
+    }
+  }
+  return lista.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+}
+
+// --- Parcelas -----------------------------------------------------------------------------
+// Divide uma compra em N lançamentos mensais (a última parcela leva os centavos que sobram).
+export function parcelar(base, n, grupo) {
+  const total = Math.round(Number(base.valor) * 100);
+  const cada = Math.floor(total / n);
+  return Array.from({ length: n }, (_, i) => {
+    const mes = somarMeses(mesDe(base.data), i);
+    return {
+      ...base,
+      valor: (i === n - 1 ? total - cada * (n - 1) : cada) / 100,
+      data: diaNoMes(mes, Number(String(base.data).slice(8, 10))),
+      descricao: `${base.descricao} (${i + 1}/${n})`,
+      dados: { ...(base.dados || {}), parcela: { n: i + 1, de: n, grupo, total: total / 100 } },
+    };
+  });
+}
+
+// Compras parceladas que ainda têm parcelas por vir.
+export function parcelasEmAberto(linhas, hoje) {
+  const grupos = new Map();
+  for (const l of lancamentos(linhas).filter((x) => x.dados?.parcela?.grupo)) {
+    const g = grupos.get(l.dados.parcela.grupo) || { grupo: l.dados.parcela.grupo, itens: [] };
+    g.itens.push(l);
+    grupos.set(g.grupo, g);
+  }
+  return [...grupos.values()].map((g) => {
+    const itens = g.itens.sort((a, b) => a.data.localeCompare(b.data));
+    const futuras = itens.filter((l) => mesDe(l.data) > mesDe(hoje));
+    const p = itens[0].dados.parcela;
+    return {
+      grupo: g.grupo, descricao: itens[0].descricao.replace(/\s\(\d+\/\d+\)$/, ''), total: p.total, de: p.de,
+      pagas: itens.length - futuras.length, faltam: futuras.length, restante: Math.round(futuras.reduce((t, l) => t + Number(l.valor), 0) * 100) / 100,
+      termina: itens.at(-1).data, porMes: Number(itens[0].valor), itens, conta: itens[0].conta,
+    };
+  }).filter((g) => g.faltam > 0).sort((a, b) => a.termina.localeCompare(b.termina));
+}
+
+// Quanto do mês já está comprometido com parcelas.
+export function comprometidoNoMes(linhas, mes) {
+  return Math.round(lancamentos(linhas).filter((l) => l.dados?.parcela && mesDe(l.data) === mes).reduce((t, l) => t + Number(l.valor), 0) * 100) / 100;
+}
+
+// --- Entradas fixas (salários, consultoria) ------------------------------------------------
+export const entradasFixas = (linhas) => vivos(linhas).filter((l) => l.tipo === 'receita');
+
+export function situacaoDasEntradas(linhas, mes, hoje) {
+  const recebidas = lancamentos(linhas).filter((l) => l.tipo === 'entrada' && l.dados?.receita_id);
+  return entradasFixas(linhas).filter((e) => !e.dados?.pausada).map((e) => {
+    const dia = diaNoMes(mes, Number(e.recorrencia?.dia) || 1);
+    const recebimento = recebidas.find((l) => l.dados.receita_id === e.id && l.dados.mes === mes);
+    return { entrada: e, dia, recebimento, estado: recebimento ? 'recebida' : dia < hoje ? 'atrasada' : 'aberta' };
+  }).sort((a, b) => a.dia.localeCompare(b.dia));
+}
+
+// --- Metas das caixinhas e reserva de emergência -------------------------------------------
+// Quanto guardar por mês para bater a meta até o prazo.
+export function planoDaCaixinha(c, hoje) {
+  const { guardado, meta } = progressoCaixinha(c);
+  const prazo = c.dados?.prazo;
+  if (!meta || !prazo) return null;
+  const falta = Math.max(0, meta - guardado);
+  const [ah, mh] = mesDe(hoje).split('-').map(Number);
+  const [ap, mp] = mesDe(prazo).split('-').map(Number);
+  const meses = Math.max(1, (ap - ah) * 12 + (mp - mh) + 1);
+  return { falta, meses, porMes: Math.ceil((falta / meses) * 100) / 100, atrasada: prazo < hoje && falta > 0 };
+}
+
+// Reserva: quantos meses dos gastos de costume (média dos últimos 3 meses fechados) estão guardados.
+export function mesesDeReserva(linhas, hoje) {
+  const reserva = caixinhas(linhas).filter((c) => c.dados?.reserva);
+  if (!reserva.length) return null;
+  const guardado = reserva.reduce((t, c) => t + progressoCaixinha(c).guardado, 0);
+  const meses = [1, 2, 3].map((i) => somarMeses(mesDe(hoje), -i));
+  const gastos = meses.map((m) => resumoDoMes(linhas, m).saiu).filter((v) => v > 0);
+  const media = gastos.length ? gastos.reduce((a, b) => a + b, 0) / gastos.length : 0;
+  return { guardado, media: Math.round(media * 100) / 100, meses: media ? Math.round((guardado / media) * 10) / 10 : null };
+}
+
+// --- Sugestões: gasto que se repete todo mês vira conta fixa --------------------------------
+const chave = (t) => semAcento(t).replace(/\(\d+\/\d+\)/g, '').replace(/[^a-z]+/g, ' ').trim();
+
+export function sugestoesDeContaFixa(linhas, hoje, ignoradas = []) {
+  const fixas = new Set(contasFixas(linhas).map((c) => chave(c.descricao)));
+  const meses = [somarMeses(mesDe(hoje), -2), somarMeses(mesDe(hoje), -1), mesDe(hoje)];
+  const porChave = new Map();
+  for (const l of lancamentos(linhas).filter((x) => x.tipo === 'saida' && !x.dados?.conta_id && !x.dados?.parcela && !x.dados?.recompensa && meses.includes(mesDe(x.data)))) {
+    const k = chave(l.descricao);
+    if (!k || k.length < 3 || fixas.has(k) || ignoradas.includes(k)) continue;
+    const g = porChave.get(k) || { chave: k, meses: new Set(), itens: [] };
+    g.meses.add(mesDe(l.data));
+    g.itens.push(l);
+    porChave.set(k, g);
+  }
+  return [...porChave.values()].filter((g) => g.meses.size >= 2 && g.meses.has(meses[1])).map((g) => {
+    const ultimo = g.itens.sort((a, b) => b.data.localeCompare(a.data))[0];
+    return { chave: g.chave, descricao: ultimo.descricao, valor: Number(ultimo.valor), dia: Number(ultimo.data.slice(8, 10)), categoria: ultimo.categoria };
+  });
+}
+
+export function buscarLancamentos(linhas, texto) {
+  const t = semAcento(texto).trim();
+  if (!t) return [];
+  return lancamentos(linhas).filter((l) => semAcento(`${l.descricao} ${l.dados?.cliente || ''}`).includes(t))
+    .sort((a, b) => b.data.localeCompare(a.data)).slice(0, 100);
 }

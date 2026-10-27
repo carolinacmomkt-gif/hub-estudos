@@ -62,7 +62,7 @@ export function abaRecompensas(estado) {
       <summary>Como ganhar pontos</summary>
       <ul class="lista-simples">
         <li><span>Cada lançamento anotado (até 5 por dia)</span><strong>+${PONTOS.lancamento}</strong></li>
-        <li><span>Conta fixa paga até o vencimento</span><strong>+${PONTOS.contaEmDia}</strong></li>
+        <li><span>Conta fixa ou fatura paga até o vencimento</span><strong>+${PONTOS.contaEmDia}</strong></li>
         <li><span>Semana fechada dentro dos limites</span><strong>+${PONTOS.semanaNoLimite}</strong></li>
         <li><span>A cada R$ 10 guardados numa caixinha</span><strong>+${PONTOS.porDezGuardados}</strong></li>
         <li><span>Meta de caixinha batida</span><strong>+${PONTOS.caixinha}</strong></li>
