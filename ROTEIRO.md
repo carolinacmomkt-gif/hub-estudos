@@ -23,7 +23,7 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 - [x] **0 — Sessão de foco e resumo da semana.**
 - [x] **1 — Menu novo** ✓ código pronto, aguardando teste: grupos com título que abrem e fecham (como no Notion), favoritos, esconder áreas, menu aberto / só ícones / escondido (Ctrl + \), editar menu, 4 atalhos do celular (no "⋯" os nomes aparecem ao lado dos ícones). Nome novo: **Bússola**.
 - [x] **2 — Hoje** ✓ código pronto, aguardando teste: Início vira Hoje, resumo do dia embaixo da saudação, "Agenda de hoje" (linha do tempo) e "Como estou hoje" (humor, energia e uma linha, no diário). Personalizar sem tela pulando e, no celular, em linhas curtas. Migração `009-vida.sql` cria de uma vez as tabelas das próximas áreas.
-- [ ] **3 — Tarefas e projetos** (separados da Faculdade).
+- [x] **3 — Tarefas e projetos** ✓ código pronto, aguardando teste: criação rápida em uma linha ("pagar luz sexta 18h #casa !", com prévia), visões Hoje / Próximos / Algum dia / Feitas, atrasadas com "passar para hoje", repetição (todo dia, dias úteis, semanal, mensal), prioridade, área, notas, projetos com cor, prazo e progresso, concluir com animação e Desfazer, cards no Hoje e tarefas com hora na Agenda de hoje. Separadas da Faculdade.
 - [ ] **4 — Hábitos e rotinas.**
 - [ ] **5 — Saúde.**
 - [ ] **6 — Finanças**: hub completo, dinheiro num lugar só mas categorizado pela origem.

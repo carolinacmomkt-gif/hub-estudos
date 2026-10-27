@@ -10,6 +10,7 @@ import { renderQuestoes } from './views-questoes.js';
 import { renderSubstack } from './views-substack.js';
 import { renderEstudos } from './views-estudos.js';
 import { renderFoco } from './views-foco.js';
+import { renderTarefas } from './views-tarefas.js';
 import { renderResumo } from './views-resumo.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
 import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
@@ -46,6 +47,7 @@ const VIEWS = {
   substack: renderSubstack,
   estudos: renderEstudos,
   foco: renderFoco,
+  tarefas: renderTarefas,
   resumo: renderResumo,
 };
 
@@ -125,6 +127,9 @@ export function renderizar({ mudouDeTela = false } = {}) {
   atualizarFoco({ soRelogio: true }); // a barrinha do foco some na tela do foco e aparece nas outras
   document.title = rota.id === 'inicio' ? 'Bússola' : `${rota.titulo} · Bússola`;
 
+  // Aba ativa sempre à vista quando as abas rolam de lado (celular).
+  const abaAtiva = conteudo.querySelector('.tarefa-abas [aria-current="page"]');
+  if (abaAtiva) abaAtiva.parentElement.scrollLeft = abaAtiva.offsetLeft - (abaAtiva.parentElement.clientWidth - abaAtiva.offsetWidth) / 2;
   if (mudouDeTela) {
     // Entrada suave só na troca de tela (redesenhos por fora não piscam).
     conteudo.classList.remove('tela-nova');
@@ -159,6 +164,8 @@ const TABELAS_NA_MEMORIA = {
   respostas: 'respostas',
   sessoes_foco: 'sessoesFoco',
   diario: 'diario',
+  tarefas: 'tarefas',
+  projetos: 'projetos',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -179,6 +186,8 @@ const TELAS_DA_TABELA = {
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
   diario: ['inicio'],
+  tarefas: ['tarefas', 'inicio'],
+  projetos: ['tarefas', 'inicio'],
   respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],

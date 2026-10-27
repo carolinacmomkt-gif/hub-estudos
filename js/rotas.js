@@ -4,10 +4,11 @@
 // "grupo" é onde a rota começa no menu (a Carol pode mudar em "Editar menu").
 export const ROTAS = [
   { id: 'inicio', titulo: 'Hoje', icone: 'inicio', fixaCelular: true, grupo: 'dia' },
+  { id: 'tarefas', titulo: 'Tarefas e projetos', icone: 'tarefas', fixaCelular: true, grupo: 'dia' },
   { id: 'calendario', titulo: 'Calendário', icone: 'calendario', fixaCelular: true, grupo: 'dia' },
   { id: 'foco', titulo: 'Sessão de foco', icone: 'foco', grupo: 'dia' },
   { id: 'faculdade', titulo: 'Faculdade', icone: 'faculdade', fixaCelular: true, grupo: 'faculdade' },
-  { id: 'cadernos', titulo: 'Cadernos', icone: 'cadernos', fixaCelular: true, grupo: 'faculdade' },
+  { id: 'cadernos', titulo: 'Cadernos', icone: 'cadernos', grupo: 'faculdade' },
   { id: 'questoes', titulo: 'Questões', icone: 'questoes', grupo: 'faculdade' },
   { id: 'estudos', titulo: 'Estudos gerais', icone: 'estudos', grupo: 'estudos' },
   { id: 'biblioteca', titulo: 'Biblioteca', icone: 'biblioteca', grupo: 'estudos' },

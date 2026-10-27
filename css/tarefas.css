@@ -1,0 +1,462 @@
+/* Tarefas e projetos */
+
+.tarefa-rapida {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tarefa-rapida input {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 1.02rem;
+}
+
+.tarefa-rapida input:focus-visible {
+  border-color: var(--cor-foco);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--cor-destaque-suave);
+}
+
+.tarefa-rapida .botao {
+  width: 52px;
+  min-height: 52px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.5rem;
+}
+
+.tarefa-rapida.compacta {
+  margin: 4px 0 10px;
+}
+
+.tarefa-rapida.compacta input,
+.tarefa-rapida.compacta .botao {
+  min-height: var(--toque);
+}
+
+.tarefa-rapida.compacta .botao {
+  width: var(--toque);
+}
+
+.tarefa-previa {
+  flex-basis: 100%;
+  min-height: 1.2em;
+  margin: 0 16px;
+  color: var(--cor-texto-destaque);
+  font-size: 0.85rem;
+}
+
+.tarefa-previa:empty {
+  display: none;
+}
+
+.tarefa-abas {
+  display: flex;
+  max-width: 100%;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tarefa-abas a {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: calc(var(--toque) - 6px);
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tarefa-abas a[aria-current="page"] {
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.tarefa-filtros {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip-filtro {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: none;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.chip-filtro[aria-pressed="true"] {
+  border-color: var(--cor-foco);
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto);
+  font-weight: 600;
+}
+
+.tarefa-visao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tarefa-grupo-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.tarefa-grupo-titulo.atraso {
+  color: var(--urg-atrasado-texto);
+}
+
+.tarefa-vazio {
+  padding: 8px 4px;
+}
+
+/* Item de tarefa */
+.tarefas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarefa {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  border-bottom: 1px solid var(--cor-borda);
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.tarefa:last-child {
+  border-bottom: 0;
+}
+
+.tarefa-check {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--toque);
+  height: var(--toque);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tarefa-check span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--cor-texto-fraco);
+  border-radius: 50%;
+  transition: background-color 0.18s, border-color 0.18s, transform 0.18s;
+}
+
+.tarefa.prio-1 .tarefa-check span { border-color: var(--urg-urgente); }
+.tarefa.prio-2 .tarefa-check span { border-color: var(--urg-atrasado); border-width: 3px; }
+
+.tarefa-check:hover span {
+  background: var(--cor-destaque-suave);
+}
+
+.tarefa-check:active span {
+  transform: scale(0.85);
+}
+
+.tarefa.feita .tarefa-check span,
+.tarefa.concluindo .tarefa-check span {
+  border-color: var(--cor-sucesso);
+  background: var(--cor-sucesso);
+}
+
+.tarefa.feita .tarefa-check span::after,
+.tarefa.concluindo .tarefa-check span::after {
+  content: "";
+  width: 6px;
+  height: 11px;
+  margin-top: -2px;
+  border: solid var(--cor-superficie);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.tarefa.concluindo .tarefa-check span {
+  animation: tarefa-pulo 0.3s ease-out;
+}
+
+.tarefa.concluindo {
+  opacity: 0.45;
+}
+
+.tarefa-corpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: var(--toque);
+  padding: 10px 8px 10px 2px;
+  border: 0;
+  background: none;
+  color: var(--cor-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tarefa-titulo {
+  overflow-wrap: anywhere;
+  transition: color 0.2s;
+}
+
+.tarefa.feita .tarefa-titulo,
+.tarefa.concluindo .tarefa-titulo {
+  color: var(--cor-texto-fraco);
+  text-decoration: line-through;
+}
+
+.tarefa-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+}
+
+.tarefa-hora {
+  color: var(--cor-texto-destaque);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.tarefa-atrasada {
+  color: var(--urg-atrasado-texto);
+  font-weight: 600;
+}
+
+.tarefa-projeto::before,
+.projeto-bolinha {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--cor-projeto);
+  vertical-align: middle;
+}
+
+.tarefa-feitas-hoje > summary,
+.tarefa-visao details > summary {
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@keyframes tarefa-pulo {
+  50% { transform: scale(1.25); }
+}
+
+/* Cores dos projetos (as mesmas das capas dos cadernos) */
+.cor-1 { --cor-projeto: var(--capa-1); }
+.cor-2 { --cor-projeto: var(--capa-2); }
+.cor-3 { --cor-projeto: var(--capa-3); }
+.cor-4 { --cor-projeto: var(--capa-4); }
+.cor-5 { --cor-projeto: var(--capa-5); }
+.cor-6 { --cor-projeto: var(--capa-6); }
+
+/* Projetos */
+.projetos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.projeto-cartao {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  overflow: hidden;
+  color: var(--cor-texto);
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.projeto-cartao:hover {
+  box-shadow: var(--sombra);
+}
+
+.projeto-cartao:active {
+  transform: scale(0.98);
+}
+
+.projeto-faixa {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--cor-projeto);
+}
+
+.projeto-nome {
+  margin-top: 4px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.projeto-topo {
+  border-top: 6px solid var(--cor-projeto);
+}
+
+.projeto-linha {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  color: var(--cor-texto);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lista-simples li:has(.projeto-linha) {
+  flex-wrap: wrap;
+}
+
+.lista-simples li:has(.projeto-linha) .progresso {
+  flex: 1 1 140px;
+}
+
+.cores-projeto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cor-opcao {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--toque);
+  height: var(--toque);
+  border-radius: 50%;
+  background: var(--cor-projeto);
+  cursor: pointer;
+}
+
+.cor-opcao input {
+  position: absolute;
+  opacity: 0;
+}
+
+.cor-opcao:has(input:checked) {
+  box-shadow: 0 0 0 3px var(--cor-superficie-elevada), 0 0 0 5px var(--cor-foco);
+}
+
+.cor-opcao:has(input:focus-visible) {
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 4px;
+}
+
+/* Prioridade no formulário (rádios em forma de pílula) */
+.segmentado:has(.segmentado-opcao) {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.segmentado-opcao {
+  position: relative;
+  flex: 1 1 auto;
+}
+
+.segmentado-opcao input {
+  position: absolute;
+  opacity: 0;
+}
+
+.segmentado-opcao span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--toque) - 6px);
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segmentado-opcao input:checked + span {
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.segmentado-opcao input:focus-visible + span {
+  outline: 2px solid var(--cor-foco);
+}
+
+/* Aviso com "Desfazer" */
+.aviso-acao {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Tarefa na Agenda de hoje */
+.agenda-item.tipo-tarefa { --cor-tipo: var(--cor-foco); }
+
+.tarefa-visao > .tarefa-rapida {
+  margin-bottom: 0;
+}
+
+/* Dica fixa nas primeiras tarefas (não aparece e some no meio de um toque, para nada pular) */
+.tarefa-dica {
+  flex-basis: 100%;
+  margin: 0 16px;
+}
+
+/* Abas que rolam de lado: um esmaecido na borda mostra que tem mais */
+@media (max-width: 700px) {
+  .tarefa-abas,
+  .tarefa-filtros {
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+  }
+}
