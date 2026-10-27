@@ -7,6 +7,9 @@ import { lerLancamento, lerValor, mesDe, paraCSV, progressoCaixinha } from './da
 import {
   prefsFinancas, formLancamento, formConta, formCaixinha, formMover, textoPreviaFin, hojeIso, valoresOcultos, ocultarValores, dinheiro,
 } from './views-financas.js';
+import { flutuar } from './celebracao.js';
+import { pontosDoLancamento, PONTOS } from './dados-recompensas.js';
+import { diaNoMes } from './dados-financas.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -116,13 +119,15 @@ export function cliqueFinancas(alvo) {
       const c = linha(id);
       if (!c) return true;
       const mes = alvo.dataset.mes || mesDe(hojeIso());
+      const emDia = hojeIso() <= diaNoMes(mes, Number(c.recorrencia?.dia) || 1);
+      if (emDia) flutuar(alvo, `+${PONTOS.contaEmDia}`);
       alvo.disabled = true;
       salvarLinha({
         tipo: 'saida', valor: c.valor, data: hojeIso(), descricao: c.descricao, categoria: c.categoria || 'outros',
         pago: true, dados: { conta_id: c.id, mes },
       }).then(() => {
         app.renderizar();
-        app.avisoCurto(`${c.descricao} paga.`);
+        app.avisoCurto(emDia ? `${c.descricao} paga em dia. +${PONTOS.contaEmDia} pontos.` : `${c.descricao} paga.`);
       });
       return true;
     }
@@ -201,6 +206,8 @@ export function enviarFinancas(form) {
       form.querySelector('[data-previa]').textContent = 'Falta o valor (ex.: "mercado 120").';
       return true;
     }
+    const ganho = pontosDoLancamento(obterEstado().financas, r.data);
+    if (ganho) flutuar(form.querySelector('[type="submit"]'), `+${ganho}`);
     salvarLinha({
       tipo: r.tipo, valor: r.valor, data: r.data, descricao: r.descricao, categoria: r.categoria, origem: r.origem,
       pago: true, dados: r.cliente ? { cliente: r.cliente } : {},
@@ -276,6 +283,8 @@ export function enviarFinancas(form) {
     if (tirar && valor > guardado) return erro(form, `A caixinha tem ${dinheiro(guardado)}.`);
     const novo = Math.round((guardado + (tirar ? -valor : valor)) * 100) / 100;
     const historico = [...(c.dados?.historico || []), { data: hojeIso(), valor: tirar ? -valor : valor }].slice(-200);
+    const ganho = tirar ? 0 : Math.floor(valor / 10) * PONTOS.porDezGuardados;
+    if (ganho) flutuar(form.querySelector('[type="submit"]'), `+${ganho}`);
     salvarLinha({ ...c, dados: { ...(c.dados || {}), guardado: novo, historico } }).then(() => {
       fecharFolha();
       app.renderizar();

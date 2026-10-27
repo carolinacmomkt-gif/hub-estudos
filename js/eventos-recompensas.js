@@ -5,7 +5,7 @@ import { obterEstado, atualizarEstado } from './estado.js';
 import { listar, salvar } from './persistencia.js';
 import { gravar } from './gravacao.js';
 import { RECOMPENSAS_PADRAO, recompensasDe, situacaoGamificacao } from './dados-recompensas.js';
-import { lerValor } from './dados-financas.js';
+import { lerValor, livreParaGastar } from './dados-financas.js';
 import { dadosGamificacao, formRecompensa, formResgate } from './views-recompensas.js';
 import { celebrar } from './celebracao.js';
 
@@ -37,6 +37,7 @@ async function mudar(fn) {
   atualizarEstado({ config: await listar('config') });
 }
 
+const temEntradaNoMes = () => (obterEstado().financas || []).some((f) => !f.excluido_em && f.tipo === 'entrada' && String(f.data).slice(0, 7) === hoje().slice(0, 7));
 const item = (id) => recompensasDe(obterEstado().config).itens.find((r) => r.id === id);
 
 export function cliqueRecompensas(alvo) {
@@ -54,7 +55,7 @@ export function cliqueRecompensas(alvo) {
   } else if (acao === 'rec-resgatar') {
     const r = item(id);
     const g = situacaoGamificacao(dadosGamificacao(obterEstado()));
-    if (r && g.saldo >= r.custo) abrirFolha('Resgatar', formResgate(r, g.saldo));
+    if (r && g.saldo >= r.custo) abrirFolha('Resgatar', formResgate(r, g.saldo, temEntradaNoMes() ? livreParaGastar(obterEstado().financas, hoje()).livre : null));
   } else return false;
   return true;
 }

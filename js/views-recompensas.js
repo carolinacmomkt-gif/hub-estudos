@@ -1,7 +1,7 @@
-// Tela Recompensas (#recompensas): nível, pontos, sequência, as recompensas da Carol para
+// Aba Recompensas das Finanças (#financas/recompensas): nível, pontos, sequência, as recompensas da Carol para
 // resgatar, conquistas e histórico. E o card do Hoje.
 
-import { cabecalho, barraProgresso } from './componentes.js';
+import { barraProgresso } from './componentes.js';
 import { esc } from './utilidades.js';
 import { situacaoGamificacao, PONTOS } from './dados-recompensas.js';
 
@@ -32,12 +32,12 @@ function cartaoRecompensa(r, saldo) {
     </section></li>`;
 }
 
-export function renderRecompensas(estado) {
+// Aba Recompensas dentro de Finanças (sem cabeçalho próprio).
+export function abaRecompensas(estado) {
   const g = situacaoGamificacao(dadosGamificacao(estado));
   const feitas = g.conquistas.filter((c) => c.feita);
   const faltam = g.conquistas.filter((c) => !c.feita).sort((a, b) => b.fracao - a.fracao);
   return `
-    ${cabecalho('Recompensas', esc(`Nível ${g.nivel.nivel} · ${g.nivel.titulo} · ${pts(g.saldo)} para gastar`))}
     <div class="rec-topo">
       <section class="card rec-nivel">
         <div class="rec-nivel-numero" aria-hidden="true"><span>nível</span><strong>${g.nivel.nivel}</strong></div>
@@ -50,7 +50,7 @@ export function renderRecompensas(estado) {
       <section class="card rec-hoje">
         <p class="proximo-rotulo">Hoje</p>
         <p class="rec-grande">+${g.hojeXp}</p>
-        <p class="campo-ajuda">${g.sequencia.dias ? `🔥 ${g.sequencia.dias} ${g.sequencia.dias === 1 ? 'dia' : 'dias'} seguidos${g.sequencia.folgaUsada ? ' (com uma folga, sem problema)' : ''}` : 'Faça uma coisinha hoje para começar a sequência.'}</p>
+        <p class="campo-ajuda">${g.sequencia.dias ? `🔥 ${g.sequencia.dias} ${g.sequencia.dias === 1 ? 'dia' : 'dias'} seguidos anotando${g.sequencia.folgaUsada ? ' (com uma folga, sem problema)' : ''}` : 'Anote um gasto hoje para começar a sequência.'}</p>
       </section>
       <section class="card rec-hoje">
         <p class="proximo-rotulo">Para gastar</p>
@@ -61,18 +61,14 @@ export function renderRecompensas(estado) {
     <details class="card rec-como">
       <summary>Como ganhar pontos</summary>
       <ul class="lista-simples">
-        <li><span>Tarefa concluída</span><strong>+${PONTOS.tarefa}</strong></li>
-        <li><span>… importante / urgente</span><strong>+${PONTOS.importante} / +${PONTOS.urgente} a mais</strong></li>
-        <li><span>Tarefa que repete, a cada vez</span><strong>+${PONTOS.repeticao}</strong></li>
-        <li><span>Hábito feito no dia</span><strong>+${PONTOS.habito}</strong></li>
-        <li><span>Rotina completa</span><strong>+${PONTOS.rotina}</strong></li>
-        <li><span>Sessão de foco de 25 min</span><strong>+15</strong></li>
-        <li><span>Projeto concluído</span><strong>+${PONTOS.projeto}</strong></li>
+        <li><span>Cada lançamento anotado (até 5 por dia)</span><strong>+${PONTOS.lancamento}</strong></li>
+        <li><span>Conta fixa paga até o vencimento</span><strong>+${PONTOS.contaEmDia}</strong></li>
+        <li><span>Semana fechada dentro dos limites</span><strong>+${PONTOS.semanaNoLimite}</strong></li>
+        <li><span>A cada R$ 10 guardados numa caixinha</span><strong>+${PONTOS.porDezGuardados}</strong></li>
         <li><span>Meta de caixinha batida</span><strong>+${PONTOS.caixinha}</strong></li>
-        <li><span>Registrar como está no dia</span><strong>+${PONTOS.humor}</strong></li>
-        <li><span>Cada lançamento em Finanças</span><strong>+${PONTOS.lancamento}</strong></li>
+        <li><span>Mês fechado no azul</span><strong>+${PONTOS.mesNoAzul}</strong></li>
       </ul>
-      <p class="campo-ajuda">Nada tira pontos. Um dia parado não apaga nada, e a sequência aguenta uma folga por semana.</p>
+      <p class="campo-ajuda">Os pontos vêm de cuidar bem do dinheiro, e a recompensa é uma permissão para gastar, já merecida. Nada tira pontos, e a sequência aguenta uma folga por semana.</p>
     </details>
     <section class="rec-secao">
       <div class="card-topo"><h2 class="card-titulo">Suas recompensas</h2>
@@ -109,10 +105,12 @@ export function formRecompensa(r = {}) {
     </form>`;
 }
 
-export function formResgate(r, saldo) {
+export function formResgate(r, saldo, livre = null) {
+  const apertado = livre !== null && r.valor > 0 && livre < r.valor;
   return `
     <form class="formulario" data-form="rec-resgate" data-id="${esc(r.id)}" novalidate>
       <p class="rec-resgate-resumo"><span aria-hidden="true">${esc(r.emoji || '🎁')}</span> ${esc(r.nome)} por <strong>${pts(r.custo)}</strong>. Ficam ${pts(saldo - r.custo)}.</p>
+      ${apertado ? `<p class="ava-alerta">O seu livre para gastar este mês está em ${livre < 0 ? '−' : ''}R$ ${Math.abs(livre).toFixed(2).replace('.', ',')}. Dá para resgatar, mas talvez valha esperar o próximo mês.</p>` : ''}
       <label class="campo-marcar"><input type="checkbox" name="lancar"${r.valor ? ' checked' : ''}><span>Lançar o gasto em Finanças (Lazer)</span></label>
       <label class="campo"><span class="campo-rotulo">Valor (R$)</span><input name="valor" type="text" inputmode="decimal" value="${esc(r.valor ? String(r.valor).replace('.', ',') : '')}"></label>
       <div class="acoes"><button class="botao botao-primario" type="submit">Resgatar</button></div>
@@ -126,7 +124,7 @@ export function cardRecompensasHoje(estado) {
     <section class="card" aria-labelledby="rec-hoje-titulo">
       <div class="card-topo">
         <h2 class="card-titulo" id="rec-hoje-titulo">Nível ${g.nivel.nivel} · ${esc(g.nivel.titulo)}</h2>
-        <a class="card-link" href="#recompensas">Recompensas</a>
+        <a class="card-link" href="#financas/recompensas">Recompensas</a>
       </div>
       ${barraProgresso(g.nivel.fracao, 'Progresso até o próximo nível')}
       <ul class="lista-simples">
@@ -134,7 +132,7 @@ export function cardRecompensasHoje(estado) {
         <li><span>Para gastar</span><strong>${pts(g.saldo)}</strong></li>
       </ul>
       ${alvo ? (g.podeResgatar.length
-        ? `<a class="botao botao-secundario botao-pequeno" href="#recompensas">Já dá para: ${esc(alvo.emoji || '')} ${esc(alvo.nome)}</a>`
+        ? `<a class="botao botao-secundario botao-pequeno" href="#financas/recompensas">Já dá para: ${esc(alvo.emoji || '')} ${esc(alvo.nome)}</a>`
         : `<p class="campo-ajuda">Faltam ${pts(alvo.custo - g.saldo)} para ${esc(alvo.emoji || '')} ${esc(alvo.nome)}</p>`) : ''}
     </section>`;
 }

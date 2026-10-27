@@ -4,8 +4,6 @@ import { obterEstado, atualizarEstado } from './estado.js';
 import { gravar } from './gravacao.js';
 import { lerTarefaRapida, aoConcluir, aoDesfazer, iso } from './dados-tarefas.js';
 import { registrarDeslize, ligarDeslizar } from './deslizar.js';
-import { flutuar } from './celebracao.js';
-import { pontosDaTarefa } from './dados-recompensas.js';
 import { formTarefa, lerFormTarefa, formProjeto, lerFormProjeto, textoPrevia, hojeIso } from './views-tarefas.js';
 
 let app; // { renderizar, avisoCurto }
@@ -60,13 +58,11 @@ async function concluir(id, botao) {
   if (!t) return;
   const li = botao?.closest('.tarefa');
   li?.classList.add('concluindo');
-  const ganho = pontosDaTarefa(t);
-  flutuar(botao || document.querySelector(`[data-tarefa="${CSS.escape(id)}"]`) || document.getElementById('aviso'), `+${ganho}`);
   // Primeiro a animação, depois a gravação (gravar redesenha a lista).
   await new Promise((r) => setTimeout(r, li ? 380 : 0));
   await salvarTarefa({ ...t, ...aoConcluir(t, new Date().toISOString(), hojeIso()) });
   app.renderizar();
-  app.avisoCurto(t.recorrencia?.tipo ? `Feito! +${ganho} pontos. Volta na próxima data.` : `Feito! +${ganho} pontos.`, {
+  app.avisoCurto(t.recorrencia?.tipo ? 'Feito! Volta na próxima data.' : 'Feito!', {
     rotulo: 'Desfazer',
     fn: async () => {
       const agora = tarefa(id);

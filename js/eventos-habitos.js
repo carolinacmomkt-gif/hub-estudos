@@ -4,8 +4,7 @@ import { obterEstado, atualizarEstado } from './estado.js';
 import { gravar } from './gravacao.js';
 import { SUGESTOES, ehRotina, registroDoDia, valorNoDia } from './dados-habitos.js';
 import { formHabito, telaRotina, hojeIso } from './views-habitos.js';
-import { flutuar, celebrar } from './celebracao.js';
-import { PONTOS } from './dados-recompensas.js';
+import { celebrar } from './celebracao.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -43,7 +42,6 @@ async function mudarValor(id, delta, alvo, { marcar = false } = {}) {
   const depois = marcar ? (antes >= meta(h) ? 0 : meta(h)) : Math.min(meta(h) * 3, antes + delta);
   const completou = antes < meta(h) && depois >= meta(h);
   alvo?.closest('.habito')?.classList.add(completou ? 'marcando' : 'mexendo');
-  if (completou) flutuar(alvo, `+${ehRotina(h) ? PONTOS.rotina : PONTOS.habito}`);
   navigator.vibrate?.(completou ? 18 : 8);
   await definirValor(h, dia, depois);
   app.renderizar();
@@ -106,7 +104,7 @@ export function cliqueHabitos(alvo) {
       definirValor(h, diaEscolhido(), meta(h)).then(() => {
         fecharFolha();
         app.renderizar();
-        celebrar(h.icone || '✨', 'Rotina feita!', `${h.nome} completa. +${PONTOS.rotina} pontos.`);
+        celebrar(h.icone || '✨', 'Rotina feita!', `${h.nome} completa. Bom começo de dia!`);
       });
       break;
     }

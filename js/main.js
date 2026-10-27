@@ -12,7 +12,6 @@ import { renderEstudos } from './views-estudos.js';
 import { renderFoco } from './views-foco.js';
 import { renderTarefas } from './views-tarefas.js';
 import { renderFinancas } from './views-financas.js';
-import { renderRecompensas } from './views-recompensas.js';
 import { renderHabitos } from './views-habitos.js';
 import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
@@ -53,7 +52,6 @@ const VIEWS = {
   foco: renderFoco,
   tarefas: renderTarefas,
   financas: renderFinancas,
-  recompensas: renderRecompensas,
   habitos: renderHabitos,
   resumo: renderResumo,
 };
@@ -196,17 +194,17 @@ const TELAS_DA_TABELA = {
   conexoes: ['configuracoes', 'faculdade'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
-  sessoes_foco: ['foco', 'inicio', 'resumo', 'recompensas'],
-  diario: ['inicio', 'recompensas'],
-  tarefas: ['tarefas', 'inicio', 'recompensas'],
-  projetos: ['tarefas', 'inicio', 'recompensas'],
-  financas: ['financas', 'inicio', 'recompensas'],
-  habitos: ['habitos', 'inicio', 'recompensas'],
-  habito_registros: ['habitos', 'inicio', 'recompensas'],
+  sessoes_foco: ['foco', 'inicio', 'resumo'],
+  diario: ['inicio'],
+  tarefas: ['tarefas', 'inicio'],
+  projetos: ['tarefas', 'inicio'],
+  financas: ['financas', 'inicio'],
+  habitos: ['habitos', 'inicio'],
+  habito_registros: ['habitos', 'inicio'],
   respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'recompensas'],
+  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas'],
   videos: ['youtube', 'inicio'],
   artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes'],
   questoes: ['questoes', 'inicio', 'estudos'],
@@ -245,6 +243,7 @@ export async function entrarNoApp() {
   await carregarDadosLocais();
   aplicarCompartilhado();
   montarNavegacao(); // o menu guardado só chega com a config
+  conferirConquistas(); // anota o que já existe neste aparelho (sem comemorar o antigo)
   renderizar();
   if (!sincronizacaoIniciada) {
     sincronizacaoIniciada = true;
@@ -264,7 +263,7 @@ window.addEventListener('hub:dados', async (evento) => {
   const { tabela, daNuvem } = evento.detail || {};
   if (!TABELAS_NA_MEMORIA[tabela]) return;
   await carregarDadosLocais([tabela]);
-  if (['tarefas', 'sessoes_foco', 'projetos', 'financas', 'diario', 'habito_registros'].includes(tabela) && noApp) conferirConquistas();
+  if (tabela === 'financas' && noApp) conferirConquistas();
   if (tabela === 'config') {
     montarNavegacao();
     marcarRotaAtiva(obterEstado().rota);

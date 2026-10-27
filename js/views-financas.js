@@ -7,12 +7,14 @@ import {
   ORIGENS_PADRAO, CATEGORIAS_PADRAO, iso, mesDe, somarMeses, lerLancamento, lancamentos, contasFixas, caixinhas,
   resumoDoMes, variacao, situacaoDasContas, contasDaSemana, progressoCaixinha, livreParaGastar,
 } from './dados-financas.js';
+import { abaRecompensas } from './views-recompensas.js';
 
 export const ABAS_FINANCAS = [
   { id: 'mes', nome: 'Mês' },
   { id: 'lancamentos', nome: 'Lançamentos' },
   { id: 'contas', nome: 'Contas fixas' },
   { id: 'caixinhas', nome: 'Caixinhas' },
+  { id: 'recompensas', nome: 'Recompensas' },
   { id: 'ajustes', nome: 'Categorias' },
 ];
 const CHAVE_OCULTAR = 'bussola.financas.ocultar';
@@ -287,6 +289,7 @@ export function renderFinancas(estado) {
   else if (aba === 'contas') corpo = abaContas(estado, mes);
   else if (aba === 'caixinhas') corpo = abaCaixinhas(estado);
   else if (aba === 'ajustes') corpo = abaAjustes(prefs);
+  else if (aba === 'recompensas') corpo = abaRecompensas(estado);
   else corpo = abaMes(estado, mes, prefs);
   return `
     ${cabecalho('Finanças', esc(sub))}
