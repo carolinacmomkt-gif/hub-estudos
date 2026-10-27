@@ -704,7 +704,7 @@
   align-items: center;
   gap: 10px 16px;
   padding: 10px 16px calc(10px + env(safe-area-inset-top));
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
   background: var(--cor-superficie);
 }
 

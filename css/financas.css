@@ -126,7 +126,7 @@
   align-items: center;
   gap: 10px;
   min-height: 56px;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
 }
 
 .fin-conta:last-child,
@@ -195,7 +195,7 @@
   min-height: 56px;
   padding: 6px 0;
   border: 0;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
   background: none;
   color: var(--cor-texto);
   font: inherit;
@@ -260,7 +260,7 @@
   align-items: flex-end;
   gap: 8px;
   padding: 8px 0;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
 }
 
 .fin-ajuste > input {

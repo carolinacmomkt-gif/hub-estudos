@@ -14,6 +14,8 @@
   --cor-superficie-2: #352820;
   --cor-superficie-elevada: #3D2F24;
   --cor-borda: #514034;
+  --cor-linha: rgba(232, 211, 191, 0.08); /* contorno de cards e divisórias: bem suave, o relevo vem da sombra */
+  --sombra-card: inset 0 1px 0 rgba(255, 240, 225, 0.06), 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 22px rgba(0, 0, 0, 0.28);
   --cor-borda-campo: #86705D; /* campos de formulário: 3:1 com o card (WCAG 1.4.11) */
   --cor-trilho: #45362A;
   --cor-veu: rgba(10, 7, 5, 0.6);
@@ -82,6 +84,8 @@
   --cor-superficie-2: #F1E7DC;
   --cor-superficie-elevada: #FFFFFF;
   --cor-borda: #D6C3AE;
+  --cor-linha: rgba(43, 30, 22, 0.08);
+  --sombra-card: 0 1px 2px rgba(43, 30, 22, 0.07), 0 6px 18px rgba(43, 30, 22, 0.08);
   --cor-borda-campo: #957C68; /* campos de formulário: 3:1 com o card (WCAG 1.4.11) */
   --cor-trilho: #E3D4C3;
   --cor-veu: rgba(43, 30, 22, 0.4);

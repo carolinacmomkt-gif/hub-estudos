@@ -168,7 +168,16 @@
   margin-top: 16px;
 }
 
-/* Campos de formulário com borda visível (3:1), em todas as telas e folhas */
+/* Campos de formulário preenchidos, sem contorno pesado: o fundo um tom acima do card e a linha
+   de baixo em 3:1 marcam o campo (como os campos "filled" do Material 3). No foco, a linha engrossa. */
 body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
-  border-color: var(--cor-borda-campo);
+  border-color: transparent;
+  background-color: var(--cor-superficie-2);
+  box-shadow: inset 0 -2px 0 var(--cor-borda-campo);
+}
+
+body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea):focus-visible {
+  border-color: transparent;
+  outline: none;
+  box-shadow: inset 0 -3px 0 var(--cor-foco), 0 0 0 3px var(--cor-destaque-suave);
 }

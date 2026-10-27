@@ -112,9 +112,10 @@
 .card {
   min-width: 0;
   padding: 22px;
-  border: 1px solid var(--cor-borda);
+  border: 1px solid var(--cor-linha);
   border-radius: var(--raio-lg);
   background: var(--cor-superficie);
+  box-shadow: var(--sombra-card);
 }
 
 .card-topo {
@@ -382,7 +383,7 @@
   gap: 12px;
   min-height: 56px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
 }
 
 .nota:last-child {
@@ -690,7 +691,7 @@
 .ava-resultado:not(:empty) {
   margin-top: 22px;
   padding-top: 20px;
-  border-top: 1px solid var(--cor-borda);
+  border-top: 1px solid var(--cor-linha);
 }
 
 .ava-status {
@@ -1067,7 +1068,7 @@ button.card-link {
 
 .aviso-item {
   padding: 10px 0;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
 }
 
 .aviso-item:last-child {

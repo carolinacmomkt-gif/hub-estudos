@@ -116,7 +116,7 @@
   gap: 10px;
   min-height: var(--toque);
   padding: 4px 0;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
 }
 
 .lista-simples li:last-child {
@@ -435,7 +435,7 @@ mark.destaque {
   flex-direction: column;
   gap: 8px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
 }
 
 .q-enunciado {
@@ -662,7 +662,7 @@ textarea.ss-area {
 .ss-previa ul { list-style: disc; }
 .ss-previa ol { list-style: decimal; }
 .ss-previa blockquote { padding-left: 16px; border-left: 3px solid var(--cor-destaque); color: var(--cor-texto-suave); }
-.ss-previa hr { margin: 1.6em 0; border: 0; border-top: 1px solid var(--cor-borda); }
+.ss-previa hr { margin: 1.6em 0; border: 0; border-top: 1px solid var(--cor-linha); }
 .ss-previa a { color: var(--cor-texto-destaque); }
 
 @media (max-width: 900px) {
@@ -719,7 +719,7 @@ textarea.ss-area {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-linha);
 }
 
 .est-etapas li.feito .campo-marcar span {
@@ -760,7 +760,7 @@ textarea.ss-area {
 }
 
 .q-ver-gabarito {
-  border-top: 1px solid var(--cor-borda);
+  border-top: 1px solid var(--cor-linha);
   padding-top: 6px;
 }
 
