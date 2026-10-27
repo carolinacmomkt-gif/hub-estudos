@@ -308,6 +308,19 @@ function ajustarBarrasDeAbas() {
 }
 window.addEventListener('resize', () => ajustarBarrasDeAbas());
 
+// Celular: ao rolar para baixo o "+" sai da frente; ao subir (ou parar no topo) ele volta.
+let ultimaRolagem = 0;
+window.addEventListener('scroll', () => {
+  const y = window.scrollY;
+  if (Math.abs(y - ultimaRolagem) < 8) return;
+  const desce = y > ultimaRolagem && y > 120;
+  if (desce !== (document.body.dataset.rolando === 'baixo')) {
+    if (desce) document.body.dataset.rolando = 'baixo';
+    else delete document.body.dataset.rolando;
+  }
+  ultimaRolagem = y;
+}, { passive: true });
+
 // Várias tabelas chegam juntas na sincronização: um redesenho só, no fim da leva.
 let redesenhoMarcado = null;
 function redesenharEmBreve() {

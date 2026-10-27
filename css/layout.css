@@ -422,24 +422,42 @@ body[data-menu="icones"] .nav-lateral .situacao-sinc {
     min-width: 0;
   }
 
+  /* Ícone em cima e nome embaixo; a tela atual ganha uma pílula atrás do ícone */
   .nav-inferior .nav-link {
+    flex-direction: column;
     justify-content: center;
+    gap: 3px;
     min-height: 56px;
-    padding: 6px 2px;
+    padding: 4px 2px;
+    background: none;
+    font-size: 0.7rem;
+    font-weight: 500;
   }
 
   .nav-inferior .nav-link svg {
-    width: 24px;
-    height: 24px;
+    box-sizing: content-box;
+    width: 22px;
+    height: 22px;
+    padding: 4px 18px;
+    border-radius: 999px;
+    transition: background-color 0.15s;
   }
 
-  /* Na barra só os ícones; os nomes aparecem ao lado de cada ícone no "⋯" */
+  .nav-inferior .nav-link:hover,
+  .nav-inferior .nav-link[aria-current="page"],
+  .nav-inferior .nav-link[data-ativo="sim"] {
+    background: none;
+  }
+
+  .nav-inferior .nav-link[aria-current="page"] svg,
+  .nav-inferior .nav-link[data-ativo="sim"] svg {
+    background: var(--cor-destaque-suave);
+  }
+
   .nav-inferior .nav-nome {
-    position: absolute;
-    width: 1px;
-    height: 1px;
+    max-width: 100%;
     overflow: hidden;
-    clip: rect(0 0 0 0);
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 }
@@ -517,7 +535,7 @@ body[data-menu="icones"] .nav-lateral .situacao-sinc {
 
 @media (max-width: 700px) {
   .aviso {
-    bottom: calc(84px + env(safe-area-inset-bottom));
+    bottom: calc(80px + env(safe-area-inset-bottom));
   }
 }
 
@@ -568,9 +586,18 @@ body[data-menu="icones"] .nav-lateral .situacao-sinc {
 @media (max-width: 700px) {
   .fab {
     right: 16px;
-    bottom: calc(82px + env(safe-area-inset-bottom));
+    bottom: calc(84px + env(safe-area-inset-bottom));
     width: 56px;
     height: 56px;
+    border-radius: 18px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  /* Rolando para baixo, o "+" sai da frente do conteúdo; volta ao subir */
+  body[data-rolando="baixo"] .fab {
+    transform: translateY(24px) scale(0.6);
+    opacity: 0;
+    pointer-events: none;
   }
 
   /* espaço para o "+" não cobrir o fim da página */

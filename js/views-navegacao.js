@@ -9,11 +9,11 @@ import {
   organizacaoDoMenu, mudarMenu, modoDoMenu, definirModoDoMenu, proximoModo, rotaPeloId, MODOS_MENU, MAX_CELULAR,
 } from './menu.js';
 
-function link(rota, { rotulo = true } = {}) {
+function link(rota, { rotulo = true, curto = false } = {}) {
   return `
     <li>
       <a class="nav-link" href="#${rota.id}" data-rota="${rota.id}" data-rotulo="${esc(rota.titulo)}" title="${esc(rota.titulo)}">
-        ${icone(rota.icone)}<span class="nav-nome">${rotulo ? esc(rota.titulo) : ''}</span>
+        ${icone(rota.icone)}<span class="nav-nome">${rotulo ? esc(curto && rota.curto ? rota.curto : rota.titulo) : ''}</span>
       </a>
     </li>`;
 }
@@ -85,7 +85,7 @@ export function montarNavegacao() {
 
   document.getElementById('nav-inferior').innerHTML = `
     <ul class="nav-lista">
-      ${org.celular.map(rotaPeloId).map((r) => link(r)).join('')}
+      ${org.celular.map(rotaPeloId).filter(Boolean).map((r) => link(r, { curto: true })).join('')}
       <li>
         <button class="nav-link" type="button" data-acao="abrir-mais" aria-haspopup="dialog" title="Todas as áreas">
           ${icone('mais')}<span class="nav-nome">Mais</span>
