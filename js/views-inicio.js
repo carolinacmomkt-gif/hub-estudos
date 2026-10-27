@@ -322,7 +322,7 @@ function painelPersonalizar(blocos, proprios) {
         <span><strong>${esc(nomeDoBloco(b.id, proprios))}</strong>${proprios[b.id] ? ' <small class="campo-ajuda">· seu card</small>' : ''}</span>
         <span class="catalogo-acoes">
           <button class="botao botao-primario botao-pequeno" type="button" data-acao="inicio-adicionar" data-id="${esc(b.id)}">Adicionar</button>
-          ${proprios[b.id] ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-remover" data-id="${esc(b.id)}">Excluir de vez</button>` : ''}
+          ${proprios[b.id] ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-remover" data-id="${esc(b.id)}" aria-label="Excluir de vez: ${esc(nomeDoBloco(b.id, proprios))}">Excluir</button>` : ''}
         </span>
       </li>`).join('')}</ul>` : '<p class="texto-suave">Todos os cards do app já estão no Hoje.</p>';
   return `
@@ -339,7 +339,7 @@ function painelPersonalizar(blocos, proprios) {
         <h3 class="ava-subtitulo">Criar um card seu</h3>
         <ul class="atalhos-criar">${TIPOS_PROPRIOS.map((t) => `
           <li><button class="atalho-criar" type="button" data-acao="inicio-novo" data-tipo="${t.id}">
-            <span><strong>${esc(t.nome)}</strong><small class="campo-ajuda"> · ${esc(t.descricao)}</small></span>
+            <span class="atalho-texto"><strong>${esc(t.nome)}</strong><small class="campo-ajuda">${esc(t.descricao)}</small></span>
           </button></li>`).join('')}</ul>
       </details>
       <div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-padrao">Voltar ao padrão</button></div>

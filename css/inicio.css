@@ -222,21 +222,26 @@
   cursor: pointer;
 }
 
+/* Cada card do catálogo: nome em cima, botões embaixo, sempre no mesmo lugar e da mesma altura */
 .catalogo-item {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 48px;
-  padding: 8px 12px;
+  gap: 10px;
+  min-height: 100px;
+  padding: 12px 14px;
   border-radius: var(--raio-sm);
   background: var(--cor-superficie-2);
 }
 
 .catalogo-acoes {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+}
+
+.catalogo-acoes .botao {
+  white-space: nowrap;
 }
 
 .catalogo > summary::before {

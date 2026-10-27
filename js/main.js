@@ -128,8 +128,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
   document.title = rota.id === 'inicio' ? 'Bússola' : `${rota.titulo} · Bússola`;
 
   // Aba ativa sempre à vista quando as abas rolam de lado (celular).
-  const abaAtiva = conteudo.querySelector('.tarefa-abas [aria-current="page"]');
-  if (abaAtiva) abaAtiva.parentElement.scrollLeft = abaAtiva.offsetLeft - (abaAtiva.parentElement.clientWidth - abaAtiva.offsetWidth) / 2;
+  ajustarBarrasDeAbas();
   if (mudouDeTela) {
     // Entrada suave só na troca de tela (redesenhos por fora não piscam).
     conteudo.classList.remove('tela-nova');
@@ -262,6 +261,30 @@ window.addEventListener('hub:dados', async (evento) => {
   if (daNuvem) redesenharEmBreve();
   else if (podeRedesenharPorFora()) renderizar();
 });
+
+// Barras de abas que rolam de lado: a ativa fica à vista e a borda esmaece onde tem mais itens.
+function marcarRolagem(barra) {
+  const sobra = barra.scrollWidth - barra.clientWidth;
+  if (sobra <= 2) delete barra.dataset.rola;
+  else barra.dataset.rola = barra.scrollLeft <= 2 ? 'fim' : barra.scrollLeft >= sobra - 2 ? 'inicio' : 'meio';
+}
+
+function ajustarBarrasDeAbas() {
+  for (const barra of conteudo.querySelectorAll('.segmentado:not(:has(.segmentado-opcao)), .tarefa-filtros')) {
+    const ativa = barra.querySelector('[aria-current="page"], [aria-pressed="true"], [aria-selected="true"]');
+    if (ativa && barra.scrollWidth > barra.clientWidth) {
+      barra.style.scrollBehavior = 'auto';
+      barra.scrollLeft = ativa.offsetLeft - barra.offsetLeft - (barra.clientWidth - ativa.offsetWidth) / 2;
+      barra.style.scrollBehavior = '';
+    }
+    marcarRolagem(barra);
+    if (!barra.dataset.ouveRolagem) {
+      barra.dataset.ouveRolagem = '1';
+      barra.addEventListener('scroll', () => marcarRolagem(barra), { passive: true });
+    }
+  }
+}
+window.addEventListener('resize', () => ajustarBarrasDeAbas());
 
 // Várias tabelas chegam juntas na sincronização: um redesenho só, no fim da leva.
 let redesenhoMarcado = null;

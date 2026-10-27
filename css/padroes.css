@@ -1,0 +1,105 @@
+/*
+  Padrões do app inteiro (carregado por último).
+  Aqui ficam as regras que fazem as telas se comportarem igual: barras de abas, filtros,
+  botões e grades de cards. Ao criar uma tela nova, use estas peças em vez de inventar outra.
+*/
+
+/* Barras de abas e filtros (.segmentado): uma linha só, rolam de lado quando não cabem.
+   Quando sobra item escondido, a borda esmaece (data-rola, marcado pelo main.js).
+   As opções de formulário em pílula (.segmentado-opcao) continuam quebrando linha. */
+.segmentado:not(:has(.segmentado-opcao)),
+.tarefa-filtros {
+  display: flex;
+  flex-wrap: nowrap;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.segmentado:not(:has(.segmentado-opcao))::-webkit-scrollbar,
+.tarefa-filtros::-webkit-scrollbar {
+  display: none;
+}
+
+.segmentado:not(:has(.segmentado-opcao)) > *,
+.tarefa-filtros > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+.yt-visoes,
+.yt-abas {
+  flex-wrap: nowrap;
+}
+
+[data-rola="fim"] {
+  -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+  mask-image: linear-gradient(to right, #000 85%, transparent);
+}
+
+[data-rola="meio"] {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 85%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 85%, transparent);
+}
+
+[data-rola="inicio"] {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 15%);
+  mask-image: linear-gradient(to right, transparent, #000 15%);
+}
+
+/* Botões: o texto nunca quebra no meio; num espaço apertado o botão desce inteiro para a linha de baixo. */
+.botao,
+.card-link {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+/* No celular, se um botão ainda assim não couber, aí sim o texto quebra (nunca rolagem lateral) */
+@media (max-width: 400px) {
+  .botao {
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+.acoes,
+.acoes-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Alças de arrastar do YouTube e do Substack com a área de toque mínima */
+.yt-alca {
+  min-width: var(--toque);
+  min-height: var(--toque);
+}
+
+/* Filtros (Biblioteca, Questões…): no celular, a busca ocupa a linha toda e o resto vai em duas colunas */
+@media (max-width: 700px) {
+  .filtros {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filtros > .campo:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .filtros select,
+  .filtros input:not([type="checkbox"]) {
+    width: 100%;
+  }
+}
+
+/* Atalhos com nome e descrição: nome em cima, descrição embaixo */
+.atalho-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
