@@ -5,6 +5,7 @@ import { cardTarefasHoje, cardProjetosHoje } from './views-tarefas.js';
 import { cardFinancasHoje, cardContasHoje } from './views-financas.js';
 import { cardRecompensasHoje } from './views-recompensas.js';
 import { cardHabitosHoje } from './views-habitos.js';
+import { cardSonhoHoje, cardFimDeSemanaHoje } from './views-metas.js';
 import { cabecalho, barraProgresso } from './componentes.js';
 import { cardCaixaEntrada } from './views-criar.js';
 import { cardPlano } from './views-plano.js';
@@ -364,6 +365,8 @@ export function renderInicio(estado) {
     recompensas: () => cardRecompensasHoje(estado),
     tarefas: () => cardTarefasHoje(estado),
     habitos: () => cardHabitosHoje(estado),
+    sonho: () => cardSonhoHoje(estado),
+    fimdesemana: () => cardFimDeSemanaHoje(estado),
     projetos: () => cardProjetosHoje(estado),
     contas: () => cardContasHoje(estado),
     financas: () => ((estado.financas || []).some((l) => !l.excluido_em) ? cardFinancasHoje(estado) : ''),

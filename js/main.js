@@ -13,6 +13,7 @@ import { renderFoco } from './views-foco.js';
 import { renderTarefas } from './views-tarefas.js';
 import { renderFinancas } from './views-financas.js';
 import { renderHabitos } from './views-habitos.js';
+import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
@@ -53,6 +54,7 @@ const VIEWS = {
   tarefas: renderTarefas,
   financas: renderFinancas,
   habitos: renderHabitos,
+  metas: renderMetas,
   resumo: renderResumo,
 };
 
@@ -176,6 +178,8 @@ const TABELAS_NA_MEMORIA = {
   financas: 'financas',
   habitos: 'habitos',
   habito_registros: 'habitoRegistros',
+  metas: 'metas',
+  lazer: 'lazer',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -196,15 +200,17 @@ const TELAS_DA_TABELA = {
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
   diario: ['inicio'],
-  tarefas: ['tarefas', 'inicio'],
-  projetos: ['tarefas', 'inicio'],
-  financas: ['financas', 'inicio'],
-  habitos: ['habitos', 'inicio'],
-  habito_registros: ['habitos', 'inicio'],
+  tarefas: ['tarefas', 'inicio', 'metas'],
+  projetos: ['tarefas', 'inicio', 'metas'],
+  financas: ['financas', 'inicio', 'metas'],
+  habitos: ['habitos', 'inicio', 'metas'],
+  habito_registros: ['habitos', 'inicio', 'metas'],
+  metas: ['metas', 'inicio'],
+  lazer: ['metas', 'inicio'],
   respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas'],
+  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'metas'],
   videos: ['youtube', 'inicio'],
   artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes'],
   questoes: ['questoes', 'inicio', 'estudos'],

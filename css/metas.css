@@ -1,0 +1,388 @@
+/* Metas e lazer: quadro dos sonhos em mural, frase do dia, trilha do Spotify e a lista de lazer */
+
+.metas-topo {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.meta-frase {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.meta-frase blockquote {
+  margin: 4px 0 0;
+}
+
+.meta-frase blockquote p {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--cor-texto);
+}
+
+.meta-frase footer,
+.frase-curta footer {
+  margin-top: 6px;
+  font-size: 0.86rem;
+  color: var(--cor-texto-suave);
+}
+
+.meta-trilha summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.meta-trilha .spotify {
+  display: block;
+  width: 100%;
+  height: 152px;
+  border: 0;
+  border-radius: 12px;
+  margin-top: 4px;
+}
+
+/* Mural: colunas que se encaixam como um painel de fotos */
+.quadro {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  columns: 4 200px;
+  column-gap: 12px;
+}
+
+.quadro-grupo {
+  margin: 18px 0 10px;
+}
+
+.sonho {
+  break-inside: avoid;
+  margin-bottom: 12px;
+}
+
+.sonho-botao {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio);
+  overflow: hidden;
+  background: var(--capa-1);
+  color: var(--sonho-texto);
+  box-shadow: var(--sombra-card);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.sonho-botao:hover {
+  transform: translateY(-2px);
+}
+
+.sonho-botao:active {
+  transform: scale(0.98);
+}
+
+.sonho.cor-2 .sonho-botao { background: var(--capa-2); }
+.sonho.cor-3 .sonho-botao { background: var(--capa-3); }
+.sonho.cor-4 .sonho-botao { background: var(--capa-4); }
+.sonho.cor-5 .sonho-botao { background: var(--capa-5); }
+.sonho.cor-6 .sonho-botao { background: var(--capa-6); }
+
+.sonho-botao img,
+.sonho-sem-foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.sonho.tam-p .sonho-botao img,
+.sonho.tam-p .sonho-sem-foto { aspect-ratio: 16 / 9; }
+
+.sonho.tam-g .sonho-botao img,
+.sonho.tam-g .sonho-sem-foto { aspect-ratio: 3 / 4; }
+
+.sonho-sem-foto {
+  display: grid;
+  place-items: center;
+  font-size: 2.6rem;
+}
+
+.sonho-texto {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 28px 12px 12px;
+  background: linear-gradient(to top, var(--sonho-veu), transparent);
+}
+
+.sonho-texto strong {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.sonho-area {
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
+.sonho-barra {
+  display: block;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--sonho-trilho);
+  overflow: hidden;
+}
+
+.sonho-barra i {
+  display: block;
+  height: 100%;
+  background: var(--sonho-texto);
+  border-radius: inherit;
+}
+
+.sonho-selo {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.sonho-selo.grande {
+  font-size: 0.9rem;
+  padding: 4px 12px;
+}
+
+.quadro.realizados .sonho-botao img {
+  filter: saturate(0.85);
+}
+
+.meta-vazio {
+  text-align: center;
+  padding: 28px 20px;
+}
+
+/* Lista de metas */
+.metas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.meta-linha {
+  padding: 0;
+}
+
+.meta-linha-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.meta-linha-topo {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-ritmo {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.ritmo-no-ritmo,
+.ritmo-pronta { color: var(--cor-sucesso); }
+.ritmo-acelerar { color: var(--urg-urgente-texto); }
+.ritmo-atrasada { color: var(--urg-atrasado-texto); }
+
+/* Detalhe e formulário */
+.meta-detalhe-foto {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: var(--raio);
+  margin-bottom: 10px;
+}
+
+.meta-marcos {
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+}
+
+.meta-atualizar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.meta-foto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.meta-foto img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.meta-foto label.botao {
+  cursor: pointer;
+}
+
+/* Lazer */
+.lazer {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lazer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cor-linha);
+  transition: opacity 0.2s;
+}
+
+.lazer-item:last-child {
+  border-bottom: 0;
+}
+
+.lazer-item.marcando {
+  opacity: 0.5;
+}
+
+.lazer-emoji {
+  font-size: 1.4rem;
+  width: 32px;
+  text-align: center;
+}
+
+.lazer-corpo {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.lazer-corpo {
+  cursor: pointer;
+}
+
+.lazer-corpo strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* Card do Hoje */
+.sonho-hoje {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sonho-hoje-foto img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.frase-curta {
+  margin: 0;
+}
+
+.frase-curta p {
+  margin: 0;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .metas-topo {
+    grid-template-columns: 1fr;
+  }
+
+  /* Player compacto do Spotify, para o quadro aparecer logo */
+  .meta-trilha .spotify {
+    height: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .quadro {
+    columns: 2 140px;
+    column-gap: 10px;
+  }
+
+  .sonho-texto {
+    padding: 22px 10px 10px;
+  }
+
+  .sonho-texto strong {
+    font-size: 0.9rem;
+  }
+
+  .lazer-item [data-comecar] {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sonho-botao,
+  .lazer-item {
+    transition: none;
+  }
+
+  .sonho-botao:hover,
+  .sonho-botao:active {
+    transform: none;
+  }
+}

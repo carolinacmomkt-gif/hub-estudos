@@ -160,6 +160,11 @@
   --flip-cartao-baixo: #251B15;
   --flip-texto: #F4E9DC;
   --flip-dobra: rgba(0, 0, 0, 0.45);
+  /* Texto sobre as fotos do quadro dos sonhos (igual nos dois temas) */
+  --sonho-veu: rgba(14, 9, 6, 0.78);
+  --sonho-texto: #FBF4EC;
+  --sonho-trilho: rgba(251, 244, 236, 0.3);
+
   --palco-preto: #000000;
   --palco-preto-texto: #CDBFAF;
 

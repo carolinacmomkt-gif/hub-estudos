@@ -33,7 +33,7 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 - [ ] **7 — Diário.**
 - [ ] **8 — Casa.**
 - [ ] **9 — Consultoria**: carteira de clientes (começa com a Sensus), evolução da consultoria e controle do produto e das mudanças.
-- [ ] **10 — Metas e lazer.**
+- [x] **10 — Metas e lazer** ✓ código pronto, aguardando teste: quadro dos sonhos com fotos (mural, por área ou por ano, tamanhos pequeno/médio/grande, Realizados com selo), metas com progresso automático (caixinha, hábito, projeto, Lazer, etapas ou número manual) e ritmo até o prazo, "Realizei!" com comemoração, frase do dia (35 frases de autoras e autores conferidos, troca todo dia), trilha do Spotify embutida, lista de lazer em uma linha ("filme Duna 2", "lugar Pirenópolis 300") com Quero / Fazendo / Feito, nota, sortear e "virar recompensa" nas Finanças, e cards no Hoje (sonho e frase do dia; ideias para o fim de semana de quinta a domingo). Sem o momento de visualizar (decisão da Carol).
 - [ ] **Cadernos por aparelho**: no computador, documento digitado (tipo Google Docs); no celular, notas; no tablet, escrita à mão.
 - [ ] **11 — Acabamento e instalação no tablet.**
 - Regra de toda a fase: usabilidade fluida e gostosa (resposta ao toque, movimento leve, sem tela pulando), com as cores e a identidade de sempre.

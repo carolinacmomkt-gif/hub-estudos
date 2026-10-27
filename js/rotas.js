@@ -17,6 +17,7 @@ export const ROTAS = [
   { id: 'substack', titulo: 'Substack', icone: 'substack', grupo: 'criacao' },
   { id: 'resumo', titulo: 'Resumo da semana', icone: 'calendario', grupo: 'dia' },
   { id: 'financas', titulo: 'Finanças', icone: 'financas', grupo: 'vida' },
+  { id: 'metas', titulo: 'Metas e lazer', icone: 'metas', grupo: 'vida' },
 ];
 
 export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configurações', icone: 'configuracoes' };

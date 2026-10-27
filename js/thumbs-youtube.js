@@ -30,6 +30,11 @@ export async function enviarThumb(videoId, arquivo) {
   return { id, caminho, criado_em: new Date().toISOString() };
 }
 
+// Guarda a imagem recém-enviada para mostrar na hora, sem baixar de volta.
+export function guardarImagemLocal(caminho, blob) {
+  urls.set(caminho, URL.createObjectURL(blob));
+}
+
 export async function urlDaThumb(caminho) {
   if (!urls.has(caminho)) urls.set(caminho, URL.createObjectURL(await baixarArquivo(caminho)));
   return urls.get(caminho);
@@ -45,7 +50,8 @@ export async function apagarThumb(caminho) {
 // Preenche as <img data-thumb="caminho"> da tela (baixa quando precisa).
 export function carregarThumbsDaTela(raiz = document) {
   for (const img of raiz.querySelectorAll('img[data-thumb]')) {
-    if (img.src) continue;
+    if (img.src || img.dataset.carregando) continue;
+    img.dataset.carregando = '1';
     urlDaThumb(img.dataset.thumb).then((url) => { img.src = url; }).catch(() => {
       img.alt = 'Imagem indisponível sem internet';
       img.classList.add('thumb-indisponivel');
