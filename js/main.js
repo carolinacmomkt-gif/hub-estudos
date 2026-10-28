@@ -19,6 +19,7 @@ import { semearLazer } from './ideias-lazer.js';
 import { ligarTablet, irAoPontoDaRota, depoisDeDesenhar } from './tablet.js';
 import { ligarAjusteDaTela } from './ajuste-tela.js';
 import { abrirCompartilhado, conectarComToken, tokenDoTrelloNoEndereco, lerDemandasSeFaz } from './eventos-demandas.js';
+import { organizarSozinha } from './eventos-organizar.js';
 import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
@@ -293,7 +294,8 @@ export async function entrarNoApp() {
     // Depois de receber o que está na nuvem, chegam as ideias de lazer da semana (sem repetir).
     sincronizar().finally(() => {
       sincronizarFaculdade();
-      lerDemandasSeFaz();
+      // Lê as demandas e, se ela ligou, monta a proposta da semana (só avisa; nada é aceito sozinho).
+      Promise.resolve(lerDemandasSeFaz()).finally(() => organizarSozinha().catch(() => {}));
       semearLazer();
     });
     retomarTrilha();

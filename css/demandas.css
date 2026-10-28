@@ -197,3 +197,189 @@
 .dem-cliente[hidden] {
   display: none;
 }
+
+/* ---------------------------------------------------------------------------
+   Organizar minhas demandas: chamada no card e prévia da semana
+   --------------------------------------------------------------------------- */
+.org-chamada {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto);
+  font-size: 0.92rem;
+}
+
+.org-chamada > span {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.org-chamada--alerta {
+  border-left: 3px solid var(--cor-destaque);
+}
+
+.org-previa {
+  display: grid;
+  gap: 14px;
+}
+
+.org-resumo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.org-dia {
+  display: grid;
+  gap: 6px;
+}
+
+.org-dia-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.org-dia-titulo small {
+  margin-left: auto;
+  color: var(--cor-texto-suave);
+  font-weight: 500;
+}
+
+.org-blocos {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-bloco {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: start;
+  gap: 4px 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.org-bloco:last-child {
+  border-bottom: 0;
+}
+
+.org-hora {
+  display: grid;
+  padding-top: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.org-hora small {
+  color: var(--cor-texto-suave);
+  font-weight: 500;
+}
+
+.org-texto {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.org-texto:hover,
+.org-bloco.editando .org-texto {
+  background: var(--cor-destaque-suave);
+}
+
+.org-texto small {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.org-antes {
+  color: var(--cor-texto-destaque);
+}
+
+.org-mover {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+  grid-column: 2;
+  padding: 4px 10px 8px;
+}
+
+.org-mover .campo {
+  flex: 1 1 140px;
+  margin: 0;
+}
+
+.org-mover .acoes {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+.org-nao-cabe {
+  display: grid;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.org-nao-cabe:last-child {
+  border-bottom: 0;
+}
+
+.org-nao-cabe small {
+  color: var(--cor-texto-suave);
+}
+
+.org-mensagem {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--cor-borda-campo);
+  border-radius: 10px;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.org-outras {
+  margin-top: 0;
+}
+
+/* Só o Aceitar fica preso embaixo, sempre à mão. */
+.org-acoes {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  padding: 10px 0 4px;
+  background: var(--cor-superficie-elevada);
+}
+
+.org-acoes .botao {
+  flex: 1 1 auto;
+}
+
+/* Toque de 44px nos botões da semana (o pequeno padrão tem 40). */
+.org-previa .botao-pequeno,
+.org-chamada .botao-pequeno {
+  min-height: 44px;
+}

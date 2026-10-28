@@ -7,12 +7,14 @@
 //        { acao: 'trello-config', designers: { id, aprovacao, aprovado }, clientes: [{ id, etiqueta }] }
 //        { acao: 'sincronizar' }
 //        { acao: 'ler', texto }               → sugestão para uma mensagem (quem grava é o app)
+//        { acao: 'organizar', entrada }       → onde cada demanda entra na semana (js/dados-organizar.js)
 
 import { resposta, lerCorpo, texto } from '../lib/http.mjs';
 import { exigirLogin, banco } from '../lib/supabase.mjs';
 import { cifrar, decifrar } from '../lib/cripto.mjs';
 import { ErroIa } from '../lib/ia-comum.mjs';
 import { noFuso } from '../lib/avisos.mjs';
+import { organizarComIa } from '../lib/ia-organizar.mjs';
 import {
   ErroOrigem, contaTrello, contaNotion, basesNotion, quadrosTrello, sincronizarDemandas, lerMensagem,
 } from '../lib/demandas.mjs';
@@ -111,6 +113,13 @@ export default async (req) => {
         if (!mensagem) return resposta(400, { ok: false, erro: 'A mensagem veio vazia.' });
         const { data: hoje } = noFuso(Date.now(), 'America/Sao_Paulo');
         return resposta(200, { ok: true, sugestao: await lerMensagem(mensagem, hoje) });
+      }
+      case 'organizar': {
+        const e = entrada.entrada;
+        if (!e || !Array.isArray(e.dias) || !Array.isArray(e.itens) || !e.itens.length || e.itens.length > 60 || e.dias.length > 20) {
+          return resposta(400, { ok: false, erro: 'Pedido inválido.' });
+        }
+        return resposta(200, { ok: true, plano: await organizarComIa(e) });
       }
       default:
         return resposta(400, { ok: false, erro: 'Pedido desconhecido.' });

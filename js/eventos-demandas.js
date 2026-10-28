@@ -65,7 +65,7 @@ export function lerDemandas({ silencioso = false } = {}) {
 export async function lerDemandasSeFaz() {
   if (!navigator.onLine) return;
   const conexoes = (await listar('conexoes')).filter((c) => ['trello', 'notion'].includes(c.servico) && c.status === 'conectado');
-  if (conexoes.some((c) => !c.ultima_sincronizacao || Date.now() - Date.parse(c.ultima_sincronizacao) > UMA_HORA)) lerDemandas({ silencioso: true });
+  if (conexoes.some((c) => !c.ultima_sincronizacao || Date.now() - Date.parse(c.ultima_sincronizacao) > UMA_HORA)) await lerDemandas({ silencioso: true });
 }
 
 // ---------------------------------------------------------------------------

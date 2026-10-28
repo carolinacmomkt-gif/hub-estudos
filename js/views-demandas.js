@@ -4,6 +4,7 @@
 import { esc, haQuantoTempo } from './utilidades.js';
 import { ORIGENS_DEMANDA, TIPOS_DEMANDA, demandasAbertas, demandasMudadas, sugerirEtiqueta, TERMOS_NOTION_PADRAO } from './dados-demandas.js';
 import { AREAS_TAREFA, PRIORIDADES } from './dados-tarefas.js';
+import { chamadaOrganizar, formPrefsOrganizar } from './views-organizar.js';
 
 const NO_CARD = 5;
 const linkSeguro = (url) => /^https?:\/\//i.test(String(url || ''));
@@ -117,6 +118,7 @@ export function cardDemandas(estado, agora = Date.now()) {
         </div>
       </div>
       ${pedeReconectar ? `<p class="ava-alerta" role="alert">${esc(pedeReconectar.detalhe?.mensagem || 'Um acesso parou de funcionar.')} <a href="#configuracoes/demandas">Conectar de novo</a></p>` : ''}
+      ${chamadaOrganizar(estado, abertas, agora)}
       ${corpo}
     </section>`;
 }
@@ -333,6 +335,7 @@ export function cardConfigDemandas(estado, chaveTrello) {
       ${blocoTrello(trello, chaveTrello)}
       <h3 class="ava-subtitulo">Notion</h3>
       ${blocoNotion(notion)}
+      ${formPrefsOrganizar(estado)}
       <h3 class="ava-subtitulo">WhatsApp</h3>
       <p class="campo-ajuda">O WhatsApp não deixa nenhum app ler as conversas. No tablet: segure a mensagem, toque em <strong>Compartilhar</strong> e escolha <strong>Bússola</strong>. No iPhone (que não mostra apps instalados pelo navegador no Compartilhar): segure a mensagem, toque em <strong>Copiar</strong> e, no card Demandas, em <strong>Colar mensagem</strong>. A IA transforma o texto em demanda.</p>
       ${algum ? `<div class="acoes"><button class="botao botao-secundario" type="button" data-acao="dem-ler"${estado.lendoDemandas ? ' disabled' : ''}>${estado.lendoDemandas ? 'Lendo…' : 'Ler agora'}</button></div>` : ''}
