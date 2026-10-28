@@ -34,11 +34,12 @@ import { ligarDia, cliqueDia, enviarDia } from './eventos-dia.js';
 import { ligarDemandas, cliqueDemandas, enviarDemandas, mudancaDemandas } from './eventos-demandas.js';
 import { cliqueBusca, enviarBusca, mudancaBusca } from './eventos-busca.js';
 import { ligarCaptura, cliqueCaptura, enviarCaptura } from './eventos-captura.js';
+import { ligarWidgets, cliqueWidgets, enviarWidgets, mudancaWidgets } from './eventos-widgets.js';
 import { ligarMetas, cliqueMetas, enviarMetas, mudancaMetas } from './eventos-metas.js';
 import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './eventos-estudos.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -201,11 +202,11 @@ async function gerarCodigoWidget() {
 
 async function desligarWidget() {
   const atual = (obterEstado().config || []).find((c) => c.chave === 'widget' && !c.excluido_em);
-  if (!atual || !window.confirm('Desligar o widget? Ele para de mostrar o resumo até você gerar um código novo.')) return;
+  if (!atual || !window.confirm('Desligar os widgets? Eles param de mostrar os resumos até você gerar um código novo.')) return;
   await salvar('config', { ...atual, valor: {}, excluido_em: new Date().toISOString() });
   atualizarEstado({ widgetCodigo: null });
   app.renderizar();
-  avisoCurto('Widget desligado.');
+  avisoCurto('Widgets desligados.');
 }
 
 async function copiar(texto, aviso) {
@@ -392,7 +393,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarTarefas, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarCaptura, ligarMetas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarTarefas, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   ligarFolhas();
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
@@ -498,7 +499,7 @@ export function ligarEventos(funcoesDoApp) {
           return;
         }
         if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo)
-          || cliqueFoco(alvo) || cliqueHoje(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueQuestoes(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
+          || cliqueFoco(alvo) || cliqueHoje(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueQuestoes(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -540,7 +541,7 @@ export function ligarEventos(funcoesDoApp) {
     evento.preventDefault();
     // Qual botão enviou (ex.: "Salvar e fazer agora" ou "Só salvar").
     form.dataset.enviadoPor = evento.submitter?.value || '';
-    if (enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarBusca(form) || enviarCaptura(form) || enviarMetas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarQuestoes(form) || enviarSubstack(form) || enviarEstudos(form)) return;
+    if (enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarQuestoes(form) || enviarSubstack(form) || enviarEstudos(form)) return;
     if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form) || enviarYoutube(form)) return;
     switch (form.dataset.form) {
       case 'login':

@@ -258,11 +258,11 @@ Tabelas:
 
 Todas as tabelas usam RLS ligado ao usuário da Carol.
 
-## Widget do iPhone (Scriptable)
+## Widgets do iPhone e do Mac (Scriptable)
 
-- Script em `scriptable/bussola-widget.js` (sem segredo nenhum): pequeno, médio e grande, cores claras e escuras com `Color.dynamic`, tocar abre `#inicio`, atualiza a cada 15 min e guarda a última resposta para mostrar sem internet.
-- Acesso por um **código do widget** gerado em Configurações: aparece uma vez, o app guarda só o SHA-256 em `config` "widget"; gerar outro desliga o anterior; "Desligar o widget" corta o acesso. O código e o endereço ficam no Keychain do iPhone.
-- A função `widget` (GET, `Authorization: Bearer <código>`) é só leitura e devolve só o resumo (tarefas de hoje, próximos compromissos, bloco do "Planejar meu dia", demandas, hábitos e gastos do mês).
+- Um script só (`scriptable/bussola-widget.js`, sem segredo nenhum) para todos os widgets: cada widget diz qual é no campo **Parâmetro** do Scriptable (vazio = Hoje nas cores da Bússola; o nome de uma área também vale). Estilo vidro (decisão da Carol, 28/10/2026): degradê da paleta, cartões translúcidos com borda clara, números em fonte arredondada, anéis e barras de progresso e SF Symbols. Pequeno, médio, grande e os da Tela Bloqueada. No Mac mini, pelos "widgets do iPhone" do macOS Sonoma.
+- Em Configurações → Widgets do iPhone ela monta os widgets (config "widgets": `parametro`, `nome`, `area`, `paleta`, `modo`, `cores` próprias) com prévia clara e escura. Áreas, paletas (Bússola, Areia, Grafite, Sálvia, Azul-noite, Rosa queimado e cores próprias) e contraste ficam em `js/dados-widgets.js` (texto e suave ≥ 4,5:1, destaque ≥ 3:1; nas cores próprias o texto é trocado se não der contraste).
+- Acesso por um **código do widget**: aparece uma vez, o app guarda só o SHA-256 em `config` "widget"; gerar outro desliga o anterior. A função `widget` (GET, `Authorization: Bearer <código>`, `?w=<parâmetro>`) é só leitura e devolve só o resumo da área.
 
 ## Backup automático
 

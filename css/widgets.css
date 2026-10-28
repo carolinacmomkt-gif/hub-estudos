@@ -1,0 +1,298 @@
+/* Configurações → Widgets do iPhone: prévias no estilo vidro (cores vindas da paleta do widget,
+   pelas variáveis --wf1, --wf2, --wt, --ws, --wd, --wv, --wb), seletor de paletas e lista. */
+
+.wprev {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 150px;
+  aspect-ratio: 1;
+  padding: 12px 13px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--wf1), var(--wf2));
+  color: var(--wt);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  font-family: system-ui, -apple-system, sans-serif;
+  flex: none;
+}
+
+/* Brilho suave no canto, como vidro pegando luz */
+.wprev::before {
+  content: "";
+  position: absolute;
+  inset: -40% 40% 40% -40%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 65%);
+  pointer-events: none;
+}
+
+.wprev-medio {
+  width: min(320px, 100%);
+  aspect-ratio: 2.14;
+}
+
+.wprev-topo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ws);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.wprev-icone {
+  display: grid;
+  color: var(--wd);
+}
+
+.wprev-icone svg {
+  width: 13px;
+  height: 13px;
+}
+
+.wprev-corpo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wprev-numero {
+  font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wprev-linha {
+  color: var(--ws);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wprev-vidro {
+  margin-top: auto;
+  padding: 6px 9px;
+  border: 1px solid var(--wb);
+  border-radius: 12px;
+  background: var(--wv);
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Lista de widgets montados */
+.widget-lista {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.widget-item {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.widget-previas {
+  display: flex;
+  gap: 10px;
+}
+
+.widget-previas .wprev {
+  width: 116px;
+  padding: 10px;
+  border-radius: 18px;
+}
+
+.widget-previas .wprev-numero {
+  font-size: 1.35rem;
+}
+
+.widget-previas .wprev-vidro {
+  font-size: 0.66rem;
+  padding: 5px 7px;
+}
+
+.widget-info {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.widget-parametro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.widget-parametro code {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--cor-superficie-2);
+}
+
+/* Formulário: prévia clara e escura lado a lado */
+.widget-form-previa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+
+.widget-form-previa .wprev {
+  flex: 1 1 240px;
+}
+
+.widget-paletas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.widget-paleta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--toque);
+  padding: 8px 4px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  font-size: 0.82rem;
+  text-align: center;
+  cursor: pointer;
+}
+
+.widget-paleta input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.widget-paleta:has(input:checked) {
+  border-color: var(--cor-foco);
+  outline: 2px solid var(--cor-foco);
+  outline-offset: -1px;
+  background: var(--cor-superficie-2);
+}
+
+.widget-paleta:has(input:focus-visible) {
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+.widget-amostra {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--cor-linha);
+}
+
+.widget-amostra i {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.widget-amostra-propria {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+  font-size: 1.1rem;
+}
+
+.widget-proprias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.widget-proprias[hidden] {
+  display: none;
+}
+
+.campo-cor input[type="color"] {
+  width: 64px;
+  min-height: var(--toque);
+  padding: 4px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-2);
+}
+
+/* Claro ou escuro: rádios no visual do segmentado */
+.widget-form .segmentado {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.widget-form .segmentado label {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: calc(var(--toque) - 6px);
+  padding: 0 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.widget-form .segmentado input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.widget-form .segmentado label:has(input:checked) {
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
+}
+
+.widget-form .segmentado label:has(input:focus-visible) {
+  outline: 2px solid var(--cor-foco);
+}
+
+@media (max-width: 520px) {
+  .widget-previas {
+    width: 100%;
+  }
+
+  .widget-previas .wprev {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+
+  .widget-form-previa {
+    padding: 10px;
+  }
+
+  .widget-form-previa .wprev {
+    flex-basis: 100%;
+  }
+}
