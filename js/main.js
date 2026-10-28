@@ -17,6 +17,7 @@ import { formatoDoCaderno } from './dados-texto.js';
 import { retomarTrilha } from './trilha.js';
 import { semearLazer } from './ideias-lazer.js';
 import { ligarTablet, irAoPontoDaRota, depoisDeDesenhar } from './tablet.js';
+import { ligarAjusteDaTela } from './ajuste-tela.js';
 import { abrirCompartilhado, conectarComToken, tokenDoTrelloNoEndereco, lerDemandasSeFaz } from './eventos-demandas.js';
 import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
@@ -342,6 +343,7 @@ function ajustarBarrasDeAbas() {
 }
 window.addEventListener('resize', () => ajustarBarrasDeAbas());
 ligarTablet();
+ligarAjusteDaTela();
 
 // Celular: ao rolar para baixo o "+" sai da frente; ao subir (ou parar no topo) ele volta.
 let ultimaRolagem = 0;

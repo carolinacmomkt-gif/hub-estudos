@@ -411,6 +411,14 @@ body[data-menu="icones"] .nav-lateral .situacao-sinc {
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
     background: var(--cor-superficie);
     border-top: 1px solid var(--cor-linha);
+    /* iPhone: acompanha a área visível de verdade (js/ajuste-tela.js) */
+    transform: translateY(var(--ajuste-base, 0px));
+  }
+
+  /* Com o teclado aberto, a barra e o "+" saem da frente (não flutuam em cima do teclado) */
+  body[data-teclado="aberto"] .nav-inferior,
+  body[data-teclado="aberto"] .fab {
+    visibility: hidden;
   }
 
   .nav-inferior .nav-lista {
@@ -594,6 +602,10 @@ body[data-menu="icones"] .nav-lateral .situacao-sinc {
   }
 
   /* Rolando para baixo, o "+" sai da frente do conteúdo; volta ao subir */
+  .fab {
+    translate: 0 var(--ajuste-base, 0px);
+  }
+
   body[data-rolando="baixo"] .fab {
     transform: translateY(24px) scale(0.6);
     opacity: 0;
