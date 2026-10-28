@@ -46,6 +46,11 @@ function palco(s, p) {
         </div>
       </div>
       <div class="palco-centro">
+        ${s.aqui ? '' : `
+          <div class="palco-outro" role="status">
+            <span>Esta sessão está rodando ${esc(s.ondeEsta)}: o sino e o som tocam lá.</span>
+            <button class="botao botao-primario botao-pequeno" type="button" data-acao="foco-continuar-aqui">Continuar aqui</button>
+          </div>`}
         ${aguardando
           ? '<p class="palco-feito" aria-hidden="true">✓</p>'
           : `<div class="flip-relogio" data-flip aria-hidden="true">${relogioFlip(relogioTexto(s.restante))}</div>`}
@@ -139,7 +144,9 @@ export function cardFocoInicio(estado) {
         <a class="card-link" href="#foco">Abrir</a>
       </div>
       ${s.ativa
-        ? `<p class="revisao-total"><strong data-foco-relogio>${s.fase === 'aguardando' ? '✓' : relogioTexto(s.restante)}</strong><span class="texto-suave">${esc(s.nomeFase)} · ${esc(s.titulo)}</span></p>`
+        ? `<p class="revisao-total"><strong data-foco-relogio>${s.fase === 'aguardando' ? '✓' : relogioTexto(s.restante)}</strong><span class="texto-suave">${esc(s.nomeFase)} · ${esc(s.titulo)}</span></p>
+           ${s.aqui ? '' : `<p class="texto-suave foco-onde">Em andamento ${esc(s.ondeEsta)}.</p>
+             <button class="botao botao-secundario" type="button" data-acao="foco-continuar-aqui">Continuar aqui</button>`}`
         : `<p class="revisao-total"><strong>${esc(textoMinutos(minHoje))}</strong><span class="texto-suave">hoje · ${esc(textoMinutos(minSemana))} na semana</span></p>
            <button class="botao botao-secundario" type="button" data-acao="foco-iniciar">Começar ${prefsFoco(estado).foco} min</button>`}
     </section>`;

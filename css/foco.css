@@ -39,6 +39,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.foco-barra-onde {
+  color: var(--cor-texto-destaque);
+  font-weight: 600;
+}
+
 .foco-barra-titulo {
   min-width: 0;
   overflow: hidden;
@@ -153,6 +158,36 @@
 
   .modo-editor .foco-barra {
     bottom: 16px;
+  }
+
+  /* Oferta de continuar aqui: os dois botões cabem sem o nome da fase. */
+  .foco-barra:has([data-acao="foco-acompanhar"]) .foco-barra-fase {
+    display: none;
+  }
+
+  .foco-barra:has([data-acao="foco-continuar-aqui"]) .foco-barra-abrir {
+    display: none;
+  }
+
+  /* Duas linhas: tempo e onde está; embaixo, os dois botões. */
+  .foco-barra:has([data-acao="foco-acompanhar"]) {
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    padding: 10px 12px;
+    border-radius: 20px;
+  }
+
+  .foco-barra:has([data-acao="foco-acompanhar"]) .foco-barra-titulo {
+    display: block;
+    flex: 1 1 calc(100% - 80px);
+  }
+
+  .foco-barra:has([data-acao="foco-acompanhar"]) .botao {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 8px;
+    font-size: 0.85rem;
+    white-space: nowrap;
   }
 }
 
@@ -549,4 +584,26 @@
 /* Com o palco aberto, o conteúdo de trás ocupa a largura toda (o menu está escondido) */
 .foco-imersivo .app {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* Sessão rodando em outro aparelho: aviso no palco com o "Continuar aqui". */
+.palco-outro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 0 auto 16px;
+  max-width: 560px;
+  padding: 10px 14px;
+  border: 1px solid var(--cor-linha);
+  border-radius: 16px;
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.foco-onde {
+  margin: 0 0 8px;
 }

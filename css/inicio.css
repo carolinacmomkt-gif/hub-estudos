@@ -512,3 +512,67 @@
   font: inherit;
   resize: vertical;
 }
+
+/* Continuar de onde parou (outro aparelho): uma linha discreta por lugar. */
+.continuar-lista {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.continuar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.continuar-item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.continuar-texto {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+}
+
+.continuar-texto strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.continuar-tipo {
+  color: var(--cor-texto-destaque);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.continuar-texto .texto-suave {
+  font-size: 0.85rem;
+}
+
+.continuar-item .botao {
+  flex: none;
+}
+
+@media (max-width: 480px) {
+  .continuar-item {
+    flex-wrap: wrap;
+  }
+
+  .continuar-texto {
+    flex-basis: calc(100% - 54px);
+  }
+
+  .continuar-item .botao {
+    order: 3;
+    flex: 1 1 auto;
+  }
+}

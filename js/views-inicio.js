@@ -17,6 +17,7 @@ import { cardYoutubeInicio } from './views-youtube.js';
 import { cardLeiturasInicio } from './views-biblioteca.js';
 import { cardSubstackInicio } from './views-substack.js';
 import { cardFocoInicio } from './views-foco.js';
+import { cardContinuar } from './continuar.js';
 import { cardResumoInicio } from './views-resumo.js';
 import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas, listaQuantoPrecisa, URGENCIA_NOTA } from './dados-faculdade.js';
 import {
@@ -404,6 +405,7 @@ export function renderInicio(estado) {
 
   const doApp = {
     proximo: () => cardProximoPasso(escolherProximoPasso(dados, agora)),
+    continuar: () => (estado.usandoExemplo ? '' : cardContinuar(estado, agora)),
     meudia: () => (estado.usandoExemplo ? '' : cardMeuDia(estado, agora)),
     demandas: () => (estado.usandoExemplo ? '' : cardDemandas(estado, agora)),
     agenda: () => (estado.usandoExemplo ? '' : cardAgendaHoje(estado, agora)),

@@ -13,6 +13,7 @@ import { esc } from './utilidades.js';
 import { imagemDoTexto, corDoTextoNoPapel } from './texto-imagem.js';
 import { seletorDeFormato, trocarFormato } from './editor-texto.js';
 import { obterEstado, atualizarEstado } from './estado.js';
+import { paginaPedida, notarPaginaDoCaderno } from './continuar.js';
 
 const CHAVE_PREFS = 'hub.editor.prefs';
 
@@ -352,6 +353,7 @@ function abrirPagina(n) {
   if (!document.getElementById('editor-painel')?.hidden) atualizarPainel();
   carregarFundo(p);
   carregarTexto(p);
+  notarPaginaDoCaderno(caderno, p, indice + 1);
 }
 
 // Texto digitado no computador ou no celular: aparece na folha, e a tinta fica por cima.
@@ -888,7 +890,10 @@ export async function montarEditorCaderno(id) {
     },
   });
   aplicarPrefs();
-  abrirPagina(0);
+  // Veio do "Continuar de onde parou": abre na página em que a Carol estava no outro aparelho.
+  const pedida = paginaPedida(caderno.id);
+  const naPedida = pedida ? paginas.findIndex((p) => p.id === pedida.pagina_id) : -1;
+  abrirPagina(naPedida >= 0 ? naPedida : pedida?.pagina ? Number(pedida.pagina) - 1 : 0);
   mostrarSalvo('Salvo');
   document.addEventListener('click', aoClicar);
   document.addEventListener('change', aoMudarCampo);

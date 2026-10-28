@@ -264,6 +264,13 @@ Todas as tabelas usam RLS ligado ao usuário da Carol.
 - Em Configurações → Widgets do iPhone ela monta os widgets (config "widgets": `parametro`, `nome`, `area`, `paleta`, `modo`, `cores` próprias) com prévia clara e escura. Áreas, paletas (Bússola, Areia, Grafite, Sálvia, Azul-noite, Rosa queimado e cores próprias) e contraste ficam em `js/dados-widgets.js` (texto e suave ≥ 4,5:1, destaque ≥ 3:1; nas cores próprias o texto é trocado se não der contraste).
 - Acesso por um **código do widget**: aparece uma vez, o app guarda só o SHA-256 em `config` "widget"; gerar outro desliga o anterior. A função `widget` (GET, `Authorization: Bearer <código>`, `?w=<parâmetro>`) é só leitura e devolve só o resumo da área.
 
+## Continuar em outro aparelho
+
+- Decisão da Carol (28/10/2026): a sessão de foco segue de um aparelho para outro, e o "continuar de onde parei" vale para caderno, leitura, simulado, rascunho do Substack e roteiro do YouTube.
+- Cada aparelho tem um código sorteado no navegador (`js/aparelho.js`, `hub.aparelho-id`) e um tipo (celular, tablet, computador) que dá o nome nas mensagens ("no computador", "no outro celular").
+- **Foco** (`js/foco.js`): a sessão vai para `config` "foco_ativo" (`{ sessao, versao, por, porTipo }`, versão que só cresce); com sessão aberta o app puxa só a tabela `config` a cada 20 s (1 min sem sessão) e ao voltar para o app (`puxarTabela`). A sessão tem `dono`: só ele toca o sino, vibra, mantém a tela acesa e o som ambiente, e publica o fim de fase automático (antes confere a nuvem, para um aparelho que dormiu não tomar a sessão de volta). "Continuar aqui" passa o dono; "Só acompanhar" fica lembrado no aparelho. O registro em `sessoes_foco` tem id fixo (sessão + ciclo), então dois aparelhos nunca contam o mesmo foco em dobro.
+- **Onde parei** (`js/continuar.js`): uma linha por tipo em `config` "continuar-<tipo>" (`id`, `titulo`, `rota`, `detalhe`, `pagina_id`/`pagina`, `posicao`, `aparelho`, `tipoAparelho`, `quando`), gravada a cada ~8 s e ao sair do app. O card "Continuar de onde parou" do Hoje mostra até 3 lugares de outro aparelho com menos de 6h; Dispensar fica no aparelho; nada abre sozinho. Salvar essas chaves não redesenha a tela (`main.js`).
+
 ## Backup automático
 
 - A `backup-agendado` (todo dia às 06:00 UTC, 3h em Brasília) e a `backup` (listar e "Fazer uma cópia agora") gravam em `{id}/backups/bussola-AAAA-MM-DD.json.gz` no Storage, no mesmo formato do "Exportar backup" (`app: 'hub-estudos'`). Entram as tabelas de `js/tabelas.js` (a mesma lista do app), inclusive o que está na lixeira; nunca `credenciais`, `conexoes`, `assinaturas_push`.

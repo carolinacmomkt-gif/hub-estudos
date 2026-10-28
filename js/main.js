@@ -31,6 +31,7 @@ import { filtrarListaNaTela } from './eventos-questoes.js';
 import { salvarSubstackAgora } from './eventos-substack.js';
 import { reaplicarBuscaCadernos } from './eventos-cadernos.js';
 import { atualizarTela as atualizarFoco } from './foco.js';
+import { notarTela } from './continuar.js';
 import { renderConfiguracoes, textoSituacao } from './views-configuracoes.js';
 import { renderLogin } from './views-login.js';
 import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
@@ -154,6 +155,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
   atualizarBotoesTema();
   marcarRotaAtiva(rota.id);
   atualizarFoco({ soRelogio: true }); // a barrinha do foco some na tela do foco e aparece nas outras
+  notarTela(); // "continuar de onde parei" no outro aparelho
   document.title = rota.id === 'inicio' ? 'Bússola' : `${rota.titulo} · Bússola`;
 
   // Aba ativa sempre à vista quando as abas rolam de lado (celular).
@@ -303,11 +305,15 @@ export async function entrarNoApp() {
   }
 }
 
+const semRedesenho = (chave) => chave === 'foco_ativo' || String(chave).startsWith('continuar-');
+
 // Dados mudaram (no aparelho ou vindos do Supabase): atualiza a tela que mostra esses dados.
 window.addEventListener('hub:dados', async (evento) => {
-  const { tabela, daNuvem } = evento.detail || {};
+  const { tabela, daNuvem, chave } = evento.detail || {};
   if (!TABELAS_NA_MEMORIA[tabela]) return;
   await carregarDadosLocais([tabela]);
+  // Sessão de foco e "onde parei" salvos aqui: a tela já sabe, não precisa redesenhar.
+  if (tabela === 'config' && !daNuvem && semRedesenho(chave)) return;
   if (tabela === 'financas' && noApp) conferirConquistas();
   if (tabela === 'config') {
     montarNavegacao();

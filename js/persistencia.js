@@ -165,7 +165,7 @@ export async function salvar(tabela, dados) {
     tx.objectStore(tabela).put(registro);
     tx.objectStore('fila').add({ tabela, id: registro.id });
   });
-  avisar('hub:dados', { tabela });
+  avisar('hub:dados', { tabela, chave: registro.chave });
   await contarPendentes();
   agendarSincronizacao(1500);
   return registro;
@@ -404,6 +404,17 @@ export async function sincronizar() {
     return situacaoSincronizacao();
   })();
   return sincronizando;
+}
+
+// Leitura rápida de uma tabela só (ex.: a sessão de foco aberta em outro aparelho), sem a volta
+// completa por todas as tabelas. Sem internet ou sem login, não faz nada.
+export async function puxarTabela(tabela) {
+  if (!nuvemConfigurada() || !sessaoAtual() || !navigator.onLine || sincronizando) return;
+  try {
+    await receberTabela(tabela);
+  } catch {
+    // a sincronização completa tenta de novo
+  }
 }
 
 export function iniciarSincronizacaoAutomatica() {
