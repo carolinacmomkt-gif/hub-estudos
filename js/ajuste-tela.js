@@ -25,7 +25,9 @@ export function ligarAjusteDaTela() {
   window.addEventListener('scroll', agendar, { passive: true });
   window.addEventListener('orientationchange', agendar);
   // Teclado fechando: o Safari recalcula a tela quando a página "rola" um nada.
-  document.addEventListener('focusout', () => {
+  document.addEventListener('focusout', (e) => {
+    // Só quando sai de um campo (o teclado fechando); senão atrapalharia a rolagem suave.
+    if (!e.target?.matches?.('input, textarea, select, [contenteditable="true"]')) return;
     setTimeout(() => {
       if (!document.activeElement?.matches?.('input, textarea, select, [contenteditable="true"]')) window.scrollTo(window.scrollX, window.scrollY);
       agendar();

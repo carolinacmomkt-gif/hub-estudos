@@ -505,3 +505,10 @@
 .tarefa.deslizando:not(.passou-do-ponto)::before {
   opacity: 0.55;
 }
+
+/* Tarefa que veio do Trello ou do Notion: abre o card ou a página exata */
+.tarefa-link {
+  flex: none;
+  align-self: center;
+  text-decoration: none;
+}

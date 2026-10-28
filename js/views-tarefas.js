@@ -39,6 +39,14 @@ export function textoDia(data, hoje = hojeIso()) {
 }
 
 // Uma tarefa na lista. "mostrarData": nas visões em que a data não é óbvia.
+// Tarefa que veio de uma demanda: o link do card do Trello ou da página do Notion (só http/https).
+const ORIGEM_LINK = { trello: 'Trello', notion: 'Notion' };
+export function linkDaOrigem(t) {
+  const url = String(t?.dados?.url || '');
+  if (!/^https?:\/\//i.test(url)) return null;
+  return { url, nome: ORIGEM_LINK[t.dados?.origem] || 'site' };
+}
+
 export function itemTarefa(t, { projetos = [], hoje = hojeIso(), mostrarData = true, feitaHoje = false, semProjeto = false } = {}) {
   const feita = Boolean(t.feita_em) || feitaHoje;
   const projeto = t.projeto_id && !semProjeto ? projetos.find((p) => p.id === t.projeto_id) : null;
@@ -59,6 +67,7 @@ export function itemTarefa(t, { projetos = [], hoje = hojeIso(), mostrarData = t
         <span class="tarefa-titulo">${esc(t.titulo)}</span>
         ${meta.length ? `<span class="tarefa-meta">${meta.join('')}</span>` : ''}
       </button>
+      ${(() => { const l = linkDaOrigem(t); return l ? `<a class="botao-icone botao-icone-p tarefa-link" href="${esc(l.url)}" target="_blank" rel="noopener" aria-label="Abrir no ${esc(l.nome)}: ${esc(t.titulo)}" title="Abrir no ${esc(l.nome)}">↗</a>` : ''; })()}
     </li>`;
 }
 
@@ -248,6 +257,7 @@ export function formTarefa(t = {}, projetos = []) {
       <label class="campo" data-rep-mensal${rec.tipo === 'mensal' ? '' : ' hidden'}><span class="campo-rotulo">Dia do mês</span>
         <input name="dia_mes" type="number" min="1" max="31" value="${esc(rec.dia || '')}"></label>
       <label class="campo"><span class="campo-rotulo">Notas</span><textarea name="notas" rows="3" maxlength="4000">${esc(t.notas || '')}</textarea></label>
+      ${(() => { const l = linkDaOrigem(t); return l ? `<p><a class="botao botao-secundario" href="${esc(l.url)}" target="_blank" rel="noopener">Abrir no ${esc(l.nome)} ↗</a></p>` : ''; })()}
       <p class="ava-alerta" role="alert" data-erro hidden></p>
       <div class="acoes">
         <button class="botao botao-primario" type="submit">${t.id ? 'Salvar' : 'Adicionar'}</button>

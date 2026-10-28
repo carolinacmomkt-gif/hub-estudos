@@ -6,6 +6,7 @@ import { ORIGENS_DEMANDA, TIPOS_DEMANDA, demandasAbertas, demandasMudadas, suger
 import { AREAS_TAREFA, PRIORIDADES } from './dados-tarefas.js';
 
 const NO_CARD = 5;
+const linkSeguro = (url) => /^https?:\/\//i.test(String(url || ''));
 const DIA_MS = 864e5;
 const diaSemana = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' });
 const diaMes = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -56,9 +57,10 @@ function itemDemanda(d, hoje) {
       <div class="dem-acoes">
         ${d.dados?.tipo ? `<button class="botao botao-primario botao-pequeno" type="button" data-acao="dem-feito" data-id="${esc(d.id)}">Feito</button>
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="dem-aceitar" data-id="${esc(d.id)}" title="Vira tarefa para fazer depois">Depois</button>
-        ${d.origem_url ? `<a class="botao botao-secundario botao-pequeno" href="${esc(d.origem_url)}" target="_blank" rel="noopener">Abrir</a>` : ''}`
+        ${linkSeguro(d.origem_url) ? `<a class="botao botao-secundario botao-pequeno" href="${esc(d.origem_url)}" target="_blank" rel="noopener" aria-label="Abrir no Trello: ${esc(d.titulo)}">Abrir</a>` : ''}`
     : `<button class="botao botao-primario botao-pequeno" type="button" data-acao="dem-aceitar" data-id="${esc(d.id)}">Aceitar</button>
-        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="dem-ajustar" data-id="${esc(d.id)}">Ajustar</button>`}
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="dem-ajustar" data-id="${esc(d.id)}">Ajustar</button>
+        ${linkSeguro(d.origem_url) ? `<a class="botao botao-secundario botao-pequeno" href="${esc(d.origem_url)}" target="_blank" rel="noopener" aria-label="Abrir no ${esc(ORIGENS_DEMANDA[d.origem])}: ${esc(d.titulo)}">Abrir</a>` : ''}`}
         <button class="botao-icone botao-icone-p" type="button" data-acao="dem-descartar" data-id="${esc(d.id)}" aria-label="Descartar: ${esc(d.titulo)}" title="Descartar">×</button>
       </div>
     </li>`;
@@ -144,7 +146,7 @@ export function formDemanda(d) {
       ${d.detalhe ? `<details class="detalhes"><summary>Ver o texto original</summary><p class="dem-original">${esc(d.detalhe)}</p></details>` : ''}
       <div class="acoes">
         <button class="botao botao-primario" type="submit">Aceitar e virar tarefa</button>
-        ${d.origem_url ? `<a class="botao botao-secundario" href="${esc(d.origem_url)}" target="_blank" rel="noopener">Abrir no ${esc(ORIGENS_DEMANDA[d.origem])}</a>` : ''}
+        ${linkSeguro(d.origem_url) ? `<a class="botao botao-secundario" href="${esc(d.origem_url)}" target="_blank" rel="noopener">Abrir no ${esc(ORIGENS_DEMANDA[d.origem])}</a>` : ''}
       </div>
     </form>`;
 }
