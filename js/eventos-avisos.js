@@ -134,7 +134,12 @@ export function mudancaAvisos(alvo) {
     marcados(form, 'tipo').forEach((t) => { tipos[t] = true; });
     const horaResumo = /^\d{2}:\d{2}$/.test(form.elements['resumo-hora']?.value || '') ? form.elements['resumo-hora'].value : atual.resumo.hora;
     const resumo = { ativo: Boolean(form.querySelector('[name="resumo-ativo"]')?.checked), dia: Number(form.elements['resumo-dia']?.value) || 0, hora: horaResumo };
-    salvarConfigAvisos({ hora, marcos, tipos, resumo }).then(() => app.avisoCurto('Preferências dos avisos salvas.'));
+    const horaDe = (nome, padrao) => (/^\d{2}:\d{2}$/.test(form.elements[nome]?.value || '') ? form.elements[nome].value : padrao);
+    const vida = Object.fromEntries(['manha', 'contas', 'habitos'].map((id) => [id, {
+      ativo: Boolean(form.querySelector(`[name="vida-${id}"]`)?.checked), hora: horaDe(`vida-hora-${id}`, atual.vida[id].hora),
+    }]));
+    vida.silencio = { ativo: Boolean(form.querySelector('[name="silencio-ativo"]')?.checked), de: horaDe('silencio-de', atual.vida.silencio.de), ate: horaDe('silencio-ate', atual.vida.silencio.ate) };
+    salvarConfigAvisos({ hora, marcos, tipos, resumo, vida }).then(() => app.avisoCurto('Preferências dos avisos salvas.'));
   } else {
     const dias = marcados(form, 'dias').map(Number);
     if (!dias.length) {

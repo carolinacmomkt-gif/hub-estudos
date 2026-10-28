@@ -209,6 +209,7 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
   4. eventos que a Carol cria à mão (provas avisadas em sala, apresentações).
 - Cada evento tem: tipo (prova, trabalho, atividade, aula, feriado, pessoal), disciplina, data/hora, status (pendente / entregue / atrasado, vindo do AVA) e um link para o AVA.
 - **Avisos**: contagem regressiva no Início e destaque vermelho para atrasados, laranja para menos de 48h e bege para a semana. Notificações do PWA 3 dias antes, 1 dia antes e no dia, com horário configurável. Como o PWA fechado não dispara avisos sozinho no Android, elas chegam por **Web Push**: a Scheduled Function verifica os prazos e envia o push (chaves VAPID).
+- **Avisos do dia a dia** (28/10/2026, `netlify/lib/avisos-vida.mjs`): resumo da manhã (até 4h depois do horário), contas fixas e faturas que vencem hoje e hábitos que faltam, cada um com liga/desliga e horário, mais um horário de silêncio. A função `avisos-agendado` roda a cada 15 minutos; cada aviso sai uma vez por dia (marcas em `config` "avisos_vida_enviados"). No iPhone, só com o app adicionado à Tela de Início pelo Safari (iOS 16.4+); a tela de Configurações mostra o passo a passo.
 - **Plano de estudo automático para provas**: ao surgir uma prova, o app sugere sessões de revisão nos dias anteriores, já com os cadernos e as questões daquela disciplina.
 - Opcional: exportar tudo como um link .ics para assinar no Google Agenda.
 

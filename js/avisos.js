@@ -15,6 +15,19 @@ export const AVISOS_PADRAO = {
   tipos: { prova: true, trabalho: true, atividade: true, revisao: true, youtube: true, substack: true, aula: false, feriado: false, pessoal: false },
 };
 
+// Avisos do dia a dia. Igual a VIDA_PADRAO em netlify/lib/avisos-vida.mjs.
+export const VIDA_PADRAO = {
+  manha: { ativo: true, hora: '07:30' },
+  contas: { ativo: true, hora: '09:00' },
+  habitos: { ativo: true, hora: '20:00' },
+  silencio: { ativo: true, de: '22:00', ate: '07:00' },
+};
+
+function vidaDe(v) {
+  const x = v || {};
+  return Object.fromEntries(Object.entries(VIDA_PADRAO).map(([id, padrao]) => [id, { ...padrao, ...(x[id] || {}) }]));
+}
+
 export function configDeAvisos(estado) {
   const v = (estado.config || []).find((c) => c.chave === 'avisos' && !c.excluido_em)?.valor || {};
   return {
@@ -23,6 +36,7 @@ export function configDeAvisos(estado) {
     marcos: { ...AVISOS_PADRAO.marcos, ...(v.marcos || {}) },
     tipos: { ...AVISOS_PADRAO.tipos, ...(v.tipos || {}) },
     resumo: { ...RESUMO_PADRAO, ...(v.resumo || {}) },
+    vida: vidaDe(v.vida),
   };
 }
 

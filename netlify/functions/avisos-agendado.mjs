@@ -1,9 +1,11 @@
-// Avisos de prazo no aparelho, de hora em hora (Netlify Scheduled Function).
+// Avisos no aparelho, a cada 15 minutos (Netlify Scheduled Function): prazos, resumo da semana
+// e os avisos do dia a dia (manhã, contas e hábitos).
 // Para cada aparelho ativado: vê o que vence em 3 dias, amanhã e hoje, manda o aviso no
 // horário escolhido e anota o que já saiu (cada prazo sai uma vez em cada marco).
 
 import { banco } from '../lib/supabase.mjs';
 import { avisosDevidos, montarNotificacoes, enviarPush, configDeAvisos, chaveEnviado, ErroPush } from '../lib/avisos.mjs';
+import { avisosDaVida } from '../lib/avisos-vida.mjs';
 import { resumoDevido, resumoDaSemana, textoDaNotificacao } from '../../js/dados-resumo.js';
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -36,10 +38,36 @@ export async function enviarResumoDaUsuaria(userId, assinaturas, valorAvisos, ag
   return { enviado: entregue };
 }
 
+// Avisos do dia a dia: cada um sai uma vez por dia (marcas em config "avisos_vida_enviados").
+export async function enviarVidaDaUsuaria(userId, assinaturas, valorAvisos, agora = Date.now()) {
+  const fuso = configDeAvisos(valorAvisos).fuso;
+  const [marca] = await banco.listar('config', userId, 'chave=eq.avisos_vida_enviados');
+  const enviados = new Set(marca?.valor?.chaves || []);
+  const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: fuso }).format(new Date(agora));
+  const semana = new Date(agora - 8 * DIA).toISOString().slice(0, 10);
+  const ler = (tabela, filtro = '') => banco.listar(tabela, userId, filtro).catch(() => []); // tabela que ainda não existe: segue sem ela
+  const [tarefas, financas, habitos, registros, eventos] = await Promise.all([
+    ler('tarefas', 'feita_em=is.null'), ler('financas'), ler('habitos'), ler('habito_registros', `data=gte.${semana}`),
+    ler('eventos', `inicio=gte.${new Date(agora - DIA).toISOString()}&inicio=lt.${new Date(agora + 2 * DIA).toISOString()}`),
+  ]);
+  const notificacoes = avisosDaVida({ dados: { tarefas, financas, habitos, registros, eventos }, config: valorAvisos?.vida, fuso, agora, enviados });
+  if (!notificacoes.length) return { enviados: 0 };
+  const entregues = new Set();
+  for (const assinatura of assinaturas) {
+    for (const n of notificacoes) if ((await enviarPush(assinatura, n)) === 'ok') entregues.add(n.chave);
+  }
+  if (entregues.size) {
+    const doDia = [...enviados].filter((c) => c.endsWith(`:${hoje}`));
+    await banco.gravar('config', [{ user_id: userId, chave: 'avisos_vida_enviados', valor: { chaves: [...new Set([...doDia, ...entregues])] } }], 'user_id,chave');
+  }
+  return { enviados: entregues.size };
+}
+
 export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.now()) {
   const [linhaConfig] = await banco.listar('config', userId, 'chave=eq.avisos');
   const config = configDeAvisos(linhaConfig?.valor);
   await enviarResumoDaUsuaria(userId, assinaturas, linhaConfig?.valor, agora).catch((erro) => console.error('resumo:', erro?.message));
+  await enviarVidaDaUsuaria(userId, assinaturas, linhaConfig?.valor, agora).catch((erro) => console.error('avisos do dia:', erro?.message));
   const janela = `inicio=gte.${new Date(agora - DIA).toISOString()}&inicio=lt.${new Date(agora + 5 * DIA).toISOString()}`;
   const eventos = await banco.listar('eventos', userId, janela);
   const enviados = new Set((await banco.listarTodas('avisos_enviados', `user_id=eq.${userId}&enviado_em=gte.${new Date(agora - 10 * DIA).toISOString()}`))
@@ -102,4 +130,4 @@ export default async () => {
   return new Response('ok');
 };
 
-export const config = { schedule: '0 * * * *' };
+export const config = { schedule: '*/15 * * * *' };

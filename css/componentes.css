@@ -1180,3 +1180,53 @@ details.card > summary {
   justify-content: space-between;
   flex-wrap: wrap;
 }
+
+/* Avisos do dia a dia: liga/desliga e horário na mesma linha */
+.aviso-vida {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.aviso-vida:last-child {
+  border-bottom: 0;
+}
+
+.aviso-vida .campo-marcar {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.aviso-vida .campo-marcar span {
+  display: flex;
+  flex-direction: column;
+}
+
+.aviso-vida input[type="time"] {
+  flex: none;
+  width: 132px;
+  min-width: 132px;
+  padding-right: 6px;
+}
+
+/* A linha do silêncio tem dois horários: quebra no celular */
+.aviso-vida:has(.aviso-vida-horas) {
+  flex-wrap: wrap;
+}
+
+.aviso-vida-horas {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.passos-ios {
+  margin: 8px 0;
+  padding-left: 22px;
+  list-style: decimal;
+  line-height: 1.6;
+}
