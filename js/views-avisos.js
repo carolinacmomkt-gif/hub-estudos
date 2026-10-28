@@ -64,6 +64,7 @@ export function cardAvisos(estado) {
           ${linhaVida('manha', 'Resumo da manhã', 'Tarefas, provas, contas e hábitos do dia', cfg.vida.manha)}
           ${linhaVida('contas', 'Contas do dia', 'Contas fixas e faturas que vencem hoje', cfg.vida.contas)}
           ${linhaVida('habitos', 'Hábitos que faltam', 'Só se ainda faltar algum no dia', cfg.vida.habitos)}
+          <div class="aviso-vida">${marcar('vida-blocos', '1', 'Começo de cada bloco do "Meu dia"', cfg.vida.blocos.ativo)}</div>
           <div class="aviso-vida">
             ${marcar('silencio-ativo', '1', 'Horário de silêncio', cfg.vida.silencio.ativo)}
             <span class="aviso-vida-horas">

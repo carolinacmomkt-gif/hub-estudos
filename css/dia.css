@@ -1,0 +1,139 @@
+/* "Planejar meu dia": blocos do dia em linha do tempo, com o bloco de agora em destaque */
+
+.meu-dia .dia-form .cal-form-linha {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dia-blocos {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.dia-bloco {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.dia-bloco:last-child {
+  border-bottom: 0;
+}
+
+.dia-hora {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 52px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dia-hora small {
+  font-weight: 500;
+  color: var(--cor-texto-fraco);
+}
+
+.dia-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 44px;
+  justify-content: center;
+  padding: 4px 0 4px 12px;
+  border: 0;
+  border-left: 3px solid var(--cor-tipo, var(--cor-destaque));
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.dia-texto {
+  cursor: pointer;
+  border-radius: 0 var(--raio-sm) var(--raio-sm) 0;
+}
+
+button.dia-texto:hover {
+  background: var(--cor-superficie-2);
+}
+
+.dia-bloco.tipo-foco { --cor-tipo: var(--cor-destaque); }
+.dia-bloco.tipo-estudo { --cor-tipo: var(--tipo-revisao); }
+.dia-bloco.tipo-tarefa { --cor-tipo: var(--tipo-pessoal); }
+.dia-bloco.tipo-pausa,
+.dia-bloco.tipo-refeicao { --cor-tipo: var(--cor-borda); }
+.dia-bloco.tipo-habito { --cor-tipo: var(--cor-sucesso); }
+.dia-bloco.tipo-compromisso { --cor-tipo: var(--tipo-prova); }
+
+.dia-bloco.tipo-pausa strong,
+.dia-bloco.tipo-refeicao strong {
+  font-weight: 500;
+  color: var(--cor-texto-suave);
+}
+
+.dia-bloco.agora .dia-texto {
+  background: var(--cor-destaque-suave);
+  border-radius: 0 var(--raio-sm) var(--raio-sm) 0;
+}
+
+.dia-bloco.passou {
+  opacity: 0.55;
+}
+
+.dia-agora-linha {
+  margin: 0 0 4px;
+  font-size: 1.02rem;
+}
+
+.dia-dica {
+  margin: 0 0 6px;
+  padding: 10px 12px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-destaque-suave);
+}
+
+.dia-pensando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 80px;
+  color: var(--cor-texto-suave);
+}
+
+.dia-pensando-ponto {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--cor-destaque);
+  animation: dia-pulso 1s ease-in-out infinite alternate;
+}
+
+@keyframes dia-pulso {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
+.agenda-item.tipo-bloco { --cor-tipo: var(--cor-destaque); }
+
+@media (max-width: 480px) {
+  .meu-dia .dia-form .cal-form-linha {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .meu-dia .dia-form input[type="time"] {
+    padding: 8px 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dia-pensando-ponto {
+    animation: none;
+  }
+}

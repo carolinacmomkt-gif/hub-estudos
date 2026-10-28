@@ -12,6 +12,7 @@ export const VIDA_PADRAO = {
   manha: { ativo: true, hora: '07:30' },
   contas: { ativo: true, hora: '09:00' },
   habitos: { ativo: true, hora: '20:00' },
+  blocos: { ativo: true },
   silencio: { ativo: true, de: '22:00', ate: '07:00' },
 };
 
@@ -28,6 +29,7 @@ export function configVida(valor) {
     manha: item('manha'),
     contas: item('contas'),
     habitos: item('habitos'),
+    blocos: { ativo: v.blocos?.ativo ?? VIDA_PADRAO.blocos.ativo },
     silencio: {
       ativo: v.silencio?.ativo ?? VIDA_PADRAO.silencio.ativo,
       de: horaOk(v.silencio?.de, VIDA_PADRAO.silencio.de),
@@ -130,6 +132,15 @@ export function avisosDaVida({ dados, config, fuso = 'America/Sao_Paulo', agora 
       });
     }
   }
-  const ORDEM = ['manha', 'contas', 'habitos'];
+  // Começo de cada bloco do "Planejar meu dia" aceito (o aviso sai na rodada de 15 min do começo).
+  const plano = dados.meuDia?.plano;
+  if (cfg.blocos.ativo && plano?.aceito && plano.data === hoje) {
+    for (const b of plano.blocos || []) {
+      const ini = minutos(b.inicio);
+      if (b.tipo === 'compromisso' || agoraMin < ini || agoraMin >= ini + 15 || enviados.has(`bloco:${hoje}:${b.inicio}`)) continue;
+      saida.push({ chave: `bloco:${hoje}:${b.inicio}`, titulo: `Agora: ${b.titulo}`, texto: `Até ${b.fim}.${b.motivo ? ` ${b.motivo}` : ''}`, tag: `bloco-${hoje}`, url: '/#inicio' });
+    }
+  }
+  const ORDEM = ['manha', 'contas', 'habitos', 'bloco'];
   return saida.sort((a, b) => ORDEM.indexOf(a.chave.split(':')[0]) - ORDEM.indexOf(b.chave.split(':')[0]));
 }

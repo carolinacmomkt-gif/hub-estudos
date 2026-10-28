@@ -5,11 +5,12 @@ import { obterEstado } from './estado.js';
 import { esc, DIA } from './utilidades.js';
 import { gravar, criarGravador } from './gravacao.js';
 import { tarefasNaAgenda } from './views-tarefas.js';
+import { blocosNaAgenda } from './views-dia.js';
 
 const fmtHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const NOME_TIPO = {
   prova: 'Prova', trabalho: 'Trabalho', atividade: 'Atividade', aula: 'Aula', feriado: 'Feriado',
-  pessoal: 'Pessoal', revisao: 'Revisão', youtube: 'YouTube', substack: 'Substack', tarefa: 'Tarefa',
+  pessoal: 'Pessoal', revisao: 'Revisão', youtube: 'YouTube', substack: 'Substack', tarefa: 'Tarefa', bloco: 'Bloco do dia',
 };
 export const HUMORES = [
   { valor: 1, rosto: '😞', nome: 'Difícil' },
@@ -59,7 +60,7 @@ export function resumoDoDia(estado, agora = Date.now()) {
 }
 
 export function cardAgendaHoje(estado, agora = Date.now()) {
-  const itens = eventosDeHoje([...(estado.eventos || []), ...tarefasNaAgenda(estado.tarefas, dataLocal(agora))], agora);
+  const itens = eventosDeHoje([...(estado.eventos || []), ...tarefasNaAgenda(estado.tarefas, dataLocal(agora)), ...blocosNaAgenda(estado, agora)], agora);
   let marcouAgora = false;
   const linhas = itens.map((e) => {
     const passou = !e.dia_inteiro && e.t1 < agora;

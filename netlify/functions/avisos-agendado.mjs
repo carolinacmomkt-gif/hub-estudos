@@ -46,18 +46,19 @@ export async function enviarVidaDaUsuaria(userId, assinaturas, valorAvisos, agor
   const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: fuso }).format(new Date(agora));
   const semana = new Date(agora - 8 * DIA).toISOString().slice(0, 10);
   const ler = (tabela, filtro = '') => banco.listar(tabela, userId, filtro).catch(() => []); // tabela que ainda não existe: segue sem ela
-  const [tarefas, financas, habitos, registros, eventos] = await Promise.all([
+  const [tarefas, financas, habitos, registros, eventos, [meuDia]] = await Promise.all([
     ler('tarefas', 'feita_em=is.null'), ler('financas'), ler('habitos'), ler('habito_registros', `data=gte.${semana}`),
     ler('eventos', `inicio=gte.${new Date(agora - DIA).toISOString()}&inicio=lt.${new Date(agora + 2 * DIA).toISOString()}`),
+    ler('config', 'chave=eq.meu_dia'),
   ]);
-  const notificacoes = avisosDaVida({ dados: { tarefas, financas, habitos, registros, eventos }, config: valorAvisos?.vida, fuso, agora, enviados });
+  const notificacoes = avisosDaVida({ dados: { tarefas, financas, habitos, registros, eventos, meuDia: meuDia?.valor }, config: valorAvisos?.vida, fuso, agora, enviados });
   if (!notificacoes.length) return { enviados: 0 };
   const entregues = new Set();
   for (const assinatura of assinaturas) {
     for (const n of notificacoes) if ((await enviarPush(assinatura, n)) === 'ok') entregues.add(n.chave);
   }
   if (entregues.size) {
-    const doDia = [...enviados].filter((c) => c.endsWith(`:${hoje}`));
+    const doDia = [...enviados].filter((c) => c.includes(`:${hoje}`));
     await banco.gravar('config', [{ user_id: userId, chave: 'avisos_vida_enviados', valor: { chaves: [...new Set([...doDia, ...entregues])] } }], 'user_id,chave');
   }
   return { enviados: entregues.size };

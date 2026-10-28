@@ -20,6 +20,7 @@ export const VIDA_PADRAO = {
   manha: { ativo: true, hora: '07:30' },
   contas: { ativo: true, hora: '09:00' },
   habitos: { ativo: true, hora: '20:00' },
+  blocos: { ativo: true },
   silencio: { ativo: true, de: '22:00', ate: '07:00' },
 };
 
