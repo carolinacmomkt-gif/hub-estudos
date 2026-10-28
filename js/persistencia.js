@@ -7,6 +7,7 @@
 // - Excluir = marcar excluido_em (some das listas, mas dá para recuperar).
 
 import { rest, sessaoAtual, nuvemConfigurada, ErroNuvem } from './nuvem.js';
+import { TABELAS, SOMENTE_LEITURA } from './tabelas.js';
 
 const NOME_BANCO = 'hub-estudos';
 // Aumente sempre que TABELAS ganhar uma tabela nova (o aparelho só cria lojas novas numa versão nova).
@@ -14,14 +15,7 @@ const NOME_BANCO = 'hub-estudos';
 const VERSAO_BANCO = 6;
 const LOTE = 500;
 
-export const TABELAS = [
-  'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
-  'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-  'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'videos', 'simulados', 'sessoes_foco',
-  'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer',
-  'demandas',
-];
-const SOMENTE_LEITURA = new Set(['conexoes']); // quem escreve são as funções da Netlify
+export { TABELAS };
 // config tem uma linha por chave ("inicio", "avisos"…). Dois aparelhos podem criar a mesma chave
 // antes de se verem: o envio junta pela chave em vez de dar erro de duplicidade.
 const CHAVE_DE_CONFLITO = { config: 'user_id,chave' };
@@ -446,13 +440,25 @@ export async function exportarBackup() {
   return Object.values(tabelas).reduce((soma, linhas) => soma + linhas.length, 0);
 }
 
-export async function importarBackup(arquivo) {
-  let conteudo;
+// arquivo: o .json exportado, o .json.gz do backup automático ou o conteúdo já lido.
+// modo "faltando": só volta o que não está no aparelho (ou foi para a lixeira) — o seguro;
+// modo "tudo": cada registro fica como estava na cópia.
+export async function lerBackup(arquivo) {
+  let texto;
   try {
-    conteudo = JSON.parse(await arquivo.text());
+    if (arquivo instanceof Blob && /gzip/.test(arquivo.type || '') || /\.gz$/.test(arquivo.name || '')) {
+      texto = await new Response(arquivo.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    } else {
+      texto = await arquivo.text();
+    }
+    return JSON.parse(texto);
   } catch {
     throw new Error('Esse arquivo não é um backup válido.');
   }
+}
+
+export async function importarBackup(arquivo, { modo = 'tudo' } = {}) {
+  const conteudo = arquivo instanceof Blob ? await lerBackup(arquivo) : arquivo;
   if (conteudo?.app !== 'hub-estudos' || typeof conteudo.tabelas !== 'object') {
     throw new Error('Esse arquivo não é um backup da Bússola.');
   }
@@ -461,7 +467,11 @@ export async function importarBackup(arquivo) {
   for (const tabela of TABELAS) {
     const linhas = conteudo.tabelas[tabela];
     if (SOMENTE_LEITURA.has(tabela) || !Array.isArray(linhas)) continue;
-    const validas = linhas.filter((l) => l && typeof l === 'object' && typeof l.id === 'string');
+    let validas = linhas.filter((l) => l && typeof l === 'object' && typeof l.id === 'string');
+    if (modo === 'faltando') {
+      const aqui = new Map((await listar(tabela, { incluirExcluidos: true })).map((l) => [l.id, l]));
+      validas = validas.filter((l) => !aqui.has(l.id) || (aqui.get(l.id).excluido_em && !l.excluido_em));
+    }
     if (!validas.length) continue;
     await transacao([tabela, 'fila'], 'readwrite', (tx) => {
       for (const { user_id: _u, ...linha } of validas) {

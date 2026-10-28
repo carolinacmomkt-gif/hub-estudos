@@ -149,6 +149,57 @@ export const banco = {
     await pedirStorage(caminho, { metodo: 'DELETE' });
   },
 
+  // Tudo de uma tabela da usuária, inclusive o que está na lixeira (para o backup), em páginas.
+  async listarTudo(tabela, userId) {
+    const linhas = [];
+    for (let desde = 0; desde < 200000; desde += 1000) {
+      const pagina = (await pedirRest(`${tabela}?select=*&user_id=eq.${encodeURIComponent(userId)}&order=id&limit=1000&offset=${desde}`)) || [];
+      linhas.push(...pagina);
+      if (pagina.length < 1000) break;
+    }
+    return linhas;
+  },
+
+  // Quem usa o app (as funções agendadas passam por todas; na prática é só a Carol).
+  async idsDasUsuarias() {
+    return [...new Set(((await pedirRest('config?select=user_id')) || []).map((l) => l.user_id))];
+  },
+
+  // Grava um arquivo na pasta da usuária no Storage (substitui se já existir).
+  async subirArquivo(userId, caminho, conteudo, tipo = 'application/octet-stream') {
+    if (!daUsuaria(userId, caminho)) throw new Error('Arquivo fora da pasta da usuária.');
+    const cfg = configuracao();
+    const r = await fetch(`${cfg.url}/storage/v1/object/arquivos/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
+      method: 'POST',
+      headers: {
+        apikey: cfg.servico,
+        ...(cfg.servico.startsWith('sb_') ? {} : { Authorization: `Bearer ${cfg.servico}` }),
+        'Content-Type': tipo,
+        'x-upsert': 'true',
+      },
+      body: conteudo,
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!r.ok) throw new Error(`Storage respondeu ${r.status}`);
+  },
+
+  // Arquivos de uma pasta da usuária: [{ name, created_at, metadata: { size } }].
+  async listarArquivos(userId, pasta) {
+    const cfg = configuracao();
+    const r = await fetch(`${cfg.url}/storage/v1/object/list/arquivos`, {
+      method: 'POST',
+      headers: {
+        apikey: cfg.servico,
+        ...(cfg.servico.startsWith('sb_') ? {} : { Authorization: `Bearer ${cfg.servico}` }),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prefix: `${userId}/${pasta}`, limit: 200, offset: 0, sortBy: { column: 'name', order: 'desc' } }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) throw new Error(`Storage respondeu ${r.status}`);
+    return (await r.json()) || [];
+  },
+
   // Leitura sem filtro de usuária (só para as funções agendadas, que passam por todas).
   async listarTodas(tabela, filtros = '') {
     return (await pedirRest(`${tabela}?select=*${filtros ? `&${filtros}` : ''}`)) || [];

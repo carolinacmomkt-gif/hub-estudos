@@ -46,12 +46,50 @@ function cardSincronizacao(estado) {
         <button class="botao botao-secundario" type="button" data-acao="exportar-backup">Exportar backup</button>
         <label class="botao botao-secundario">
           Importar backup
-          <input class="visualmente-oculto" type="file" accept="application/json,.json" data-acao="importar-backup">
+          <input class="visualmente-oculto" type="file" accept="application/json,.json,.gz,application/gzip" data-acao="importar-backup">
         </label>
       </div>
-      <p class="campo-ajuda">O backup é um arquivo .json com tudo o que está no app. Guarde no Drive de vez em quando.</p>
+      <p class="campo-ajuda">O backup é um arquivo com tudo o que está no app (sem senhas nem tokens).</p>
       <div id="backup-resultado" aria-live="polite"></div>
+      ${s.nuvem && s.logada ? `
+        <h3 class="ava-subtitulo">Cópias automáticas na nuvem</h3>
+        <p class="campo-ajuda">Toda madrugada a Bússola guarda uma cópia de tudo no seu espaço do Supabase (se algo mudou). Ficam as dos últimos 7 dias e uma por semana por 2 meses.</p>
+        <div id="backup-copias">${listaCopias(estado)}</div>
+        <div class="acoes">
+          ${estado.copiasBackup ? '' : '<button class="botao botao-secundario" type="button" data-acao="backup-ver">Ver as cópias</button>'}
+          <button class="botao botao-secundario" type="button" data-acao="backup-agora"${estado.fazendoBackup ? ' disabled aria-busy="true"' : ''}>${estado.fazendoBackup ? 'Copiando…' : 'Fazer uma cópia agora'}</button>
+        </div>` : ''}
     </section>`;
+}
+
+const diaCopia = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+const tamanho = (b) => (!b ? '' : b < 1e6 ? `${Math.max(1, Math.round(b / 1e3))} KB` : `${(b / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`);
+
+function listaCopias(estado) {
+  const copias = estado.copiasBackup;
+  if (!copias) return '';
+  if (!copias.length) return '<p class="texto-suave">Ainda não há cópias. A primeira sai nesta madrugada, ou toque em "Fazer uma cópia agora".</p>';
+  return `<ul class="lista-simples backup-copias">${copias.map((c) => `
+    <li>
+      <span><strong>${esc(diaCopia.format(new Date(`${c.dia}T12:00:00Z`)).replace(/\./g, ''))}</strong>${c.tamanho ? ` <small class="campo-ajuda">${esc(tamanho(c.tamanho))}</small>` : ''}</span>
+      <span class="acoes">
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="backup-baixar" data-caminho="${esc(c.caminho)}" data-nome="${esc(c.nome)}">Baixar</button>
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="backup-restaurar" data-caminho="${esc(c.caminho)}" data-dia="${esc(c.dia)}">Restaurar</button>
+      </span>
+    </li>`).join('')}</ul>`;
+}
+
+// Restaurar uma cópia: o jeito seguro (só o que sumiu) vem primeiro.
+export function folhaRestaurar(dia) {
+  const quando = diaCopia.format(new Date(`${dia}T12:00:00Z`)).replace(/\./g, '');
+  return `
+    <p class="texto-suave">Cópia de <strong>${esc(quando)}</strong>. Como você quer restaurar?</p>
+    <div class="dem-escolhas">
+      <button class="botao botao-primario" type="button" data-acao="backup-restaurar-confirmar" data-modo="faltando">Só o que sumiu</button>
+      <p class="campo-ajuda">Volta o que foi apagado ou não está mais no app. O que você mudou depois da cópia fica como está. Recomendado.</p>
+      <button class="botao botao-secundario" type="button" data-acao="backup-restaurar-confirmar" data-modo="tudo">Tudo como estava na cópia</button>
+      <p class="campo-ajuda">Cada registro volta exatamente como estava nesse dia. O que mudou depois se perde.</p>
+    </div>`;
 }
 
 function cardAparencia() {

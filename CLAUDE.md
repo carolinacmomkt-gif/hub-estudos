@@ -257,6 +257,12 @@ Tabelas:
 
 Todas as tabelas usam RLS ligado ao usuário da Carol.
 
+## Backup automático
+
+- A `backup-agendado` (todo dia às 06:00 UTC, 3h em Brasília) e a `backup` (listar e "Fazer uma cópia agora") gravam em `{id}/backups/bussola-AAAA-MM-DD.json.gz` no Storage, no mesmo formato do "Exportar backup" (`app: 'hub-estudos'`). Entram as tabelas de `js/tabelas.js` (a mesma lista do app), inclusive o que está na lixeira; nunca `credenciais`, `conexoes`, `assinaturas_push`.
+- Sem mudança desde a última cópia, não faz outra. Ficam as 7 mais novas e a primeira de cada semana até 8 semanas (`js/dados-backup.js`).
+- Restaurar acontece no app: "Só o que sumiu" (padrão: volta o que não está no aparelho ou foi para a lixeira) ou "Tudo como estava na cópia".
+
 ## Variáveis de ambiente (Netlify)
 
 - `SUPABASE_URL`

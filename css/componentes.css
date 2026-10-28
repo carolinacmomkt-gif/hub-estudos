@@ -1252,3 +1252,22 @@ details.card > summary {
   list-style: decimal;
   line-height: 1.6;
 }
+
+/* Configurações: cópias automáticas na nuvem */
+.backup-copias li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.backup-copias li:last-child {
+  border-bottom: 0;
+}
+
+.backup-copias .acoes {
+  margin: 0;
+}

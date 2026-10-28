@@ -3,12 +3,12 @@
 import { definirTema } from './tema.js';
 import { definirTamanhoTexto } from './preferencias.js';
 import { obterEstado, atualizarEstado } from './estado.js';
-import { entrarComSenha, sair } from './nuvem.js';
+import { entrarComSenha, sair, baixarArquivo } from './nuvem.js';
 import {
-  salvar, obter, sincronizar, situacaoSincronizacao, exportarBackup, importarBackup, apagarDadosLocais,
+  salvar, obter, sincronizar, situacaoSincronizacao, exportarBackup, importarBackup, lerBackup, apagarDadosLocais,
 } from './persistencia.js';
-import { conectarAva, conectarLyceum, desconectar } from './funcoes.js';
-import { renderCarregando, renderResultadoAva, renderResultadoLyceum } from './views-configuracoes.js';
+import { conectarAva, conectarLyceum, desconectar, chamar } from './funcoes.js';
+import { renderCarregando, renderResultadoAva, renderResultadoLyceum, folhaRestaurar } from './views-configuracoes.js';
 import { renderFolhaCriar } from './views-criar.js';
 import { esc } from './utilidades.js';
 import { sincronizarFaculdade } from './faculdade-sinc.js';
@@ -184,6 +184,65 @@ async function fazerBackup() {
   }
 }
 
+// Cópias automáticas na nuvem (Storage): ver, fazer agora, baixar e restaurar.
+async function verCopias() {
+  const r = await chamar('backup', { acao: 'listar' });
+  if (!r.ok) return avisoCurto(r.erro || 'Não consegui ver as cópias agora.');
+  atualizarEstado({ copiasBackup: r.copias });
+  return app.renderizar();
+}
+
+async function copiaAgora() {
+  if (obterEstado().fazendoBackup) return;
+  atualizarEstado({ fazendoBackup: true });
+  app.renderizar();
+  await sincronizar(); // o que está só no aparelho sobe antes da cópia
+  const r = await chamar('backup', { acao: 'criar' });
+  atualizarEstado({ fazendoBackup: false, ...(r.ok ? { copiasBackup: r.copias } : {}) });
+  app.renderizar();
+  avisoCurto(r.ok ? `Cópia feita, com ${r.total} ${r.total === 1 ? 'registro' : 'registros'}.` : (r.erro || 'Não deu para copiar agora.'));
+}
+
+async function baixarCopia(caminho, nome) {
+  try {
+    const blob = await baixarArquivo(caminho);
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = nome;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+  } catch (erro) {
+    avisoCurto(erro.message || 'Não consegui baixar a cópia.');
+  }
+}
+
+let copiaEscolhida = null;
+function pedirRestaurar(caminho, dia) {
+  copiaEscolhida = { caminho, dia };
+  document.getElementById('folha-evento-titulo').textContent = 'Restaurar a cópia';
+  document.getElementById('folha-evento-conteudo').innerHTML = folhaRestaurar(dia);
+  const folha = document.getElementById('folha-evento');
+  if (!folha.open) folha.showModal();
+}
+
+async function restaurarCopia(modo) {
+  if (!copiaEscolhida) return;
+  if (modo === 'tudo' && !window.confirm('Tudo volta como estava na cópia, e o que mudou depois dela se perde. Restaurar assim mesmo?')) return;
+  const { caminho } = copiaEscolhida;
+  copiaEscolhida = null;
+  document.getElementById('folha-evento').close();
+  try {
+    avisoCurto('Restaurando…');
+    const conteudo = await lerBackup(new Blob([await (await baixarArquivo(caminho)).arrayBuffer()], { type: 'application/gzip' }));
+    const total = await importarBackup(conteudo, { modo });
+    avisoCurto(total ? `Restaurado: ${total} ${total === 1 ? 'registro voltou' : 'registros voltaram'}. Sincronizando…` : 'Nada para restaurar: tudo o que está na cópia já está no app.');
+  } catch (erro) {
+    avisoCurto(erro.message || 'Não consegui restaurar.');
+  }
+}
+
 async function restaurarBackup(input) {
   const arquivo = input.files?.[0];
   input.value = '';
@@ -192,7 +251,10 @@ async function restaurarBackup(input) {
   if (!window.confirm('Importar este backup? Ele se junta aos dados atuais (o que tiver o mesmo registro é substituído pelo do backup).')) return;
   try {
     const total = await importarBackup(arquivo);
-    saida.innerHTML = `<p class="ava-status">Backup importado: ${total} ${total === 1 ? 'registro' : 'registros'}. Sincronizando com a nuvem…</p>`;
+    const texto = `Backup importado: ${total} ${total === 1 ? 'registro' : 'registros'}. Sincronizando com a nuvem…`;
+    // A tela pode redesenhar logo depois (o backup traz as configurações): o aviso embaixo fica.
+    saida.innerHTML = `<p class="ava-status">${texto}</p>`;
+    avisoCurto(texto);
   } catch (erro) {
     saida.innerHTML = `<div class="ava-alerta" role="alert">${esc(erro.message)}</div>`;
   }
@@ -335,6 +397,21 @@ export function ligarEventos(funcoesDoApp) {
         return;
       case 'exportar-backup':
         fazerBackup();
+        return;
+      case 'backup-ver':
+        verCopias();
+        return;
+      case 'backup-agora':
+        copiaAgora();
+        return;
+      case 'backup-baixar':
+        baixarCopia(alvo.dataset.caminho, alvo.dataset.nome);
+        return;
+      case 'backup-restaurar':
+        pedirRestaurar(alvo.dataset.caminho, alvo.dataset.dia);
+        return;
+      case 'backup-restaurar-confirmar':
+        restaurarCopia(alvo.dataset.modo);
         return;
       case 'sair':
         sairDaConta();
