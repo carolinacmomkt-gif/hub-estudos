@@ -91,7 +91,26 @@ body.nota-aberta .trilha {
   }
 }
 
-/* Folhas que sobem de baixo: fecham deslizando */
+/* Folhas que sobem de baixo: fecham deslizando. A alça ganha uma área de toque maior. */
+dialog.folha .folha-alca {
+  position: relative;
+  touch-action: none;
+}
+
+dialog.folha .folha-alca::after {
+  content: "";
+  position: absolute;
+  inset: -16px -60px;
+}
+
+/* A folha deixa uma faixa do app à vista (para tocar fora) e rola por dentro */
+dialog.folha {
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 dialog.folha {
   transition: transform 0.16s ease;
 }
