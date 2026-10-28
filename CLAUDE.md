@@ -56,7 +56,7 @@ A base é a identidade da Central de Conteúdo.
 
 ## Estrutura de telas
 
-1. **Início**: painel-resumo geral, com:
+1. **Início (Hoje)**: painel-resumo geral, com um arranjo próprio para cada aparelho (celular, tablet e computador, em `config` "inicio-<aparelho>"), com:
    - os próximos prazos (7 dias) e as provas;
    - o card "Próximo passo";
    - revisões de questões pendentes;
