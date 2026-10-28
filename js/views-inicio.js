@@ -18,7 +18,7 @@ import { cardLeiturasInicio } from './views-biblioteca.js';
 import { cardSubstackInicio } from './views-substack.js';
 import { cardFocoInicio } from './views-foco.js';
 import { cardResumoInicio } from './views-resumo.js';
-import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas } from './dados-faculdade.js';
+import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas, listaQuantoPrecisa, URGENCIA_NOTA } from './dados-faculdade.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
   diasAte, haQuantoTempo, numeroNota, DIA,
@@ -278,6 +278,47 @@ function cardFaltas(estado) {
     </section>`;
 }
 
+// "Quanto preciso tirar": a nota que falta em cada disciplina, do mais apertado ao mais tranquilo.
+const nota1 = (n) => (Math.ceil(n * 10 - 1e-9) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+const diaProva = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+
+function linhaPrecisa(x) {
+  const { r, meta, nivel, proxima, faltas, pendentes } = x;
+  const quais = r.faltam === 1 ? `na ${pendentes[0] || 'prova que falta'}` : `em cada uma das ${r.faltam} provas`;
+  let texto;
+  let chip;
+  if (nivel === 'impossivel') { texto = `Mesmo com 10 ${quais}, não chega a ${nota1(meta)}`; chip = 'Recuperação'; }
+  else if (nivel === 'abaixo') { texto = `Média final ${nota1(r.final)}, abaixo de ${nota1(meta)}`; chip = nota1(r.final); }
+  else { texto = `Precisa de ${nota1(r.necessaria)} ${quais}`; chip = nota1(r.necessaria); }
+  const meta2 = [
+    proxima && `${proxima.titulo.replace(/\s+/g, ' ').slice(0, 40)} em ${diaProva.format(new Date(proxima.inicio)).replace(/\./g, '')}`,
+    faltas && ['atencao', 'estourou'].includes(faltas.nivel) && textoFaltas(faltas),
+  ].filter(Boolean).join(' · ');
+  return `
+    <li class="prazo urg-${URGENCIA_NOTA[nivel]}">
+      <span class="prazo-marca" aria-hidden="true"></span>
+      <div><p class="prazo-titulo"><a href="#faculdade/${esc(x.disciplina.id)}">${esc(x.disciplina.nome)}</a></p>
+        <p class="prazo-meta">${esc(texto)}${meta2 ? ` · ${esc(meta2)}` : ''}</p></div>
+      <div class="prazo-tempo"><span class="chip" aria-label="${esc(texto)}">${esc(chip)}</span></div>
+    </li>`;
+}
+
+function cardPrecisa(estado, agora) {
+  const lista = listaQuantoPrecisa(estado, agora);
+  if (!lista.length) return '';
+  const abertas = lista.filter((x) => !['garantida', 'passou'].includes(x.nivel));
+  const prontas = lista.filter((x) => ['garantida', 'passou'].includes(x.nivel));
+  return `
+    <section class="card" aria-labelledby="precisa-titulo">
+      <div class="card-topo">
+        <h2 class="card-titulo" id="precisa-titulo">Quanto preciso tirar</h2>
+        <a class="card-link" href="#faculdade">Faculdade</a>
+      </div>
+      ${abertas.length ? `<ul class="prazos">${abertas.map(linhaPrecisa).join('')}</ul>` : '<p class="texto-suave">Tudo encaminhado: nenhuma disciplina pedindo nota alta.</p>'}
+      ${prontas.length ? `<p class="campo-ajuda">Média já garantida em ${prontas.map((x) => esc(x.disciplina.nome)).join(', ')}.</p>` : ''}
+    </section>`;
+}
+
 function cardAvisos(estado, agora) {
   const avisos = avisosRecentes(estado, 4);
   if (!avisos.length) return '';
@@ -382,6 +423,7 @@ export function renderInicio(estado) {
     revisoes: () => cardRevisoes(dados),
     notas: () => cardNotas(dados, agora),
     faltas: () => (estado.usandoExemplo ? '' : cardFaltas(estado)),
+    precisa: () => (estado.usandoExemplo ? '' : cardPrecisa(estado, agora)),
     avisos: () => (estado.usandoExemplo ? '' : cardAvisos(estado, agora)),
     youtube: () => ((estado.videos || []).some((v) => !v.excluido_em) ? cardYoutubeInicio(estado, agora) : ''),
     foco: () => cardFocoInicio(estado),

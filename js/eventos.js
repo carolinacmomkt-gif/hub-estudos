@@ -220,7 +220,14 @@ async function aoMudarCalculadora(form) {
     pesos[campo.dataset.chave] = Number.isFinite(valor) && valor >= 0 ? valor : 1;
   });
   disciplina.pesos = { meta: Number.isFinite(meta) && meta > 0 ? meta : 7, pesos };
-  atualizarResultadoCalculadora(obterEstado(), disciplina);
+  // "E se eu tirar...": só na tela, não vai para o banco.
+  const simuladas = {};
+  form.querySelectorAll('input[name="simulada"]').forEach((campo) => {
+    const valor = Number(String(campo.value).replace(',', '.'));
+    if (campo.value !== '' && Number.isFinite(valor)) simuladas[campo.dataset.chave] = Math.min(10, Math.max(0, valor));
+  });
+  atualizarResultadoCalculadora(obterEstado(), disciplina, simuladas);
+  if (form.contains(document.activeElement) && document.activeElement.name === 'simulada') return; // simular não salva nada
   clearTimeout(tempoCalculadora);
   tempoCalculadora = setTimeout(() => salvar('disciplinas', { ...disciplina }), 800);
 }

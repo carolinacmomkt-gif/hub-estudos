@@ -8,7 +8,7 @@ import {
 } from './utilidades.js';
 import {
   disciplinasAtivas, eventosDaDisciplina, frequenciaDaDisciplina, situacaoFaltas, textoFaltas, urgenciaFaltas,
-  notasLyceumDaDisciplina, notasAvaDaDisciplina, provasDaCalculadora, calcularMedia, situacaoDoEvento, avisosRecentes,
+  notasLyceumDaDisciplina, notasAvaDaDisciplina, provasDaCalculadora, calcularMedia, simularMedia, situacaoDoEvento, avisosRecentes,
 } from './dados-faculdade.js';
 
 const NOMES_TIPO = { prova: 'Prova', trabalho: 'Trabalho', atividade: 'Atividade', aula: 'Aula', feriado: 'Feriado', pessoal: 'Pessoal', revisao: 'Revisão' };
@@ -204,24 +204,51 @@ function cardCalculadora(estado, d) {
             <input name="meta" type="number" inputmode="decimal" min="0" max="10" step="0.1" value="${esc(meta)}">
           </label>
           <div class="calculadora-provas">
-            ${provas.map((p) => `
-              <label class="campo campo-curto">
-                <span class="campo-rotulo">${esc(p.nome)} <small>${p.nota !== null && p.nota !== undefined ? `nota ${numeroNota(Number(p.nota))}` : 'sem nota'}</small></span>
-                <input name="peso" data-chave="${esc(p.chave)}" type="number" inputmode="decimal" min="0" step="0.5" value="${esc(pesos[p.chave] ?? 1)}" aria-label="Peso de ${esc(p.nome)}">
-              </label>`).join('')}
+            ${provas.map((p) => {
+    const semNota = p.nota === null || p.nota === undefined;
+    return `
+              <div class="calc-prova">
+                <span class="campo-rotulo">${esc(p.nome)} <small>${semNota ? 'sem nota' : `nota ${numeroNota(Number(p.nota))}`}</small></span>
+                <div class="calc-campos">
+                  <label class="campo campo-curto"><span class="campo-ajuda">Peso</span>
+                    <input name="peso" data-chave="${esc(p.chave)}" type="number" inputmode="decimal" min="0" step="0.5" value="${esc(pesos[p.chave] ?? 1)}" aria-label="Peso de ${esc(p.nome)}"></label>
+                  ${semNota ? `<label class="campo campo-curto"><span class="campo-ajuda">E se eu tirar</span>
+                    <input name="simulada" data-chave="${esc(p.chave)}" type="number" inputmode="decimal" min="0" max="10" step="0.1" placeholder="0 a 10" aria-label="Nota que você imagina tirar em ${esc(p.nome)}"></label>` : ''}
+                </div>
+              </div>`;
+  }).join('')}
           </div>
-          <p class="campo-ajuda">Os números são os pesos de cada prova (1 = peso normal). Confira no plano de ensino da disciplina.</p>
+          <p class="campo-ajuda">Peso 1 = peso normal (confira no plano de ensino). "E se eu tirar" só simula: não fica salvo.</p>
         </form>
-        <p class="calculadora-resultado" id="calc-resultado" aria-live="polite">${esc(resultadoMedia(r, meta))}</p>`
+        <p class="calculadora-resultado" id="calc-resultado" aria-live="polite">${esc(resultadoMedia(r, meta))}</p>
+        <p class="calculadora-resultado calc-simulacao" id="calc-simulacao" aria-live="polite" hidden></p>`
         : '<p class="texto-suave">As provas aparecem aqui quando o Lyceum ou o AVA tiverem notas desta disciplina.</p>'}
     </section>`;
 }
 
-export function atualizarResultadoCalculadora(estado, disciplina) {
+// Resultado do "E se eu tirar...": com todas as provas preenchidas, a média final; senão, o que ainda falta.
+function resultadoSimulacao(r, meta) {
+  if (!r) return '';
+  if (r.final !== undefined) {
+    return r.aprovada
+      ? `Com essas notas, sua média fica ${numeroNota(r.final)}: você passa.`
+      : `Com essas notas, sua média fica ${numeroNota(r.final)}: ainda abaixo de ${numeroNota(meta)}.`;
+  }
+  return `Com essa nota, ${resultadoMedia(r, meta).replace(/^Você/, 'você')}`;
+}
+
+export function atualizarResultadoCalculadora(estado, disciplina, simuladas = {}) {
   const el = document.getElementById('calc-resultado');
   if (!el) return;
   const meta = Number(disciplina.pesos?.meta ?? 7);
-  el.textContent = resultadoMedia(calcularMedia(provasDaCalculadora(estado, disciplina.id), disciplina.pesos?.pesos || {}, meta), meta);
+  const provas = provasDaCalculadora(estado, disciplina.id);
+  const pesos = disciplina.pesos?.pesos || {};
+  el.textContent = resultadoMedia(calcularMedia(provas, pesos, meta), meta);
+  const sim = document.getElementById('calc-simulacao');
+  if (!sim) return;
+  const temSimulada = Object.keys(simuladas).length > 0;
+  sim.hidden = !temSimulada;
+  sim.textContent = temSimulada ? resultadoSimulacao(simularMedia(provas, pesos, meta, simuladas), meta) : '';
 }
 
 function cardPrazos(estado, d, agora) {

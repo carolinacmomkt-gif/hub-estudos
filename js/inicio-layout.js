@@ -25,6 +25,7 @@ export const CARDS_DO_APP = [
   { id: 'plano', nome: 'Plano para a prova', tamanho: '2/3' },
   { id: 'revisoes', nome: 'Revisões pendentes', tamanho: '1/3' },
   { id: 'notas', nome: 'Últimas notas', tamanho: '2/3' },
+  { id: 'precisa', nome: 'Quanto preciso tirar', tamanho: '1/3' },
   { id: 'faltas', nome: 'Atenção às faltas', tamanho: '1/3' },
   { id: 'avisos', nome: 'Avisos da faculdade', tamanho: '2/3' },
   { id: 'youtube', nome: 'YouTube', tamanho: '1/3' },

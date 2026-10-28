@@ -202,3 +202,55 @@ export function disciplinasComFaltasEmRisco(estado) {
     .map((d) => ({ disciplina: d, faltas: situacaoFaltas(frequenciaDaDisciplina(estado, d.id)) }))
     .filter((x) => x.faltas && (x.faltas.nivel === 'atencao' || x.faltas.nivel === 'estourou'));
 }
+
+// ---------------------------------------------------------------------------
+// "Quanto preciso tirar": a nota que falta em cada disciplina, a próxima prova e as faltas
+// ---------------------------------------------------------------------------
+
+// Do mais apertado para o mais tranquilo (a ordem do card no Hoje).
+const ORDEM_NOTA = ['impossivel', 'abaixo', 'dificil', 'atencao', 'tranquila', 'garantida', 'passou'];
+export const URGENCIA_NOTA = { impossivel: 'atrasado', abaixo: 'atrasado', dificil: 'urgente', atencao: 'urgente', tranquila: 'semana', garantida: 'futuro', passou: 'futuro' };
+
+export function nivelDaNota(r) {
+  if (!r) return null;
+  if (r.final !== undefined) return r.aprovada ? 'passou' : 'abaixo';
+  if (r.garantida) return 'garantida';
+  if (!r.possivel) return 'impossivel';
+  if (r.necessaria > 8) return 'dificil';
+  if (r.necessaria > 6) return 'atencao';
+  return 'tranquila';
+}
+
+export function quantoPrecisa(estado, d, agora = Date.now()) {
+  const provas = provasDaCalculadora(estado, d.id);
+  const meta = Number(d.pesos?.meta ?? 7);
+  const r = calcularMedia(provas, d.pesos?.pesos || {}, meta);
+  if (!r) return null;
+  // Próxima prova marcada no calendário (do AVA, do calendário acadêmico ou anotada por ela).
+  const proxima = eventosDaDisciplina(estado, d.id)
+    .find((e) => e.tipo === 'prova' && tempo(e.inicio) >= agora - 12 * 60 * 60 * 1000) || null;
+  return {
+    disciplina: d,
+    meta,
+    r,
+    nivel: nivelDaNota(r),
+    proxima,
+    faltas: situacaoFaltas(frequenciaDaDisciplina(estado, d.id)),
+    pendentes: provas.filter((p) => p.nota === null || p.nota === undefined).map((p) => p.nome),
+  };
+}
+
+export function listaQuantoPrecisa(estado, agora = Date.now()) {
+  return disciplinasAtivas(estado).map((d) => quantoPrecisa(estado, d, agora)).filter(Boolean)
+    .sort((a, b) => ORDEM_NOTA.indexOf(a.nivel) - ORDEM_NOTA.indexOf(b.nivel)
+      || (b.r.necessaria ?? -1) - (a.r.necessaria ?? -1));
+}
+
+// Simulador "e se eu tirar...": notas de mentira só nas provas que ainda não têm nota.
+export function simularMedia(provas, pesos, meta, simuladas = {}) {
+  const usadas = provas.map((p) => {
+    const s = simuladas[p.chave];
+    return (p.nota === null || p.nota === undefined) && Number.isFinite(s) ? { ...p, nota: s, maxima: 10 } : p;
+  });
+  return calcularMedia(usadas, pesos, meta);
+}

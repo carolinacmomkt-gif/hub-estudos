@@ -1112,8 +1112,30 @@ button.card-link {
 
 .calculadora-provas {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 12px;
+}
+
+.calc-prova {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.calc-campos {
+  display: flex;
+  gap: 10px;
+}
+
+.calc-campos .campo {
+  flex: 1;
+  min-width: 0;
+}
+
+.calc-simulacao {
+  margin-top: 8px;
+  background: var(--cor-superficie-2);
 }
 
 .campo-curto input {
