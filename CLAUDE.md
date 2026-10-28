@@ -258,6 +258,12 @@ Tabelas:
 
 Todas as tabelas usam RLS ligado ao usuário da Carol.
 
+## Widget do iPhone (Scriptable)
+
+- Script em `scriptable/bussola-widget.js` (sem segredo nenhum): pequeno, médio e grande, cores claras e escuras com `Color.dynamic`, tocar abre `#inicio`, atualiza a cada 15 min e guarda a última resposta para mostrar sem internet.
+- Acesso por um **código do widget** gerado em Configurações: aparece uma vez, o app guarda só o SHA-256 em `config` "widget"; gerar outro desliga o anterior; "Desligar o widget" corta o acesso. O código e o endereço ficam no Keychain do iPhone.
+- A função `widget` (GET, `Authorization: Bearer <código>`) é só leitura e devolve só o resumo (tarefas de hoje, próximos compromissos, bloco do "Planejar meu dia", demandas, hábitos e gastos do mês).
+
 ## Backup automático
 
 - A `backup-agendado` (todo dia às 06:00 UTC, 3h em Brasília) e a `backup` (listar e "Fazer uma cópia agora") gravam em `{id}/backups/bussola-AAAA-MM-DD.json.gz` no Storage, no mesmo formato do "Exportar backup" (`app: 'hub-estudos'`). Entram as tabelas de `js/tabelas.js` (a mesma lista do app), inclusive o que está na lixeira; nunca `credenciais`, `conexoes`, `assinaturas_push`.

@@ -1310,3 +1310,14 @@ details.card > summary {
   width: 20px;
   height: 20px;
 }
+
+.widget-codigo {
+  display: block;
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}

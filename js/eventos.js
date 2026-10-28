@@ -186,6 +186,37 @@ async function fazerBackup() {
   }
 }
 
+// Widget do iPhone: o código aparece uma vez; o app guarda só o hash (config "widget").
+async function gerarCodigoWidget() {
+  const atual = (obterEstado().config || []).find((c) => c.chave === 'widget' && !c.excluido_em);
+  if (atual && !window.confirm('Gerar outro código? O widget que usa o código atual para de funcionar até você colar o novo.')) return;
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const codigo = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codigo)))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  await salvar('config', { ...(atual || {}), chave: 'widget', valor: { hash, criado_em: new Date().toISOString() }, excluido_em: null });
+  atualizarEstado({ widgetCodigo: codigo });
+  app.renderizar();
+  document.getElementById('widget-config')?.scrollIntoView({ block: 'nearest' });
+}
+
+async function desligarWidget() {
+  const atual = (obterEstado().config || []).find((c) => c.chave === 'widget' && !c.excluido_em);
+  if (!atual || !window.confirm('Desligar o widget? Ele para de mostrar o resumo até você gerar um código novo.')) return;
+  await salvar('config', { ...atual, valor: {}, excluido_em: new Date().toISOString() });
+  atualizarEstado({ widgetCodigo: null });
+  app.renderizar();
+  avisoCurto('Widget desligado.');
+}
+
+async function copiar(texto, aviso) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    avisoCurto(aviso);
+  } catch {
+    avisoCurto('Não deu para copiar: segure o texto e copie à mão.');
+  }
+}
+
 // Cópias automáticas na nuvem (Storage): ver, fazer agora, baixar e restaurar.
 async function verCopias() {
   const r = await chamar('backup', { acao: 'listar' });
@@ -402,6 +433,18 @@ export function ligarEventos(funcoesDoApp) {
         return;
       case 'backup-ver':
         verCopias();
+        return;
+      case 'widget-gerar':
+        gerarCodigoWidget();
+        return;
+      case 'widget-desligar':
+        desligarWidget();
+        return;
+      case 'widget-copiar':
+        copiar(obterEstado().widgetCodigo || '', 'Código copiado.');
+        return;
+      case 'widget-copiar-endereco':
+        copiar(location.origin, 'Endereço copiado.');
         return;
       case 'backup-agora':
         copiaAgora();

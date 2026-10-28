@@ -79,6 +79,33 @@ function listaCopias(estado) {
     </li>`).join('')}</ul>`;
 }
 
+// Widget do iPhone (Scriptable): um código só de leitura, que aparece uma vez e pode ser desligado.
+function cardWidget(estado) {
+  const ligado = (estado.config || []).find((c) => c.chave === 'widget' && !c.excluido_em && c.valor?.hash);
+  const codigo = estado.widgetCodigo;
+  return `
+    <section class="card" aria-labelledby="config-widget" id="widget-config">
+      <h2 class="card-titulo" id="config-widget">Widget do iPhone</h2>
+      <p class="texto-suave">Mostra na Tela de Início as tarefas de hoje, o próximo compromisso, as demandas e os hábitos, nas versões clara e escura. Usa o app gratuito <strong>Scriptable</strong>.</p>
+      ${codigo ? `
+        <div class="ava-sucesso">
+          <strong>Seu código do widget</strong>
+          <code class="widget-codigo">${esc(codigo)}</code>
+          <span>Ele só aparece agora. Cole no Scriptable quando o script pedir. Ele só lê o resumo: não mexe em nada.</span>
+        </div>
+        <div class="acoes">
+          <button class="botao botao-primario" type="button" data-acao="widget-copiar">Copiar o código</button>
+          <button class="botao botao-secundario" type="button" data-acao="widget-copiar-endereco">Copiar o endereço do app</button>
+        </div>` : ''}
+      ${ligado && !codigo ? `<p class="campo-ajuda">Ligado desde ${esc(new Date(ligado.valor.criado_em || ligado.criado_em).toLocaleDateString('pt-BR'))}.</p>` : ''}
+      <div class="acoes">
+        <button class="botao ${ligado ? 'botao-secundario' : 'botao-primario'}" type="button" data-acao="widget-gerar">${ligado ? 'Gerar outro código' : 'Gerar o código do widget'}</button>
+        ${ligado ? '<button class="botao botao-secundario" type="button" data-acao="widget-desligar">Desligar o widget</button>' : ''}
+      </div>
+      ${ligado ? '<p class="campo-ajuda">Gerar outro código desliga o anterior.</p>' : ''}
+    </section>`;
+}
+
 // Restaurar uma cópia: o jeito seguro (só o que sumiu) vem primeiro.
 export function folhaRestaurar(dia) {
   const quando = diaCopia.format(new Date(`${dia}T12:00:00Z`)).replace(/\./g, '');
@@ -215,6 +242,7 @@ export function renderConfiguracoes(estado) {
         resumo: (d) => `<span>${esc([d.curso, d.turno, d.serie].filter(Boolean).join(' · ') || 'Portal do aluno')}</span>`,
       })}
       ${cardConfigDemandas(estado, chaveDoTrello())}
+      ${cardWidget(estado)}
     </div>`;
 }
 
