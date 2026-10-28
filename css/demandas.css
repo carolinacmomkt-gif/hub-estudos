@@ -1,0 +1,159 @@
+/* Caixa de demandas: o que chegou do Trello, do Notion e das mensagens, esperando o OK */
+
+.dem-topo-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 12px;
+}
+
+.dem-lista {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.dem-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 0 10px 12px;
+  border-bottom: 1px solid var(--cor-linha);
+  border-left: 3px solid var(--cor-trilho);
+}
+
+.dem-item:last-child {
+  border-bottom: 0;
+}
+
+.dem-item.prio-1 {
+  border-left-color: var(--urg-urgente);
+}
+
+.dem-item.prio-2 {
+  border-left-color: var(--urg-atrasado);
+}
+
+.dem-item.dem-mudou {
+  border-left-color: var(--cor-destaque);
+  background: var(--cor-destaque-suave);
+  border-radius: 0 10px 10px 0;
+  padding-right: 8px;
+}
+
+.dem-texto {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dem-texto strong {
+  overflow-wrap: anywhere;
+}
+
+.dem-linha-origem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  color: var(--cor-texto-fraco);
+  font-size: 0.85rem;
+}
+
+.dem-linha-origem small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.dem-origem {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dem-meta {
+  color: var(--cor-texto-suave);
+  font-size: 0.875rem;
+}
+
+.dem-urgente {
+  color: var(--urg-atrasado-texto);
+  font-weight: 600;
+}
+
+.dem-acoes {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.dem-previa {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--cor-destaque);
+  background: var(--cor-superficie-2);
+  border-radius: 0 10px 10px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 40dvh;
+  overflow: auto;
+}
+
+.dem-escolhas {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.dem-original {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--cor-texto-suave);
+}
+
+/* Celular: as ações ocupam a linha inteira, embaixo do texto */
+@media (max-width: 520px) {
+  .dem-acoes {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .dem-acoes .botao {
+    flex: 1;
+  }
+}
+
+.demandas .card-topo {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.demandas .card-titulo {
+  white-space: nowrap;
+}
+
+.dem-bases {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.dem-bases legend {
+  padding: 0;
+  margin-bottom: 4px;
+}

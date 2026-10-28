@@ -38,6 +38,7 @@ Na Netlify: **Project configuration → Environment variables → Add a variable
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys → `service_role` | **sim** |
 | `TOKEN_CRYPTO_KEY` | Terminal do Mac: `openssl rand -base64 32` | **sim** |
 | `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` | Avisos no aparelho. Gere no Terminal do Mac (veja abaixo) | só a `PRIVATE` é secreta |
+| `TRELLO_API_KEY` | Caixa de demandas. Veja "Chave do Trello" abaixo | não (o acesso é o token que a Carol autoriza) |
 | `ANTHROPIC_API_KEY` | console.anthropic.com → API Keys → Create Key (usada na leitura do calendário acadêmico e, depois, no gerador de questões) | **sim** |
 
 **Chaves dos avisos (VAPID)**: no Terminal do Mac, cole as três linhas. A primeira cria o arquivo `vapid.pem`;
@@ -48,6 +49,14 @@ openssl ecparam -name prime256v1 -genkey -noout -out vapid.pem
 echo "VAPID_PUBLIC_KEY:";  openssl ec -in vapid.pem -pubout -outform DER 2>/dev/null | tail -c 65 | base64 | tr '/+' '_-' | tr -d '=\n'; echo
 echo "VAPID_PRIVATE_KEY:"; openssl ec -in vapid.pem -outform DER 2>/dev/null | tail -c +8 | head -c 32 | base64 | tr '/+' '_-' | tr -d '=\n'; echo
 ```
+
+**Chave do Trello (Caixa de demandas)**: entre em `trello.com/power-ups/admin` → **New** → nome "Bússola",
+escolha um Workspace seu e salve. Na página do Power-Up, abra **API key** → **Generate a new API key** e copie a
+**API key** (não o "Secret") para `TRELLO_API_KEY`. Em **Allowed origins**, coloque o endereço do app na Netlify
+(ex.: `https://seu-app.netlify.app`), senão o Trello não devolve para a Bússola depois de autorizar.
+
+O **Notion** não usa variável: a Carol cria uma conexão interna em `notion.so/profile/integrations` e cola o segredo
+uma vez em Configurações (ele fica criptografado no Supabase, como a senha do Lyceum).
 
 Depois de criar ou mudar uma variável, faça um novo deploy (**Deploys → Trigger deploy**).
 `HUB_CODIGO_ACESSO` não é mais usada desde a Etapa 2 (o login protege as funções) e pode ser apagada.
@@ -70,6 +79,7 @@ Rode cada um uma vez no SQL Editor, em ordem (o `esquema.sql` já inclui todos, 
 - `007-areas.sql`: Biblioteca (fonte, resumo, fichamento, favoritos), tabela `simulados` das Questões, campos do Substack (subtítulo, notas, tags, agendamento, checklist), trilhas e temas dos Estudos gerais e o tipo `substack` nos eventos.
 - `008-foco.sql`: tabela `sessoes_foco` (sessão de foco e resumo da semana).
 - `009-vida.sql`: tabelas das áreas de vida da Bússola (`projetos`, `tarefas`, `habitos`, `habito_registros`, `diario`, `saude`, `clientes`, `consultoria`, `financas`, `casa`, `metas`, `lazer`). O Hoje já usa o `diario`.
+- `010-demandas.sql`: Caixa de demandas (tabela `demandas`) e Trello e Notion como conexões.
 
 ## Estrutura
 

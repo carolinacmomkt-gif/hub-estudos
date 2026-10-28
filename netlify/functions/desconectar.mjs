@@ -1,9 +1,9 @@
-// Desconecta o AVA ou o Lyceum: apaga o segredo criptografado e marca a conexão como desconectada.
+// Desconecta o AVA, o Lyceum, o Trello ou o Notion: apaga o segredo criptografado e marca a conexão como desconectada.
 
 import { resposta, lerCorpo } from '../lib/http.mjs';
 import { exigirLogin, banco } from '../lib/supabase.mjs';
 
-const SERVICOS = ['ava', 'lyceum'];
+const SERVICOS = ['ava', 'lyceum', 'trello', 'notion'];
 
 export default async (req) => {
   if (req.method !== 'POST') return resposta(405, { ok: false, erro: 'Use POST.' });

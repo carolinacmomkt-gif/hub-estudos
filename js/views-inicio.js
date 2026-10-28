@@ -6,6 +6,7 @@ import { cardFinancasHoje, cardContasHoje } from './views-financas.js';
 import { cardRecompensasHoje } from './views-recompensas.js';
 import { cardHabitosHoje } from './views-habitos.js';
 import { cardMeuDia } from './views-dia.js';
+import { cardDemandas } from './views-demandas.js';
 import { cardFraseHoje, cardSonhoHoje, cardFimDeSemanaHoje } from './views-metas.js';
 import { cabecalho, barraProgresso } from './componentes.js';
 import { cardCaixaEntrada } from './views-criar.js';
@@ -363,6 +364,7 @@ export function renderInicio(estado) {
   const doApp = {
     proximo: () => cardProximoPasso(escolherProximoPasso(dados, agora)),
     meudia: () => (estado.usandoExemplo ? '' : cardMeuDia(estado, agora)),
+    demandas: () => (estado.usandoExemplo ? '' : cardDemandas(estado, agora)),
     agenda: () => (estado.usandoExemplo ? '' : cardAgendaHoje(estado, agora)),
     humor: () => cardHumor(estado, agora),
     recompensas: () => cardRecompensasHoje(estado),

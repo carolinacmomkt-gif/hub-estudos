@@ -23,6 +23,7 @@ const ALVOS = {
   'inicio/planejar': '[data-bloco="meudia"] [data-acao="dia-planejar"], [data-bloco="meudia"] .meu-dia',
   'tarefas/nova': '#tarefa-rapida-geral',
   'financas/lancar': '#fin-rapido',
+  'configuracoes/demandas': '#demandas-config',
 };
 let pendente = null;
 

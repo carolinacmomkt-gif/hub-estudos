@@ -18,6 +18,7 @@ export default async () => {
       await sincronizarLyceumDaUsuaria(userId);
       continue;
     }
+    if (servico !== 'ava') continue; // Trello e Notion têm a função própria (demandas-agendado)
     const geral = await sincronizarAva(userId, { parte: 'geral' });
     const cursos = geral.ok ? geral.cursos : [];
     for (let i = 0; i < cursos.length && sobra() > 5000; i += CURSOS_POR_PARTE) {

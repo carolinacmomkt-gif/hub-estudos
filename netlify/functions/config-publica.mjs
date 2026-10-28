@@ -17,5 +17,7 @@ export default async () => {
   if (!url || !anon) return resposta(200, { ok: false, erro: 'O Supabase ainda não foi configurado na Netlify.' });
   const avaBaseUrl = (process.env.AVA_BASE_URL || '').replace(/\/+$/, '') || null; // para os links "Abrir no AVA"
   const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || null; // pública por natureza (avisos no aparelho)
-  return resposta(200, { ok: true, supabaseUrl: url, supabaseAnonKey: anon, avaBaseUrl, vapidPublicKey });
+  // Chave do app no Trello: pública por natureza (o acesso de verdade é o token que a Carol autoriza).
+  const trelloApiKey = process.env.TRELLO_API_KEY || null;
+  return resposta(200, { ok: true, supabaseUrl: url, supabaseAnonKey: anon, avaBaseUrl, vapidPublicKey, trelloApiKey });
 };

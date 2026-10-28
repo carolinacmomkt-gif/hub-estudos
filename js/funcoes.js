@@ -35,6 +35,7 @@ export const conectarAva = (matricula, senha) => chamar('ava-conectar', { matric
 export const conectarLyceum = (matricula, senha) => chamar('lyceum-conectar', { matricula, senha });
 export const desconectar = (servico) => chamar('desconectar', { servico });
 export const sincronizarServico = (corpo) => chamar('sincronizar', corpo);
+export const pedirDemandas = (corpo) => chamar('demandas', corpo);
 
 // Funções de segundo plano (nome terminado em "-background") respondem 202 na hora
 // e continuam trabalhando; o resultado chega por outro caminho (uma linha no banco).

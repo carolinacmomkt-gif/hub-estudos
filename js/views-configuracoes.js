@@ -6,6 +6,8 @@ import { OPCOES_TEMA, lerPreferenciaTema } from './tema.js';
 import { OPCOES_TEXTO, lerTamanhoTexto } from './preferencias.js';
 import { esc, haQuantoTempo } from './utilidades.js';
 import { cardAvisos, cardPlanoPrefs } from './views-avisos.js';
+import { cardConfigDemandas } from './views-demandas.js';
+import { chaveDoTrello } from './nuvem.js';
 
 const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -174,6 +176,7 @@ export function renderConfiguracoes(estado) {
         explicacao: 'Digite a matrícula e a senha uma vez. A senha fica guardada criptografada (só as funções do app conseguem abrir) para o Lyceum sincronizar sozinho. Você pode desconectar quando quiser.',
         resumo: (d) => `<span>${esc([d.curso, d.turno, d.serie].filter(Boolean).join(' · ') || 'Portal do aluno')}</span>`,
       })}
+      ${cardConfigDemandas(estado, chaveDoTrello())}
     </div>`;
 }
 

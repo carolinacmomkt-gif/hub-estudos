@@ -377,7 +377,7 @@ create table if not exists public.config (
 create table if not exists public.conexoes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  servico text not null check (servico in ('ava', 'lyceum')),
+  servico text not null check (servico in ('ava', 'lyceum', 'trello', 'notion')),
   status text not null default 'desconectado' check (status in ('conectado', 'desconectado', 'erro', 'reconectar')),
   conectado_em timestamptz,
   ultima_sincronizacao timestamptz,
@@ -387,6 +387,32 @@ create table if not exists public.conexoes (
   excluido_em timestamptz,
   unique (user_id, servico)
 );
+
+-- Caixa de demandas (Trello, Notion e mensagens compartilhadas), migração 010.
+create table if not exists public.demandas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  origem text not null check (origem in ('trello', 'notion', 'compartilhado', 'manual')),
+  origem_id text,          -- id do cartão ou da página (vazio no que veio compartilhado)
+  origem_url text,
+  titulo text not null,
+  detalhe text,
+  onde text,               -- "Quadro › Lista" no Trello, nome da base no Notion
+  quem text,               -- quem pediu, quando dá para saber
+  prazo date,
+  hora text,
+  minutos smallint,        -- tempo estimado
+  prioridade smallint not null default 0,
+  status text not null default 'nova' check (status in ('nova', 'aceita', 'descartada')),
+  mudou jsonb,             -- o que mudou na origem depois de aceita ({ prazo: { de, para }, titulo: { de, para } })
+  tarefa_id uuid,
+  assinatura text,         -- resumo do que veio da origem, para saber se mudou
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create unique index if not exists demandas_origem_uk on public.demandas (user_id, origem, origem_id);
 
 -- Leituras do calendário acadêmico com a IA (a Carol revisa antes de virar evento).
 create table if not exists public.importacoes (
@@ -502,7 +528,7 @@ revoke all on public.avisos_enviados from anon, authenticated;
 -- Segredos criptografados (AES-256-GCM, chave TOKEN_CRYPTO_KEY só na Netlify).
 create table if not exists public.credenciais (
   user_id uuid not null references auth.users (id) on delete cascade,
-  servico text not null check (servico in ('ava', 'lyceum')),
+  servico text not null check (servico in ('ava', 'lyceum', 'trello', 'notion')),
   dados_cifrados text not null,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
@@ -727,7 +753,7 @@ declare
     'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
     'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
     'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos', 'simulados', 'sessoes_foco',
-    'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer'
+    'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer', 'demandas'
   ];
 begin
   foreach tabela in array tabelas loop

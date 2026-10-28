@@ -6,7 +6,8 @@ const estado = {
   rota: 'inicio',
   dados: gerarDadosExemplo(), // até a Etapa 4 trazer os dados reais da faculdade
   usandoExemplo: true,
-  caixa: [], // caixa de entrada (dados reais, do aparelho/Supabase)
+  caixa: [],
+  demandas: [], // Caixa de demandas (Trello, Notion e mensagens compartilhadas) // caixa de entrada (dados reais, do aparelho/Supabase)
   conexoes: [], // situação do AVA e do Lyceum
   sinc: {}, // situação da sincronização
   email: null,

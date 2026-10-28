@@ -17,6 +17,7 @@ import { formatoDoCaderno } from './dados-texto.js';
 import { retomarTrilha } from './trilha.js';
 import { semearLazer } from './ideias-lazer.js';
 import { ligarTablet, irAoPontoDaRota, depoisDeDesenhar } from './tablet.js';
+import { abrirCompartilhado, conectarComToken, tokenDoTrelloNoEndereco, lerDemandasSeFaz } from './eventos-demandas.js';
 import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
@@ -170,6 +171,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
 // Tabelas que as telas usam (as páginas de caderno ficam de fora: são pesadas e só o editor abre).
 const TABELAS_NA_MEMORIA = {
   caixa_entrada: 'caixa',
+  demandas: 'demandas',
   conexoes: 'conexoes',
   disciplinas: 'disciplinas',
   eventos: 'eventos',
@@ -213,7 +215,8 @@ async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
 // Telas que mostram cada tabela (para redesenhar quando os dados mudam).
 const TELAS_DA_TABELA = {
   caixa_entrada: ['inicio'],
-  conexoes: ['configuracoes', 'faculdade'],
+  demandas: ['inicio'],
+  conexoes: ['configuracoes', 'faculdade', 'inicio'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
@@ -238,18 +241,17 @@ const TELAS_DA_TABELA = {
   areas: ['estudos', 'inicio', 'biblioteca', 'questoes', 'cadernos'],
 };
 
-// Link ou texto compartilhado de outro app (Web Share Target): abre "Adicionar leitura" preenchido.
+// Link ou texto compartilhado de outro app (Web Share Target, no Android): a Carol escolhe se
+// vira demanda, leitura ou ideia na caixa de entrada (a folha abre depois do primeiro desenho).
+let compartilhadoPendente = null;
 function aplicarCompartilhado() {
   const p = new URLSearchParams(location.search);
   if (!['url', 'text', 'title'].some((k) => p.get(k))) return;
   const texto = p.get('text') || '';
   const url = p.get('url') || (texto.match(/https?:\/\/\S+/) || [])[0] || '';
   const sobra = url ? texto.replace(url, '').trim() : texto;
-  atualizarEstado({
-    bibPreenchido: { url, titulo: p.get('title') || '', texto: url ? '' : sobra },
-    bibFonte: url ? 'link' : 'texto',
-  });
-  history.replaceState(null, '', `${location.pathname}#biblioteca/novo`);
+  compartilhadoPendente = { url, titulo: p.get('title') || '', texto: sobra };
+  history.replaceState(null, '', `${location.pathname}#inicio`);
 }
 
 export function mostrarLogin(opcoes = {}) {
@@ -266,9 +268,15 @@ export async function entrarNoApp() {
   document.body.classList.remove('modo-login');
   await carregarDadosLocais();
   aplicarCompartilhado();
+  const tokenTrello = tokenDoTrelloNoEndereco(); // volta da autorização do Trello
   montarNavegacao(); // o menu guardado só chega com a config
   conferirConquistas(); // anota o que já existe neste aparelho (sem comemorar o antigo)
   renderizar();
+  if (compartilhadoPendente) {
+    abrirCompartilhado(compartilhadoPendente);
+    compartilhadoPendente = null;
+  }
+  if (tokenTrello) conectarComToken('trello', tokenTrello);
   if (!sincronizacaoIniciada) {
     sincronizacaoIniciada = true;
     iniciarSincronizacaoAutomatica();
@@ -278,6 +286,7 @@ export async function entrarNoApp() {
     // Depois de receber o que está na nuvem, chegam as ideias de lazer da semana (sem repetir).
     sincronizar().finally(() => {
       sincronizarFaculdade();
+      lerDemandasSeFaz();
       semearLazer();
     });
     retomarTrilha();

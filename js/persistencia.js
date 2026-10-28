@@ -11,7 +11,7 @@ import { rest, sessaoAtual, nuvemConfigurada, ErroNuvem } from './nuvem.js';
 const NOME_BANCO = 'hub-estudos';
 // Aumente sempre que TABELAS ganhar uma tabela nova (o aparelho só cria lojas novas numa versão nova).
 // Se mesmo assim faltar alguma, abrir() sobe a versão sozinho.
-const VERSAO_BANCO = 5;
+const VERSAO_BANCO = 6;
 const LOTE = 500;
 
 export const TABELAS = [
@@ -19,6 +19,7 @@ export const TABELAS = [
   'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
   'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'videos', 'simulados', 'sessoes_foco',
   'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer',
+  'demandas',
 ];
 const SOMENTE_LEITURA = new Set(['conexoes']); // quem escreve são as funções da Netlify
 // config tem uma linha por chave ("inicio", "avisos"…). Dois aparelhos podem criar a mesma chave
@@ -27,7 +28,7 @@ const CHAVE_DE_CONFLITO = { config: 'user_id,chave' };
 
 // Tabelas e tipos que dependem de uma migração (supabase/migracoes). Se a migração ainda não
 // foi rodada, só aquela tabela espera; as outras continuam sincronizando normalmente.
-const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)', simulados: '007-areas.sql', sessoes_foco: '008-foco.sql',
+const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)', simulados: '007-areas.sql', sessoes_foco: '008-foco.sql', demandas: '010-demandas.sql',
   ...Object.fromEntries(['projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer'].map((t) => [t, '009-vida.sql'])),
 };
 const tabelaNaoExiste = (erro) => erro instanceof ErroNuvem && (erro.codigo === 'PGRST205' || erro.codigo === '42P01' || erro.status === 404);

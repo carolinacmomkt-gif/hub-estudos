@@ -33,7 +33,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que gera questões e lê PDFs da Biblioteca, `questoes-corrigir`, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia` e `planejar-dia`, que monta os blocos do "Planejar meu dia") |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que gera questões e lê PDFs da Biblioteca, `questoes-corrigir`, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", e `demandas`, que sugere prazo, tempo e prioridade das demandas) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -201,6 +201,15 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - **Regra**: o app nunca tenta contornar o reCAPTCHA. Se o login exigir captcha, a conexão usa a sessão que a própria Carol abre no portal.
 - Tudo do Lyceum é **somente leitura**: o app nunca mexe em matrícula, financeiro, serviços ou contratos.
 
+## Caixa de demandas (Trello, Notion e mensagens)
+
+- Decisão da Carol (28/10/2026): juntar as demandas do Trello, do Notion e das mensagens do WhatsApp numa caixa no Hoje; nada vira tarefa sem o OK dela. Gmail fica de fora.
+- **Só leitura**: o app nunca cria, muda ou apaga nada no Trello nem no Notion.
+- **Trello**: autorização oficial (`trello.com/1/authorize`, `scope=read`, `expiration=never`) com a chave do app em `TRELLO_API_KEY` (pública) e o token da Carol guardado criptografado em `credenciais`. Entram os cartões em que ela é membro, abertos, sem "concluído" e fora de listas como "Feito"/"Concluído".
+- **Notion**: conexão interna criada pela Carol (segredo colado uma vez, criptografado); ela escolhe até 8 bases. Entram as páginas editadas nos últimos 30 dias sem status de concluída.
+- **WhatsApp**: não há API para conversas pessoais e os jeitos não oficiais arriscam o número, então **nunca** use bibliotecas não oficiais. Caminho: Web Share Target (Compartilhar → Bússola, só no Android) ou "Colar mensagem" (iPhone).
+- A função `demandas` (conectar, bases, escolher, sincronizar, ler) e a `demandas-agendado` (a cada 2h) gravam em `demandas` (`status` nova / aceita / descartada, `mudou` quando a origem muda depois de aceita). A IA analisa até 15 itens novos por leitura; o resto fica com a sugestão simples (`js/dados-demandas.js`) e a IA completa na próxima.
+
 ## Calendário da faculdade (requisito importante)
 
 - Fontes:
@@ -242,6 +251,7 @@ Tabelas:
 - `simulados` (Questões)
 - `videos` (YouTube)
 - `config` (tema, horários de aviso, token do AVA criptografado)
+- `demandas` (migração 010): Caixa de demandas
 - áreas de vida (migração 009): `projetos`, `tarefas`, `habitos`, `habito_registros`, `diario`, `saude`, `clientes`, `consultoria`, `financas`, `casa`, `metas`, `lazer`, cada uma com um campo `dados` (jsonb) para os detalhes
 
 Todas as tabelas usam RLS ligado ao usuário da Carol.
@@ -256,3 +266,4 @@ Todas as tabelas usam RLS ligado ao usuário da Carol.
 - `TOKEN_CRYPTO_KEY`
 - `VAPID_PUBLIC_KEY` (pode ir para o front-end; é pública)
 - `VAPID_PRIVATE_KEY` (somente nas funções)
+- `TRELLO_API_KEY` (chave do app no Trello; pública, vai para o front-end pelo `config-publica`)
