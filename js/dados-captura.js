@@ -3,7 +3,7 @@
 // Sem tela: roda no app e na função da Netlify.
 
 import { lerTarefaRapida, AREAS_TAREFA } from './dados-tarefas.js';
-import { lerLancamento, lerValor, CATEGORIAS_PADRAO } from './dados-financas.js';
+import { lerLancamento, CATEGORIAS_PADRAO } from './dados-financas.js';
 
 export const DESTINOS_CAPTURA = [
   { id: 'tarefa', nome: 'Tarefa' },
@@ -45,7 +45,9 @@ export function conferirItens(itens, { categorias = CATEGORIAS_PADRAO } = {}) {
 export function capturaSimples(texto, hoje, { categorias = CATEGORIAS_PADRAO } = {}) {
   const t = String(texto || '').trim();
   if (!t) return [];
-  if (lerValor(t)) {
+  // Dinheiro só com sinal claro ("gastei 40", "R$ 12", "recebi 3500"): "reunião às 15" não é gasto.
+  const semAcento = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/\d/.test(t) && /r\$|\breais\b|\b(gastei|gasto|paguei|comprei|recebi|ganhei|entrou|caiu|pix)\b/.test(semAcento)) {
     const l = lerLancamento(t, hoje, { categorias });
     if (l?.valor) return conferirItens([{ destino: l.tipo === 'entrada' ? 'entrada' : 'gasto', titulo: l.descricao || t, data: l.data, valor: l.valor, categoria: l.categoria }], { categorias });
   }

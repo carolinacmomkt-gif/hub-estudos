@@ -963,6 +963,18 @@ button.card-link {
   color: var(--cor-texto-suave);
 }
 
+/* Os atalhos que são links ficam iguais aos que são botões (sem sublinhado) */
+a.atalho-criar {
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-texto);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.atalho-criar:hover {
+  background: var(--cor-superficie-elevada);
+}
+
 .atalho-criar svg {
   flex: none;
   width: 20px;

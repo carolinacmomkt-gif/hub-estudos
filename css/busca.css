@@ -116,3 +116,84 @@
     flex-direction: column;
   }
 }
+
+/* Captura por voz no "+" */
+.captura-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.captura-mic.ouvindo {
+  border-color: var(--urg-atrasado);
+  color: var(--urg-atrasado-texto);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .captura-mic.ouvindo {
+    animation: captura-pulso 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes captura-pulso {
+  50% { box-shadow: 0 0 0 6px var(--urg-atrasado-fundo); }
+}
+
+.captura-itens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.captura-item {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+
+.captura-linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.captura-linha select {
+  flex: 1;
+  min-width: 0;
+}
+
+.captura[hidden] {
+  display: none;
+}
+
+/* Prévia da captura: os mesmos campos do app (44px, borda de 3:1, letra normal) */
+.captura-item select,
+.captura-item input {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 12px;
+  border: 1px solid var(--cor-borda-campo);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: max(1rem, 16px); /* 16px: o iPhone não dá zoom ao tocar */
+}
+
+.captura-item select:focus-visible,
+.captura-item input:focus-visible {
+  border-color: var(--cor-foco);
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 0;
+}
+
+/* Conferindo a prévia, os atalhos de "Criar" saem da frente */
+.captura-ativa > .ava-subtitulo,
+.captura-ativa > .atalhos-criar {
+  display: none;
+}

@@ -1,17 +1,12 @@
-// Botão "+": caixa de entrada rápida (ideias em 2 segundos) e atalhos para criar coisas.
+// Botão "+": falar ou escrever (a captura organiza com a IA, ou guarda na caixa de entrada) e atalhos para criar coisas.
 
 import { icone } from './icones.js';
 import { esc, haQuantoTempo } from './utilidades.js';
+import { formCaptura } from './views-captura.js';
 
 export function renderFolhaCriar() {
   return `
-    <form class="formulario" data-form="caixa-entrada" novalidate>
-      <label class="campo">
-        <span class="campo-rotulo">Ideia rápida</span>
-        <textarea name="texto" rows="3" maxlength="2000" placeholder="Anote aqui. Depois você decide se vira pauta, tarefa ou nota."></textarea>
-      </label>
-      <button class="botao botao-primario" type="submit">Guardar na caixa de entrada</button>
-    </form>
+    ${formCaptura()}
     <h3 class="ava-subtitulo">Criar</h3>
     <ul class="atalhos-criar">
       <li><button class="atalho-criar" type="button" data-acao="tarefa-nova">${icone('tarefas')}<span>Nova tarefa</span></button></li>
