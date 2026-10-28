@@ -39,8 +39,9 @@ function resultado(html) {
 let lendo = null;
 export function lerDemandas({ silencioso = false } = {}) {
   if (lendo) return lendo;
-  // Só redesenha onde o "Lendo…" aparece: nas outras telas nada pula durante a leitura.
-  const redesenhar = () => { if (['inicio', 'configuracoes'].includes(obterEstado().rota)) app.renderizar(); };
+  // Só redesenha onde o "Lendo…" aparece: nas outras telas nada pula durante a leitura. Enquanto a
+  // Carol arruma o Hoje, também não (os botões pulariam).
+  const redesenhar = () => { if (['inicio', 'configuracoes'].includes(obterEstado().rota) && !obterEstado().editandoInicio) app.renderizar(); };
   lendo = (async () => {
     atualizarEstado({ lendoDemandas: true });
     redesenhar();
