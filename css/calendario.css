@@ -62,6 +62,7 @@
 }
 
 .campo-marcar input {
+  flex: none;
   width: 22px;
   height: 22px;
   accent-color: var(--cor-texto-destaque);

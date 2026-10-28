@@ -256,7 +256,6 @@
 /* Categorias e fontes */
 .fin-ajuste {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px;
   padding: 8px 0;
@@ -264,14 +263,30 @@
 }
 
 .fin-ajuste > input {
-  flex: 1 1 160px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .fin-limite {
   display: flex;
+  flex: none;
   flex-direction: column;
-  width: 130px;
+  width: 120px;
+}
+
+.fin-limite input {
+  width: 100%;
+}
+
+.fin-ajuste > .botao-icone {
+  flex: none;
+  margin-bottom: 3px;
+}
+
+@media (max-width: 480px) {
+  .fin-limite {
+    width: 96px;
+  }
 }
 
 @media (max-width: 1099px) {

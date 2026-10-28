@@ -237,3 +237,42 @@ body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):no
     font-size: max(16px, 1rem);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Revisão de 28/10/2026
+   --------------------------------------------------------------------------- */
+
+/* Campo solto (fora de .campo) também tem 44px e cara de campo. :where() não pesa: qualquer
+   estilo próprio de um componente continua valendo por cima. */
+:where(#conteudo) :where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"])) {
+  box-sizing: border-box;
+  min-height: var(--toque);
+  padding: 8px 12px;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+/* Área de toque de 44px sem aumentar o desenho: abas, chips e botões de ícone pequenos
+   ganham uma margem invisível em cima e embaixo (como fazem os apps do Android e do iPhone). */
+.segmentado > :is(button, a),
+.chip-filtro,
+.botao-icone-p {
+  position: relative;
+}
+
+.segmentado > :is(button, a)::after,
+.chip-filtro::after,
+.botao-icone-p::after {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+
+/* Caixinhas de marcar e opções: 20px (o rótulo em volta também é tocável) e na cor do tema */
+:where(input[type="checkbox"], input[type="radio"]) {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--cor-destaque);
+  cursor: pointer;
+}

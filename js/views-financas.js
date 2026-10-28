@@ -385,7 +385,7 @@ function abaAjustes(prefs) {
       <label class="visualmente-oculto" for="fin-nome-${tipo}-${esc(x.id)}">Nome</label>
       <input id="fin-nome-${tipo}-${esc(x.id)}" type="text" maxlength="40" value="${esc(x.nome)}" data-acao-mudar="fin-ajuste" data-tipo="${tipo}" data-id="${esc(x.id)}" data-campo="nome">
       ${tipo === 'categorias' ? `<label class="fin-limite"><span class="campo-ajuda">Limite no mês</span>
-        <input type="number" min="0" step="10" inputmode="decimal" placeholder="sem limite" value="${Number(x.limite) || ''}" data-acao-mudar="fin-ajuste" data-tipo="${tipo}" data-id="${esc(x.id)}" data-campo="limite"></label>` : ''}
+        <input type="number" min="0" step="10" inputmode="decimal" placeholder="livre" value="${Number(x.limite) || ''}" data-acao-mudar="fin-ajuste" data-tipo="${tipo}" data-id="${esc(x.id)}" data-campo="limite"></label>` : ''}
       ${x.id === 'outros' ? '' : `<button class="botao-icone botao-icone-p" type="button" data-acao="fin-ajuste-remover" data-tipo="${tipo}" data-id="${esc(x.id)}" aria-label="Tirar ${esc(x.nome)}">×</button>`}
     </li>`;
   return `
