@@ -1,0 +1,108 @@
+/* Trilha do Spotify que segue tocando em qualquer tela (fica fora do conteúdo que redesenha) */
+
+.trilha {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 24;
+  width: min(360px, calc(100vw - 32px));
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra);
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+.trilha[hidden] {
+  display: none;
+}
+
+.trilha-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.trilha-pilula,
+.trilha-botao {
+  min-height: var(--toque);
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  color: var(--cor-texto);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trilha-botao {
+  min-width: var(--toque);
+  padding: 0;
+  font-size: 1.3rem;
+  color: var(--cor-texto-suave);
+}
+
+.trilha-player iframe {
+  display: block;
+  width: 100%;
+  height: 152px;
+  border: 0;
+}
+
+/* Recolhida: vira uma pílula; o player continua na página (a música não para) */
+.trilha.recolhida {
+  width: auto;
+  border-radius: 999px;
+}
+
+.trilha.recolhida .trilha-player {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.trilha.recolhida .trilha-botao {
+  display: none;
+}
+
+/* No modo editor (caderno em tela cheia) e na nota aberta, a pílula some da frente */
+.modo-editor .trilha:not(.recolhida),
+body.nota-aberta .trilha {
+  bottom: auto;
+  top: 12px;
+}
+
+@media (max-width: 700px) {
+  .trilha {
+    left: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    width: calc(100vw - 24px - 72px);
+  }
+
+  .trilha-player iframe {
+    height: 80px;
+  }
+
+  .trilha.recolhida {
+    width: auto;
+  }
+}
+
+/* Folhas que sobem de baixo: fecham deslizando */
+dialog.folha {
+  transition: transform 0.16s ease;
+}
+
+dialog.folha.fechando {
+  transform: translateY(110%) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trilha,
+  dialog.folha {
+    transition: none;
+  }
+}
