@@ -1,0 +1,118 @@
+/* "Pergunte à Bússola": campo grande, resposta da IA em destaque e a lista de resultados */
+
+.busca-form {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.busca-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 1px solid var(--cor-borda-campo);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+.busca-form input:focus-visible {
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+.busca-form .botao {
+  flex: none;
+  min-height: 52px;
+  border-radius: 999px;
+}
+
+.busca-sugestoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.busca-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.busca-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--cor-linha);
+  color: inherit;
+  text-decoration: none;
+}
+
+.busca-lista li:last-child .busca-item {
+  border-bottom: 0;
+}
+
+.busca-item:hover strong {
+  text-decoration: underline;
+}
+
+.busca-icone {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+}
+
+.busca-icone svg {
+  width: 18px;
+  height: 18px;
+}
+
+.busca-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.busca-texto strong {
+  overflow-wrap: anywhere;
+}
+
+.busca-texto small {
+  color: var(--cor-texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.busca-resposta {
+  border-left: 3px solid var(--cor-destaque);
+}
+
+.busca-pergunta {
+  margin: 0 0 6px;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.busca-resposta-texto {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 520px) {
+  .busca-form {
+    flex-direction: column;
+  }
+}

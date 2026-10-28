@@ -23,6 +23,8 @@ import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
+import { renderBusca } from './views-busca.js';
+import { montarBusca, dadosDaBusca } from './eventos-busca.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
 import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
 import { filtrarListaNaTela } from './eventos-questoes.js';
@@ -63,12 +65,14 @@ const VIEWS = {
   habitos: renderHabitos,
   metas: renderMetas,
   resumo: renderResumo,
+  buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
 };
 
 // Telas com partes vivas (canvas, ouvintes): montar depois de entrar na página e desmontar ao sair.
 const CICLO = {
   caneta: { montar: montarCaneta, desmontar: desmontarCaneta },
   configuracoes: { montar: atualizarSituacaoAvisos, desmontar: () => {} },
+  buscar: { montar: montarBusca, desmontar: () => {} },
   // Só o editor (#cadernos/<id>) tem partes vivas; a lista não.
   cadernos: {
     montar: (id) => {

@@ -17,6 +17,7 @@ export const ROTAS = [
   { id: 'youtube', titulo: 'YouTube', curto: 'YouTube', icone: 'youtube', grupo: 'criacao' },
   { id: 'substack', titulo: 'Substack', curto: 'Substack', icone: 'substack', grupo: 'criacao' },
   { id: 'resumo', titulo: 'Resumo da semana', curto: 'Semana', icone: 'calendario', grupo: 'dia' },
+  { id: 'buscar', titulo: 'Pergunte à Bússola', curto: 'Buscar', icone: 'buscar', grupo: 'dia' },
   { id: 'financas', titulo: 'Finanças', curto: 'Finanças', icone: 'financas', grupo: 'vida' },
   { id: 'metas', titulo: 'Metas e lazer', curto: 'Metas', icone: 'metas', grupo: 'vida' },
 ];

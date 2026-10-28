@@ -201,6 +201,11 @@ body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):no
   .cabecalho {
     gap: 10px 16px;
     margin-bottom: 16px;
+    flex-wrap: nowrap; /* a lupa fica ao lado do título, não numa linha só dela */
+  }
+
+  .cabecalho > div:first-child {
+    min-width: 0;
   }
 
   .cabecalho h1 {

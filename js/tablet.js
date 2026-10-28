@@ -117,7 +117,7 @@ export const ATALHOS_TECLADO = [
   { tecla: 'l', nome: 'Lançar um gasto', hash: '#financas/lancar' },
   { tecla: 'k', nome: 'Cadernos', hash: '#cadernos' },
   { tecla: 'm', nome: 'Metas e lazer', hash: '#metas' },
-  { tecla: '/', nome: 'Buscar nesta tela' },
+  { tecla: '/', nome: 'Buscar (nesta tela, ou em tudo)' },
   { tecla: '?', nome: 'Ver estes atalhos' },
 ];
 
@@ -146,10 +146,11 @@ function ligarTeclado() {
     }
     if (e.key === '/') {
       const busca = document.querySelector('#conteudo input[type="search"], #conteudo input[name="busca"], #conteudo [id$="busca"]');
-      if (busca) {
-        e.preventDefault();
-        busca.focus();
-      }
+      e.preventDefault();
+      // Tela sem busca própria: vai para o "Pergunte à Bússola".
+      if (busca) busca.focus();
+      else if (location.hash.startsWith('#buscar')) document.getElementById('busca-termo')?.focus();
+      else location.hash = '#buscar';
       return;
     }
     const atalho = ATALHOS_TECLADO.find((a) => a.hash && a.tecla === e.key.toLowerCase());

@@ -33,7 +33,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que gera questões e lê PDFs da Biblioteca, `questoes-corrigir`, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", e `demandas`, que sugere prazo, tempo e prioridade das demandas) |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que gera questões e lê PDFs da Biblioteca, `questoes-corrigir`, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas, e `perguntar`, que responde o "Pergunte à Bússola") |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -72,6 +72,7 @@ A base é a identidade da Central de Conteúdo.
 7. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
 8. **Questões**: gerador, banco de questões, modo prova, modo fixação e revisão espaçada.
 9. **Calendário**: visão de mês, semana e lista, com eventos da faculdade e eventos próprios.
+10. **Pergunte à Bússola** (`#buscar`, lupa no topo de todas as telas): busca no aparelho em tudo (`js/dados-busca.js`) e "Perguntar", que manda à IA só o resumo da pergunta (`contextoDaPergunta`) e mostra a resposta com links para os itens.
 
 ## Cadernos (requisito importante)
 

@@ -1271,3 +1271,30 @@ details.card > summary {
 .backup-copias .acoes {
   margin: 0;
 }
+
+/* Topo das telas: lupa do "Pergunte à Bússola" e o tema */
+.cabecalho-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cabecalho-busca {
+  display: grid;
+  place-items: center;
+  width: calc(var(--toque) + 6px);
+  height: calc(var(--toque) + 6px);
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+}
+
+.cabecalho-busca:hover {
+  color: var(--cor-texto);
+}
+
+.cabecalho-busca svg {
+  width: 20px;
+  height: 20px;
+}

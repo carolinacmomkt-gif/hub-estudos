@@ -22,7 +22,10 @@ export function cabecalho(titulo, subtitulo = '') {
         <h1 tabindex="-1">${esc(titulo)}</h1>
         ${subtitulo ? `<p class="cabecalho-sub">${subtitulo}</p>` : ''}
       </div>
-      ${seletorTema()}
+      <div class="cabecalho-acoes">
+        ${location.hash.startsWith('#buscar') ? '' : `<a class="cabecalho-busca" href="#buscar" aria-label="Pergunte à Bússola: buscar ou perguntar" title="Buscar">${icone('buscar')}</a>`}
+        ${seletorTema()}
+      </div>
     </header>`;
 }
 
