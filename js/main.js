@@ -16,6 +16,7 @@ import { montarEditorTexto, desmontarEditorTexto } from './editor-texto.js';
 import { formatoDoCaderno } from './dados-texto.js';
 import { retomarTrilha } from './trilha.js';
 import { semearLazer } from './ideias-lazer.js';
+import { ligarTablet, irAoPontoDaRota, depoisDeDesenhar } from './tablet.js';
 import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
@@ -161,7 +162,9 @@ export function renderizar({ mudouDeTela = false } = {}) {
     renderizar.entrada = setTimeout(() => conteudo.classList.remove('tela-nova'), 260);
     window.scrollTo(0, 0);
     conteudo.querySelector('h1')?.focus({ preventScroll: true });
-  }
+    // Atalhos do ícone e do teclado (ex.: #tarefas/nova): já vai até o campo certo.
+    irAoPontoDaRota(rota.id, rota.parametro);
+  } else depoisDeDesenhar();
 }
 
 // Tabelas que as telas usam (as páginas de caderno ficam de fora: são pesadas e só o editor abre).
@@ -329,6 +332,7 @@ function ajustarBarrasDeAbas() {
   }
 }
 window.addEventListener('resize', () => ajustarBarrasDeAbas());
+ligarTablet();
 
 // Celular: ao rolar para baixo o "+" sai da frente; ao subir (ou parar no topo) ele volta.
 let ultimaRolagem = 0;

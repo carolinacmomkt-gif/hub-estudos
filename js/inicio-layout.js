@@ -56,11 +56,13 @@ export const ALTURA_MAX = 1200;
 
 const PADRAO_PROPRIO = { nota: 'metade', atalhos: 'metade', checklist: '1/3', contagem: '1/3' };
 
-// Celular (tela pequena), tablet (toque e tela grande) ou computador.
+// Celular (tela pequena), tablet (toque e tela grande) ou computador. Vale o tamanho da tela do
+// aparelho, não o da janela: o tablet em tela dividida continua sendo tablet (e o computador com a
+// janela estreita continua sendo computador).
 export function aparelhoDoInicio() {
   if (typeof matchMedia !== 'function') return 'computador';
   const menor = Math.min(screen?.width || innerWidth, screen?.height || innerHeight);
-  if (matchMedia('(max-width: 700px)').matches || menor < 600) return 'celular';
+  if (menor < 600) return 'celular';
   if (matchMedia('(any-pointer: coarse)').matches && (navigator.maxTouchPoints || 0) > 0) return 'tablet';
   return 'computador';
 }

@@ -1,0 +1,60 @@
+/* Só no tablet (body[data-aparelho="tablet"], marcado por js/tablet.js) */
+
+/* Toque de 48px, o padrão do Android para dedo e caneta */
+body[data-aparelho="tablet"] {
+  --toque: 48px;
+}
+
+/* Paisagem: as folhas (detalhes, formulários, Mais) abrem na lateral direita, como no One UI,
+   e a lista continua à vista do lado. Fecham tocando fora, no Esc ou deslizando para a direita. */
+@media (min-width: 1000px) {
+  body[data-aparelho="tablet"] dialog.folha {
+    inset: 0 0 0 auto;
+    width: min(480px, 42vw);
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 22px 0 0 22px;
+  }
+
+  body[data-aparelho="tablet"] dialog.folha .folha-alca {
+    display: none;
+  }
+
+  body[data-aparelho="tablet"] dialog.folha.fechando {
+    transform: translateX(110%) !important;
+  }
+}
+
+/* Nome do botão ao passar a S Pen por cima */
+.dica-caneta {
+  position: fixed;
+  z-index: 60;
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto);
+  box-shadow: var(--sombra);
+  font-size: 0.85rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.dica-caneta[hidden] {
+  display: none;
+}
+
+/* Lista de atalhos do teclado */
+.atalhos-teclado kbd {
+  min-width: 28px;
+  padding: 2px 8px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  background: var(--cor-superficie-2);
+  font-family: inherit;
+  font-weight: 700;
+  text-align: center;
+}

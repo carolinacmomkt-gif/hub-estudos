@@ -17,7 +17,8 @@ export const soTinta = (caderno) => SO_TINTA.includes(caderno?.tipo);
 // Celular: notas. Tablet (toque e tela grande): à mão. Computador: documento.
 export function formatoDoAparelho() {
   if (typeof matchMedia !== 'function') return 'documento';
-  if (matchMedia('(max-width: 700px)').matches) return 'notas';
+  // Pelo tamanho da tela do aparelho (o tablet em tela dividida continua abrindo à mão).
+  if (Math.min(screen?.width || innerWidth, screen?.height || innerHeight) < 600) return 'notas';
   if (matchMedia('(any-pointer: coarse)').matches && (navigator.maxTouchPoints || 0) > 0) return 'tinta';
   return 'documento';
 }

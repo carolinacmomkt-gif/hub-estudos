@@ -60,34 +60,40 @@ export function ligarFolhas() {
   // topo da rolagem, faz a folha descer junto com o dedo; soltando longe (ou rápido), ela fecha.
   // O Safari cancela os Pointer Events quando acha que é rolagem; os eventos de toque, não.
   let toque = null;
+  // Tablet em paisagem: a folha fica na lateral e fecha deslizando para a direita.
+  const lateral = () => document.body.dataset.aparelho === 'tablet' && matchMedia('(min-width: 1000px)').matches;
   document.addEventListener('touchstart', (e) => {
     const folha = e.target.closest?.('dialog.folha[open]');
     if (!folha || e.touches.length !== 1 || e.target.closest('input, textarea, select, [contenteditable]')) return;
-    toque = { folha, y: e.touches[0].clientY, t: Date.now(), dy: 0, arrastando: false, rolava: folha.scrollTop > 0 };
+    toque = { folha, x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), dy: 0, arrastando: false, rolava: folha.scrollTop > 0, lado: lateral() };
   }, { passive: true });
   document.addEventListener('touchmove', (e) => {
     if (!toque) return;
+    const x = e.touches[0].clientX;
     const y = e.touches[0].clientY;
-    const dy = y - toque.y;
+    // Na lateral o gesto é para a direita; embaixo, é para baixo.
+    const passo = toque.lado ? x - toque.x : y - toque.y;
+    const outro = toque.lado ? Math.abs(y - toque.y) : 0;
     if (!toque.arrastando) {
       // Subir o dedo (ou folha já rolada) é rolagem normal: o app sai da frente.
-      if (toque.rolava || toque.folha.scrollTop > 0 || dy < 0) {
-        toque = null;
+      if ((!toque.lado && (toque.rolava || toque.folha.scrollTop > 0)) || passo < 0 || outro > Math.abs(passo)) {
+        if (passo < 0 || outro > 10 || toque.folha.scrollTop > 0) toque = null;
         return;
       }
       // Na folha no topo, descer o dedo não tem o que rolar: o app assume o gesto já no começo
       // (senão o navegador decide que é rolagem e não deixa mais a folha acompanhar o dedo).
       if (e.cancelable) e.preventDefault();
-      if (dy < 6) return;
+      if (passo < 6) return;
       toque.arrastando = true;
       toque.folha.style.transition = 'none';
     }
     if (e.cancelable) e.preventDefault(); // a página não rola nem "quica" por trás
-    toque.dy = Math.max(0, dy - 6);
-    toque.vel = (y - (toque.ultimoY ?? toque.y)) / Math.max(1, Date.now() - (toque.ultimoT ?? toque.t));
-    toque.ultimoY = y;
+    const atual = toque.lado ? x : y;
+    toque.dy = Math.max(0, passo - 6);
+    toque.vel = (atual - (toque.ultimo ?? (toque.lado ? toque.x : toque.y))) / Math.max(1, Date.now() - (toque.ultimoT ?? toque.t));
+    toque.ultimo = atual;
     toque.ultimoT = Date.now();
-    toque.folha.style.transform = `translateY(${toque.dy}px)`;
+    toque.folha.style.transform = toque.lado ? `translateX(${toque.dy}px)` : `translateY(${toque.dy}px)`;
   }, { passive: false });
   const fimDoToque = (e) => {
     if (!toque) return;

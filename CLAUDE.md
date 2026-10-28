@@ -53,6 +53,7 @@ A base é a identidade da Central de Conteúdo.
   - tipografia do sistema;
   - bordas arredondadas.
 - A área de toque mínima é de 44px, pensando no uso com o dedo e com a S Pen.
+- **Jeito de tablet** (`tablet.js`, `tablet.css`, só quando `body[data-aparelho="tablet"]`): toque de 48px, folha lateral direita em paisagem (≥1000px, fecha deslizando para a direita), dica do nome do botão ao passar a S Pen, atalhos de teclado físico ("?" mostra a lista) e atalhos do ícone no manifest (`#inicio/planejar`, `#tarefas/nova`, `#financas/lancar`). O aparelho é decidido pelo tamanho da tela, não da janela, para a tela dividida continuar tablet.
 
 ## Estrutura de telas
 

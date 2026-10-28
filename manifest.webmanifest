@@ -11,20 +11,80 @@
   "background_color": "#191919",
   "theme_color": "#191919",
   "icons": [
-    { "src": "icones/icone-192-v2.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icones/icone-512-v2.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icones/icone-maskable-512-v2.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "icones/icone-v2.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "icones/icone-192-v2.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icones/icone-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icones/icone-maskable-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icones/icone-v2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ],
   "shortcuts": [
-    { "name": "Cadernos", "url": "./#cadernos", "icons": [{ "src": "icones/icone-192-v2.png", "sizes": "192x192" }] },
-    { "name": "Calendário", "url": "./#calendario", "icons": [{ "src": "icones/icone-192-v2.png", "sizes": "192x192" }] },
-    { "name": "Questões", "url": "./#questoes", "icons": [{ "src": "icones/icone-192-v2.png", "sizes": "192x192" }] },
-    { "name": "Nova leitura", "url": "./#biblioteca/novo", "icons": [{ "src": "icones/icone-192-v2.png", "sizes": "192x192" }] }
+    {
+      "name": "Planejar meu dia",
+      "short_name": "Meu dia",
+      "url": "./#inicio/planejar",
+      "icons": [
+        {
+          "src": "icones/icone-192-v2.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Nova tarefa",
+      "short_name": "Tarefa",
+      "url": "./#tarefas/nova",
+      "icons": [
+        {
+          "src": "icones/icone-192-v2.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Lançar um gasto",
+      "short_name": "Gasto",
+      "url": "./#financas/lancar",
+      "icons": [
+        {
+          "src": "icones/icone-192-v2.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Cadernos",
+      "url": "./#cadernos",
+      "icons": [
+        {
+          "src": "icones/icone-192-v2.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ],
   "share_target": {
     "action": "./",
     "method": "GET",
-    "params": { "title": "title", "text": "text", "url": "url" }
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
   }
 }
