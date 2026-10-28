@@ -2,7 +2,7 @@
 // compartilhado (WhatsApp e outros) e o card de conexão do Trello e do Notion em Configurações.
 
 import { esc, haQuantoTempo } from './utilidades.js';
-import { ORIGENS_DEMANDA, demandasAbertas, demandasMudadas } from './dados-demandas.js';
+import { ORIGENS_DEMANDA, TIPOS_DEMANDA, demandasAbertas, demandasMudadas, sugerirEtiqueta, TERMOS_NOTION_PADRAO } from './dados-demandas.js';
 import { AREAS_TAREFA, PRIORIDADES } from './dados-tarefas.js';
 
 const NO_CARD = 5;
@@ -31,7 +31,8 @@ export function textoPrazo(prazo, hoje) {
 const tempo = (min) => (!min ? '' : min < 60 ? `~${min} min` : `~${Math.floor(min / 60)}h${min % 60 ? String(min % 60).padStart(2, '0') : ''}`);
 
 function selo(d) {
-  return `<span class="dem-origem dem-origem--${esc(d.origem)}">${esc(ORIGENS_DEMANDA[d.origem] || 'Demanda')}</span>`;
+  const tipo = TIPOS_DEMANDA[d.dados?.tipo];
+  return `<span class="dem-origem dem-origem--${esc(d.origem)}">${esc(ORIGENS_DEMANDA[d.origem] || 'Demanda')}</span>${tipo ? `<span class="dem-origem dem-tipo--${esc(d.dados.tipo)}">${esc(tipo)}</span>` : ''}`;
 }
 
 function itemDemanda(d, hoje) {
@@ -50,10 +51,14 @@ function itemDemanda(d, hoje) {
         <strong>${esc(d.titulo)}</strong>
         ${meta ? `<small class="dem-meta">${meta}</small>` : ''}
         ${d.dados?.motivo ? `<small class="campo-ajuda">${esc(d.dados.motivo)}</small>` : ''}
+        ${d.dados?.tipo === 'alinhar' && d.detalhe ? `<details class="detalhes dem-detalhe"><summary>Ver o que está atrasado</summary><p class="dem-original">${esc(d.detalhe)}</p></details>` : ''}
       </div>
       <div class="dem-acoes">
-        <button class="botao botao-primario botao-pequeno" type="button" data-acao="dem-aceitar" data-id="${esc(d.id)}">Aceitar</button>
-        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="dem-ajustar" data-id="${esc(d.id)}">Ajustar</button>
+        ${d.dados?.tipo ? `<button class="botao botao-primario botao-pequeno" type="button" data-acao="dem-feito" data-id="${esc(d.id)}">Feito</button>
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="dem-aceitar" data-id="${esc(d.id)}" title="Vira tarefa para fazer depois">Depois</button>
+        ${d.origem_url ? `<a class="botao botao-secundario botao-pequeno" href="${esc(d.origem_url)}" target="_blank" rel="noopener">Abrir</a>` : ''}`
+    : `<button class="botao botao-primario botao-pequeno" type="button" data-acao="dem-aceitar" data-id="${esc(d.id)}">Aceitar</button>
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="dem-ajustar" data-id="${esc(d.id)}">Ajustar</button>`}
         <button class="botao-icone botao-icone-p" type="button" data-acao="dem-descartar" data-id="${esc(d.id)}" aria-label="Descartar: ${esc(d.titulo)}" title="Descartar">×</button>
       </div>
     </li>`;
@@ -191,18 +196,77 @@ export function linkDoTrello(chave, retorno) {
   return `https://trello.com/1/authorize?${p}`;
 }
 
+const LISTA_APROVACAO = /^\s*aprova[cç][aã]o\s*$/i;
+const LISTA_APROVADO = /^\s*aprovad[oa]s?\s*$/i;
+
+// Quadro dos designers: o que ela escolheu, senão o que tem as listas "Aprovação" e "Aprovado".
+export function quadroDosDesigners(quadros, config) {
+  if (config?.designers?.id) return quadros.find((q) => q.id === config.designers.id) || null;
+  return quadros.filter((q) => q.listas.some((l) => LISTA_APROVACAO.test(l.nome)) && q.listas.some((l) => LISTA_APROVADO.test(l.nome)))
+    .sort((a, b) => b.etiquetas.length - a.etiquetas.length)[0] || null;
+}
+
+export function opcoesListas(quadro, escolhida, padrao) {
+  const listas = quadro?.listas || [];
+  const atual = escolhida || listas.find((l) => padrao.test(l.nome))?.id || '';
+  return `<option value="">Nenhuma</option>${listas.map((l) => `<option value="${esc(l.id)}"${l.id === atual ? ' selected' : ''}>${esc(l.nome)}</option>`).join('')}`;
+}
+
+export function opcoesEtiquetas(quadro, escolhida) {
+  return `<option value="">Pelo nome do quadro</option>${(quadro?.etiquetas || []).map((e) => `<option value="${esc(e)}"${e === escolhida ? ' selected' : ''}>${esc(e)}</option>`).join('')}`;
+}
+
+function formConfigTrello(c) {
+  const quadros = c.detalhe?.quadros || [];
+  const config = c.detalhe?.config || {};
+  if (!quadros.length) {
+    return `<p class="campo-ajuda">Nenhum quadro encontrado. <button class="card-link" type="button" data-acao="dem-trello-quadros">Atualizar a lista de quadros</button></p>`;
+  }
+  const designers = quadroDosDesigners(quadros, config);
+  const salvos = new Map((config.clientes || []).map((x) => [x.id, x]));
+  const temConfig = Boolean(config.designers?.id || config.clientes?.length);
+  const linhas = quadros.filter((q) => q.id !== designers?.id).map((q) => {
+    const salvo = salvos.get(q.id);
+    const sugerida = sugerirEtiqueta(designers?.etiquetas, q.nome);
+    const marcado = temConfig ? Boolean(salvo) : Boolean(sugerida);
+    return `
+      <div class="dem-cliente" data-quadro="${esc(q.id)}">
+        <label class="campo-marcar"><input type="checkbox" name="cliente" value="${esc(q.id)}"${marcado ? ' checked' : ''}> ${esc(q.nome)}</label>
+        <select name="etiqueta-${esc(q.id)}" aria-label="Etiqueta de ${esc(q.nome)} no quadro dos designers">${opcoesEtiquetas(designers, salvo ? salvo.etiqueta : sugerida)}</select>
+      </div>`;
+  }).join('');
+  return `
+    <form class="formulario" data-form="dem-trello-config" novalidate>
+      <label class="campo"><span class="campo-rotulo">Quadro dos designers</span>
+        <select name="designers" data-acao-mudar="dem-designers"><option value="">Nenhum</option>${quadros.map((q) => `<option value="${esc(q.id)}"${q.id === designers?.id ? ' selected' : ''}>${esc(q.nome)}</option>`).join('')}</select></label>
+      <div class="cal-form-linha">
+        <label class="campo"><span class="campo-rotulo">Lista de aprovação</span><select name="aprovacao">${opcoesListas(designers, config.designers?.aprovacao, LISTA_APROVACAO)}</select></label>
+        <label class="campo"><span class="campo-rotulo">Lista de aprovados</span><select name="aprovado">${opcoesListas(designers, config.designers?.aprovado, LISTA_APROVADO)}</select></label>
+      </div>
+      <p class="campo-ajuda">Post de cliente seu que cair na aprovação avisa no celular na hora. Quando for aprovado, a Bússola lembra de atualizar o Trello do cliente.</p>
+      <fieldset class="campo dem-bases"><legend class="campo-rotulo">Quadros dos seus clientes</legend>
+        <p class="campo-ajuda">Marque os seus (os de influência ficam de fora). Ao lado, a etiqueta do cliente no quadro dos designers. A lista "Demandas" de cada quadro vira demanda, e card com prazo vencido (fora de Aprovados) ou quadro parado há 7 dias pede atualização, uma vez por semana.</p>
+        ${linhas}
+      </fieldset>
+      <div class="acoes">
+        <button class="botao botao-primario" type="submit">Salvar</button>
+        <button class="botao botao-secundario" type="button" data-acao="dem-trello-quadros">Atualizar a lista de quadros</button>
+      </div>
+    </form>`;
+}
+
 function blocoTrello(c, chave) {
   if (ligada(c)) {
     return `
       ${c.status === 'reconectar' ? `<p class="ava-alerta" role="alert">${esc(c.detalhe?.mensagem || 'O Trello recusou o acesso.')}</p>` : situacao(c)}
-      <p class="campo-ajuda">Entram os cartões em que você é membro, que não estão concluídos nem em listas como "Feito".</p>
+      ${formConfigTrello(c)}
       <div class="acoes">
         ${c.status === 'reconectar' ? '<button class="botao botao-primario" type="button" data-acao="dem-trello-conectar">Conectar de novo</button>' : ''}
         <button class="botao botao-secundario" type="button" data-acao="dem-desconectar" data-servico="trello">Desconectar</button>
       </div>`;
   }
   return `
-    <p class="texto-suave">Os cartões do Trello em que você é membro viram demandas. A Bússola só lê: nunca muda nada no Trello.</p>
+    <p class="texto-suave">Depois de conectar, você escolhe o quadro dos designers e os quadros dos seus clientes, inclusive os compartilhados com você. A Bússola só lê: nunca muda nada no Trello.</p>
     ${chave ? '<div class="acoes"><button class="botao botao-primario" type="button" data-acao="dem-trello-conectar">Conectar o Trello</button></div>'
     : '<p class="ava-alerta">Falta a variável TRELLO_API_KEY na Netlify (veja o passo a passo no ROTEIRO).</p>'}
     <details class="detalhes"><summary>Conectar copiando o token (se voltar do Trello não funcionar)</summary>
@@ -225,7 +289,9 @@ function blocoNotion(c) {
           ${disponiveis.length ? disponiveis.map((b) => `<label class="campo-marcar"><input type="checkbox" name="base" value="${esc(b.id)}"${escolhidas.has(b.id) ? ' checked' : ''}> ${esc(b.nome)}</label>`).join('')
     : '<p class="campo-ajuda">Nenhuma base liberada. No Notion, abra a base, toque em ••• → Conexões e escolha a da Bússola. Depois toque em "Atualizar a lista".</p>'}
         </fieldset>
-        <p class="campo-ajuda">Entram as páginas editadas nos últimos 30 dias que não estão com status de concluídas.</p>
+        <label class="campo"><span class="campo-rotulo">Nomes que marcam o que é seu</span>
+          <input name="termos" type="text" maxlength="200" value="${esc((c.detalhe?.termos ?? TERMOS_NOTION_PADRAO).join(', '))}"></label>
+        <p class="campo-ajuda">Entram as páginas editadas nos últimos 30 dias, não concluídas, que tenham um desses nomes em algum campo (responsável, etiqueta, status). Separe por vírgula.</p>
         <div class="acoes">
           ${disponiveis.length ? '<button class="botao botao-primario" type="submit">Salvar as bases</button>' : ''}
           <button class="botao botao-secundario" type="button" data-acao="dem-bases-atualizar">Atualizar a lista</button>

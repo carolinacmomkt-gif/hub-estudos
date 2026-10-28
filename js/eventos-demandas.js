@@ -6,7 +6,8 @@ import { listar, obter, salvar, sincronizar } from './persistencia.js';
 import { pedirDemandas, desconectar } from './funcoes.js';
 import { chaveDoTrello } from './nuvem.js';
 import { demandaDoTexto, sugestaoSimples, aplicarSugestao, tarefaDaDemanda } from './dados-demandas.js';
-import { formDemanda, formColar, folhaCompartilhado, hojeLocal, linkDoTrello } from './views-demandas.js';
+import { formDemanda, formColar, folhaCompartilhado, hojeLocal, linkDoTrello, opcoesListas, opcoesEtiquetas } from './views-demandas.js';
+import { sugerirEtiqueta } from './dados-demandas.js';
 
 let app; // { renderizar, avisoCurto }
 const UMA_HORA = 60 * 60 * 1000;
@@ -38,13 +39,15 @@ function resultado(html) {
 let lendo = null;
 export function lerDemandas({ silencioso = false } = {}) {
   if (lendo) return lendo;
+  // Só redesenha onde o "Lendo…" aparece: nas outras telas nada pula durante a leitura.
+  const redesenhar = () => { if (['inicio', 'configuracoes'].includes(obterEstado().rota)) app.renderizar(); };
   lendo = (async () => {
     atualizarEstado({ lendoDemandas: true });
-    app.renderizar();
+    redesenhar();
     const r = await pedirDemandas({ acao: 'sincronizar' });
     await sincronizar();
     atualizarEstado({ lendoDemandas: false });
-    app.renderizar();
+    redesenhar();
     if (!r.ok) {
       if (!silencioso) app.avisoCurto(r.erros?.[0] || r.erro || 'Não consegui ler agora.');
     } else if (r.novas || r.mudadas) {
@@ -125,6 +128,14 @@ async function aceitar(id, ajustes = {}) {
       await salvar('demandas', { ...d });
     },
   });
+}
+
+// Aprovação, aprovado e "atualizar o Trello": ela já fez (sem virar tarefa).
+async function feito(id) {
+  const d = await obter('demandas', id);
+  if (!d || d.status !== 'nova') return;
+  await salvar('demandas', { ...d, status: 'aceita', dados: { ...(d.dados || {}), feito_em: new Date().toISOString() } });
+  app.avisoCurto('Feito.', { rotulo: 'Desfazer', fn: () => salvar('demandas', { ...d }) });
 }
 
 async function descartar(id) {
@@ -221,6 +232,15 @@ export function cliqueDemandas(alvo) {
     case 'dem-ler': lerDemandas(); break;
     case 'dem-aceitar': aceitar(id); break;
     case 'dem-descartar': descartar(id); break;
+    case 'dem-feito': feito(id); break;
+    case 'dem-trello-quadros':
+      pedirDemandas({ acao: 'trello-quadros' }).then(async (r) => {
+        if (!r.ok) return app.avisoCurto(r.erro || 'Não consegui ler os quadros.');
+        await sincronizar();
+        app.renderizar();
+        return app.avisoCurto(`${r.quadros} ${r.quadros === 1 ? 'quadro encontrado' : 'quadros encontrados'}.`);
+      });
+      break;
     case 'dem-ajustar':
       obter('demandas', id).then((d) => d && abrirFolha('Ajustar a demanda', formDemanda(d)));
       break;
@@ -261,6 +281,23 @@ export function cliqueDemandas(alvo) {
   return true;
 }
 
+// Trocou o quadro dos designers: listas e etiquetas acompanham, sem perder o que já foi marcado.
+export function mudancaDemandas(alvo, tipo) {
+  if (alvo.dataset?.acaoMudar !== 'dem-designers') return false;
+  if (tipo !== 'change') return true;
+  const form = alvo.closest('form');
+  const quadros = (obterEstado().conexoes || []).find((c) => c.servico === 'trello')?.detalhe?.quadros || [];
+  const q = quadros.find((x) => x.id === alvo.value) || null;
+  form.elements.aprovacao.innerHTML = opcoesListas(q, '', /^\s*aprova[cç][aã]o\s*$/i);
+  form.elements.aprovado.innerHTML = opcoesListas(q, '', /^\s*aprovad[oa]s?\s*$/i);
+  form.querySelectorAll('.dem-cliente').forEach((linha) => {
+    const quadro = quadros.find((x) => x.id === linha.dataset.quadro);
+    linha.hidden = linha.dataset.quadro === alvo.value; // o quadro dos designers não é de cliente
+    linha.querySelector('select').innerHTML = opcoesEtiquetas(q, sugerirEtiqueta(q?.etiquetas, quadro?.nome));
+  });
+  return true;
+}
+
 export function enviarDemandas(form) {
   const tipo = form.dataset.form;
   if (!tipo?.startsWith('dem-')) return false;
@@ -270,9 +307,24 @@ export function enviarDemandas(form) {
     if (token) conectarComToken(form.dataset.servico, token);
     return true;
   }
+  if (tipo === 'dem-trello-config') {
+    const designers = form.elements.designers.value;
+    const clientes = [...form.querySelectorAll('input[name="cliente"]:checked')]
+      .filter((i) => i.value !== designers)
+      .map((i) => ({ id: i.value, etiqueta: form.elements[`etiqueta-${i.value}`]?.value || '' }));
+    pedirDemandas({ acao: 'trello-config', designers: { id: designers, aprovacao: form.elements.aprovacao.value, aprovado: form.elements.aprovado.value }, clientes }).then(async (r) => {
+      if (!r.ok) return app.avisoCurto(r.erro || 'Não deu para salvar.');
+      await sincronizar();
+      app.renderizar();
+      lerDemandas({ silencioso: true });
+      return app.avisoCurto(`Salvo: ${r.config.clientes.length} ${r.config.clientes.length === 1 ? 'cliente' : 'clientes'}${r.config.designers ? ' e o quadro dos designers' : ''}. Lendo…`);
+    });
+    return true;
+  }
   if (tipo === 'dem-bases') {
     const bases = [...form.querySelectorAll('input[name="base"]:checked')].map((i) => i.value);
-    pedirDemandas({ acao: 'escolher', bases }).then(async (r) => {
+    const termos = String(form.elements.termos?.value || '').split(',').map((t) => t.trim()).filter(Boolean);
+    pedirDemandas({ acao: 'escolher', bases, termos }).then(async (r) => {
       if (!r.ok) return app.avisoCurto(r.erro || 'Não deu para salvar.');
       await sincronizar();
       app.renderizar();

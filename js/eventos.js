@@ -31,12 +31,12 @@ import { ligarRecompensas, cliqueRecompensas, enviarRecompensas } from './evento
 import { ligarHabitos, cliqueHabitos, enviarHabitos, mudancaHabitos } from './eventos-habitos.js';
 import { ligarFolhas } from './folhas-dialogo.js';
 import { ligarDia, cliqueDia, enviarDia } from './eventos-dia.js';
-import { ligarDemandas, cliqueDemandas, enviarDemandas } from './eventos-demandas.js';
+import { ligarDemandas, cliqueDemandas, enviarDemandas, mudancaDemandas } from './eventos-demandas.js';
 import { ligarMetas, cliqueMetas, enviarMetas, mudancaMetas } from './eventos-metas.js';
 import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './eventos-estudos.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 

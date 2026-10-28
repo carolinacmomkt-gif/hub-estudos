@@ -119,3 +119,56 @@ export function tarefaDaDemanda(d, hoje) {
     dados: { demanda_id: d.id, origem: d.origem, url: d.origem_url || null, minutos: d.minutos || null },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Trello da agência: quadro dos designers (cliente pela etiqueta) e um quadro por cliente
+// ---------------------------------------------------------------------------
+
+// Demandas que a Bússola monta sozinha (sem IA): post em aprovação, aprovado e Trello desatualizado.
+export const TIPOS_DEMANDA = {
+  aprovacao: 'Aprovação',
+  aprovado: 'Aprovado',
+  alinhar: 'Atualizar Trello',
+};
+
+const normal = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/\b(dra?|doutora?)\b\.?/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+
+// "Dra. Karyne Magalhães | SM" → "Dra. Karyne Magalhães"
+export const nomeDoCliente = (quadro) => String(quadro || '').split('|')[0].trim() || String(quadro || '').trim();
+
+// A etiqueta do quadro dos designers é do cliente? ("KARYNE MAGALHÃES" ↔ "Dra. Karyne Magalhães | SM")
+export function etiquetaDoCliente(etiqueta, quadro) {
+  const a = normal(etiqueta);
+  const b = normal(nomeDoCliente(quadro));
+  if (!a || !b || a.length < 3) return false;
+  return a === b || b.includes(a) || a.includes(b);
+}
+
+// Sugere a etiqueta de cada cliente entre as etiquetas do quadro dos designers.
+export const sugerirEtiqueta = (etiquetas, quadro) => (etiquetas || []).find((e) => etiquetaDoCliente(e, quadro)) || '';
+
+// Listas que não contam para "Trello desatualizado": informações, aprovados e o que já foi.
+const FORA_DO_ALINHAMENTO = /\b(informa[cç](ao|oes|ões)|aprovad[oa]s?|conclu[ií]d[oa]s?|postad[oa]s?|publicad[oa]s?|feit[oa]s?|arquiv)/i;
+export const contaNoAlinhamento = (lista) => !FORA_DO_ALINHAMENTO.test(String(lista || '').normalize('NFC'));
+export const ehListaDeDemandas = (lista) => /^\s*demandas?\b/i.test(String(lista || ''));
+
+// Semana do ano (ISO), para o lembrete de atualizar o Trello sair uma vez por semana.
+export function semanaDe(dia) {
+  const d = new Date(`${dia}T12:00:00Z`);
+  const quinta = new Date(d);
+  quinta.setUTCDate(d.getUTCDate() + 3 - ((d.getUTCDay() + 6) % 7));
+  const ano = quinta.getUTCFullYear();
+  const primeira = new Date(Date.UTC(ano, 0, 4));
+  const semana = 1 + Math.round(((quinta - primeira) / 864e5 - 3 + ((primeira.getUTCDay() + 6) % 7)) / 7);
+  return `${ano}-S${String(semana).padStart(2, '0')}`;
+}
+
+// Notion: só o que tem um destes nomes em algum campo (responsável, etiqueta, status...).
+export const TERMOS_NOTION_PADRAO = ['Carol', 'Essence'];
+export function paginaEhDela(textos, termos = TERMOS_NOTION_PADRAO) {
+  const lista = (termos || []).map(normal).filter(Boolean);
+  if (!lista.length) return true;
+  const tudo = ` ${(textos || []).map(normal).join(' ')} `;
+  return lista.some((t) => tudo.includes(` ${t} `)); // palavra inteira ("Carol", não "Caroline")
+}

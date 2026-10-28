@@ -157,3 +157,43 @@
   padding: 0;
   margin-bottom: 4px;
 }
+
+/* Tipo da demanda montada pela Bússola (aprovação, aprovado, atualizar Trello) */
+.dem-tipo--aprovacao {
+  border-color: var(--urg-atrasado);
+  color: var(--urg-atrasado-texto);
+}
+
+.dem-tipo--aprovado,
+.dem-tipo--alinhar {
+  border-color: var(--urg-urgente);
+  color: var(--urg-urgente-texto);
+}
+
+.dem-detalhe {
+  margin-top: 4px;
+}
+
+/* Configurações: quadros dos clientes, cada um com a etiqueta no quadro dos designers */
+.dem-cliente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.dem-cliente .campo-marcar {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.dem-cliente select {
+  flex: 0 1 240px;
+  min-width: 0;
+}
+
+.dem-cliente[hidden] {
+  display: none;
+}

@@ -10,8 +10,11 @@ import { banco } from './supabase.mjs';
 import { decifrar } from './cripto.mjs';
 import { pedirJson, ErroIa, lista, objeto, texto, limpar } from './ia-comum.mjs';
 import { noFuso } from './avisos.mjs';
+import { enviarPush } from './avisos.mjs';
+import { configVida, emSilencio } from './avisos-vida.mjs';
 import {
   pareceFeito, prazoDaOrigem, assinaturaDe, aplicarSugestao, sugestaoSimples, mudancaDe, AREAS_DEMANDA,
+  nomeDoCliente, etiquetaDoCliente, contaNoAlinhamento, ehListaDeDemandas, semanaDe, paginaEhDela, TERMOS_NOTION_PADRAO,
 } from '../../js/dados-demandas.js';
 
 const FUSO = 'America/Sao_Paulo';
@@ -63,7 +66,107 @@ export async function contaTrello(token) {
   return { nome: eu.fullName || eu.username || 'Trello' };
 }
 
-export async function lerTrello(token) {
+// Quadros que ela vê (inclusive os compartilhados com ela), com listas e etiquetas, para escolher
+// o quadro dos designers e os quadros dos clientes dela.
+export async function quadrosTrello(token) {
+  const quadros = (await trello('members/me/boards', token, '&filter=open&fields=name,url&lists=open&list_fields=name')) || [];
+  const comEtiquetas = await Promise.all(quadros.slice(0, 60).map(async (q) => ({
+    id: q.id,
+    nome: limpar(q.name, 120),
+    listas: (q.lists || []).map((l) => ({ id: l.id, nome: limpar(l.name, 80) })),
+    etiquetas: [...new Set(((await trello(`boards/${q.id}/labels`, token, '&fields=name&limit=200').catch(() => [])) || [])
+      .map((e) => limpar(e.name, 60)).filter(Boolean))],
+  })));
+  return comEtiquetas;
+}
+
+const DIA_MS = 864e5;
+const diaMes = (d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+
+// Do jeito da agência: no quadro dos designers, o cliente vem pela etiqueta; cada cliente dela
+// tem um quadro próprio. jaVistos: origem_id das demandas guardadas (para saber o que mudou de lista).
+async function lerTrelloAgencia(token, cfg, { hoje, agora, jaVistos }) {
+  const itens = [];
+  const clientes = (cfg.clientes || []).slice(0, 30);
+  const doCliente = (etiquetas) => clientes.find((cl) => (etiquetas || []).some((e) => etiquetaDoCliente(e.name, cl.etiqueta || cl.nome)));
+  const d = cfg.designers;
+  if (d?.id && (d.aprovacao || d.aprovado)) {
+    const [cartoes, listas] = await Promise.all([
+      trello(`boards/${d.id}/cards`, token, '&filter=open&fields=name,idList,labels,shortUrl,url,dateLastActivity'),
+      trello(`boards/${d.id}/lists`, token, '&fields=name'),
+    ]);
+    const nomeLista = new Map((listas || []).map((l) => [l.id, l.name]));
+    for (const c of cartoes || []) {
+      const cliente = doCliente(c.labels);
+      if (!cliente) continue; // sem etiqueta de cliente dela (influência, outros clientes, cartões de aviso)
+      const nome = nomeDoCliente(cliente.nome);
+      const base = { origem: 'trello', origem_url: c.shortUrl || c.url || null, quem: nome, prazo: null, hora: null, cliente: nome };
+      if (c.idList === d.aprovacao) {
+        itens.push({
+          ...base, tipo: 'aprovacao', origem_id: `apr:${c.id}`, titulo: limpar(c.name, 200),
+          onde: [nomeDoCliente(d.nome), nomeLista.get(c.idList)].filter(Boolean).join(' › '),
+          detalhe: `Entrou em ${nomeLista.get(c.idList) || 'Aprovação'} no quadro dos designers. Depois de mandar para ${nome}, passe o card para "Posts para aprovação" no Trello dela.`,
+          fixo: { titulo: limpar(`Mandar para ${nome} aprovar: ${c.name}`, 120), prioridade: 2, minutos: 15, prazo: hoje, area: 'consultoria', motivo: 'Post novo em aprovação.' },
+        });
+      } else if (c.idList === d.aprovado) {
+        // Só o que acabou de ser aprovado (passou pela aprovação aqui ou mexeu nos últimos 3 dias).
+        const recente = c.dateLastActivity && agora - Date.parse(c.dateLastActivity) < 3 * DIA_MS;
+        if (!jaVistos.has(`apr:${c.id}`) && !recente) continue;
+        itens.push({
+          ...base, tipo: 'aprovado', origem_id: `aprov:${c.id}`, titulo: limpar(c.name, 200),
+          onde: [nomeDoCliente(d.nome), nomeLista.get(c.idList)].filter(Boolean).join(' › '),
+          detalhe: `${nome} aprovou. Passe o card para "Aprovados" no Trello dela.`,
+          fixo: { titulo: limpar(`Atualizar o Trello de ${nome}: "${c.name}" aprovado`, 120), prioridade: 1, minutos: 5, prazo: hoje, area: 'consultoria', motivo: 'Saiu de Aprovação para Aprovado.' },
+        });
+      }
+    }
+  }
+  // Quadro de cada cliente: a lista "Demandas" vira demanda; prazo vencido ou quadro parado pede atualização.
+  await Promise.all(clientes.map(async (cl) => {
+    const [quadro, cartoes, listas] = await Promise.all([
+      trello(`boards/${cl.id}`, token, '&fields=name,url,dateLastActivity'),
+      trello(`boards/${cl.id}/cards`, token, '&filter=open&fields=name,desc,due,dueComplete,idList,shortUrl,url,dateLastActivity'),
+      trello(`boards/${cl.id}/lists`, token, '&fields=name'),
+    ]);
+    const nome = nomeDoCliente(quadro?.name || cl.nome);
+    const nomeLista = new Map((listas || []).map((l) => [l.id, l.name]));
+    const atrasados = [];
+    for (const c of cartoes || []) {
+      const lista = nomeLista.get(c.idList) || '';
+      const { prazo, hora } = prazoDaOrigem(c.due, FUSO);
+      if (ehListaDeDemandas(lista)) {
+        itens.push({
+          origem: 'trello', origem_id: c.id, origem_url: c.shortUrl || c.url || null, titulo: limpar(c.name, 200),
+          detalhe: String(c.desc || '').trim().slice(0, 2000) || null, onde: `${nome} › ${lista}`, quem: nome, prazo, hora, cliente: nome,
+        });
+      } else if (prazo && prazo < hoje && !c.dueComplete && contaNoAlinhamento(lista)) {
+        atrasados.push(`• ${limpar(c.name, 80)} (${limpar(lista, 40)}, prazo ${diaMes(prazo)})`);
+      }
+    }
+    const parado = quadro?.dateLastActivity ? Math.floor((agora - Date.parse(quadro.dateLastActivity)) / DIA_MS) : 0;
+    if (atrasados.length || parado >= 7) {
+      const motivo = atrasados.length ? `${atrasados.length} ${atrasados.length === 1 ? 'card com prazo vencido' : 'cards com prazo vencido'}.` : `Sem mudança há ${parado} dias.`;
+      itens.push({
+        origem: 'trello', tipo: 'alinhar', origem_id: `alinhar:${cl.id}:${semanaDe(hoje)}`, origem_url: quadro?.url || null,
+        titulo: `Atualizar o Trello de ${nome}`, onde: nome, quem: nome, prazo: null, hora: null, cliente: nome,
+        detalhe: [atrasados.length ? `Com prazo vencido e ainda fora de Aprovados:\n${atrasados.slice(0, 12).join('\n')}${atrasados.length > 12 ? `\n… e mais ${atrasados.length - 12}` : ''}` : '', parado >= 7 ? `Nenhuma mudança no quadro há ${parado} dias.` : ''].filter(Boolean).join('\n\n'),
+        fixo: { titulo: `Atualizar o Trello de ${nome}`, prioridade: 1, minutos: 15, prazo: hoje, area: 'consultoria', motivo },
+      });
+    }
+  }));
+  return itens.slice(0, MAX_ITENS);
+}
+
+// cfg: o que ela escolheu em Configurações (quadro dos designers e quadros dos clientes).
+// Sem escolha: os cartões em que ela é membro (o jeito simples).
+export async function lerTrello(token, cfg = {}, contexto = {}) {
+  if (cfg.designers?.id || cfg.clientes?.length) {
+    return lerTrelloAgencia(token, cfg, { hoje: contexto.hoje, agora: contexto.agora ?? Date.now(), jaVistos: contexto.jaVistos || new Set() });
+  }
+  return lerTrelloMembro(token);
+}
+
+async function lerTrelloMembro(token) {
   const [quadros, cartoes] = await Promise.all([
     trello('members/me/boards', token, '&filter=open&fields=name'),
     trello('members/me/cards', token, '&filter=open&fields=name,desc,due,dueComplete,idBoard,idList,shortUrl,url'),
@@ -120,14 +223,16 @@ function lerPagina(p, nomeBase) {
   const marcado = props.some((x) => x.type === 'checkbox' && x.checkbox === true);
   const pessoas = props.filter((x) => x.type === 'people').flatMap((x) => x.people || []).map((u) => u.name).filter(Boolean);
   const textos = props.filter((x) => x.type === 'rich_text').map((x) => textoRico(x.rich_text)).filter(Boolean);
+  const etiquetas = props.filter((x) => x.type === 'multi_select').flatMap((x) => x.multi_select || []).map((o) => o.name).filter(Boolean);
   return {
     feito: situacao.some(pareceFeito) || marcado,
+    marcas: [...situacao, ...pessoas, ...etiquetas, ...textos],
     item: {
       origem: 'notion',
       origem_id: p.id,
       origem_url: p.url || null,
       titulo: limpar(titulo, 200),
-      detalhe: [situacao.length ? `Status: ${situacao.join(', ')}` : '', pessoas.length ? `Responsável: ${pessoas.join(', ')}` : '', ...textos].filter(Boolean).join('\n').slice(0, 2000) || null,
+      detalhe: [situacao.length ? `Status: ${situacao.join(', ')}` : '', etiquetas.length ? `Etiquetas: ${etiquetas.join(', ')}` : '', pessoas.length ? `Responsável: ${pessoas.join(', ')}` : '', ...textos].filter(Boolean).join('\n').slice(0, 2000) || null,
       onde: nomeBase,
       quem: null,
       ...prazoDaOrigem(data, FUSO),
@@ -135,7 +240,7 @@ function lerPagina(p, nomeBase) {
   };
 }
 
-export async function lerNotion(token, bases) {
+export async function lerNotion(token, bases, termos = TERMOS_NOTION_PADRAO) {
   const itens = [];
   for (const base of (bases || []).slice(0, 8)) {
     const r = await notion(`databases/${encodeURIComponent(base.id)}/query`, token, {
@@ -145,8 +250,9 @@ export async function lerNotion(token, bases) {
     });
     for (const p of r.results || []) {
       if (p.archived || p.in_trash) continue;
-      const { feito, item } = lerPagina(p, base.nome);
-      if (!feito && item.titulo) itens.push(item);
+      const { feito, item, marcas } = lerPagina(p, base.nome);
+      // Só o que é dela: marcado "Carol" ou "Essence" em algum campo (responsável, etiqueta, status...).
+      if (!feito && item.titulo && paginaEhDela(marcas, termos)) itens.push(item);
     }
   }
   return itens.slice(0, MAX_ITENS);
@@ -213,17 +319,39 @@ function linhaNova(userId, item, s, ia) {
     status: 'nova',
     assinatura: resumoDe(assinaturaDe(item)),
     excluido_em: null, // voltou para a origem depois de sumir: volta para a caixa
-    dados: { titulo_origem: item.titulo, prazo_origem: item.prazo || null, motivo: s.motivo, area: s.area, ia },
+    dados: { titulo_origem: item.titulo, prazo_origem: item.prazo || null, motivo: s.motivo, area: s.area, ia, ...(item.tipo ? { tipo: item.tipo } : {}), ...(item.cliente ? { cliente: item.cliente } : {}) },
   };
 }
 
-async function lerOrigem(userId, servico) {
+async function lerOrigem(userId, servico, contexto) {
   const cifrado = await banco.lerCredencial(userId, servico);
   if (!cifrado) return null;
   const segredo = decifrar(cifrado);
-  if (servico === 'trello') return lerTrello(segredo.token);
-  const conexao = await banco.lerConexao(userId, 'notion');
-  return lerNotion(segredo.token, conexao?.detalhe?.bases || []);
+  const conexao = await banco.lerConexao(userId, servico);
+  if (servico === 'trello') return lerTrello(segredo.token, conexao?.detalhe?.config || {}, contexto);
+  return lerNotion(segredo.token, conexao?.detalhe?.bases || [], conexao?.detalhe?.termos ?? TERMOS_NOTION_PADRAO);
+}
+
+// Post novo em aprovação: aviso no celular na hora (fora do horário de silêncio).
+async function avisarAprovacoes(userId, linhas, agora) {
+  if (!linhas.length) return;
+  try {
+    const [assinaturas, configs] = await Promise.all([
+      banco.listar('assinaturas_push', userId).catch(() => []),
+      banco.listar('config', userId, 'chave=eq.avisos').catch(() => []),
+    ]);
+    if (!assinaturas.length) return;
+    const { minutos } = noFuso(agora, FUSO);
+    if (emSilencio(minutos, configVida(configs[0]?.valor?.vida).silencio)) return;
+    const n = linhas.length === 1
+      ? { titulo: 'Post para aprovação', texto: linhas[0].titulo, tag: 'demandas-aprovacao', url: '/#inicio' }
+      : { titulo: `${linhas.length} posts para aprovação`, texto: linhas.slice(0, 3).map((l) => l.quem).filter(Boolean).join(', '), tag: 'demandas-aprovacao', url: '/#inicio' };
+    for (const a of assinaturas) {
+      if ((await enviarPush(a, n)) === 'expirada') await banco.apagar('assinaturas_push', `user_id=eq.${userId}&id=eq.${a.id}`).catch(() => {});
+    }
+  } catch (falha) {
+    console.error('demandas push:', falha?.message);
+  }
 }
 
 // Junta o que veio da origem com o que já está guardado.
@@ -234,8 +362,10 @@ export async function sincronizarDemandas(userId, { agora = Date.now(), cliente,
   const resultado = { ok: true, novas: 0, mudadas: 0, erros: [] };
   for (const servico of servicos) {
     let itens;
+    let guardadas;
     try {
-      itens = await lerOrigem(userId, servico);
+      guardadas = await banco.listar('demandas', userId, `origem=eq.${servico}`);
+      itens = await lerOrigem(userId, servico, { hoje, agora, jaVistos: new Set(guardadas.map((d) => d.origem_id)) });
     } catch (falha) {
       const reconectar = falha instanceof ErroOrigem && falha.reconectar;
       const mensagem = falha instanceof ErroOrigem ? falha.message : `Não consegui ler o ${servico === 'trello' ? 'Trello' : 'Notion'} agora.`;
@@ -247,13 +377,13 @@ export async function sincronizarDemandas(userId, { agora = Date.now(), cliente,
     }
     if (!itens) continue;
 
-    const guardadas = await banco.listar('demandas', userId, `origem=eq.${servico}`);
     const porId = new Map(guardadas.map((d) => [d.origem_id, d]));
     const vistos = new Set(itens.map((x) => x.origem_id));
     const novos = itens.filter((x) => !porId.has(x.origem_id));
     // Novas sem IA de leituras anteriores também ganham a vez (até o limite da rodada).
+    // Os que a Bússola monta sozinha (aprovação, aprovado, atualizar Trello) não passam pela IA.
     const semIa = guardadas.filter((d) => d.status === 'nova' && d.dados?.ia === false && vistos.has(d.origem_id));
-    const paraIa = [...novos, ...semIa.map((d) => itens.find((x) => x.origem_id === d.origem_id))].slice(0, IA_POR_RODADA);
+    const paraIa = [...novos, ...semIa.map((d) => itens.find((x) => x.origem_id === d.origem_id))].filter((x) => x && !x.fixo).slice(0, IA_POR_RODADA);
     let sugestoes = new Map();
     try {
       sugestoes = await sugerirComIa(paraIa, hoje, { cliente });
@@ -269,6 +399,13 @@ export async function sincronizarDemandas(userId, { agora = Date.now(), cliente,
     for (const item of itens) {
       const antiga = porId.get(item.origem_id);
       const assinatura = resumoDe(assinaturaDe(item));
+      if (item.fixo) {
+        // Demanda montada pela Bússola: nova entra; aceita ou descartada só guarda a assinatura.
+        if (!antiga) gravar.push(linhaNova(userId, item, { ...sugestaoSimples(item, hoje), ...item.fixo, quem: item.quem }, true));
+        else if (antiga.status === 'nova' && antiga.assinatura !== assinatura) gravar.push({ ...linhaNova(userId, item, { ...sugestaoSimples(item, hoje), ...item.fixo, quem: item.quem }, true), id: antiga.id });
+        else if (antiga.assinatura !== assinatura) await banco.atualizarPorId('demandas', userId, antiga.id, { assinatura });
+        continue;
+      }
       if (!antiga) {
         const s = daIa(item);
         gravar.push(linhaNova(userId, item, aplicarSugestao(item, s, hoje), Boolean(s)));
@@ -298,6 +435,7 @@ export async function sincronizarDemandas(userId, { agora = Date.now(), cliente,
     }
     resultado.novas += novos.length;
     await banco.gravar('demandas', gravar, 'user_id,origem,origem_id');
+    await avisarAprovacoes(userId, gravar.filter((l) => l.dados?.tipo === 'aprovacao' && !porId.has(l.origem_id)), agora);
     // Saiu da origem (concluída, arquivada, deixou de ser dela) e ainda não foi aceita: some da caixa.
     const sumiram = guardadas.filter((d) => d.status === 'nova' && !vistos.has(d.origem_id));
     for (const d of sumiram) await banco.atualizarPorId('demandas', userId, d.id, { excluido_em: new Date(agora).toISOString() });
