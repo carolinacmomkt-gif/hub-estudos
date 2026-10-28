@@ -1,6 +1,7 @@
 // Arranjo do Hoje: quais cards aparecem, em que ordem e de que tamanho, e os cards
 // criados pela Carol (nota, atalhos, checklist e contagem regressiva).
-// Fica em config (chave "inicio"), então vale para todos os aparelhos.
+// Cada tipo de aparelho tem o seu arranjo (decisão da Carol, 28/10/2026): config "inicio-celular",
+// "inicio-tablet" e "inicio-computador". O arranjo antigo ("inicio") serve de ponto de partida.
 
 import { listar, salvar } from './persistencia.js';
 
@@ -11,7 +12,8 @@ export const CARDS_DO_APP = [
   { id: 'recompensas', nome: 'Nível e recompensas', tamanho: '1/3' },
   { id: 'tarefas', nome: 'Tarefas de hoje', tamanho: '2/3' },
   { id: 'habitos', nome: 'Hábitos de hoje', tamanho: '1/3' },
-  { id: 'sonho', nome: 'Sonho e frase do dia', tamanho: '1/3' },
+  { id: 'sonho', nome: 'Frase do dia', tamanho: '1/3' },
+  { id: 'sonhofoto', nome: 'Sonho do dia (foto)', tamanho: '1/3', oculto: true },
   { id: 'fimdesemana', nome: 'Ideias para o fim de semana', tamanho: '1/3' },
   { id: 'projetos', nome: 'Projetos em andamento', tamanho: '1/3' },
   { id: 'contas', nome: 'Contas da semana', tamanho: '1/3' },
@@ -53,8 +55,19 @@ export const ALTURA_MAX = 1200;
 
 const PADRAO_PROPRIO = { nota: 'metade', atalhos: 'metade', checklist: '1/3', contagem: '1/3' };
 
+// Celular (tela pequena), tablet (toque e tela grande) ou computador.
+export function aparelhoDoInicio() {
+  if (typeof matchMedia !== 'function') return 'computador';
+  const menor = Math.min(screen?.width || innerWidth, screen?.height || innerHeight);
+  if (matchMedia('(max-width: 700px)').matches || menor < 600) return 'celular';
+  if (matchMedia('(any-pointer: coarse)').matches && (navigator.maxTouchPoints || 0) > 0) return 'tablet';
+  return 'computador';
+}
+export const chaveDoInicio = () => `inicio-${aparelhoDoInicio()}`;
+
 function salvo(estado) {
-  return (estado.config || []).find((c) => c.chave === 'inicio' && !c.excluido_em)?.valor || {};
+  const lista = (estado.config || []).filter((c) => !c.excluido_em);
+  return (lista.find((c) => c.chave === chaveDoInicio()) || lista.find((c) => c.chave === 'inicio'))?.valor || {};
 }
 
 // Lista final de blocos: o que está salvo, mais os cards do app que surgiram depois.
@@ -75,7 +88,7 @@ export function blocosDoInicio(estado) {
   CARDS_DO_APP.forEach((c, i) => {
     if (presentes.has(c.id)) return;
     // Card novo do app entra na posição do padrão (ou no fim).
-    blocos.splice(Math.min(i, blocos.length), 0, { id: c.id, visivel: true, tamanho: c.tamanho, altura: null });
+    blocos.splice(Math.min(i, blocos.length), 0, { id: c.id, visivel: !c.oculto, tamanho: c.tamanho, altura: null });
   });
   return { blocos, proprios };
 }
@@ -88,10 +101,12 @@ export function nomeDoBloco(id, proprios) {
 }
 
 async function mudar(fn) {
-  const atual = (await listar('config')).find((c) => c.chave === 'inicio');
-  const base = blocosDoInicio({ config: atual ? [atual] : [] });
+  const configs = await listar('config');
+  const chave = chaveDoInicio();
+  const atual = configs.find((c) => c.chave === chave);
+  const base = blocosDoInicio({ config: configs });
   fn(base);
-  await salvar('config', { ...(atual || {}), chave: 'inicio', valor: { blocos: base.blocos, proprios: base.proprios } });
+  await salvar('config', { ...(atual || {}), chave, valor: { blocos: base.blocos, proprios: base.proprios } });
 }
 
 export const moverBloco = (id, passo) => mudar(({ blocos }) => {
@@ -166,7 +181,7 @@ export const marcarItem = (id, indice) => mudar((v) => {
 // Volta à ordem e aos tamanhos do padrão, mas guarda os cards próprios (ocultos).
 export const voltarAoPadrao = () => mudar((v) => {
   v.blocos = [
-    ...CARDS_DO_APP.map((c) => ({ id: c.id, visivel: true, tamanho: c.tamanho, altura: null })),
+    ...CARDS_DO_APP.map((c) => ({ id: c.id, visivel: !c.oculto, tamanho: c.tamanho, altura: null })),
     ...Object.keys(v.proprios).map((id) => ({ id, visivel: false, tamanho: PADRAO_PROPRIO[v.proprios[id].tipo] || 'metade' })),
   ];
 });

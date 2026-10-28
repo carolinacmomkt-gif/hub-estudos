@@ -7,6 +7,7 @@ import {
   AREAS_VIDA, TIPOS_LAZER, STATUS_LAZER, ativas, realizadas, progressoDaMeta, ritmoDaMeta, ideiasDoFimDeSemana, sonhoDoDia, spotifyEmbed,
 } from './dados-metas.js';
 import { fraseDoDia } from './frases.js';
+import { trilhaAberta } from './trilha.js';
 import { caixinhas } from './dados-financas.js';
 import { ativos as habitosAtivos } from './dados-habitos.js';
 
@@ -62,11 +63,12 @@ function cardSpotify(prefs) {
         </form>
       </details>`;
   }
+  const tocando = trilhaAberta();
   return `
     <section class="card meta-trilha">
       <div class="card-topo"><h2 class="card-titulo">🎵 Trilha</h2><button class="card-link" type="button" data-acao="metas-spotify-trocar">Trocar</button></div>
-      <iframe class="spotify" title="Trilha do Spotify" src="${esc(src)}" loading="lazy"
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+      <p class="campo-ajuda">${tocando ? 'Abrimos o player no canto da tela: a música continua enquanto você usa o app.' : 'O player fica no canto da tela e continua tocando em qualquer área do app.'}</p>
+      <button class="botao botao-primario" type="button" data-acao="metas-tocar">${tocando ? 'Mostrar o player' : '▶ Tocar a trilha'}</button>
     </section>`;
 }
 
@@ -307,18 +309,26 @@ export function formLazer(l = {}) {
 // Cards do Hoje
 // ---------------------------------------------------------------------------
 
+// Card do Hoje só com a frase do dia (troca todo dia).
+export function cardFraseHoje() {
+  const f = fraseDoDia();
+  return `
+    <section class="card frase-hoje" aria-label="Frase do dia">
+      <p class="proximo-rotulo">Frase do dia</p>
+      <blockquote class="frase-curta"><p>“${esc(f.texto)}”</p><footer>${esc(f.autor)}${f.obra ? `, <cite>${esc(f.obra)}</cite>` : ''}</footer></blockquote>
+    </section>`;
+}
+
+// Card opcional (começa fora do Hoje): um sonho com foto por dia.
 export function cardSonhoHoje(estado) {
   const m = sonhoDoDia(estado.metas);
-  const f = fraseDoDia();
-  const p = m ? progressoDaMeta(m, dadosDasMetas(estado)) : null;
+  if (!m) return '';
+  const p = progressoDaMeta(m, dadosDasMetas(estado));
   return `
     <section class="card sonho-hoje" aria-labelledby="sonho-hoje-titulo">
-      ${m ? `<a class="sonho-hoje-foto" href="#metas"><img data-thumb="${esc(m.dados.imagem)}" alt=""></a>` : ''}
-      <div class="sonho-hoje-texto">
-        <div class="card-topo"><h2 class="card-titulo" id="sonho-hoje-titulo">${m ? esc(m.titulo) : 'Frase do dia'}</h2><a class="card-link" href="#metas">Sonhos</a></div>
-        ${p ? barraProgresso(p.fracao, `Progresso de ${m.titulo}`) : ''}
-        <blockquote class="frase-curta"><p>“${esc(f.texto)}”</p><footer>${esc(f.autor)}</footer></blockquote>
-      </div>
+      <a class="sonho-hoje-foto" href="#metas"><img data-thumb="${esc(m.dados.imagem)}" alt=""></a>
+      <div class="card-topo"><h2 class="card-titulo" id="sonho-hoje-titulo">${esc(m.titulo)}</h2><a class="card-link" href="#metas">Sonhos</a></div>
+      ${p ? barraProgresso(p.fracao, `Progresso de ${m.titulo}`) : ''}
     </section>`;
 }
 

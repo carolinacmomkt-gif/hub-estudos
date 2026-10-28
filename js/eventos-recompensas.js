@@ -91,12 +91,22 @@ export function enviarRecompensas(form) {
     const f = new FormData(form);
     const valor = lerValor(f.get('valor') || '');
     const lancar = f.get('lancar') === 'on' && Number.isFinite(valor) && valor > 0;
-    mudar((v) => { v.resgates.push({ id: `g-${Date.now().toString(36)}`, recompensa_id: r.id, nome: r.nome, emoji: r.emoji, pontos: r.custo, data: new Date().toISOString() }); })
+    const resgateId = `g-${Date.now().toString(36)}`;
+    mudar((v) => { v.resgates.push({ id: resgateId, recompensa_id: r.id, nome: r.nome, emoji: r.emoji, pontos: r.custo, data: new Date().toISOString() }); })
       .then(() => (lancar ? gravar('financas', 'financas', { tipo: 'saida', valor, data: hoje(), descricao: r.nome, categoria: 'lazer', pago: true, dados: { recompensa: true } }) : null))
-      .then(() => {
+      .then((gasto) => {
         fecharFolha();
         app.renderizar();
         celebrar(r.emoji || '🎁', 'Aproveite!', `${r.nome} resgatado. Você merece.`);
+        // Desfazer devolve os pontos e tira o gasto que foi lançado junto.
+        app.avisoCurto(`${r.nome} resgatado (−${r.custo} pontos).`, {
+          rotulo: 'Desfazer',
+          fn: async () => {
+            await mudar((v) => { v.resgates = v.resgates.filter((x) => x.id !== resgateId); });
+            if (gasto) await gravar('financas', 'financas', { ...gasto, excluido_em: new Date().toISOString() });
+            app.renderizar();
+          },
+        });
       });
     return true;
   }
@@ -116,7 +126,8 @@ export function conferirConquistas() {
   }
   const guardar = () => {
     try {
-      localStorage.setItem(CHAVE_VISTO, JSON.stringify({ nivel: g.nivel.nivel, conquistas: feitas }));
+      // Guarda tudo o que já foi comemorado: desfazer e refazer não comemora de novo.
+      localStorage.setItem(CHAVE_VISTO, JSON.stringify({ nivel: Math.max(g.nivel.nivel, visto?.nivel || 0), conquistas: [...new Set([...(visto?.conquistas || []), ...feitas])] }));
     } catch {
       // sem armazenamento: comemora de novo em outra vez, sem problema
     }
@@ -128,5 +139,5 @@ export function conferirConquistas() {
   const nova = g.conquistas.find((c) => c.feita && !visto.conquistas.includes(c.id));
   if (g.nivel.nivel > visto.nivel) celebrar('⭐', `Nível ${g.nivel.nivel}!`, `Agora você é ${g.nivel.titulo}. ${g.saldo} pontos para gastar.`);
   else if (nova) celebrar(nova.emoji, `Conquista: ${nova.nome}`, nova.texto);
-  if (g.nivel.nivel !== visto.nivel || nova || feitas.length !== visto.conquistas.length) guardar();
+  if (g.nivel.nivel > visto.nivel || nova) guardar();
 }

@@ -14,6 +14,8 @@ import { renderTarefas } from './views-tarefas.js';
 import { renderFinancas } from './views-financas.js';
 import { montarEditorTexto, desmontarEditorTexto } from './editor-texto.js';
 import { formatoDoCaderno } from './dados-texto.js';
+import { retomarTrilha } from './trilha.js';
+import { semearLazer } from './ideias-lazer.js';
 import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
@@ -270,9 +272,16 @@ export async function entrarNoApp() {
     retomarTrabalhos();
     iniciarBiblioteca();
     // Ao abrir: baixa o que mudou e, se faz mais de 1h, atualiza a faculdade (AVA + Lyceum).
-    sincronizar().finally(() => sincronizarFaculdade());
+    // Depois de receber o que está na nuvem, chegam as ideias de lazer da semana (sem repetir).
+    sincronizar().finally(() => {
+      sincronizarFaculdade();
+      semearLazer();
+    });
+    retomarTrilha();
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) sincronizarFaculdade();
+      if (document.hidden) return;
+      sincronizarFaculdade();
+      semearLazer();
     });
   }
 }

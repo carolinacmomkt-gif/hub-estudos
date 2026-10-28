@@ -29,6 +29,7 @@ import { ligarTarefas, cliqueTarefas, enviarTarefas, mudancaTarefas } from './ev
 import { ligarFinancas, cliqueFinancas, enviarFinancas, mudancaFinancas } from './eventos-financas.js';
 import { ligarRecompensas, cliqueRecompensas, enviarRecompensas } from './eventos-recompensas.js';
 import { ligarHabitos, cliqueHabitos, enviarHabitos, mudancaHabitos } from './eventos-habitos.js';
+import { ligarFolhas } from './folhas-dialogo.js';
 import { ligarMetas, cliqueMetas, enviarMetas, mudancaMetas } from './eventos-metas.js';
 import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './eventos-estudos.js';
 
@@ -288,6 +289,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
   for (const ligar of [ligarTarefas, ligarFinancas, ligarRecompensas, ligarHabitos, ligarMetas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  ligarFolhas();
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
 

@@ -81,6 +81,19 @@ function baixar(nome, texto) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
+// "Desfazer" de algo que criou um lançamento (Paguei, Recebi, fatura): apaga o lançamento,
+// e os pontos que ele deu somem junto (os pontos saem sempre dos dados).
+function desfazerLinha(salvo) {
+  return {
+    rotulo: 'Desfazer',
+    fn: async () => {
+      const atual = linha(salvo.id);
+      if (atual) await salvarLinha({ ...atual, excluido_em: new Date().toISOString() });
+      app.renderizar();
+    },
+  };
+}
+
 async function excluir(id) {
   const l = linha(id);
   if (!l) return;
@@ -141,9 +154,9 @@ export function cliqueFinancas(alvo) {
       salvarLinha({
         tipo: 'saida', valor: c.valor, data: hojeIso(), descricao: c.descricao, categoria: c.categoria || 'outros',
         pago: true, dados: { conta_id: c.id, mes },
-      }).then(() => {
+      }).then((salvo) => {
         app.renderizar();
-        app.avisoCurto(emDia ? `${c.descricao} paga em dia. +${PONTOS.contaEmDia} pontos.` : `${c.descricao} paga.`);
+        app.avisoCurto(emDia ? `${c.descricao} paga em dia. +${PONTOS.contaEmDia} pontos.` : `${c.descricao} paga.`, desfazerLinha(salvo));
       });
       return true;
     }
@@ -203,9 +216,9 @@ export function cliqueFinancas(alvo) {
       salvarLinha({
         tipo: 'entrada', valor: e.valor, data: hojeIso(), descricao: e.descricao, origem: e.origem || 'outros', pago: true,
         dados: { receita_id: e.id, mes: alvo.dataset.mes || mesDe(hojeIso()) },
-      }).then(() => {
+      }).then((salvo) => {
         app.renderizar();
-        app.avisoCurto(`${e.descricao}: recebido.`);
+        app.avisoCurto(`${e.descricao}: recebido.`, desfazerLinha(salvo));
       });
       return true;
     }
@@ -226,9 +239,9 @@ export function cliqueFinancas(alvo) {
       alvo.disabled = true;
       // O pagamento da fatura não é um gasto novo: as compras já contaram no dia em que foram feitas.
       salvarLinha({ tipo: 'pagamento', valor: f.total, data: hojeIso(), descricao: `Fatura ${c.descricao}`, pago: true, dados: { cartao_id: c.id, mes: f.mes } })
-        .then(() => {
+        .then((salvo) => {
           app.renderizar();
-          app.avisoCurto(`Fatura do ${c.descricao} paga${emDia ? ` em dia. +${PONTOS.contaEmDia} pontos` : ''}.`);
+          app.avisoCurto(`Fatura do ${c.descricao} paga${emDia ? ` em dia. +${PONTOS.contaEmDia} pontos` : ''}.`, desfazerLinha(salvo));
         });
       return true;
     }
@@ -420,13 +433,30 @@ export function enviarFinancas(form) {
     if (tirar && valor > guardado) return erro(form, `A caixinha tem ${dinheiro(guardado)}.`);
     const novo = Math.round((guardado + (tirar ? -valor : valor)) * 100) / 100;
     const historico = [...(c.dados?.historico || []), { data: hojeIso(), valor: tirar ? -valor : valor }].slice(-200);
-    const ganho = tirar ? 0 : Math.floor(valor / 10) * PONTOS.porDezGuardados;
+    // O "+N" mostra só o que vai contar (dinheiro tirado e guardado de novo não ganha outra vez).
+    let soma = 0;
+    let maior = 0;
+    for (const h of c.dados?.historico || []) { soma += Number(h.valor) || 0; maior = Math.max(maior, soma); }
+    const ganho = tirar ? 0 : Math.max(0, Math.floor(Math.max(maior, soma + valor) / 10) - Math.floor(maior / 10)) * PONTOS.porDezGuardados;
     if (ganho) flutuar(form.querySelector('[type="submit"]'), `+${ganho}`);
     salvarLinha({ ...c, dados: { ...(c.dados || {}), guardado: novo, historico } }).then(() => {
       fecharFolha();
       app.renderizar();
       const pr = progressoCaixinha({ ...c, dados: { guardado: novo } });
-      app.avisoCurto(!tirar && pr.meta && pr.fracao >= 1 ? `Meta de "${c.descricao}" batida! 🎉` : tirar ? 'Tirado da caixinha.' : 'Guardado!');
+      app.avisoCurto(!tirar && pr.meta && pr.fracao >= 1 ? `Meta de "${c.descricao}" batida! 🎉` : tirar ? 'Tirado da caixinha.' : 'Guardado!', {
+        rotulo: 'Desfazer',
+        // Volta o valor e tira o registro do histórico (os pontos desse "Guardar" saem junto).
+        fn: async () => {
+          const agora = linha(c.id);
+          if (!agora) return;
+          const hist = [...(agora.dados?.historico || [])];
+          const i = hist.map((h) => h.valor).lastIndexOf(tirar ? -valor : valor);
+          if (i >= 0) hist.splice(i, 1);
+          const volta = Math.round((progressoCaixinha(agora).guardado - (tirar ? -valor : valor)) * 100) / 100;
+          await salvarLinha({ ...agora, dados: { ...(agora.dados || {}), guardado: Math.max(0, volta), historico: hist } });
+          app.renderizar();
+        },
+      });
     });
     return true;
   }

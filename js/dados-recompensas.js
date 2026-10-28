@@ -78,10 +78,19 @@ export function ganhos(dados, hoje = iso(new Date())) {
     }
   }
 
-  // Caixinhas: +1 a cada R$ 10 guardados (tirar depois não desconta) e +30 ao bater a meta.
+  // Caixinhas: +1 a cada R$ 10 guardados e +30 ao bater a meta. Conta o maior valor que a caixinha
+  // já teve: tirar não desconta, mas tirar e guardar de novo o mesmo dinheiro não ganha outra vez.
+  // Desfazer um "Guardar" apaga o registro, então os pontos dele somem junto.
   for (const c of linhas.filter((x) => x.tipo === 'caixinha')) {
+    let saldo = 0;
+    let maior = 0;
     for (const h of c.dados?.historico || []) {
-      if (Number(h.valor) >= 10) lista.push({ dia: h.data, pontos: Math.floor(Number(h.valor) / 10) * PONTOS.porDezGuardados, tipo: 'guardar' });
+      saldo += Number(h.valor) || 0;
+      if (saldo > maior) {
+        const pontos = Math.floor(saldo / 10) - Math.floor(maior / 10);
+        maior = saldo;
+        if (pontos > 0) lista.push({ dia: h.data, pontos: pontos * PONTOS.porDezGuardados, tipo: 'guardar' });
+      }
     }
     if (Number(c.valor) > 0 && Number(c.dados?.guardado) >= Number(c.valor)) {
       lista.push({ dia: diaDe(c.atualizado_em || Date.now()), pontos: PONTOS.caixinha, tipo: 'caixinha' });

@@ -345,6 +345,15 @@ button.lazer-corpo {
   line-height: 1.45;
 }
 
+.frase-hoje blockquote p {
+  font-size: 1.08rem;
+  color: var(--cor-texto);
+}
+
+.frase-curta footer cite {
+  font-style: normal;
+}
+
 @media (max-width: 900px) {
   .metas-topo {
     grid-template-columns: 1fr;

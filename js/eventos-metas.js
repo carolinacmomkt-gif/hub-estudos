@@ -9,6 +9,8 @@ import { reduzirImagem, carregarThumbsDaTela, apagarThumb, guardarImagemLocal } 
 import { enviarArquivo, idDaUsuaria } from './nuvem.js';
 import { recompensasDe, RECOMPENSAS_PADRAO } from './dados-recompensas.js';
 import { celebrar } from './celebracao.js';
+import { tocarTrilha } from './trilha.js';
+import { prefsMetas } from './views-metas.js';
 
 let app; // { renderizar, avisoCurto }
 let fotoEscolhida = null; // arquivo da foto do formulário aberto
@@ -145,6 +147,9 @@ export function cliqueMetas(alvo) {
     }
     case 'metas-jeito':
       mudarPrefs((v) => { v.jeito = alvo.dataset.valor; }).then(() => app.renderizar());
+      break;
+    case 'metas-tocar':
+      if (tocarTrilha(prefsMetas(obterEstado()).spotify)) app.renderizar();
       break;
     case 'metas-spotify-trocar':
       mudarPrefs((v) => { v.spotify = ''; }).then(() => app.renderizar());
@@ -322,6 +327,8 @@ export function enviarMetas(form) {
   if (tipo === 'metas-spotify') {
     const link = String(new FormData(form).get('link') || '').trim();
     if (!spotifyEmbed(link)) return erro(form, 'Cole um link do Spotify (playlist, álbum ou música).');
+    // Toca na hora (o toque em "Salvar" vale como o gesto que o navegador pede para tocar som).
+    tocarTrilha(link);
     mudarPrefs((v) => { v.spotify = link; }).then(() => app.renderizar());
     return true;
   }

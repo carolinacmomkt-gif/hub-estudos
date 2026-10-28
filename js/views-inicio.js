@@ -5,11 +5,11 @@ import { cardTarefasHoje, cardProjetosHoje } from './views-tarefas.js';
 import { cardFinancasHoje, cardContasHoje } from './views-financas.js';
 import { cardRecompensasHoje } from './views-recompensas.js';
 import { cardHabitosHoje } from './views-habitos.js';
-import { cardSonhoHoje, cardFimDeSemanaHoje } from './views-metas.js';
+import { cardFraseHoje, cardSonhoHoje, cardFimDeSemanaHoje } from './views-metas.js';
 import { cabecalho, barraProgresso } from './componentes.js';
 import { cardCaixaEntrada } from './views-criar.js';
 import { cardPlano } from './views-plano.js';
-import { blocosDoInicio, nomeDoBloco, TAMANHOS, TIPOS_PROPRIOS } from './inicio-layout.js';
+import { blocosDoInicio, nomeDoBloco, TAMANHOS, TIPOS_PROPRIOS, aparelhoDoInicio } from './inicio-layout.js';
 import { renderProprio } from './views-inicio-proprios.js';
 import { cardYoutubeInicio } from './views-youtube.js';
 import { cardLeiturasInicio } from './views-biblioteca.js';
@@ -335,6 +335,7 @@ function painelPersonalizar(blocos, proprios) {
         <h2 class="card-titulo" id="personalizar-titulo">Personalizar o Hoje</h2>
         <button class="botao botao-primario botao-pequeno" type="button" data-acao="inicio-pronto">Pronto</button>
       </div>
+      <p class="campo-ajuda personalizar-aparelho">Este arranjo vale só para ${{ celular: 'o celular', tablet: 'o tablet', computador: 'o computador' }[aparelhoDoInicio()]}: cada aparelho tem o seu.</p>
       <p class="texto-suave">Segure <strong>⠿</strong> e arraste o card para onde quiser, ou use <strong>↑ ↓</strong>. No tablet e no computador, puxe o canto de baixo, à direita, para mudar a largura e a altura (dois toques no canto voltam a altura ao automático). O <strong>×</strong> tira o card do Hoje; ele fica em "Adicionar ao Hoje" para pôr de volta.</p>
       <details class="catalogo">
         <summary>Adicionar ao Hoje</summary>
@@ -365,7 +366,8 @@ export function renderInicio(estado) {
     recompensas: () => cardRecompensasHoje(estado),
     tarefas: () => cardTarefasHoje(estado),
     habitos: () => cardHabitosHoje(estado),
-    sonho: () => cardSonhoHoje(estado),
+    sonho: () => cardFraseHoje(),
+    sonhofoto: () => cardSonhoHoje(estado),
     fimdesemana: () => cardFimDeSemanaHoje(estado),
     projetos: () => cardProjetosHoje(estado),
     contas: () => cardContasHoje(estado),
