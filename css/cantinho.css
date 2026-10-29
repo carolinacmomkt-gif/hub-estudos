@@ -77,13 +77,13 @@ body:has(.conteudo[data-tela="cantinho"]) {
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='700' viewBox='0 0 900 700'%3E%3Cg fill='%23F0E5D6'%3E%3Ccircle cx='62' cy='88' r='1.3'/%3E%3Ccircle cx='190' cy='40' r='0.9'/%3E%3Ccircle cx='318' cy='120' r='1.1'/%3E%3Ccircle cx='410' cy='26' r='0.8'/%3E%3Ccircle cx='540' cy='96' r='1.4'/%3E%3Ccircle cx='660' cy='58' r='0.9'/%3E%3Ccircle cx='790' cy='130' r='1.2'/%3E%3Ccircle cx='870' cy='36' r='0.8'/%3E%3Ccircle cx='24' cy='230' r='0.9'/%3E%3Ccircle cx='150' cy='290' r='1.3'/%3E%3Ccircle cx='270' cy='210' r='0.8'/%3E%3Ccircle cx='380' cy='330' r='1'/%3E%3Ccircle cx='470' cy='250' r='0.9'/%3E%3Ccircle cx='600' cy='300' r='1.2'/%3E%3Ccircle cx='720' cy='220' r='0.8'/%3E%3Ccircle cx='840' cy='320' r='1'/%3E%3Ccircle cx='90' cy='420' r='1'/%3E%3Ccircle cx='230' cy='470' r='0.8'/%3E%3Ccircle cx='340' cy='520' r='1.2'/%3E%3Ccircle cx='500' cy='440' r='0.9'/%3E%3Ccircle cx='640' cy='500' r='1.3'/%3E%3Ccircle cx='760' cy='430' r='0.8'/%3E%3Ccircle cx='880' cy='540' r='1'/%3E%3Ccircle cx='40' cy='600' r='1.1'/%3E%3Ccircle cx='180' cy='650' r='0.8'/%3E%3Ccircle cx='300' cy='610' r='1'/%3E%3Ccircle cx='440' cy='670' r='0.9'/%3E%3Ccircle cx='560' cy='620' r='1.2'/%3E%3Ccircle cx='700' cy='660' r='0.8'/%3E%3Ccircle cx='820' cy='610' r='1'/%3E%3C/g%3E%3Cg fill='%23E8D3BF'%3E%3Cpath d='M120 160l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z'/%3E%3Cpath d='M700 90l2 5.5 5.5 2-5.5 2-2 5.5-2-5.5-5.5-2 5.5-2z'/%3E%3Cpath d='M420 380l1.4 3.8 3.8 1.4-3.8 1.4-1.4 3.8-1.4-3.8-3.8-1.4 3.8-1.4z'/%3E%3Cpath d='M830 480l1.8 4.9 4.9 1.8-4.9 1.8-1.8 4.9-1.8-4.9-4.9-1.8 4.9-1.8z'/%3E%3Cpath d='M250 560l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 900px 700px;
-  opacity: 0.55;
+  opacity: 0.45;
   animation: ct-cintilar 10s ease-in-out infinite alternate;
 }
 
 @keyframes ct-cintilar {
-  from { opacity: 0.35; }
-  to { opacity: 0.7; }
+  from { opacity: 0.3; }
+  to { opacity: 0.55; }
 }
 
 .conteudo[data-tela="cantinho"] > :not(.ct-mesinha) {
@@ -91,27 +91,32 @@ body:has(.conteudo[data-tela="cantinho"]) {
   z-index: 1;
 }
 
-/* a lua: um disco que o outro cobre (crescente), com o brilho atrás */
+/* a lua: um disco que o outro cobre (crescente), com o brilho atrás; o tamanho vem do font-size */
 .ct-lua {
-  position: absolute;
-  top: -14px;
-  right: -8px;
+  position: relative;
+  flex: none;
   z-index: 0;
-  width: 104px;
-  height: 104px;
+  width: 1em;
+  height: 1em;
+  font-size: 96px;
   border-radius: 50%;
   pointer-events: none;
-  box-shadow: -22px 10px 0 0 var(--ct-lua);
+  box-shadow: -0.21em 0.1em 0 0 var(--ct-lua);
   opacity: 0.95;
 }
 
 .ct-lua::before {
   content: "";
   position: absolute;
-  inset: -50px;
-  transform: translate(-22px, 10px);
+  inset: -0.5em;
+  transform: translate(-0.21em, 0.1em);
   border-radius: 50%;
   background: radial-gradient(circle, rgba(232, 211, 191, 0.24), rgba(232, 211, 191, 0.06) 45%, transparent 68%);
+}
+
+/* aqui não tem tarefa: o "+" some no tablet e no computador (no celular ele mora na barra) */
+@media (min-width: 701px) {
+  body:has(.conteudo[data-tela="cantinho"]) .fab { display: none; }
 }
 
 /* ---- peças em vidro ---- */
@@ -190,7 +195,7 @@ body:has(.conteudo[data-tela="cantinho"]) {
 }
 
 .ct-sub { margin-top: 6px; color: var(--ct-suave); }
-.ct-voltar { flex: none; margin-top: 2px; color: var(--ct-texto); border-color: var(--ct-vidro-borda); background: var(--ct-vidro); }
+.ct-voltar { flex: none; margin-top: 2px; border-radius: var(--raio); color: var(--ct-texto); border-color: var(--ct-vidro-borda); background: var(--ct-vidro); font-size: 1.6rem; line-height: 1; padding-bottom: 3px; text-decoration: none; }
 .ct-voltar:hover { background: var(--ct-vidro-forte); }
 
 .conteudo[data-tela="cantinho"] .botao-secundario {
@@ -213,16 +218,19 @@ body:has(.conteudo[data-tela="cantinho"]) {
 /* ---- entrada ---- */
 .ct-entrada {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 32px 40px;
   align-items: start;
+  align-content: center;
+  min-height: calc(100dvh - 260px);
 }
 
-.ct-agora { position: relative; }
-.ct-agora > :not(.ct-lua) { position: relative; z-index: 1; }
+.ct-agora { position: relative; container-type: inline-size; }
+.ct-hora-linha { display: flex; align-items: center; gap: clamp(16px, 6cqw, 40px); }
+.ct-hora-linha .ct-lua { font-size: clamp(60px, 19cqw, 100px); margin-left: 0.3em; }
 
 .ct-hora {
-  font-size: clamp(4.2rem, 9vw, 6.4rem);
+  font-size: clamp(3.4rem, 21cqw, 6.4rem);
   font-weight: 200;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -269,6 +277,7 @@ body:has(.conteudo[data-tela="cantinho"]) {
 
 a.ct-pilula:hover { background: var(--ct-vidro-forte); }
 .ct-pilula b { color: var(--ct-texto); font-weight: 600; }
+.ct-pilula-nota { color: var(--ct-fraco); font-size: 0.78rem; }
 
 .ct-frase {
   margin: 22px 0 0;
@@ -290,8 +299,8 @@ a.ct-pilula:hover { background: var(--ct-vidro-forte); }
   display: flex;
   flex-direction: column;
   gap: 14px;
-  min-height: 150px;
-  padding: 16px;
+  min-height: 164px;
+  padding: 18px;
   transition: transform 0.12s, background-color 0.15s;
 }
 
@@ -556,11 +565,9 @@ a.ct-pilula:hover { background: var(--ct-vidro-forte); }
   transition: opacity 1.2s ease, filter 1.2s ease;
 }
 
-.ct-mesinha .ct-lua { top: 48px; right: 56px; width: 120px; height: 120px; box-shadow: -26px 12px 0 0 var(--ct-lua); }
-.ct-mesinha .ct-lua::before { transform: translate(-26px, 12px); }
 .ct-mesinha.escurecida { opacity: 0.5; }
 .ct-mesinha.quente { filter: sepia(0.35) brightness(0.85); }
-.ct-mesinha > .ct-lua { z-index: 0; }
+.ct-mesinha > .ct-lua { position: absolute; top: 40px; right: 56px; z-index: 0; font-size: 110px; }
 .ct-mesinha-centro { position: relative; z-index: 1; align-self: center; min-width: 0; }
 .ct-mesinha-hora { font-size: clamp(5rem, 15vw, 11rem); font-weight: 200; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; text-shadow: 0 0 50px rgba(232, 211, 191, 0.2); }
 .ct-mesinha-data { margin-top: 10px; font-size: 1.1rem; line-height: 1.45; color: var(--ct-suave); }
@@ -595,14 +602,14 @@ html[data-vidro="nao"] :is(.ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel) {
 /* ---- tablet em pé e telas médias ---- */
 @media (max-width: 1100px) {
   .ct-cantos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ct-mesinha > .ct-lua { top: 20px; right: 40px; font-size: 96px; }
 }
 
 @media (max-width: 900px) {
   .ct-entrada, .ct-dormir { grid-template-columns: minmax(0, 1fr); }
   .ct-cantos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .ct-lua { top: 0; right: 8px; width: 84px; height: 84px; box-shadow: -17px 8px 0 0 var(--ct-lua); }
-  .ct-lua::before { transform: translate(-17px, 8px); }
-  .ct-mesinha .ct-lua { top: 32px; right: 32px; }
+  .ct-mesinha > .ct-lua { top: 24px; right: 32px; font-size: 90px; }
+  .ct-entrada { min-height: 0; }
   .ct-mesinha { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto auto; padding: 36px 24px 24px; }
   .ct-mesinha-lado { flex-direction: row; }
   .ct-mesinha-lado .ct-card { flex: 1; }
@@ -611,10 +618,8 @@ html[data-vidro="nao"] :is(.ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel) {
 /* ---- celular ---- */
 @media (max-width: 700px) {
   .ct-topo { margin-bottom: 18px; }
-  .ct-lua { top: -6px; right: 12px; width: 68px; height: 68px; box-shadow: -14px 7px 0 0 var(--ct-lua); }
-  .ct-lua::before { inset: -30px; transform: translate(-14px, 7px); }
   .ct-mesinha { padding-top: 124px; }
-  .ct-mesinha .ct-lua { top: 28px; right: 20px; }
+  .ct-mesinha > .ct-lua { top: 28px; right: 20px; font-size: 68px; }
   .ct-pausas-topo { flex-direction: column; align-items: stretch; gap: 12px; }
   .ct-pausas-topo .ct-respira-previa { align-self: center; }
   .ct-acordar-grande { font-size: 2.8rem; }

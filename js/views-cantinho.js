@@ -25,7 +25,7 @@ export function relogioAgora(agora = Date.now()) {
 function topoCantinho(titulo, { voltar = false, sub = '' } = {}) {
   return `
     <header class="ct-topo">
-      ${voltar ? `<a class="botao-icone ct-voltar" href="#cantinho" aria-label="Voltar ao cantinho">${icone('recolher')}</a>` : ''}
+      ${voltar ? `<a class="botao-icone ct-voltar" href="#cantinho" aria-label="Voltar ao cantinho" title="Voltar">‹</a>` : ''}
       <div class="ct-topo-texto"><p class="ct-rotulo">Meu cantinho</p><h1 class="ct-titulo" tabindex="-1">${esc(titulo)}</h1>${sub ? `<p class="ct-sub">${esc(sub)}</p>` : ''}</div>
       <div class="ct-topo-acoes">
         ${voltar ? '' : `<button class="botao botao-secundario botao-pequeno ct-botao-lua" type="button" data-acao="ct-mesinha">${icone('cantinho')}Mesinha</button>`}
@@ -49,8 +49,8 @@ function linhaDoDia(estado, c, hoje, agoraMin) {
   const leitura = leituraDe(estado.config);
   const lidos = minutosNoDia(leitura, hoje);
   if (lidos > 0 || livroDoMomento(estado.artigos)) itens.push(`<span class="ct-pilula"><span aria-hidden="true">📖</span><b>${lidos}</b> de ${leitura.metaMin} min</span>`);
-  if (c.deitar) itens.push(`<a class="ct-pilula" href="#cantinho/dormir"><span aria-hidden="true">🌙</span>deitar até <b>${esc(c.deitar)}</b></a>`);
-  else itens.push(`<a class="ct-pilula" href="#cantinho/dormir"><span aria-hidden="true">🌙</span>acordar às <b>${esc(c.acordar)}</b> · ver a hora de deitar</a>`);
+  const deitar = c.deitar || horasDeDeitar(c.acordar)[1]?.hora;
+  itens.push(`<a class="ct-pilula" href="#cantinho/dormir"><span aria-hidden="true">🌙</span>deitar até <b>${esc(deitar)}</b>${c.deitar ? '' : ' <span class="ct-pilula-nota">sugestão</span>'}</a>`);
   return `<div class="ct-linha-dia">${itens.join('')}</div>`;
 }
 
@@ -66,8 +66,8 @@ function cartaoPausaQueCabe(estado, c, hoje, agoraMin) {
   const sem = semParar >= 45 ? ` · você está há ${textoDuracao(semParar)} sem parar` : feitas ? ` · ${feitas} ${feitas === 1 ? 'pausa feita' : 'pausas feitas'} hoje` : '';
   return `
     <div class="ct-faixa">
-      <div><strong>${pausa.id === 'sair' ? 'Dá para sair um pouco' : `Cabe ${pausa.nome.toLowerCase()} ${pausa.minutos} min`}</strong><small>${quando}${sem}</small></div>
-      <button class="botao botao-primario" type="button" data-acao="ct-pausa" data-tipo="${esc(pausa.id)}">${pausa.minutos} min</button>
+      <div><strong>${pausa.id === 'sair' ? `Dá para sair ${pausa.minutos} min` : `Cabe ${pausa.nome.toLowerCase()} ${pausa.minutos} min`}</strong><small>${quando}${sem}</small></div>
+      <button class="botao botao-primario" type="button" data-acao="ct-pausa" data-tipo="${esc(pausa.id)}">Começar</button>
     </div>`;
 }
 
@@ -104,13 +104,12 @@ export function renderCantinho(estado) {
   const frase = fraseDoDia();
   const semParar = minutosSemParar(c, hoje, Date.now(), estado.abriuEm || Date.now());
   const ultima = c.ultimaPausa && String(c.ultimaPausa).slice(0, 10) === hoje ? relogioAgora(Date.parse(c.ultimaPausa)) : null;
-  const parou = ultima ? `você parou por último às ${ultima}` : semParar >= 45 ? `você está há ${textoDuracao(semParar)} sem parar` : 'nenhuma pausa ainda hoje';
+  const parou = ultima ? `você parou por último às ${ultima}` : semParar >= 45 ? `você está há ${textoDuracao(semParar)} sem parar` : 'sem pausa ainda hoje';
   return `
     ${topoCantinho(saudacao(estado.dados?.nome || 'Carol'), { sub: climaDoMomento(agoraMin) })}
     <div class="ct-entrada">
       <div class="ct-agora">
-        <div class="ct-lua" aria-hidden="true"></div>
-        <p class="ct-hora" data-ct-relogio>${relogioAgora()}</p>
+        <div class="ct-hora-linha"><p class="ct-hora" data-ct-relogio>${relogioAgora()}</p><div class="ct-lua" aria-hidden="true"></div></div>
         <p class="ct-data">${esc(fmtData.format(new Date()))} · ${esc(parou)}</p>
         ${cartaoPausaQueCabe(estado, c, hoje, agoraMin)}
         ${linhaDoDia(estado, c, hoje, agoraMin)}
