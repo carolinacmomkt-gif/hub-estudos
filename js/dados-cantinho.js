@@ -100,12 +100,12 @@ export function proximoComHora({ eventos = [], tarefas = [] }, hoje, agoraMin) {
     const d = new Date(e.inicio);
     const data = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     if (data !== hoje) continue;
-    itens.push({ titulo: e.titulo, min: d.getHours() * 60 + d.getMinutes() });
+    itens.push({ titulo: e.titulo, min: d.getHours() * 60 + d.getMinutes(), tipo: 'evento' });
   }
   for (const t of tarefas) {
     if (t.excluido_em || t.feita_em || t.data !== hoje || !t.hora) continue;
     const m = paraMin(t.hora);
-    if (m !== null) itens.push({ titulo: t.titulo, min: m });
+    if (m !== null) itens.push({ titulo: t.titulo, min: m, tipo: 'tarefa' });
   }
   return itens.filter((i) => i.min > agoraMin).sort((a, b) => a.min - b.min)[0] || null;
 }

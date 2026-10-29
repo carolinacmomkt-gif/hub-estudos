@@ -61,9 +61,9 @@ function cartaoPausaQueCabe(estado, c, hoje, agoraMin) {
   const semParar = minutosSemParar(c, hoje, Date.now(), estado.abriuEm || Date.now());
   const feitas = pausasDoDia(c, hoje).length;
   if (!pausa) {
-    return `<div class="ct-faixa"><div><strong>Daqui a ${livre} min tem ${esc(proximo.titulo)}</strong><small>Respira fundo, toma uma água. Depois dela, a pausa.</small></div></div>`;
+    return `<div class="ct-faixa"><div><strong>Daqui a ${livre} min tem ${proximo.tipo === 'evento' ? esc(proximo.titulo) : 'uma coisa com hora'}</strong><small>Respira fundo, toma uma água. Depois dela, a pausa.</small></div></div>`;
   }
-  const quando = proximo ? `a próxima coisa com hora é ${esc(proximo.titulo)} às ${paraHora(proximo.min)}` : 'nada com hora pela frente hoje';
+  const quando = proximo ? `${textoDuracao(livre)} livres até as ${paraHora(proximo.min)}${proximo.tipo === 'evento' ? ` (${esc(proximo.titulo)})` : ''}` : 'nada com hora pela frente hoje';
   const sem = semParar >= 45 ? ` · você está há ${textoDuracao(semParar)} sem parar` : feitas ? ` · ${feitas} ${feitas === 1 ? 'pausa feita' : 'pausas feitas'} hoje` : '';
   return `
     <div class="ct-faixa">
@@ -86,8 +86,6 @@ function cantos(estado, c, hoje) {
     { rota: livro ? `#livro/${livro.livro.id}` : '#biblioteca', emoji: '📖', nome: 'Ler devagar', texto: livro ? `${livro.livro.titulo}${faltaLer ? ` · faltam ${faltaLer} min` : ' · meta de hoje batida'}` : 'nenhum livro na estante ainda' },
     { rota: '#cantinho/pessoas', emoji: '🎂', nome: 'Pessoas', texto: r.pessoas },
     { rota: '#cantinho/desejos', emoji: '🎁', nome: 'Desejos', texto: r.desejos },
-    { rota: '#cantinho/pausas', emoji: '🎧', nome: 'Sons', texto: `${SONS.map((s) => s.nome.toLowerCase()).join(' · ')}` },
-    { rota: '#inicio', emoji: '📝', nome: 'Fechar o dia', texto: 'humor, uma linha, o que fica para amanhã', breve: true },
   ];
   return `<div class="ct-cantos">${lista.map((x) => `
     <a class="ct-card ct-canto" href="${esc(x.rota)}">

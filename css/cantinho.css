@@ -292,14 +292,14 @@ a.ct-pilula:hover { background: var(--ct-vidro-forte); }
 
 .ct-frase small { display: block; margin-top: 4px; font-style: normal; font-size: 0.8rem; color: var(--ct-fraco); }
 
-.ct-cantos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ct-cantos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 12px; }
 
 .ct-canto {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-height: 164px;
+  gap: 12px;
+  min-height: 150px;
   padding: 18px;
   transition: transform 0.12s, background-color 0.15s;
 }
@@ -307,7 +307,7 @@ a.ct-pilula:hover { background: var(--ct-vidro-forte); }
 .ct-canto:hover { background: var(--ct-vidro-forte); }
 .ct-canto:active { transform: scale(0.98); }
 .ct-canto .ct-selo { position: absolute; top: 14px; right: 14px; }
-.ct-canto-texto { margin-top: auto; min-width: 0; }
+.ct-canto-texto { min-width: 0; }
 .ct-canto b { display: block; font-size: 1.02rem; font-weight: 650; }
 .ct-canto small { display: -webkit-box; margin-top: 3px; font-size: 0.82rem; line-height: 1.35; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .ct-dica { margin-top: 20px; color: var(--ct-fraco); font-size: 0.85rem; }
