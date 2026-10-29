@@ -14,4 +14,10 @@
     texto = localStorage.getItem('hub.texto') || 'normal';
   } catch (e) {}
   document.documentElement.dataset.texto = texto;
+
+  var vidro = 'sim';
+  try {
+    vidro = localStorage.getItem('hub.vidro') === 'nao' ? 'nao' : 'sim';
+  } catch (e) {}
+  document.documentElement.dataset.vidro = vidro;
 })();

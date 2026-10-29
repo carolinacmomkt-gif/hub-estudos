@@ -1,7 +1,7 @@
 // Cliques, formulários e interações globais (delegação no documento).
 
 import { definirTema } from './tema.js';
-import { definirTamanhoTexto } from './preferencias.js';
+import { definirTamanhoTexto, definirVidro } from './preferencias.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 import { entrarComSenha, sair, baixarArquivo } from './nuvem.js';
 import {
@@ -405,7 +405,7 @@ export function ligarEventos(funcoesDoApp) {
   const folhaCriar = document.getElementById('folha-criar');
 
   document.addEventListener('click', (evento) => {
-    const alvo = evento.target.closest('[data-tema-opcao], [data-texto-opcao], [data-acao], a[href^="#"]');
+    const alvo = evento.target.closest('[data-tema-opcao], [data-texto-opcao], [data-vidro-opcao], [data-acao], a[href^="#"]');
     if (!alvo || alvo.matches('input[type="file"]')) return;
 
     if (alvo.dataset.temaOpcao) {
@@ -414,6 +414,10 @@ export function ligarEventos(funcoesDoApp) {
     }
     if (alvo.dataset.textoOpcao) {
       definirTamanhoTexto(alvo.dataset.textoOpcao);
+      return;
+    }
+    if (alvo.dataset.vidroOpcao) {
+      definirVidro(alvo.dataset.vidroOpcao);
       return;
     }
 

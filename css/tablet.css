@@ -16,7 +16,7 @@ body[data-aparelho="tablet"] {
     max-height: 100dvh;
     margin: 0;
     padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
-    border-radius: 22px 0 0 22px;
+    border-radius: var(--raio-folha) 0 0 var(--raio-folha);
   }
 
   body[data-aparelho="tablet"] dialog.folha .folha-alca {

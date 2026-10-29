@@ -3,7 +3,7 @@
 import { cabecalho } from './componentes.js';
 import { icone } from './icones.js';
 import { OPCOES_TEMA, lerPreferenciaTema } from './tema.js';
-import { OPCOES_TEXTO, lerTamanhoTexto } from './preferencias.js';
+import { OPCOES_TEXTO, lerTamanhoTexto, OPCOES_VIDRO, lerVidro } from './preferencias.js';
 import { esc, haQuantoTempo } from './utilidades.js';
 import { cardAvisos, cardPlanoPrefs } from './views-avisos.js';
 import { cardConfigDemandas } from './views-demandas.js';
@@ -101,6 +101,11 @@ function cardAparencia() {
       ${icone(o.id)}
       <span>${esc(o.rotulo)}<small>${esc(o.descricao)}</small></span>
     </button>`).join('');
+  const vidro = lerVidro();
+  const opcoesVidro = OPCOES_VIDRO.map((o) => `
+    <button class="opcao-tema" type="button" data-vidro-opcao="${o.id}" aria-pressed="${o.id === vidro}">
+      <span>${esc(o.rotulo)}<small>${esc(o.descricao)}</small></span>
+    </button>`).join('');
   const opcoesTexto = OPCOES_TEXTO.map((o) => `
     <button class="opcao-tema opcao-texto opcao-texto--${o.id}" type="button" data-texto-opcao="${o.id}" aria-pressed="${o.id === texto}">
       <span aria-hidden="true">Aa</span><span>${esc(o.rotulo)}</span>
@@ -114,6 +119,9 @@ function cardAparencia() {
       <div class="opcoes-tema">${opcoesTema}</div>
       <h3 class="ava-subtitulo">Tamanho do texto</h3>
       <div class="opcoes-tema">${opcoesTexto}</div>
+      <h3 class="ava-subtitulo">Vidro</h3>
+      <div class="opcoes-tema">${opcoesVidro}</div>
+      <p class="campo-ajuda">As barras e as folhas deixam ver, desfocado, o que passa por trás. Se o sistema estiver com "reduzir transparência", fica desligado de qualquer jeito.</p>
     </section>`;
 }
 

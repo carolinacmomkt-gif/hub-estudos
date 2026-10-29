@@ -1,8 +1,10 @@
 :root {
   --fonte: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Cantos (revisão de 29/10/2026, menos redondos): card 16, botão 12, folha 20 (--raio-folha) */
   --raio-sm: 10px;
-  --raio: 14px;
-  --raio-lg: 20px;
+  --raio: 12px;
+  --raio-lg: 16px;
+  --raio-folha: 20px;
   --toque: 44px; /* área mínima de toque (dedo e S Pen) */
 }
 
@@ -103,7 +105,7 @@ svg {
   min-height: var(--toque);
   padding: 0 20px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--raio);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;

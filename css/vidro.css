@@ -1,0 +1,323 @@
+/*
+  Vidro (decisão da Carol, 29/10/2026, inspirado no iOS 26/27): a camada de navegação e de controle
+  (barra de baixo, menu lateral, folhas, "+", avisos) fica translúcida, com desfoque do que passa
+  por trás, borda clara e um brilho leve. O conteúdo (cards, listas, campos) continua opaco: é onde
+  se lê. Nunca vidro em cima de vidro.
+
+  Carregado por último, depois de padroes.css. Com "reduzir transparência" no sistema (ou
+  html[data-vidro="nao"], escolhido em Configurações) o desfoque sai e as superfícies ficam opacas.
+*/
+
+/* ---------------------------------------------------------------------------
+   A peça de vidro
+   --------------------------------------------------------------------------- */
+.nav-inferior,
+.nav-lateral,
+dialog.folha,
+#menu-voltar,
+.fab,
+.aviso,
+.faixa-offline,
+.celebracao,
+.dica-caneta {
+  background: var(--vidro);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid var(--vidro-borda);
+  box-shadow: var(--vidro-sombra);
+}
+
+/* Brilho no canto, como luz batendo no vidro (só nas barras; na folha, grande, viraria uma faixa) */
+.nav-inferior::before,
+.nav-lateral::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--vidro-brilho), transparent 38%, transparent 70%, var(--vidro-brilho));
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.nav-inferior,
+.nav-lateral,
+dialog.folha {
+  isolation: isolate;
+}
+
+/* O "+" continua cheio (é o botão principal), só ganha a borda e a sombra do vidro */
+.fab {
+  background: var(--cor-preenchido);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: transparent;
+  border-radius: var(--raio-lg);
+}
+
+/* Sem transparência (sistema ou escolha da Carol): tudo opaco, sem desfoque */
+@media (prefers-reduced-transparency: reduce) {
+  .nav-inferior,
+  .nav-lateral,
+  dialog.folha,
+  #menu-voltar,
+  .aviso,
+  .faixa-offline,
+  .celebracao,
+  .dica-caneta {
+    background: var(--cor-superficie-elevada);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+html[data-vidro="nao"] .nav-inferior,
+html[data-vidro="nao"] .nav-lateral,
+html[data-vidro="nao"] dialog.folha,
+html[data-vidro="nao"] #menu-voltar,
+html[data-vidro="nao"] .aviso,
+html[data-vidro="nao"] .faixa-offline,
+html[data-vidro="nao"] .celebracao,
+html[data-vidro="nao"] .dica-caneta {
+  background: var(--cor-superficie-elevada);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Menu lateral (tablet e computador): um trilho solto, com margem, em vez de uma coluna colada
+   --------------------------------------------------------------------------- */
+.app {
+  --margem-trilho: 14px;
+}
+
+.nav-lateral {
+  position: sticky;
+  top: var(--margem-trilho);
+  height: calc(100vh - var(--margem-trilho) * 2);
+  height: calc(100dvh - var(--margem-trilho) * 2);
+  margin: var(--margem-trilho) 0 var(--margem-trilho) var(--margem-trilho);
+  padding: 20px 12px;
+  border-radius: var(--raio-folha);
+  border-right-width: 1px;
+}
+
+body[data-menu="icones"] .nav-lateral {
+  padding: 14px 8px;
+}
+
+.nav-link {
+  border-radius: var(--raio);
+}
+
+.nav-link[aria-current="page"],
+.nav-link[data-ativo="sim"] {
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
+}
+
+/* O botão ☰ do menu escondido também é de vidro */
+#menu-voltar {
+  border-radius: var(--raio);
+}
+
+/* ---------------------------------------------------------------------------
+   Celular: barra de baixo flutuante que encolhe ao rolar
+   --------------------------------------------------------------------------- */
+@media (max-width: 700px) {
+  .nav-inferior {
+    left: 16px;
+    right: 16px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    padding: 5px;
+    border-top: 1px solid var(--vidro-borda);
+    border-radius: 22px;
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), padding 0.28s;
+  }
+
+  .nav-inferior .nav-link {
+    min-height: 50px;
+    border-radius: 16px;
+    transition: background-color 0.15s, color 0.15s, min-height 0.28s;
+  }
+
+  .nav-inferior .nav-link svg {
+    padding: 0;
+    border-radius: 0;
+    transition: none;
+  }
+
+  /* A tela atual fica inteira preenchida, não só o ícone */
+  .nav-inferior .nav-link[aria-current="page"],
+  .nav-inferior .nav-link[data-ativo="sim"] {
+    background: var(--cor-preenchido);
+    color: var(--cor-sobre-preenchido);
+  }
+
+  .nav-inferior .nav-link[aria-current="page"] svg,
+  .nav-inferior .nav-link[data-ativo="sim"] svg {
+    background: none;
+  }
+
+  /* Rolando para baixo a barra vira uma pílula só com ícones; ao subir ou parar, volta */
+  body[data-rolando="baixo"] .nav-inferior {
+    left: 50%;
+    right: auto;
+    padding: 4px;
+    transform: translate(-50%, var(--ajuste-base, 0px));
+  }
+
+  body[data-rolando="baixo"] .nav-inferior li {
+    flex: none;
+    width: 50px;
+  }
+
+  body[data-rolando="baixo"] .nav-inferior .nav-link {
+    min-height: 40px;
+    border-radius: 13px;
+  }
+
+  body[data-rolando="baixo"] .nav-inferior .nav-nome {
+    display: none;
+  }
+
+  /* O "+" senta na mesma linha da barra, com o mesmo canto */
+  .fab {
+    right: 16px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+  }
+
+  /* Borda de rolagem: o conteúdo some num degradê ao passar atrás da barra */
+  body:not(.modo-login):not([data-teclado="aberto"]) .app::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 19;
+    height: calc(84px + env(safe-area-inset-bottom));
+    background: linear-gradient(to bottom, transparent, var(--cor-fundo) 85%);
+    pointer-events: none;
+    transform: translateY(var(--ajuste-base, 0px));
+  }
+
+  .aviso {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Folhas (de baixo no celular, cartão no computador, lateral no tablet deitado)
+   --------------------------------------------------------------------------- */
+dialog.folha {
+  border-radius: var(--raio-folha) var(--raio-folha) 0 0;
+}
+
+dialog.folha::backdrop {
+  background: var(--cor-veu);
+}
+
+/* Formulários e botões dentro da folha: cantos concêntricos (o de fora menos a margem) */
+dialog.folha .botao {
+  border-radius: calc(var(--raio-folha) - 8px);
+}
+
+@media (min-width: 1000px) and (hover: hover) {
+  dialog.folha-confirmar {
+    border-radius: var(--raio-folha);
+  }
+}
+
+/* O cartão central do computador (folha-evento, criar) também é vidro, mas em cima do conteúdo
+   a leitura do formulário vem primeiro: um pouco mais opaco que as barras */
+@media (min-width: 701px) {
+  dialog.folha {
+    background: color-mix(in srgb, var(--vidro) 100%, var(--cor-superficie-elevada) 35%);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Avisos e cartões flutuantes
+   --------------------------------------------------------------------------- */
+.aviso {
+  border-radius: 16px;
+}
+
+.celebracao {
+  border-radius: var(--raio-folha);
+}
+
+.faixa-offline {
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+}
+
+/* ---------------------------------------------------------------------------
+   Cards, botões e controles: cantos menores, alinhados (etapa 2)
+   --------------------------------------------------------------------------- */
+.card {
+  border-radius: var(--raio-lg);
+}
+
+.card .botao,
+.proximo .botao {
+  border-radius: calc(var(--raio-lg) - 4px);
+}
+
+.cabecalho-busca,
+.botao-icone {
+  border-radius: var(--raio);
+}
+
+/* Movimento: folhas sobem (ou entram pela lateral) com a curva do iOS; toques respondem (etapa 3) */
+@supports (transition-behavior: allow-discrete) {
+  dialog.folha[open] {
+    animation: folha-subir 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  dialog.folha[open]::backdrop {
+    animation: veu-surgir 0.3s ease-out;
+  }
+
+  @media (min-width: 1000px) {
+    body[data-aparelho="tablet"] dialog.folha[open] {
+      animation-name: folha-lateral;
+    }
+  }
+
+  @media (min-width: 1000px) and (hover: hover) {
+    .folha-confirmar[open] {
+      animation-name: cartao-surgir;
+    }
+  }
+}
+
+@keyframes folha-subir {
+  from { transform: translateY(40px); opacity: 0; }
+}
+
+@keyframes folha-lateral {
+  from { transform: translateX(60px); opacity: 0; }
+}
+
+@keyframes cartao-surgir {
+  from { transform: scale(0.96); opacity: 0; }
+}
+
+@keyframes veu-surgir {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-inferior,
+  .nav-inferior .nav-link,
+  dialog.folha[open],
+  dialog.folha[open]::backdrop,
+  .folha-confirmar[open] {
+    transition: none !important;
+    animation: none !important;
+  }
+}
