@@ -636,3 +636,64 @@ html[data-vidro="nao"] :is(.ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel) {
   .ct-ciclo b { font-size: 1.4rem; }
   .ct-contagem { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---- parte 2: Cuidar de mim, Lista de desejos e Pessoas ---- */
+.ct-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.ct-card-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ct-card-topo .ct-rotulo { margin-bottom: 0; }
+.ct-card-topo + * { margin-top: 10px; }
+.ct-rotulo-meio { margin-top: 18px; }
+.ct-subtitulo { margin: 10px 0 2px; font-size: 0.9rem; font-weight: 600; color: var(--ct-suave); }
+.ct-destaque { font-size: 2rem; font-weight: 300; letter-spacing: -0.02em; }
+.ct-destaque small { font-size: 0.95rem; font-weight: 400; color: var(--ct-suave); }
+
+.ct-lista { list-style: none; margin: 0; padding: 0; }
+.ct-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: var(--toque); padding: 8px 0; border-top: 1px solid var(--ct-vidro-borda); }
+.ct-item:first-child { border-top: 0; }
+.ct-item:has(> .ct-item-texto:first-child) { grid-template-columns: minmax(0, 1fr) auto; }
+.ct-item-texto { min-width: 0; }
+.ct-item-texto b { display: block; font-weight: 600; }
+.ct-item-texto small { display: block; margin-top: 2px; font-size: 0.82rem; line-height: 1.35; color: var(--ct-suave); overflow-wrap: anywhere; }
+.ct-item.feito .ct-item-texto b { color: var(--ct-suave); text-decoration: line-through; text-decoration-color: var(--ct-fraco); }
+.ct-item.atencao .ct-quando { background: rgba(228, 180, 166, 0.2); color: #E4B4A6; }
+.ct-item-acoes { display: flex; align-items: center; gap: 6px; }
+.ct-quando { display: inline-grid; place-items: center; min-width: 58px; min-height: 32px; padding: 2px 10px; border-radius: 999px; background: var(--ct-cheio); color: var(--ct-texto); font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+
+.ct-check { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--ct-cheio-borda); border-radius: 50%; background: transparent; color: #2B1E16; font: inherit; font-weight: 700; cursor: pointer; transition: background-color 0.15s, transform 0.12s; }
+.ct-check.on { background: var(--ct-lua); border-color: var(--ct-lua); }
+.ct-check:active { transform: scale(0.92); }
+.ct-tirar { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--ct-fraco); font: inherit; font-size: 1.2rem; cursor: pointer; }
+.ct-tirar:hover { background: var(--ct-vidro-forte); color: var(--ct-texto); }
+.ct-link { padding: 0; border: 0; background: none; color: var(--ct-texto); font: inherit; font-size: inherit; text-decoration: underline; text-decoration-color: var(--ct-fraco); cursor: pointer; }
+
+.ct-copos { display: flex; flex-wrap: wrap; gap: 6px; }
+.ct-copo { display: grid; place-items: center; width: var(--toque); height: var(--toque); border: 1px solid var(--ct-vidro-borda); border-radius: var(--raio); background: var(--ct-vidro); font-size: 1.2rem; filter: grayscale(1); opacity: 0.55; cursor: pointer; transition: opacity 0.15s, transform 0.12s; }
+.ct-copo.cheio { background: var(--ct-cheio); border-color: var(--ct-cheio-borda); filter: none; opacity: 1; }
+.ct-copo:active { transform: scale(0.92); }
+
+.ct-mais { margin-top: 12px; }
+.ct-mais summary { display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 12px; border: 1px solid var(--ct-vidro-borda); border-radius: var(--raio); background: var(--ct-vidro); color: var(--ct-texto); font-size: 0.9rem; font-weight: 600; cursor: pointer; list-style: none; }
+.ct-mais summary::-webkit-details-marker { display: none; }
+.ct-mais summary::before { content: "+"; margin-right: 8px; font-size: 1.1rem; }
+.ct-mais[open] summary::before { content: "–"; }
+.ct-mais summary:hover { background: var(--ct-vidro-forte); }
+.ct-form { margin-top: 12px; gap: 12px; }
+.ct-form .campo-rotulo, .conteudo[data-tela="cantinho"] .campo-rotulo { color: var(--ct-suave); }
+.conteudo[data-tela="cantinho"] .ct-card :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) { border-color: var(--ct-cheio-borda); background: rgba(255, 245, 230, 0.06); color: var(--ct-texto); color-scheme: dark; }
+.conteudo[data-tela="cantinho"] .ct-card :is(input, select, textarea)::placeholder { color: var(--ct-fraco); }
+.ct-dias { display: flex; flex-wrap: wrap; gap: 6px; }
+.ct-dia { position: relative; }
+.ct-dia input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ct-dia span { display: inline-grid; place-items: center; min-width: 40px; min-height: 36px; padding: 0 8px; border: 1px solid var(--ct-vidro-borda); border-radius: var(--raio-sm); background: var(--ct-vidro); color: var(--ct-suave); font-size: 0.82rem; }
+.ct-dia input:checked + span { background: var(--ct-cheio); border-color: var(--ct-cheio-borda); color: var(--ct-texto); font-weight: 600; }
+.ct-dia input:focus-visible + span { outline: 2px solid var(--ct-cheio-borda); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .ct-grade { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .ct-item { gap: 10px; }
+  .ct-item-acoes { flex-direction: column; align-items: flex-end; gap: 2px; }
+  .ct-quando { min-width: 50px; font-size: 0.74rem; }
+}

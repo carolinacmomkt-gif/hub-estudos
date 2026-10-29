@@ -34,7 +34,7 @@ export const segundaDe = (s) => somarDias(s, -((diaDaSemana(s) + 6) % 7));
 export const ehRotina = (h) => Array.isArray(h.dados?.passos) && h.dados.passos.length > 0;
 export const ativos = (habitos) => (habitos || []).filter((h) => !h.excluido_em && h.ativo !== false)
   .sort((a, b) => (a.ordem || 0) - (b.ordem || 0) || String(a.criado_em).localeCompare(String(b.criado_em)));
-const metaDe = (h) => Math.max(1, Number(h.meta) || 1);
+export const metaDe = (h) => Math.max(1, Number(h.meta) || 1);
 
 export function textoFrequencia(f) {
   if (!f || f.tipo === 'diario') return 'Todo dia';

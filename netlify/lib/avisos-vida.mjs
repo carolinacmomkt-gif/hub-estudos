@@ -6,6 +6,8 @@ import { tarefasDeHoje } from '../../js/dados-tarefas.js';
 import { habitosDoDia, feitoNoDia, valorNoDia } from '../../js/dados-habitos.js';
 import { situacaoDasContas, cartoes, fatura, mesDe, somarMeses } from '../../js/dados-financas.js';
 import { noFuso } from './avisos.mjs';
+import { valeNoDia } from '../../js/dados-cuidar.js';
+import { somarDias } from '../../js/dados-tarefas.js';
 
 // Igual a VIDA_PADRAO em js/avisos.js.
 export const VIDA_PADRAO = {
@@ -91,8 +93,48 @@ export function avisosDaVida({ dados, config, fuso = 'America/Sao_Paulo', agora 
       });
     }
   }
-  // O "hora de desligar" é o único que passa pelo silêncio (ele é justamente para a noite).
+  // Remédios e vitaminas na hora marcada (Cuidar de mim): o horário é dela, então passa pelo silêncio.
+  const cuidar = dados.cuidar || {};
+  for (const r of cuidar.remedios || []) {
+    if (!valeNoDia(r.dias, hoje)) continue;
+    const tomadas = r.tomados?.[hoje] || [];
+    for (const hora of r.horas || []) {
+      const alvo = minutos(hora);
+      const chave = `remedio:${r.id}:${hora}:${hoje}`;
+      if (agoraMin >= alvo && agoraMin < alvo + 45 && !tomadas.includes(hora) && !enviados.has(chave)) {
+        saida.push({ chave, titulo: `Hora de ${r.nome}`, texto: `${hora}${r.dose ? ` · ${r.dose}` : ''}. Toque em "tomei" no Cuidar de mim.`, tag: `remedio-${r.id}-${hoje}`, url: '/#cantinho/cuidar' });
+      }
+    }
+  }
+  // O "hora de desligar" e os remédios são os únicos que passam pelo silêncio.
   if (emSilencio(agoraMin, cfg.silencio)) return saida;
+
+  // Consultas (hoje e amanhã) e aniversários (hoje e amanhã), junto com o horário da manhã.
+  const amanha = somarDias(hoje, 1);
+  if (cfg.manha.ativo && agoraMin >= minutos(cfg.manha.hora) && agoraMin < minutos(cfg.manha.hora) + 4 * 60) {
+    for (const c of cuidar.consultas || []) {
+      if (c.feita || (c.data !== hoje && c.data !== amanha)) continue;
+      const chave = `consulta:${c.id}:${hoje}`;
+      if (enviados.has(chave)) continue;
+      const quando = c.data === hoje ? 'Hoje' : 'Amanhã';
+      saida.push({ chave, titulo: `${quando}${c.hora ? ` às ${c.hora}` : ''}: ${c.nome}`, texto: [c.local, c.levar ? `levar ${c.levar}` : ''].filter(Boolean).join(' · ') || 'Está no seu Calendário.', tag: `consulta-${c.id}-${hoje}`, url: '/#cantinho/cuidar' });
+    }
+    for (const p of (dados.pessoas || [])) {
+      const a = p.aniversario;
+      if (!a) continue;
+      const dia = `${String(a.mes).padStart(2, '0')}-${String(a.dia).padStart(2, '0')}`;
+      const ehHoje = hoje.slice(5) === dia;
+      const ehAmanha = amanha.slice(5) === dia;
+      if (!ehHoje && !ehAmanha) continue;
+      const chave = `aniversario:${p.id}:${hoje}`;
+      if (enviados.has(chave)) continue;
+      saida.push({
+        chave, titulo: ehHoje ? `🎂 Hoje é aniversário de ${p.nome}` : `Amanhã é aniversário de ${p.nome}`,
+        texto: [p.gosta ? `gosta de ${p.gosta}` : '', p.presentes ? `presente: ${p.presentes}` : ''].filter(Boolean).join(' · ') || (ehHoje ? 'Manda uma mensagem.' : 'Dá tempo de pensar num presente.'),
+        tag: `aniversario-${p.id}-${hoje}`, url: '/#cantinho/pessoas',
+      });
+    }
+  }
   // O resumo da manhã só vale até 4h depois do horário (um "bom dia" à noite não ajuda).
   const LIMITE = { manha: 4 * 60, contas: 24 * 60, habitos: 24 * 60 };
   const devido = (id) => cfg[id].ativo && agoraMin >= minutos(cfg[id].hora) && agoraMin < minutos(cfg[id].hora) + LIMITE[id]

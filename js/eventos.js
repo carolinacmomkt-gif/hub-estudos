@@ -37,6 +37,7 @@ import { ligarDia, cliqueDia, enviarDia } from './eventos-dia.js';
 import { ligarProtegidos, cliqueProtegidos, enviarProtegidos } from './eventos-protegidos.js';
 import { ligarRituais, cliqueRituais, enviarRituais, mudancaRituais } from './eventos-rituais.js';
 import { ligarCantinho, cliqueCantinho, enviarCantinho, mudancaCantinho } from './eventos-cantinho.js';
+import { ligarCuidar, cliqueCuidar, enviarCuidar } from './eventos-cuidar.js';
 import { ligarDemandas, cliqueDemandas, enviarDemandas, mudancaDemandas } from './eventos-demandas.js';
 import { ligarOrganizar, cliqueOrganizar, enviarOrganizar, mudancaOrganizar } from './eventos-organizar.js';
 import { cliqueBusca, enviarBusca, mudancaBusca } from './eventos-busca.js';
@@ -401,7 +402,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   ligarFolhas();
   ligarConfirmar(); // os diálogos do navegador viram folhas do app
   const folhaMais = document.getElementById('folha-mais');
@@ -512,7 +513,7 @@ export function ligarEventos(funcoesDoApp) {
           return;
         }
         if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo)
-          || cliqueFoco(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueQuestoes(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
+          || cliqueFoco(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueQuestoes(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -554,7 +555,7 @@ export function ligarEventos(funcoesDoApp) {
     evento.preventDefault();
     // Qual botão enviou (ex.: "Salvar e fazer agora" ou "Só salvar").
     form.dataset.enviadoPor = evento.submitter?.value || '';
-    if (enviarLeitor(form) || enviarProtegidos(form) || enviarRituais(form) || enviarCantinho(form) || enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarQuestoes(form) || enviarSubstack(form) || enviarEstudos(form)) return;
+    if (enviarLeitor(form) || enviarProtegidos(form) || enviarRituais(form) || enviarCantinho(form) || enviarCuidar(form) || enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarQuestoes(form) || enviarSubstack(form) || enviarEstudos(form)) return;
     if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form) || enviarYoutube(form)) return;
     switch (form.dataset.form) {
       case 'login':

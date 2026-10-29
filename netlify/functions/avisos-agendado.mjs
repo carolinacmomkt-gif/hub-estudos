@@ -46,13 +46,15 @@ export async function enviarVidaDaUsuaria(userId, assinaturas, valorAvisos, agor
   const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: fuso }).format(new Date(agora));
   const semana = new Date(agora - 8 * DIA).toISOString().slice(0, 10);
   const ler = (tabela, filtro = '') => banco.listar(tabela, userId, filtro).catch(() => []); // tabela que ainda não existe: segue sem ela
-  const [tarefas, financas, habitos, registros, eventos, [meuDia], [cantinhoCfg]] = await Promise.all([
+  const [tarefas, financas, habitos, registros, eventos, [meuDia], [cantinhoCfg], [cuidarCfg], [pessoasCfg]] = await Promise.all([
     ler('tarefas', 'feita_em=is.null'), ler('financas'), ler('habitos'), ler('habito_registros', `data=gte.${semana}`),
     ler('eventos', `inicio=gte.${new Date(agora - DIA).toISOString()}&inicio=lt.${new Date(agora + 2 * DIA).toISOString()}`),
     ler('config', 'chave=eq.meu_dia'),
     ler('config', 'chave=eq.cantinho'),
+    ler('config', 'chave=eq.cuidar'),
+    ler('config', 'chave=eq.pessoas'),
   ]);
-  const notificacoes = avisosDaVida({ dados: { tarefas, financas, habitos, registros, eventos, meuDia: meuDia?.valor, cantinho: cantinhoCfg?.valor }, config: valorAvisos?.vida, fuso, agora, enviados });
+  const notificacoes = avisosDaVida({ dados: { tarefas, financas, habitos, registros, eventos, meuDia: meuDia?.valor, cantinho: cantinhoCfg?.valor, cuidar: cuidarCfg?.valor, pessoas: pessoasCfg?.valor?.lista || [] }, config: valorAvisos?.vida, fuso, agora, enviados });
   if (!notificacoes.length) return { enviados: 0 };
   const entregues = new Set();
   for (const assinatura of assinaturas) {

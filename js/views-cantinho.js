@@ -12,6 +12,7 @@ import {
   minutosSemParar, pausasDoDia, textoDuracao, paraHora, paraMin, ehNoite,
 } from './dados-cantinho.js';
 import { AMBIENTES } from './foco-palco.js';
+import { telaCuidar, telaDesejos, telaPessoas, resumoParaCantos } from './views-cuidar.js';
 
 const fmtData = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 const SONS = AMBIENTES.filter((a) => a.id).map((a) => ({ ...a, emoji: { chuva: '🌧️', marrom: '🌊', lareira: '🔥' }[a.id] || '🎧' }));
@@ -77,12 +78,15 @@ function cantos(estado, c, hoje) {
   const livro = livroDoMomento(estado.artigos);
   const leitura = leituraDe(estado.config);
   const faltaLer = Math.max(0, leitura.metaMin - minutosNoDia(leitura, hoje));
+  const r = resumoParaCantos(estado, hoje);
   const lista = [
     { rota: '#cantinho/pausas', emoji: '🫁', nome: 'Pausas', texto: feitas.length ? `${feitas.length} hoje · respirar, alongar, cochilo, sair` : 'respirar 2 min · alongar 5 · cochilo 20 · sair 10' },
-    { rota: '#cantinho/dormir', emoji: '🌙', nome: 'Dormir', texto: `deitar até ${deitar} para acordar às ${c.acordar}` },
+    { rota: '#cantinho/dormir', emoji: '🌙', nome: 'Dormir', texto: `deitar até ${deitar} · acordar ${c.acordar}` },
+    { rota: '#cantinho/cuidar', emoji: '💧', nome: 'Cuidar de mim', texto: r.cuidar },
     { rota: livro ? `#livro/${livro.livro.id}` : '#biblioteca', emoji: '📖', nome: 'Ler devagar', texto: livro ? `${livro.livro.titulo}${faltaLer ? ` · faltam ${faltaLer} min` : ' · meta de hoje batida'}` : 'nenhum livro na estante ainda' },
+    { rota: '#cantinho/pessoas', emoji: '🎂', nome: 'Pessoas', texto: r.pessoas },
+    { rota: '#cantinho/desejos', emoji: '🎁', nome: 'Desejos', texto: r.desejos },
     { rota: '#cantinho/pausas', emoji: '🎧', nome: 'Sons', texto: `${SONS.map((s) => s.nome.toLowerCase()).join(' · ')}` },
-    { rota: '#habitos', emoji: '💧', nome: 'Cuidar de mim', texto: 'água, remédios, consultas, ciclo, pele', breve: true },
     { rota: '#inicio', emoji: '📝', nome: 'Fechar o dia', texto: 'humor, uma linha, o que fica para amanhã', breve: true },
   ];
   return `<div class="ct-cantos">${lista.map((x) => `
@@ -101,6 +105,9 @@ export function renderCantinho(estado) {
   if (sub === 'dormir') return telaDormir(estado, c, agoraMin);
   if (sub === 'pausas') return telaPausas(estado, c, hoje);
   if (sub === 'mesinha') return telaMesinha(estado, c, agoraMin);
+  if (sub === 'cuidar') return telaCuidar(estado, topoCantinho, hoje);
+  if (sub === 'desejos') return telaDesejos(estado, topoCantinho);
+  if (sub === 'pessoas') return telaPessoas(estado, topoCantinho, hoje);
   const frase = fraseDoDia();
   const semParar = minutosSemParar(c, hoje, Date.now(), estado.abriuEm || Date.now());
   const ultima = c.ultimaPausa && String(c.ultimaPausa).slice(0, 10) === hoje ? relogioAgora(Date.parse(c.ultimaPausa)) : null;

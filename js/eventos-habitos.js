@@ -27,7 +27,7 @@ function abrirFolha(titulo, html) {
 const fecharFolha = () => document.getElementById('folha-evento')?.close();
 
 // Um registro por hábito e por dia: cria, muda o valor ou (com 0) apaga.
-async function definirValor(h, dia, valor) {
+export async function definirValor(h, dia, valor) {
   const atual = registroDoDia(obterEstado().habitoRegistros, h.id, dia);
   const novo = Math.max(0, Math.round(valor));
   if (atual) await gravar('habito_registros', 'habitoRegistros', { ...atual, valor: novo, excluido_em: novo ? null : new Date().toISOString() });
@@ -173,3 +173,6 @@ export function enviarHabitos(form) {
   });
   return true;
 }
+
+// Para outras telas (o Cuidar de mim do cantinho mexe na água de hoje).
+export const definirValorDoHabito = definirValor;
