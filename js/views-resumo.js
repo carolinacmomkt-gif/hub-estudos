@@ -3,6 +3,7 @@
 import { cabecalho, barraProgresso } from './componentes.js';
 import { esc, diaEHora } from './utilidades.js';
 import { semanaDe, resumoDaSemana, textoMinutos } from './dados-resumo.js';
+import { chamadaRetrospectiva } from './views-retrospectiva.js';
 
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' });
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -37,6 +38,8 @@ export function renderResumo(estado) {
       <a class="botao botao-secundario botao-pequeno" href="#resumo/${ant}">‹ Semana anterior</a>
       ${deslocamento < 0 ? `<a class="botao botao-secundario botao-pequeno" href="#resumo/${prox}">Próxima semana ›</a>` : ''}
       ${deslocamento !== 0 ? '<a class="botao botao-secundario botao-pequeno" href="#resumo">Esta semana</a>' : ''}
+      <a class="botao botao-secundario botao-pequeno" href="#retrospectiva">Retrospectiva do mês</a>
+      ${chamadaRetrospectiva(estado)}
     </div>
     ${r.vazia ? '<section class="card"><p class="texto-suave">Nada registrado nesta semana ainda. As sessões de foco, as questões respondidas e as leituras terminadas aparecem aqui.</p></section>' : ''}
     <div class="q-resumo">
@@ -89,5 +92,6 @@ export function cardResumoInicio(estado) {
         <li><span>Questões</span><strong>${r.questoes.respondidas}${r.questoes.taxa !== null ? ` · ${Math.round(r.questoes.taxa * 100)}%` : ''}</strong></li>
         <li><span>Leituras terminadas</span><strong>${r.leituras.length}</strong></li>
       </ul>
+      ${chamadaRetrospectiva(estado)}
     </section>`;
 }

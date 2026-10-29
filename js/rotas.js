@@ -28,6 +28,7 @@ export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configuraçõe
 const ROTAS_INTERNAS = [
   { id: 'caneta', titulo: 'Testar a caneta', icone: 'cadernos' },
   { id: 'livro', titulo: 'Leitor', icone: 'biblioteca' },
+  { id: 'retrospectiva', titulo: 'Retrospectiva do mês', icone: 'calendario' },
 ];
 
 const TODAS = [...ROTAS, ROTA_CONFIGURACOES, ...ROTAS_INTERNAS];

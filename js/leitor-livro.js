@@ -6,6 +6,7 @@
 // parou (artigos.dados.posicao), que segue para os outros aparelhos.
 
 import { atualizarEstado } from './estado.js';
+import { registrarLeitura } from './eventos-rituais.js';
 import { obter, listar, salvar } from './persistencia.js';
 import { chamar } from './funcoes.js';
 import { esc } from './utilidades.js';
@@ -74,7 +75,10 @@ export async function montarLeitor(id) {
   ouvir(document, 'selectionchange', aoSelecionar);
   ouvir(window, 'resize', () => { clearTimeout(L.tempoResize); L.tempoResize = setTimeout(() => { aplicarPrefs(); relayout(); }, 150); });
   ouvir(window, 'pagehide', gravarPosicaoAgora);
-  ouvir(document, 'visibilitychange', () => { if (document.hidden) gravarPosicaoAgora(); else telaAcesa(L.prefs.telaAcesa); });
+  ouvir(document, 'visibilitychange', () => { if (document.hidden) { gravarPosicaoAgora(); contarMinutos(); } else { telaAcesa(L.prefs.telaAcesa); L.lendoDesde = Date.now(); } });
+  L.lendoDesde = Date.now();
+  L.ultimaInteracao = Date.now();
+  L.tickLeitura = setInterval(contarMinutos, 30000);
   ligarGestos();
   telaAcesa(L.prefs.telaAcesa);
   try {
@@ -94,6 +98,8 @@ export async function montarLeitor(id) {
 
 export function desmontarLeitor() {
   if (!L) return;
+  contarMinutos();
+  clearInterval(L.tickLeitura);
   gravarPosicaoAgora();
   gravarTintaAgora();
   for (const [alvo, tipo, fn] of L.ouvintes) alvo.removeEventListener(tipo, fn);
@@ -599,11 +605,45 @@ async function guardarConfigLeitor(campos) {
   await salvar('config', { ...(atual || {}), excluido_em: null, chave: 'leitor', valor: { ...(atual?.excluido_em ? {} : atual?.valor || {}), ...campos } });
 }
 
+// Ritual de leitura: soma os minutos com o livro na tela (parou de virar página por 10 min = saiu).
+function contarMinutos() {
+  if (!L) return;
+  const agora = Date.now();
+  const ms = agora - (L.lendoDesde || agora);
+  L.lendoDesde = agora;
+  if (document.hidden || ms <= 0 || ms > 6 * 60000 || agora - (L.ultimaInteracao || 0) > 10 * 60000) return;
+  const minutos = ms / 60000;
+  registrarLeitura(minutos);
+  L.minutosLivro = Math.round(((Number(L.artigo.dados?.minutos) || 0) + minutos) * 10) / 10;
+  clearTimeout(L.tempoMinutos);
+  L.tempoMinutos = setTimeout(() => L && mudarArtigo({ dados: { minutos: L.minutosLivro } }).catch(() => {}), 2000);
+}
+
+// Terminou o livro: uma vez, quando chega ao fim.
+function painelFim() {
+  const destaques = (L.artigo.destaques || []).length;
+  const minutos = Math.round(L.minutosLivro ?? (Number(L.artigo.dados?.minutos) || 0));
+  abrirPainel('Terminou! 🎉', `
+    <p class="lv-fim-titulo"><strong>${esc(L.artigo.titulo)}</strong>${L.artigo.autor ? `<br><span class="texto-suave">${esc(L.artigo.autor)}</span>` : ''}</p>
+    <ul class="lv-fim-numeros">
+      <li><strong>${minutos ? esc(minutos >= 60 ? `${Math.floor(minutos / 60)}h ${minutos % 60} min` : `${minutos} min`) : '—'}</strong><span class="campo-ajuda">de leitura</span></li>
+      <li><strong>${destaques}</strong><span class="campo-ajuda">${destaques === 1 ? 'destaque' : 'destaques'}</span></li>
+    </ul>
+    <div class="acoes">
+      ${L.artigo.status === 'lido' || L.artigo.status === 'fichado' ? '' : '<button class="botao botao-primario" type="button" data-leitor="lido">Marcar como lido</button>'}
+      <a class="botao botao-secundario" href="#biblioteca/${esc(L.artigo.id)}">${destaques ? 'Fichar os destaques' : 'Notas do livro'}</a>
+      <a class="botao botao-secundario" href="#biblioteca">Escolher o próximo</a>
+    </div>`);
+}
+
 function depoisDeAndar() {
   if (!L) return;
+  L.ultimaInteracao = Date.now();
   esconderMenu();
   contarPaginaLida();
   const pct = pctAtual();
+  const noFim = L.formato === 'pdf' ? L.pagina >= L.total : (L.capitulo >= L.epub.capitulos.length - 1 && (L.prefs.modo === 'rolagem' ? fracaoAtual() >= 0.98 : L.pagina >= L.paginas - 1));
+  if (noFim && !L.fimMostrado && el('lv-painel')?.hidden !== false) { L.fimMostrado = true; setTimeout(() => L && painelFim(), 300); }
   const barra = el('lv-barra');
   if (barra && document.activeElement !== barra) barra.value = String(Math.round(pct * 1000));
   let tempo;
@@ -1223,7 +1263,7 @@ function aoClicar(e) {
       });
       break;
     case 'lido':
-      mudarArtigo({ status: 'lido', lido_em: new Date().toISOString() }).then(() => { aviso('Marcado como lido. Que bom!'); painelMais(); });
+      mudarArtigo({ status: 'lido', lido_em: new Date().toISOString() }).then(() => { aviso('Marcado como lido. Que bom!'); if (L?.fimMostrado) fecharPainel(); else painelMais(); });
       break;
     case 'ferramenta': {
       L.editor.ferramenta = alvo.dataset.ferramenta;

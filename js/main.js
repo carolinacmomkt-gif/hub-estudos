@@ -26,6 +26,7 @@ import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
+import { renderRetrospectiva } from './views-retrospectiva.js';
 import { renderBusca } from './views-busca.js';
 import { montarBusca, dadosDaBusca } from './eventos-busca.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
@@ -70,6 +71,7 @@ const VIEWS = {
   habitos: renderHabitos,
   metas: renderMetas,
   resumo: renderResumo,
+  retrospectiva: renderRetrospectiva,
   buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
 };
 

@@ -9,6 +9,7 @@ import { tarefasDeHoje } from '../../js/dados-tarefas.js';
 import { habitosDoDia, feitoNoDia, valorNoDia } from '../../js/dados-habitos.js';
 import { resumoDoMes, mesDe, livreParaGastar, contasDaSemana, CATEGORIAS_PADRAO } from '../../js/dados-financas.js';
 import { livreHoje } from '../../js/dados-comprar.js';
+import { leituraDe, minutosNoDia, sequenciaLeitura } from '../../js/dados-leitura.js';
 import { planoDeHoje, blocoAgora } from '../../js/dados-dia.js';
 import { listaQuantoPrecisa, situacaoFaltas } from '../../js/dados-faculdade.js';
 import { ativas, progressoDaMeta } from '../../js/dados-metas.js';
@@ -147,10 +148,11 @@ const AREAS = {
     const proxima = pautas.filter((p) => p.etapa !== 'publicado').sort((a, b) => ['revisao', 'rascunho', 'ideia'].indexOf(a.etapa) - ['revisao', 'rascunho', 'ideia'].indexOf(b.etapa))[0];
     return { feitos, meta, fracao: Math.min(1, feitos / meta), proxima: proxima ? { titulo: proxima.titulo, etapa: proxima.etapa } : null };
   },
-  async leituras({ ler }) {
-    const artigos = await ler('artigos', 'status=in.(lendo,ler)');
+  async leituras({ hoje, ler }) {
+    const [artigos, configs] = await Promise.all([ler('artigos', 'status=in.(lendo,ler)'), ler('config', 'chave=eq.leitura')]);
+    const leitura = leituraDe(configs);
     const ordem = (a) => (a.status === 'lendo' ? 0 : 1);
-    return { lendo: artigos.filter((a) => a.status === 'lendo').length, fila: artigos.filter((a) => a.status === 'ler').length, lista: [...artigos].sort((a, b) => ordem(a) - ordem(b)).slice(0, 5).map((a) => ({ titulo: a.titulo, autor: a.autor || null, status: a.status })) };
+    return { hojeMin: minutosNoDia(leitura, hoje), meta: leitura.metaMin, sequencia: sequenciaLeitura(leitura, hoje).dias, lendo: artigos.filter((a) => a.status === 'lendo').length, fila: artigos.filter((a) => a.status === 'ler').length, lista: [...artigos].sort((a, b) => ordem(a) - ordem(b)).slice(0, 5).map((a) => ({ titulo: a.titulo, autor: a.autor || null, status: a.status })) };
   },
   async hoje(ctx) {
     const [tarefas, agenda, demandas, habitos] = await Promise.all([AREAS.tarefas(ctx), AREAS.agenda(ctx), AREAS.demandas(ctx), AREAS.habitos(ctx)]);

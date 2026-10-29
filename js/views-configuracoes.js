@@ -9,6 +9,7 @@ import { cardAvisos, cardPlanoPrefs } from './views-avisos.js';
 import { cardConfigDemandas } from './views-demandas.js';
 import { cardWidgets } from './views-widgets.js';
 import { cardProtegidos } from './views-protegidos.js';
+import { cardConfigLeitura } from './views-leitura.js';
 import { chaveDoTrello } from './nuvem.js';
 
 const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -211,6 +212,7 @@ export function renderConfiguracoes(estado) {
       ${cardAvisos(estado)}
       ${cardPlanoPrefs(estado)}
       ${cardProtegidos(estado)}
+      ${cardConfigLeitura(estado)}
       ${cardServico(estado, {
         servico: 'ava',
         titulo: 'AVA (Moodle)',

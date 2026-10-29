@@ -251,7 +251,7 @@ function principal(d) {
     case 'metas': return { valor: x.lista[0] ? `${Math.round(x.lista[0].fracao * 100)}%` : '–', fracao: x.lista[0]?.fracao ?? null, rotulo: 'meta', linha: x.lista[0]?.titulo || 'Sem meta ativa' };
     case 'agenda': { const e = x.agora || x.lista[0]; return { valor: x.lista.length ? String(x.lista.length) : '0', fracao: null, rotulo: 'próximos', linha: e ? `${x.agora ? 'Agora' : diaCurto(e.dia, d.hoje)}${e.hora && !x.agora ? ` ${e.hora}` : ''}: ${e.titulo}` : 'Nada marcado' }; }
     case 'youtube': return { valor: String(x.etapas.reduce((t, e) => t + e.total, 0)), fracao: null, rotulo: 'vídeos', linha: x.proximo ? `${x.proximo.etapa}: ${x.proximo.titulo}` : 'Sem vídeo em produção' };
-    case 'leituras': return { valor: String(x.lendo), fracao: null, rotulo: 'lendo', linha: x.lista[0]?.titulo || 'Nada na fila' };
+    case 'leituras': return x.meta ? { valor: `${Math.round(x.hojeMin)} min`, fracao: Math.min(1, x.hojeMin / x.meta), rotulo: `de ${x.meta} hoje${x.sequencia >= 2 ? ` · 🔥 ${x.sequencia}` : ''}`, linha: x.lista[0]?.titulo || 'Nada na fila' } : { valor: String(x.lendo), fracao: null, rotulo: 'lendo', linha: x.lista[0]?.titulo || 'Nada na fila' };
     case 'frase': return { valor: '“', fracao: null, rotulo: '', linha: x.texto };
     default: { const t = x.tarefas; return { valor: String(t.total), fracao: t.progresso, rotulo: t.total === 1 ? 'tarefa' : 'tarefas', linha: x.agenda.agora ? `Agora: ${x.agenda.agora.titulo}` : x.agenda.lista[0] ? `${diaCurto(x.agenda.lista[0].dia, d.hoje)} ${x.agenda.lista[0].hora || ''} ${x.agenda.lista[0].titulo}` : 'Agenda livre' }; }
   }
