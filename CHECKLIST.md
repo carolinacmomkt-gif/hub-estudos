@@ -27,6 +27,11 @@ Depois de criar ou mudar uma variável, faça um novo deploy ("Trigger deploy").
 - Avisos: ative e escolha os horários (no iPhone, só com o app na Tela de Início).
 - Horas protegidas, meta de leitura, vidro e tema do seu jeito.
 
+## 3b. Meu cantinho (nada a configurar, só usar)
+- Em Dormir, escolha a hora de acordar e toque numa hora de deitar: o aviso "hora de desligar" chega 30 min antes (precisa dos avisos ligados).
+- Em Cuidar de mim, cadastre remédios com horário (aviso na hora) e consultas (vão para o Calendário). O ciclo fica só no aparelho em que você ligar.
+- À noite, "Fechar o dia" leva 60 segundos e alimenta o Diário do mês, os Padrões e a Retrospectiva.
+
 ## 4. Instalar nos aparelhos
 - **Galaxy Tab S10 Lite**: Chrome → menu → "Instalar app". Teste com a S Pen: caderno, caneta por cima do PDF, folhas laterais em paisagem e o desfoque do vidro (se pesar, desligue o Vidro em Configurações → Aparência).
 - **iPhone**: Safari → Compartilhar → "Adicionar à Tela de Início" (se já tinha o app, remova e adicione de novo para o ícone novo aparecer).

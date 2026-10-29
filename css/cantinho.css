@@ -699,3 +699,32 @@ html[data-vidro="nao"] :is(.ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel) {
   .ct-item-acoes { flex-direction: column; align-items: flex-end; gap: 2px; }
   .ct-quando { min-width: 50px; font-size: 0.74rem; }
 }
+
+/* ---- parte 3: Fechar o dia e Diário ---- */
+.ct-faixa-link { text-decoration: none; color: inherit; cursor: pointer; }
+.ct-faixa-link:hover { background: rgba(232, 211, 191, 0.26); }
+.ct-fechar { display: flex; flex-direction: column; gap: 12px; }
+.ct-humores { display: flex; flex-wrap: wrap; gap: 8px; }
+.ct-humor { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 0; min-width: 56px; min-height: 60px; padding: 8px 4px; border: 1px solid var(--ct-vidro-borda); border-radius: var(--raio); background: var(--ct-vidro); color: var(--ct-suave); font: inherit; font-size: 0.72rem; cursor: pointer; transition: background-color 0.15s, transform 0.12s; }
+.ct-humor span { font-size: 1.5rem; line-height: 1; }
+.ct-humor:hover { background: var(--ct-vidro-forte); }
+.ct-humor:active { transform: scale(0.95); }
+.ct-humor[aria-pressed="true"] { background: var(--ct-cheio); border-color: var(--ct-cheio-borda); color: var(--ct-texto); font-weight: 600; }
+.ct-fechar .acoes { align-items: center; }
+.ct-diario-topo { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.ct-mes { font-size: 1.15rem; font-weight: 650; min-width: 12ch; text-align: center; }
+.ct-diario-grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 12px; }
+.ct-diario-cab { padding: 2px 0 6px; text-align: center; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ct-fraco); }
+.ct-diario-dia { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; border: 1px solid var(--ct-vidro-borda); border-radius: var(--raio-sm); background: var(--ct-vidro); }
+.ct-diario-dia small { font-size: 0.7rem; color: var(--ct-fraco); }
+.ct-diario-dia b { font-size: 1.15rem; line-height: 1; font-weight: 400; color: var(--ct-fraco); }
+.ct-diario-dia.fechado { border-color: var(--ct-cheio-borda); }
+.ct-diario-dia.hoje { background: var(--ct-cheio); }
+.ct-diario-dia.hoje small { color: var(--ct-texto); font-weight: 600; }
+.ct-diario-dia.futuro { opacity: 0.35; }
+
+@media (max-width: 700px) {
+  .ct-humor { min-width: 52px; font-size: 0.66rem; }
+  .ct-diario-dia { min-height: 44px; }
+  .ct-diario-dia b { font-size: 1rem; }
+}

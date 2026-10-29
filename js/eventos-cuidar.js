@@ -13,6 +13,8 @@ import {
 import { novoDesejoDaLista } from './dados-desejos.js';
 import { novaPessoa, lerAniversario } from './dados-pessoas.js';
 import { habitoAgua } from './views-cuidar.js';
+import { linhaDoDiario, somarMeses, mesDe } from './dados-fechar.js';
+import { amanha } from './dados-pessoas.js';
 import { confirmar } from './confirmar.js';
 
 let app;
@@ -58,7 +60,7 @@ async function apagarEvento(id) {
 
 export function cliqueCuidar(alvo) {
   const { acao, id } = alvo.dataset;
-  if (!acao || !/^(cu|ds|ps)-/.test(acao)) return false;
+  if (!acao || !/^(cu|ds|ps|fd)-/.test(acao)) return false;
   const hoje = dataLocal();
   switch (acao) {
     case 'cu-agua-criar': {
@@ -135,6 +137,23 @@ export function cliqueCuidar(alvo) {
     case 'ps-falei':
       mudarPessoas((v) => { v.lista = v.lista.map((p) => (p.id === id ? { ...p, ultimoContato: hoje } : p)); });
       return true;
+    case 'fd-humor': {
+      const grupo = alvo.closest('.ct-humores');
+      const marcado = alvo.getAttribute('aria-pressed') === 'true';
+      grupo.querySelectorAll('[aria-pressed]').forEach((b) => b.setAttribute('aria-pressed', String(!marcado && b === alvo)));
+      const campo = alvo.closest('form')?.elements.humor;
+      if (campo) campo.value = marcado ? '' : alvo.dataset.valor;
+      navigator.vibrate?.(8);
+      return true;
+    }
+    case 'fd-mes': {
+      const atual = obterEstado().mesDiario || mesDe(hoje);
+      const novo = somarMeses(atual, Number(alvo.dataset.delta) || 0);
+      if (novo > mesDe(hoje)) return true;
+      atualizarEstado({ mesDiario: novo });
+      app.renderizar();
+      return true;
+    }
     case 'ps-remover':
       confirmar('Tirar esta pessoa da lista?', { botao: 'Tirar', perigo: true }).then((ok) => { if (ok) mudarPessoas((v) => { v.lista = v.lista.filter((p) => p.id !== id); }); });
       return true;
@@ -145,7 +164,7 @@ export function cliqueCuidar(alvo) {
 
 export function enviarCuidar(form) {
   const tipo = form.dataset.form;
-  if (!tipo || !/^(cu|ds|ps)-/.test(tipo)) return false;
+  if (!tipo || !/^(cu|ds|ps|fd)-/.test(tipo)) return false;
   const c = form.elements;
   const nome = c.nome?.value.trim();
   mostrarErro(form, '');
@@ -184,6 +203,27 @@ export function enviarCuidar(form) {
     case 'ds-novo': {
       if (!nome) return mostrarErro(form, 'O que você quer?'), true;
       mudarDesejos((v) => { v.lista.push(novoDesejoDaLista({ nome, porque: c.porque.value, link: c.link.value })); }).then(() => app.avisoCurto('Na lista. Deixa descansar um pouco.'));
+      return true;
+    }
+    case 'fd-fechar': {
+      const hoje = dataLocal();
+      const humor = Number(c.humor.value) || null;
+      const bom = c.bom.value.trim().slice(0, 160);
+      const texto = c.texto.value.trim().slice(0, 500);
+      const amanhaTexto = c.amanha.value.trim().slice(0, 200);
+      if (!humor && !bom && !texto && !amanhaTexto) return mostrarErro(form, 'Escolhe um rostinho ou escreve uma linha, pelo menos.'), true;
+      const linha = linhaDoDiario(obterEstado(), hoje);
+      const jaFechado = linha?.dados?.fechar || {};
+      (async () => {
+        await gravar('diario', 'diario', { ...(linha || { data: hoje }), humor: humor || linha?.humor || null, texto: texto || null, dados: { ...(linha?.dados || {}), fechar: { bom, amanha: amanhaTexto, fechado_em: jaFechado.fechado_em || new Date().toISOString(), tarefa_id: jaFechado.tarefa_id || null } } });
+        if (amanhaTexto && !jaFechado.tarefa_id) {
+          const t = await gravar('tarefas', 'tarefas', { titulo: amanhaTexto, data: amanha(hoje), area: 'pessoal', prioridade: 0, dados: { origem: 'cantinho' } });
+          const l2 = linhaDoDiario(obterEstado(), hoje);
+          if (l2 && t?.id) await gravar('diario', 'diario', { ...l2, dados: { ...l2.dados, fechar: { ...l2.dados.fechar, tarefa_id: t.id } } });
+        }
+        app.renderizar();
+        app.avisoCurto(jaFechado.fechado_em ? 'Guardado.' : 'Dia fechado. Boa noite.');
+      })();
       return true;
     }
     case 'ps-novo': {

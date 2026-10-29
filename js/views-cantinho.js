@@ -13,6 +13,8 @@ import {
 } from './dados-cantinho.js';
 import { AMBIENTES } from './foco-palco.js';
 import { telaCuidar, telaDesejos, telaPessoas, resumoParaCantos } from './views-cuidar.js';
+import { telaFechar, telaDiario } from './views-fechar.js';
+import { linhaDoDiario, fechamentoDe } from './dados-fechar.js';
 
 const fmtData = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 const SONS = AMBIENTES.filter((a) => a.id).map((a) => ({ ...a, emoji: { chuva: '🌧️', marrom: '🌊', lareira: '🔥' }[a.id] || '🎧' }));
@@ -23,13 +25,13 @@ export function relogioAgora(agora = Date.now()) {
 }
 
 // Cabeçalho próprio do cantinho (sem a lupa nem o seletor de tema: aqui é descanso).
-function topoCantinho(titulo, { voltar = false, sub = '' } = {}) {
+function topoCantinho(titulo, { voltar = false, sub = '', acoes = '' } = {}) {
   return `
     <header class="ct-topo">
       ${voltar ? `<a class="botao-icone ct-voltar" href="#cantinho" aria-label="Voltar ao cantinho" title="Voltar">‹</a>` : ''}
       <div class="ct-topo-texto"><p class="ct-rotulo">Meu cantinho</p><h1 class="ct-titulo" tabindex="-1">${esc(titulo)}</h1>${sub ? `<p class="ct-sub">${esc(sub)}</p>` : ''}</div>
       <div class="ct-topo-acoes">
-        ${voltar ? '' : `<button class="botao botao-secundario botao-pequeno ct-botao-lua" type="button" data-acao="ct-mesinha">${icone('cantinho')}Mesinha</button>`}
+        ${acoes}${voltar ? '' : `<button class="botao botao-secundario botao-pequeno ct-botao-lua" type="button" data-acao="ct-mesinha">${icone('cantinho')}Mesinha</button>`}
       </div>
     </header>`;
 }
@@ -43,8 +45,9 @@ function climaDoMomento(agoraMin) {
   return 'Hora de desacelerar.';
 }
 
-function linhaDoDia(estado, c, hoje, agoraMin) {
+function linhaDoDia(estado, c, hoje, agoraMin, fechado = null) {
   const itens = [];
+  if (fechado) itens.push('<a class="ct-pilula" href="#cantinho/diario"><span aria-hidden="true">📝</span><b>dia fechado</b> · ver o mês</a>');
   const agua = habitosDoDia(estado.habitos || [], estado.habitoRegistros || [], hoje).lista.find((h) => /água/i.test(h.nome));
   if (agua) itens.push(`<span class="ct-pilula"><span aria-hidden="true">💧</span><b>${valorNoDia(estado.habitoRegistros || [], agua, hoje)}/${Number(agua.meta) || 1}</b> ${esc(agua.unidade || '')}</span>`);
   const leitura = leituraDe(estado.config);
@@ -106,18 +109,23 @@ export function renderCantinho(estado) {
   if (sub === 'cuidar') return telaCuidar(estado, topoCantinho, hoje);
   if (sub === 'desejos') return telaDesejos(estado, topoCantinho);
   if (sub === 'pessoas') return telaPessoas(estado, topoCantinho, hoje);
+  if (sub === 'fechar') return telaFechar(estado, topoCantinho, c, hoje);
+  if (sub === 'diario') return telaDiario(estado, topoCantinho, hoje);
   const frase = fraseDoDia();
   const semParar = minutosSemParar(c, hoje, Date.now(), estado.abriuEm || Date.now());
   const ultima = c.ultimaPausa && String(c.ultimaPausa).slice(0, 10) === hoje ? relogioAgora(Date.parse(c.ultimaPausa)) : null;
   const parou = ultima ? `você parou por último às ${ultima}` : semParar >= 45 ? `você está há ${textoDuracao(semParar)} sem parar` : 'sem pausa ainda hoje';
+  const fechado = fechamentoDe(linhaDoDiario(estado, hoje));
+  const noite = agoraMin >= 19 * 60 || agoraMin < 4 * 60;
+  const acoes = fechado ? '' : '<a class="botao botao-secundario botao-pequeno" href="#cantinho/fechar">Fechar o dia</a>';
   return `
-    ${topoCantinho(saudacao(estado.dados?.nome || 'Carol'), { sub: climaDoMomento(agoraMin) })}
+    ${topoCantinho(saudacao(estado.dados?.nome || 'Carol'), { sub: climaDoMomento(agoraMin), acoes })}
     <div class="ct-entrada">
       <div class="ct-agora">
         <div class="ct-hora-linha"><p class="ct-hora" data-ct-relogio>${relogioAgora()}</p><div class="ct-lua" aria-hidden="true"></div></div>
         <p class="ct-data">${esc(fmtData.format(new Date()))} · ${esc(parou)}</p>
-        ${cartaoPausaQueCabe(estado, c, hoje, agoraMin)}
-        ${linhaDoDia(estado, c, hoje, agoraMin)}
+        ${noite && !fechado ? '<a class="ct-faixa ct-faixa-link" href="#cantinho/fechar"><div><strong>Fechar o dia · 60 segundos</strong><small>como foi, uma coisa boa e o que fica para amanhã</small></div><span class="botao botao-primario">Fechar</span></a>' : cartaoPausaQueCabe(estado, c, hoje, agoraMin)}
+        ${linhaDoDia(estado, c, hoje, agoraMin, fechado)}
         <blockquote class="ct-frase">“${esc(frase.texto)}”<small>${esc(frase.autor || '')}</small></blockquote>
       </div>
       ${cantos(estado, c, hoje)}
