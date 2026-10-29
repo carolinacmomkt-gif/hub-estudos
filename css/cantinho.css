@@ -1,17 +1,17 @@
 /*
-  Meu cantinho (29/10/2026): a noite da Bússola (opções A + F, escolha da Carol). Grafite quente com a luz bege no alto, nuvens suaves, a lua em bege (a cor de
+  Meu cantinho (29/10/2026): a noite da Bússola. Grafite escuro (o tom de baixo, pedido da Carol), nuvens bem suaves, a lua em bege (a cor de
   destaque do app), estrelas de quatro pontas (a mesma estrela da marca) e cards em vidro por cima.
   Tipografia, cantos (16/12), chips, selos e botões são os do app; só o clima é outro.
   Com "reduzir transparência" ou o Vidro desligado, os cards ficam opacos.
 */
 
 :root {
-  --ct-fundo-1: #2b2521;
-  --ct-fundo-2: #1f1c1a;
-  --ct-fundo-3: #151414;
-  --ct-nuvem: rgba(214, 200, 186, 0.1);
+  --ct-fundo-1: #1e1e20;
+  --ct-fundo-2: #171718;
+  --ct-fundo-3: #121213;
+  --ct-nuvem: rgba(205, 205, 210, 0.055);
   --ct-lua: #E8D3BF;
-  --ct-brilho: rgba(232, 211, 191, 0.2);
+  --ct-brilho: rgba(232, 211, 191, 0.07);
   --ct-vidro: rgba(255, 245, 230, 0.065);
   --ct-vidro-forte: rgba(255, 245, 230, 0.11);
   --ct-vidro-borda: rgba(255, 245, 230, 0.13);
@@ -22,30 +22,32 @@
   --ct-suave: rgba(240, 229, 214, 0.72);
   --ct-fraco: rgba(240, 229, 214, 0.48);
   --ct-sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.28);
-  --ct-opaco: #2a2522;
+  --ct-opaco: #222224;
 }
 
 [data-tema="claro"] {
-  --ct-fundo-1: #3a322d;
-  --ct-fundo-2: #2a2522;
-  --ct-fundo-3: #1d1a19;
-  --ct-opaco: #352e2a;
+  --ct-fundo-1: #2a2a2d;
+  --ct-fundo-2: #202022;
+  --ct-fundo-3: #181819;
+  --ct-opaco: #2a2a2d;
 }
 
-/* ---- o céu ---- */
+/* ---- o céu (na tela inteira, não só na área do conteúdo) ---- */
 body:has(.conteudo[data-tela="cantinho"]) {
-  background: var(--ct-fundo-3);
+  background:
+    radial-gradient(60% 45% at 82% -6%, var(--ct-brilho), transparent 70%),
+    linear-gradient(172deg, var(--ct-fundo-1) 0%, var(--ct-fundo-2) 48%, var(--ct-fundo-3) 100%);
+  background-attachment: fixed;
+  background-color: var(--ct-fundo-3);
 }
+
+body:has(.conteudo[data-tela="cantinho"]) .app { background: transparent; }
 
 .conteudo[data-tela="cantinho"] {
   position: relative;
   min-height: 100dvh;
   color: var(--ct-texto);
-  background:
-    radial-gradient(60% 45% at 82% -6%, var(--ct-brilho), transparent 70%),
-    radial-gradient(55% 40% at 4% 104%, rgba(150, 118, 88, 0.22), transparent 70%),
-    linear-gradient(172deg, var(--ct-fundo-1) 0%, var(--ct-fundo-2) 48%, var(--ct-fundo-3) 100%);
-  background-attachment: fixed;
+  background: none;
 }
 
 /* nuvens suaves (F) e um grão leve de papel */
@@ -91,7 +93,7 @@ body:has(.conteudo[data-tela="cantinho"]) {
   z-index: 1;
 }
 
-/* a lua: um disco que o outro cobre (crescente), com o brilho atrás; o tamanho vem do font-size */
+/* a lua: um disco bege com um recorte redondo (máscara), e o brilho segue o crescente */
 .ct-lua {
   position: relative;
   flex: none;
@@ -99,19 +101,19 @@ body:has(.conteudo[data-tela="cantinho"]) {
   width: 1em;
   height: 1em;
   font-size: 96px;
-  border-radius: 50%;
   pointer-events: none;
-  box-shadow: -0.21em 0.1em 0 0 var(--ct-lua);
+  filter: drop-shadow(0 0 0.16em rgba(232, 211, 191, 0.4));
   opacity: 0.95;
 }
 
 .ct-lua::before {
   content: "";
   position: absolute;
-  inset: -0.5em;
-  transform: translate(-0.21em, 0.1em);
+  inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 211, 191, 0.24), rgba(232, 211, 191, 0.06) 45%, transparent 68%);
+  background: var(--ct-lua);
+  -webkit-mask: radial-gradient(circle at 70% 36%, transparent 0 46%, #000 47.5%);
+  mask: radial-gradient(circle at 70% 36%, transparent 0 46%, #000 47.5%);
 }
 
 /* aqui não tem tarefa: o "+" some no tablet e no computador (no celular ele mora na barra) */
@@ -227,7 +229,7 @@ body:has(.conteudo[data-tela="cantinho"]) {
 
 .ct-agora { position: relative; container-type: inline-size; }
 .ct-hora-linha { display: flex; align-items: center; gap: clamp(16px, 6cqw, 40px); }
-.ct-hora-linha .ct-lua { font-size: clamp(60px, 19cqw, 100px); margin-left: 0.3em; }
+.ct-hora-linha .ct-lua { font-size: clamp(56px, 17cqw, 92px); margin-left: 0.1em; }
 
 .ct-hora {
   font-size: clamp(3.4rem, 21cqw, 6.4rem);
@@ -582,7 +584,7 @@ body.modo-pausa .nav-inferior, body.modo-pausa .fab, body.modo-pausa #foco-barra
 /* ---- sem vidro ---- */
 @media (prefers-reduced-transparency: reduce) {
   .ct-card, .ct-faixa, .ct-pilula, .ct-chip, .ct-som, .ct-ciclo, .ct-contagem li, .ct-passo, .ct-voltar { background: var(--ct-opaco); -webkit-backdrop-filter: none; backdrop-filter: none; }
-  .ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel { background: #4a4038; }
+  .ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel { background: #3a3733; }
 }
 
 html[data-vidro="nao"] :is(.ct-card, .ct-faixa, .ct-pilula, .ct-chip, .ct-som, .ct-ciclo, .ct-contagem li, .ct-passo, .ct-voltar) {
@@ -591,7 +593,7 @@ html[data-vidro="nao"] :is(.ct-card, .ct-faixa, .ct-pilula, .ct-chip, .ct-som, .
   backdrop-filter: none;
 }
 
-html[data-vidro="nao"] :is(.ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel) { background: #4a4038; }
+html[data-vidro="nao"] :is(.ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel) { background: #3a3733; }
 
 @media (prefers-reduced-motion: reduce) {
   .conteudo[data-tela="cantinho"]::before, .ct-respira-previa { animation: none; }
