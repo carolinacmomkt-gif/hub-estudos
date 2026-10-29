@@ -26,3 +26,15 @@ export async function resumirCapitulo({ texto: corpo, capitulo, livro }, { clien
   });
   return { resumo: limpar(r.resumo, 2000), pontos: (r.pontos || []).map((p) => limpar(p, 300)).filter(Boolean).slice(0, 6) };
 }
+
+// "Definir": o significado de uma palavra na frase em que apareceu (curto, como um dicionário).
+export async function definirPalavra({ palavra, frase, livro }, { cliente } = {}) {
+  const r = await pedirJson({
+    system: SYSTEM,
+    conteudo: `Livro: ${limpar(livro, 200)}\nPalavra: ${limpar(palavra, 60)}\nFrase em que apareceu: "${limpar(frase, 300)}"\n\nDê o significado da palavra nesse contexto como num dicionário: "classe" (substantivo, adjetivo...), "definicao" em uma ou duas linhas e "exemplo" com uma frase curta de uso no dia a dia.`,
+    esquema: objeto({ classe: texto, definicao: texto, exemplo: texto }),
+    maxTokens: 600,
+    cliente,
+  });
+  return { classe: limpar(r.classe, 40), definicao: limpar(r.definicao, 600), exemplo: limpar(r.exemplo, 300) };
+}

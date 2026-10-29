@@ -155,6 +155,11 @@
   pointer-events: none;
 }
 
+.lv-janela,
+.lv-pdf {
+  z-index: 1; /* a página fica embaixo do rodapé, do "voltar" e da régua */
+}
+
 .lv-janela {
   position: absolute;
   inset: 0;
@@ -163,6 +168,7 @@
 
 .lv-texto {
   box-sizing: border-box;
+  font-weight: var(--leitor-peso, 400);
   height: 100%;
   padding: 28px var(--leitor-margem, 36px);
   font-family: var(--leitor-fonte);
@@ -172,8 +178,14 @@
   hyphens: auto;
   overflow-wrap: break-word;
   column-fill: auto;
-  transition: transform 0.22s ease;
+  transition: transform 0.26s cubic-bezier(0.2, 0.7, 0.2, 1);
   will-change: transform;
+}
+
+/* Enquanto o dedo arrasta, a página acompanha na hora (sem a transição) */
+.lv-texto.lv-arrastando,
+.lv-sem-animacao .lv-texto {
+  transition: none;
 }
 
 .lv-texto p {
@@ -678,6 +690,10 @@
   border-radius: 18px;
 }
 
+.lv-painel .lv-escolha[aria-label="Temas prontos"] {
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+}
+
 .lv-painel .lv-escolha button {
   min-width: 0;
   padding: 0 8px;
@@ -689,4 +705,145 @@
 
 .lv-painel input[type="range"] {
   width: 100%;
+}
+
+/* Rodapé discreto da tela limpa (como no Kindle): só aparece com as barras escondidas */
+.lv-rodape {
+  position: absolute;
+  right: 0;
+  bottom: 6px;
+  left: 0;
+  z-index: 2;
+  width: max-content;
+  min-height: 32px;
+  margin: 0 auto;
+  padding: 4px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--lv-suave);
+  font: inherit;
+  font-size: 0.78rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.lv-calmo .lv-rodape {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lv-rodape:empty {
+  display: none;
+}
+
+/* "Voltar para onde estava": aparece depois de um pulo */
+.lv-voltar {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 4;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 0.85rem;
+  box-shadow: var(--sombra);
+}
+
+.lv-voltar[hidden] {
+  display: none;
+}
+
+/* Prévia enquanto arrasta a barra de progresso */
+.lv-previa {
+  position: absolute;
+  right: 0;
+  bottom: 12px;
+  left: 0;
+  z-index: 4;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto);
+  font-size: 0.9rem;
+  box-shadow: var(--sombra);
+}
+
+.lv-previa[hidden] {
+  display: none;
+}
+
+/* Régua de leitura */
+.lv-regua {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  display: none;
+  height: 2.4em;
+  pointer-events: none;
+  transition: top 0.08s linear;
+}
+
+.lv-com-regua .lv-regua {
+  display: block;
+  background: color-mix(in srgb, var(--cor-destaque) 22%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--cor-destaque) 50%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cor-destaque) 50%, transparent);
+}
+
+.lv-regua-foco .lv-regua {
+  background: transparent;
+  border: 0;
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--lv-fundo) 72%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lv-regua { transition: none; }
+}
+
+/* Vocabulário */
+.lv-vocab {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.lv-vocab-texto {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lv-vocab-texto small {
+  color: var(--cor-texto-suave);
+}
+
+.lv-vocab.aprendida .lv-vocab-texto strong {
+  color: var(--cor-texto-suave);
+  text-decoration: line-through;
+}
+
+.lv-vocab-acoes {
+  display: flex;
+  flex: none;
+}
+
+.lv-vocab-acoes [aria-pressed="true"] {
+  color: var(--cor-sucesso);
+}
+
+/* Enquanto a página segue o dedo, nada de selecionar texto sem querer */
+.lv-texto.lv-arrastando {
+  user-select: none;
 }

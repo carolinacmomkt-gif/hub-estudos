@@ -3,7 +3,7 @@
 
 import { esc } from './utilidades.js';
 import { artigoPeloId } from './dados-biblioteca.js';
-import { formatoDoLivro, FONTES_LEITOR, TEMAS_LEITOR, MARGENS_LEITOR, CORES_TINTA_LIVRO } from './dados-livros.js';
+import { formatoDoLivro, FONTES_LEITOR, TEMAS_LEITOR, MARGENS_LEITOR, CORES_TINTA_LIVRO, PESOS_LEITOR, TEMAS_PRONTOS, temaAtual } from './dados-livros.js';
 import { CORES_DESTAQUE } from './dados-biblioteca.js';
 
 const botao = (acao, rotulo, simbolo, extra = '') => `<button class="lv-botao" type="button" data-leitor="${acao}" aria-label="${esc(rotulo)}" title="${esc(rotulo)}"${extra}>${simbolo}</button>`;
@@ -32,7 +32,11 @@ export function renderLivro(estado) {
           ? '<div class="lv-pdf" id="lv-pdf"></div>'
           : '<div class="lv-janela" id="lv-janela"><div class="lv-texto" id="lv-livro-texto" lang="pt"></div></div>'}
         <p class="lv-carregando" id="lv-carregando" role="status">Abrindo o livro…</p>
+        <div class="lv-regua" id="lv-regua" aria-hidden="true"></div>
         <div class="lv-brilho" id="lv-brilho" aria-hidden="true"></div>
+        <button class="lv-rodape" id="lv-rodape" type="button" data-leitor="rodape" aria-label="Trocar o que o rodapé mostra"></button>
+        <button class="lv-voltar" id="lv-voltar" type="button" data-leitor="voltar" hidden>↩ Voltar para onde estava</button>
+        <output class="lv-previa" id="lv-previa" hidden></output>
       </div>
       ${pdf ? barraCaneta() : ''}
       <footer class="lv-base">
@@ -51,6 +55,7 @@ export function renderLivro(estado) {
       <div class="lv-menu" id="lv-menu" role="toolbar" aria-label="Trecho selecionado" hidden>
         ${CORES_DESTAQUE.map((c) => `<button class="lv-cor destaque-${c.id}" type="button" data-leitor="destacar" data-cor="${c.id}" aria-label="Destacar em ${esc(c.nome.toLowerCase())}"></button>`).join('')}
         <button class="lv-menu-botao" type="button" data-leitor="nota-selecao">Nota</button>
+        <button class="lv-menu-botao" type="button" data-leitor="definir" hidden>Definir</button>
         <button class="lv-menu-botao" type="button" data-leitor="copiar">Copiar</button>
         <button class="lv-menu-botao" type="button" data-leitor="explicar">Explicar</button>
         <button class="lv-menu-botao" type="button" data-leitor="tirar-destaque" hidden>Tirar</button>
@@ -73,9 +78,25 @@ function barraCaneta() {
 }
 
 // Painel de ajustes (EPUB e PDF).
-export function painelAjustes(prefs, pdf, zoom = 1, ajuste = 'pagina') {
+export function painelAjustes(prefs, pdf, zoom = 1, ajuste = 'pagina', meuTema = null) {
   const escolha = (campo, lista, atual) => `<div class="segmentado lv-escolha" role="group">${lista.map((x) => `<button type="button" data-leitor="pref" data-campo="${campo}" data-valor="${x.id}" aria-pressed="${String(atual) === String(x.id)}">${esc(x.nome)}</button>`).join('')}</div>`;
   const temas = [{ id: 'auto', nome: 'Como o app' }, ...TEMAS_LEITOR];
+  const atual = temaAtual(prefs, meuTema);
+  const prontos = `
+    <p class="lv-rotulo">Temas prontos</p>
+    <div class="segmentado lv-escolha" role="group" aria-label="Temas prontos">
+      ${TEMAS_PRONTOS.map((t) => `<button type="button" data-leitor="tema-pronto" data-valor="${t.id}" aria-pressed="${atual === t.id}">${esc(t.nome)}</button>`).join('')}
+      ${meuTema ? `<button type="button" data-leitor="tema-pronto" data-valor="meu" aria-pressed="${atual === 'meu'}">Meu tema</button>` : ''}
+    </div>
+    ${atual && atual !== 'meu' ? '' : `<div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-leitor="tema-guardar">${meuTema ? 'Atualizar o meu tema' : 'Guardar como meu tema'}</button></div>`}`;
+  const extras = `
+    <p class="lv-rotulo">Leitura</p>
+    <label class="campo-marcar"><input type="checkbox" data-leitor-pref="regua"${prefs.regua ? ' checked' : ''}><span>Régua de leitura (segue o dedo ou a S Pen)</span></label>
+    ${prefs.regua ? escolha('reguaEstilo', [{ id: 'faixa', nome: 'Faixa colorida' }, { id: 'foco', nome: 'Escurece o resto' }], prefs.reguaEstilo) : ''}
+    <label class="campo-marcar"><input type="checkbox" data-leitor-pref="telaAcesa"${prefs.telaAcesa ? ' checked' : ''}><span>Tela acesa enquanto lê</span></label>
+    <label class="campo-marcar"><input type="checkbox" data-leitor-pref="animacao" value="deslizar"${prefs.animacao === 'deslizar' ? ' checked' : ''}><span>Página desliza ao virar</span></label>
+    <div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-leitor="tela-cheia">Tela cheia</button></div>
+    <p class="campo-ajuda">Com a tela limpa (toque no meio), o rodapé mostra o tempo do capítulo; toque nele para trocar por tempo do livro, página, porcentagem ou nada.</p>`;
   if (pdf) {
     return `
       <p class="lv-rotulo">Tamanho</p>
@@ -87,18 +108,22 @@ export function painelAjustes(prefs, pdf, zoom = 1, ajuste = 'pagina') {
       <label class="campo-marcar"><input type="checkbox" data-leitor-pref="pdfNoite"${prefs.pdfNoite ? ' checked' : ''}><span>Modo noite (inverte as cores da página)</span></label>
       <p class="lv-rotulo">Fundo do leitor</p>${escolha('tema', temas, prefs.tema)}
       ${controleBrilho(prefs)}
-      <p class="campo-ajuda">No PDF, para destacar um trecho use o marca-texto da caneta (✎).</p>`;
+      ${extras}
+      <p class="campo-ajuda">No PDF, para destacar um trecho use o marca-texto da caneta (✎). Pinça dá zoom.</p>`;
   }
   return `
+    ${prontos}
     <p class="lv-rotulo">Letra</p>${escolha('fonte', FONTES_LEITOR, prefs.fonte)}
     <div class="lv-linha">${botaoPequeno('tamanho', '-1', 'Letra menor', 'A−')}<span class="lv-valor">${prefs.tamanho}</span>${botaoPequeno('tamanho', '1', 'Letra maior', 'A+')}</div>
+    <p class="lv-rotulo">Peso da letra</p>${escolha('peso', PESOS_LEITOR, prefs.peso)}
     <label class="campo"><span class="campo-rotulo">Espaço entre linhas: ${prefs.linhas.toFixed(1)}</span>
       <input type="range" min="1.2" max="2.2" step="0.1" value="${prefs.linhas}" data-leitor-pref="linhas"></label>
     <p class="lv-rotulo">Margens</p>${escolha('margens', MARGENS_LEITOR, prefs.margens)}
     <label class="campo-marcar"><input type="checkbox" data-leitor-pref="justificado"${prefs.justificado ? ' checked' : ''}><span>Texto justificado</span></label>
     <p class="lv-rotulo">Fundo</p>${escolha('tema', temas, prefs.tema)}
     ${controleBrilho(prefs)}
-    <p class="lv-rotulo">Jeito de ler</p>${escolha('modo', [{ id: 'paginas', nome: 'Virar páginas' }, { id: 'rolagem', nome: 'Rolar' }], prefs.modo)}`;
+    <p class="lv-rotulo">Jeito de ler</p>${escolha('modo', [{ id: 'paginas', nome: 'Virar páginas' }, { id: 'rolagem', nome: 'Rolar' }], prefs.modo)}
+    ${extras}`;
 }
 
 const botaoPequeno = (campo, passo, rotulo, texto) => `<button class="botao botao-secundario botao-pequeno" type="button" data-leitor="passo" data-campo="${campo}" data-passo="${passo}" aria-label="${esc(rotulo)}">${esc(texto)}</button>`;

@@ -3,7 +3,7 @@
 
 import { resposta, lerCorpo } from '../lib/http.mjs';
 import { exigirLogin } from '../lib/supabase.mjs';
-import { explicarTrecho, resumirCapitulo } from '../lib/ia-livro.mjs';
+import { explicarTrecho, resumirCapitulo, definirPalavra } from '../lib/ia-livro.mjs';
 import { ErroIa } from '../lib/ia-comum.mjs';
 
 export default async (req) => {
@@ -19,6 +19,10 @@ export default async (req) => {
     if (corpo.acao === 'resumir') {
       if (String(corpo.texto || '').trim().length < 200) return resposta(400, { ok: false, erro: 'Este capítulo é curto demais para resumir.' });
       return resposta(200, { ok: true, ...(await resumirCapitulo(corpo)) });
+    }
+    if (corpo.acao === 'definir') {
+      if (!/^[\p{L}\p{M}'-]{2,30}$/u.test(String(corpo.palavra || '').trim())) return resposta(400, { ok: false, erro: 'Selecione uma palavra só.' });
+      return resposta(200, { ok: true, ...(await definirPalavra(corpo)) });
     }
     return resposta(400, { ok: false, erro: 'Pedido desconhecido.' });
   } catch (falha) {

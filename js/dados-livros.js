@@ -24,7 +24,29 @@ export const MARGENS_LEITOR = [
 ];
 export const PREFS_LEITOR_PADRAO = {
   fonte: 'serifa', tamanho: 19, linhas: 1.6, margens: 'media', justificado: true, tema: 'auto', brilho: 1, modo: 'paginas', pdfNoite: false,
+  peso: 400, regua: false, reguaEstilo: 'faixa', animacao: 'deslizar', rodape: 'capitulo', telaAcesa: true,
 };
+
+export const PESOS_LEITOR = [
+  { id: 400, nome: 'Normal' },
+  { id: 500, nome: 'Médio' },
+  { id: 650, nome: 'Forte' },
+];
+
+// Temas prontos (como o Aa do Kindle): um toque troca letra, tamanho, linhas e margens juntos.
+export const TEMAS_PRONTOS = [
+  { id: 'compacto', nome: 'Compacto', prefs: { tamanho: 16, linhas: 1.35, margens: 'estreita', peso: 400 } },
+  { id: 'padrao', nome: 'Padrão', prefs: { tamanho: 19, linhas: 1.6, margens: 'media', peso: 400 } },
+  { id: 'grande', nome: 'Grande', prefs: { tamanho: 24, linhas: 1.7, margens: 'media', peso: 400 } },
+  { id: 'baixa-visao', nome: 'Baixa visão', prefs: { tamanho: 30, linhas: 1.9, margens: 'larga', peso: 650, fonte: 'leitura', justificado: false } },
+];
+const CAMPOS_DO_TEMA = ['fonte', 'tamanho', 'linhas', 'margens', 'justificado', 'peso'];
+export const temaDasPrefs = (prefs) => Object.fromEntries(CAMPOS_DO_TEMA.map((c) => [c, prefs[c]]));
+export const temaAtual = (prefs, meuTema) => [...TEMAS_PRONTOS, ...(meuTema ? [{ id: 'meu', prefs: meuTema }] : [])]
+  .find((t) => Object.entries(t.prefs).every(([c, v]) => prefs[c] === v) && (t.id !== 'baixa-visao' || prefs.fonte === 'leitura'))?.id || null;
+
+// O que aparece no rodapé discreto, com a tela limpa (tocar troca, como no Kindle).
+export const RODAPES = ['capitulo', 'livro', 'pagina', 'pct', 'nada'];
 
 const entre = (v, min, max, padrao) => (Number.isFinite(Number(v)) ? Math.max(min, Math.min(max, Number(v))) : padrao);
 
@@ -40,6 +62,12 @@ export function prefsLeitor(v = {}) {
     brilho: Math.round(entre(v.brilho, 0.4, 1, p.brilho) * 100) / 100,
     modo: v.modo === 'rolagem' ? 'rolagem' : 'paginas',
     pdfNoite: v.pdfNoite === true,
+    peso: PESOS_LEITOR.some((x) => x.id === Number(v.peso)) ? Number(v.peso) : p.peso,
+    regua: v.regua === true,
+    reguaEstilo: v.reguaEstilo === 'foco' ? 'foco' : 'faixa',
+    animacao: v.animacao === 'nenhuma' ? 'nenhuma' : 'deslizar',
+    rodape: RODAPES.includes(v.rodape) ? v.rodape : p.rodape,
+    telaAcesa: v.telaAcesa !== false,
   };
 }
 
@@ -84,9 +112,20 @@ export const porcentagemPdf = (pagina, total) => (total > 1 ? Math.max(0, Math.m
 
 export const textoPct = (pct) => `${Math.round((Number(pct) || 0) * 100)}%`;
 
+// Ritmo de leitura em caracteres por minuto. Começa na média e aprende o da Carol (como o Kindle).
+export const RITMO_PADRAO = Math.round(CARACTERES_POR_PALAVRA * PALAVRAS_POR_MINUTO);
+export const ritmoOk = (cpm) => (Number(cpm) >= 300 && Number(cpm) <= 6000 ? Number(cpm) : RITMO_PADRAO);
+
+// Junta uma página lida ao ritmo (média que anda devagar; páginas lidas rápido demais ou paradas não contam).
+export function novoRitmo(atual, caracteres, ms) {
+  if (!(caracteres > 150) || ms < 4000 || ms > 5 * 60 * 1000) return ritmoOk(atual);
+  const desta = Math.max(300, Math.min(6000, (caracteres / ms) * 60000));
+  return Math.round(ritmoOk(atual) * 0.85 + desta * 0.15);
+}
+
 // Minutos para ler um tanto de caracteres (texto) ou de bytes de XHTML (os capítulos não abertos).
-export const minutosDoTexto = (caracteres) => Math.max(0, Math.round(caracteres / CARACTERES_POR_PALAVRA / PALAVRAS_POR_MINUTO));
-export const minutosDoXhtml = (bytes) => minutosDoTexto(bytes * 0.55); // tira as marcações
+export const minutosDoTexto = (caracteres, cpm = RITMO_PADRAO) => Math.max(0, Math.round(caracteres / ritmoOk(cpm)));
+export const minutosDoXhtml = (bytes, cpm) => minutosDoTexto(bytes * 0.55, cpm); // tira as marcações
 
 export function textoTempo(min) {
   if (min < 1) return 'menos de 1 min';
@@ -97,11 +136,11 @@ export function textoTempo(min) {
 }
 
 // Quanto falta no capítulo e no livro (EPUB), a partir do texto do capítulo aberto.
-export function tempoRestanteEpub(capitulos, posicao, caracteresDoCapitulo) {
+export function tempoRestanteEpub(capitulos, posicao, caracteresDoCapitulo, cpm) {
   const i = Number(posicao?.capitulo) || 0;
   const fracao = entre(posicao?.fracao, 0, 1, 0);
-  const capitulo = minutosDoTexto(caracteresDoCapitulo * (1 - fracao));
-  const depois = capitulos.slice(i + 1).reduce((s, c) => s + minutosDoXhtml(c.peso), 0);
+  const capitulo = minutosDoTexto(caracteresDoCapitulo * (1 - fracao), cpm);
+  const depois = capitulos.slice(i + 1).reduce((s, c) => s + minutosDoXhtml(c.peso, cpm), 0);
   return { capitulo, livro: capitulo + depois };
 }
 
@@ -173,3 +212,23 @@ export const CORES_TINTA_LIVRO = [
   { id: 'livro-vermelho', nome: 'Vermelho', variavel: '--tinta-livro-vermelho' },
   { id: 'livro-verde', nome: 'Verde', variavel: '--tinta-livro-verde' },
 ];
+
+// Vocabulário (como o do Kindle): as palavras que ela procurou, com a frase em que apareceram.
+export function guardarPalavra(lista, { palavra, frase, definicao = '', livro = '' }) {
+  const chave = semAcento(palavra).trim();
+  if (!chave) return lista || [];
+  const resto = (lista || []).filter((x) => semAcento(x.palavra).trim() !== chave);
+  return [{ palavra: String(palavra).trim().slice(0, 60), frase: String(frase || '').replace(/\s+/g, ' ').trim().slice(0, 300), definicao: String(definicao || '').slice(0, 600), livro, quando: new Date().toISOString(), aprendida: false }, ...resto].slice(0, 300);
+}
+
+// Uma palavra só (para o "Definir"): sem espaço, até 30 letras.
+export const ehPalavra = (t) => /^[\p{L}\p{M}'-]{2,30}$/u.test(String(t || '').trim());
+
+// A frase em volta de uma posição do texto.
+export function fraseEmVolta(texto, posicao) {
+  const t = String(texto || '');
+  const ini = Math.max(t.lastIndexOf('.', posicao - 1), t.lastIndexOf('!', posicao - 1), t.lastIndexOf('?', posicao - 1)) + 1;
+  const fins = ['.', '!', '?'].map((c) => t.indexOf(c, posicao)).filter((x) => x >= 0);
+  const fim = fins.length ? Math.min(...fins) + 1 : t.length;
+  return t.slice(ini, Math.min(fim, ini + 300)).replace(/\s+/g, ' ').trim();
+}

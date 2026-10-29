@@ -18,8 +18,10 @@ import { notarLivro } from './continuar.js';
 import {
   prefsLeitor, formatoDoLivro, FONTES_LEITOR, MARGENS_LEITOR, porcentagemEpub, posicaoDaPorcentagem, porcentagemPdf,
   textoPct, tempoRestanteEpub, textoTempo, marcadorAqui, alternarMarcador, posicaoDaChave,
-  novoDestaque, destaquesDoCapitulo, buscarNoTexto,
+  novoDestaque, destaquesDoCapitulo, buscarNoTexto, TEMAS_PRONTOS, temaDasPrefs, RODAPES, ritmoOk, novoRitmo,
+  guardarPalavra, ehPalavra, fraseEmVolta,
 } from './dados-livros.js';
+import { entrarEmTelaCheia, sairDaTelaCheia, telaAcesa } from './foco-palco.js';
 
 const CHAVE_PREFS = 'hub.leitor.prefs';
 const MIN_POR_PAGINA_PDF = 1.6;
@@ -56,9 +58,13 @@ export async function montarLeitor(id) {
   const artigo = await obter('artigos', id);
   if (!artigo || artigo.excluido_em || !artigo.pdf_path) return;
   document.body.classList.add('modo-editor', 'modo-leitor');
+  const config = (await listar('config')).find((c) => c.chave === 'leitor' && !c.excluido_em)?.valor || {};
   L = {
     montagem, artigo, formato: formatoDoLivro(artigo), prefs: lerPrefs(), marcadores: artigo.dados?.marcadores || [],
     ouvintes: [], salvarPosicao: null, zoom: 1,
+    ritmo: ritmoOk(config.ritmo), vocabulario: Array.isArray(config.vocabulario) ? config.vocabulario : [], meuTema: config.meuTema || null,
+    historico: [], // de onde saiu num pulo (sumário, busca, marcador, barra): "Voltar para onde estava"
+    paginaDesde: Date.now(), capitulosProntos: new Map(),
   };
   aplicarPrefs();
   ouvir(document, 'click', aoClicar);
@@ -68,8 +74,9 @@ export async function montarLeitor(id) {
   ouvir(document, 'selectionchange', aoSelecionar);
   ouvir(window, 'resize', () => { clearTimeout(L.tempoResize); L.tempoResize = setTimeout(() => { aplicarPrefs(); relayout(); }, 150); });
   ouvir(window, 'pagehide', gravarPosicaoAgora);
-  ouvir(document, 'visibilitychange', () => { if (document.hidden) gravarPosicaoAgora(); });
+  ouvir(document, 'visibilitychange', () => { if (document.hidden) gravarPosicaoAgora(); else telaAcesa(L.prefs.telaAcesa); });
   ligarGestos();
+  telaAcesa(L.prefs.telaAcesa);
   try {
     const blob = await arquivoGuardado(artigo.pdf_path);
     if (L?.montagem !== montagem) return;
@@ -94,6 +101,9 @@ export function desmontarLeitor() {
   L.pdf?.destroy?.();
   L.editor?.destruir();
   clearTimeout(L.tempoResize);
+  clearTimeout(L.tempoRegua);
+  telaAcesa(false);
+  sairDaTelaCheia();
   document.body.classList.remove('modo-editor', 'modo-leitor');
   L = null;
 }
@@ -131,7 +141,12 @@ function aplicarPrefs() {
   leitor.style.setProperty('--leitor-linhas', String(p.linhas));
   leitor.style.setProperty('--leitor-margem', `${MARGENS_LEITOR.find((m) => m.id === p.margens).px}px`);
   leitor.style.setProperty('--leitor-alinhamento', p.justificado ? 'justify' : 'left');
+  leitor.style.setProperty('--leitor-peso', String(p.peso));
+  leitor.classList.toggle('lv-sem-animacao', p.animacao === 'nenhuma');
+  leitor.classList.toggle('lv-com-regua', p.regua);
+  leitor.classList.toggle('lv-regua-foco', p.regua && p.reguaEstilo === 'foco');
   el('lv-brilho').style.opacity = String(Math.round((1 - p.brilho) * 100) / 100);
+  telaAcesa(p.telaAcesa);
   const topo = leitor.querySelector('.lv-topo');
   if (topo) leitor.style.setProperty('--lv-topo', `${topo.offsetHeight}px`);
 }
@@ -144,12 +159,24 @@ async function abrirLivroEpub(blob, montagem) {
   L.epub = await abrirEpub(blob);
   if (L?.montagem !== montagem) return;
   const pos = L.artigo.dados?.posicao;
-  await abrirCapitulo(Math.min(L.epub.capitulos.length - 1, Number(pos?.capitulo) || 0), { fracao: Number(pos?.fracao) || 0 });
+  await abrirCapitulo(Math.min(L.epub.capitulos.length - 1, Number(pos?.capitulo) || 0), { fracao: Number(pos?.fracao) || 0, exata: pos });
 }
 
-async function abrirCapitulo(i, { fracao = 0, fim = false, ancora = '', offset = null } = {}) {
-  const c = await L.epub.capitulo(i);
+// O capítulo seguinte já fica pronto na memória: virar para ele não espera nada.
+function capituloPronto(i) {
+  if (i < 0 || i >= L.epub.capitulos.length) return Promise.resolve(null);
+  if (!L.capitulosProntos.has(i)) {
+    L.capitulosProntos.set(i, L.epub.capitulo(i));
+    if (L.capitulosProntos.size > 4) L.capitulosProntos.delete(L.capitulosProntos.keys().next().value);
+  }
+  return L.capitulosProntos.get(i);
+}
+
+async function abrirCapitulo(i, { fracao = 0, fim = false, ancora = '', offset = null, exata = null } = {}) {
+  const c = await capituloPronto(i);
   if (!c || !L) return;
+  L.capitulosProntos.delete(i); // os nós vão para a tela; da próxima vez lê de novo
+  capituloPronto(i + 1).catch(() => {});
   L.capitulo = i;
   L.textoCapitulo = c.texto;
   const texto = el('lv-livro-texto');
@@ -161,6 +188,7 @@ async function abrirCapitulo(i, { fracao = 0, fim = false, ancora = '', offset =
   if (offset !== null) irParaOffset(offset);
   else if (ancora && texto.querySelector(`#l-${CSS.escape(ancora.replace(/[^\w-]/g, '_'))}`)) irParaElemento(texto.querySelector(`#l-${CSS.escape(ancora.replace(/[^\w-]/g, '_'))}`));
   else if (fim) irParaPaginaEpub(L.paginas - 1);
+  else if (exata && L.prefs.modo !== 'rolagem' && exata.paginas === L.paginas && exata.largura === L.largura && Number.isInteger(exata.pagina)) irParaPaginaEpub(exata.pagina);
   else irParaFracao(fracao);
 }
 
@@ -188,7 +216,7 @@ function layoutEpub() {
   // então o vão entre colunas é o dobro da margem e virar é deslocar uma largura inteira.
   const colunas = largura >= 1000 ? 2 : 1;
   const preferida = MARGENS_LEITOR.find((m) => m.id === L.prefs.margens).px;
-  const maxColuna = L.prefs.tamanho * 36;
+  const maxColuna = L.prefs.tamanho * 33; // ~65 letras por linha, o conforto de um livro
   const coluna = Math.min(maxColuna, (largura - preferida * 2 * colunas) / colunas);
   const margem = (largura - coluna * colunas) / (2 * colunas);
   const vao = margem * 2;
@@ -235,7 +263,9 @@ function irParaFracao(fracao) {
 
 function irParaPaginaEpub(n) {
   L.pagina = Math.max(0, Math.min(L.paginas - 1, n));
-  el('lv-livro-texto').style.transform = `translateX(${-L.pagina * L.largura}px)`;
+  const texto = el('lv-livro-texto');
+  texto.classList.remove('lv-arrastando');
+  texto.style.transform = `translateX(${-L.pagina * L.largura}px)`;
   depoisDeAndar();
 }
 
@@ -386,6 +416,8 @@ function mostrarMenu(rect, { selecao = null, destaque = null } = {}) {
   L.menuDestaque = destaque;
   menu.querySelector('[data-leitor="tirar-destaque"]').hidden = !destaque;
   menu.querySelector('[data-leitor="copiar"]').hidden = Boolean(destaque);
+  const trecho = selecao?.trecho || (destaque && (L.artigo.destaques || []).find((d) => d.id === destaque)?.texto) || '';
+  menu.querySelector('[data-leitor="definir"]').hidden = !ehPalavra(trecho);
   menu.hidden = false;
   const palco = el('lv').getBoundingClientRect();
   const largura = menu.offsetWidth;
@@ -529,8 +561,13 @@ function alternarCaneta() {
 // Andar, progresso e onde parou
 // ---------------------------------------------------------------------------
 
+// EPUB: capítulo + fração (vale em qualquer aparelho) e, de brinde, a página exata desta
+// paginação (se a tela e os ajustes forem os mesmos, volta no pixel).
 function posicaoAtual() {
-  return L.formato === 'pdf' ? { pagina: L.pagina } : { capitulo: L.capitulo, fracao: Math.round(fracaoAtual() * 1000) / 1000 };
+  if (L.formato === 'pdf') return { pagina: L.pagina };
+  const pos = { capitulo: L.capitulo, fracao: Math.round(fracaoAtual() * 1000) / 1000 };
+  if (L.prefs.modo !== 'rolagem') Object.assign(pos, { pagina: L.pagina || 0, paginas: L.paginas, largura: L.largura });
+  return pos;
 }
 
 function pctAtual() {
@@ -543,9 +580,29 @@ function tituloDoCapitulo() {
   return item?.titulo || `Parte ${L.capitulo + 1}`;
 }
 
+// Aprende o ritmo dela: quanto tempo ficou na página que acabou de sair.
+function contarPaginaLida() {
+  if (L.formato !== 'epub' || L.prefs.modo === 'rolagem') return;
+  const agora = Date.now();
+  const caracteres = L.textoCapitulo.length / Math.max(1, L.paginas);
+  const ritmo = novoRitmo(L.ritmo, caracteres, agora - (L.paginaDesde || agora));
+  L.paginaDesde = agora;
+  if (ritmo !== L.ritmo) {
+    L.ritmo = ritmo;
+    clearTimeout(L.tempoRitmo);
+    L.tempoRitmo = setTimeout(() => guardarConfigLeitor({ ritmo }), 5000);
+  }
+}
+
+async function guardarConfigLeitor(campos) {
+  const atual = (await listar('config', { incluirExcluidos: true })).find((c) => c.chave === 'leitor');
+  await salvar('config', { ...(atual || {}), excluido_em: null, chave: 'leitor', valor: { ...(atual?.excluido_em ? {} : atual?.valor || {}), ...campos } });
+}
+
 function depoisDeAndar() {
   if (!L) return;
   esconderMenu();
+  contarPaginaLida();
   const pct = pctAtual();
   const barra = el('lv-barra');
   if (barra && document.activeElement !== barra) barra.value = String(Math.round(pct * 1000));
@@ -558,7 +615,7 @@ function depoisDeAndar() {
       ? `Página ${L.pagina} de ${L.total} · ${textoTempo(capitulo ?? livro)} ${capitulo !== null ? 'no capítulo' : 'no livro'}`
       : `Página ${L.pagina} de ${L.total} · ${capitulo !== null ? `${textoTempo(capitulo)} para acabar o capítulo · ` : ''}${textoTempo(livro)} para acabar o livro`;
   } else {
-    const t = tempoRestanteEpub(L.epub.capitulos, posicaoAtual(), L.textoCapitulo.length);
+    const t = tempoRestanteEpub(L.epub.capitulos, posicaoAtual(), L.textoCapitulo.length, L.ritmo);
     tempo = innerWidth < 520
       ? `${textoTempo(t.capitulo)} no capítulo · ${textoPct(pct)}`
       : `${textoTempo(t.capitulo)} para acabar o capítulo · ${textoTempo(t.livro)} para acabar o livro · ${textoPct(pct)}`;
@@ -567,10 +624,14 @@ function depoisDeAndar() {
   if (t) t.textContent = tempo;
   const onde = el('lv-onde');
   if (onde) onde.textContent = tituloDoCapitulo();
+  const rodape = el('lv-rodape');
+  if (rodape) rodape.textContent = textoDoRodape(pct);
+  const voltar = el('lv-voltar');
+  if (voltar) voltar.hidden = !L.historico.length;
   const marcado = Boolean(marcadorAqui(L.marcadores, L.formato, posicaoAtual(), 1 / Math.max(2, L.paginas || 2)));
   document.querySelector('[data-leitor="marcador"]')?.setAttribute('aria-pressed', String(marcado));
   clearTimeout(L.salvarPosicao);
-  L.salvarPosicao = setTimeout(gravarPosicaoAgora, 1500);
+  L.salvarPosicao = setTimeout(gravarPosicaoAgora, 600);
 }
 
 function gravarPosicaoAgora() {
@@ -582,6 +643,55 @@ function gravarPosicaoAgora() {
   if (antes && JSON.stringify(antes) === JSON.stringify(posicao)) return;
   mudarArtigo({ dados: { posicao, pct, ultima_leitura: new Date().toISOString(), ...(L.formato === 'pdf' ? { zoom: L.zoom, ajuste: L.ajuste } : {}) } }).catch(() => {});
   notarLivro(L.artigo, `${textoPct(pct)} lido`);
+}
+
+// O rodapé discreto da tela limpa (como o Kindle: tocar nele troca o que mostra).
+function textoDoRodape(pct) {
+  const r = L.prefs.rodape;
+  if (r === 'nada') return '';
+  if (r === 'pct') return textoPct(pct);
+  if (L.formato === 'pdf') {
+    if (r === 'pagina') return `${L.pagina} de ${L.total}`;
+    const fimCap = L.sumarioPdf?.find((s) => s.pagina > L.pagina)?.pagina;
+    const min = r === 'capitulo' && fimCap ? (fimCap - L.pagina) * MIN_POR_PAGINA_PDF : (L.total - L.pagina) * MIN_POR_PAGINA_PDF;
+    return `${textoTempo(Math.round(min))} ${r === 'capitulo' && fimCap ? 'no capítulo' : 'no livro'}`;
+  }
+  if (r === 'pagina') return `${(L.pagina || 0) + 1} de ${L.paginas}`;
+  const t = tempoRestanteEpub(L.epub.capitulos, posicaoAtual(), L.textoCapitulo.length, L.ritmo);
+  return r === 'capitulo' ? `${textoTempo(t.capitulo)} no capítulo` : `${textoTempo(t.livro)} no livro`;
+}
+
+// Antes de um pulo (sumário, busca, marcador, barra), guarda de onde saiu.
+function lembrarDeOndeSaiu() {
+  const pos = posicaoAtual();
+  const ultimo = L.historico[L.historico.length - 1];
+  if (ultimo && JSON.stringify(ultimo) === JSON.stringify(pos)) return;
+  L.historico.push(pos);
+  if (L.historico.length > 10) L.historico.shift();
+}
+
+async function irParaPosicao(p) {
+  if (!p) return;
+  if (L.formato === 'pdf') await irParaPaginaPdf(p.pagina);
+  else if (p.capitulo === L.capitulo) irParaFracao(p.fracao);
+  else await abrirCapitulo(p.capitulo, { fracao: p.fracao });
+}
+
+function voltarParaOndeEstava() {
+  const p = L.historico.pop();
+  if (!p) return;
+  irParaPosicao(p).then(() => { aviso('De volta para onde você estava.'); depoisDeAndar(); });
+}
+
+// Régua de leitura: a faixa segue o toque ou a S Pen pelo texto.
+function moverRegua(y) {
+  const regua = el('lv-regua');
+  const janela = el('lv-janela') || el('lv-pdf');
+  if (!regua || !janela) return;
+  const r = janela.getBoundingClientRect();
+  const altura = L.prefs.tamanho * L.prefs.linhas * 1.6;
+  regua.style.top = `${Math.max(0, Math.min(r.height - altura, y - r.top - altura / 2))}px`;
+  regua.style.height = `${altura}px`;
 }
 
 // ---------------------------------------------------------------------------
@@ -686,7 +796,7 @@ const nomeDoCapitulo = (i) => L.epub.sumario.filter((s) => s.capitulo <= i).pop(
 
 function painelAjustesAbrir() {
   L.painel = 'ajustes';
-  abrirPainel('Ajustes de leitura', painelAjustes(L.prefs, L.formato === 'pdf', L.zoom, L.ajuste));
+  abrirPainel('Ajustes de leitura', painelAjustes(L.prefs, L.formato === 'pdf', L.zoom, L.ajuste, L.meuTema));
 }
 
 function painelMais() {
@@ -703,7 +813,8 @@ function painelMais() {
     <h3 class="lv-subtitulo">Destaques</h3>
     ${destaques.length ? `<ol class="lv-lista">${destaques.map((d) => `<li><button type="button" class="lv-item" data-leitor="ir" data-capitulo="${d.capitulo}" data-offset="${d.inicio}"><span class="lv-trecho destaque-${esc(d.cor || 'amarelo')}">${esc(d.texto)}</span>${d.nota ? `<small>Nota: ${esc(d.nota)}</small>` : ''}<small>${esc(d.onde || '')}</small></button></li>`).join('')}</ol>
       <p class="campo-ajuda">Os destaques também ficam na Biblioteca, em "Destaques e notas", e dá para levar para o fichamento.</p>` : '<p class="texto-suave">Selecione um trecho e escolha uma cor.</p>'}`}
-    <div class="acoes lv-so-celular"><button class="botao botao-secundario botao-pequeno" type="button" data-leitor="painel-busca">Buscar no livro</button></div>
+    <div class="acoes"><button class="botao botao-secundario botao-pequeno lv-so-celular" type="button" data-leitor="painel-busca">Buscar no livro</button>
+      <button class="botao botao-secundario botao-pequeno" type="button" data-leitor="vocabulario">Vocabulário${L.vocabulario.length ? ` (${L.vocabulario.length})` : ''}</button></div>
     <h3 class="lv-subtitulo">IA</h3>
     <div class="acoes">
       ${L.formato === 'epub' ? '<button class="botao botao-secundario botao-pequeno" type="button" data-leitor="resumir">Resumo deste capítulo</button>' : ''}
@@ -770,6 +881,54 @@ async function textoParaQuestoes() {
   return partes.join('\n\n');
 }
 
+function previaDaBarra(pct) {
+  if (L.formato === 'pdf') {
+    const pagina = Math.max(1, Math.round(pct * (L.total - 1)) + 1);
+    const cap = L.sumarioPdf?.filter((s) => s.pagina <= pagina).pop()?.titulo;
+    return `${cap ? `${cap} · ` : ''}página ${pagina}`;
+  }
+  const p = posicaoDaPorcentagem(L.epub.capitulos, pct);
+  return `${nomeDoCapitulo(p.capitulo)} · ${textoPct(pct)}`;
+}
+
+// "Definir": a IA explica a palavra em uma linha e ela entra no Vocabulário (com a frase).
+async function definir() {
+  const s = L.selecao || selecaoNoTexto();
+  const destaque = L.menuDestaque && (L.artigo.destaques || []).find((d) => d.id === L.menuDestaque);
+  const palavra = (s?.trecho || destaque?.texto || '').trim();
+  if (!ehPalavra(palavra)) return;
+  const posicao = s?.inicio ?? destaque?.inicio ?? 0;
+  const frase = fraseEmVolta(textoDoDom(), posicao);
+  esconderMenu();
+  L.painel = 'ia';
+  abrirPainel(palavra, '<p class="texto-suave" role="status">Procurando o significado…</p>');
+  const r = await chamar('livro-ia', { acao: 'definir', palavra, frase, livro: L.artigo.titulo });
+  if (L?.painel !== 'ia') return;
+  const definicao = r.ok ? r.definicao : '';
+  el('lv-painel-corpo').innerHTML = r.ok
+    ? `<p><strong>${esc(palavra)}</strong>${r.classe ? ` <small class="texto-suave">${esc(r.classe)}</small>` : ''}</p><p>${esc(r.definicao)}</p>${r.exemplo ? `<p class="campo-ajuda">${esc(r.exemplo)}</p>` : ''}
+       <p class="campo-ajuda">Guardada no seu Vocabulário (⋯), com a frase do livro.</p>`
+    : `<p class="ava-alerta" role="alert">${esc(r.erro || 'Não consegui agora.')}</p>`;
+  L.vocabulario = guardarPalavra(L.vocabulario, { palavra, frase, definicao, livro: L.artigo.titulo });
+  guardarConfigLeitor({ vocabulario: L.vocabulario });
+}
+
+function painelVocabulario() {
+  L.painel = 'vocabulario';
+  const lista = L.vocabulario;
+  abrirPainel('Vocabulário', lista.length
+    ? `<p class="campo-ajuda">As palavras que você procurou, com a frase em que apareceram. Marque as que já aprendeu.</p>
+       <ul class="lv-lista">${lista.map((v) => `
+         <li class="lv-vocab${v.aprendida ? ' aprendida' : ''}">
+           <div class="lv-vocab-texto"><strong>${esc(v.palavra)}</strong>${v.definicao ? `<span>${esc(v.definicao)}</span>` : ''}<small>"${esc(v.frase)}"${v.livro ? ` · ${esc(v.livro)}` : ''}</small></div>
+           <div class="lv-vocab-acoes">
+             <button class="lv-botao" type="button" data-leitor="vocab-aprendida" data-palavra="${esc(v.palavra)}" aria-pressed="${v.aprendida}" aria-label="${v.aprendida ? 'Marcar como ainda aprendendo' : 'Marcar como aprendida'}" title="${v.aprendida ? 'Ainda aprendendo' : 'Aprendi'}">✓</button>
+             <button class="lv-botao" type="button" data-leitor="vocab-tirar" data-palavra="${esc(v.palavra)}" aria-label="Tirar ${esc(v.palavra)}" title="Tirar">×</button>
+           </div>
+         </li>`).join('')}</ul>`
+    : '<p class="texto-suave">Selecione uma palavra no livro e toque em <strong>Definir</strong>: ela fica guardada aqui com a frase.</p>');
+}
+
 // ---------------------------------------------------------------------------
 // Toques, gestos e teclado
 // ---------------------------------------------------------------------------
@@ -778,20 +937,67 @@ function ligarGestos() {
   const palco = el('lv-palco');
   if (!palco) return;
   let inicio = null;
+  // A página segue o dedo enquanto arrasta (EPUB em páginas): o livro parece de papel.
+  const arrastavel = () => L.formato === 'epub' && L.prefs.modo !== 'rolagem' && el('lv-painel').hidden;
+  const texto = () => el('lv-livro-texto');
   ouvir(palco, 'pointerdown', (e) => {
     if (e.target.closest('a, button, mark, input')) { inicio = null; return; }
     if (el('lv').classList.contains('com-caneta') && (e.pointerType === 'pen' || L.editor?.dedoDesenha)) { inicio = null; return; }
-    inicio = { x: e.clientX, y: e.clientY, t: Date.now(), tipo: e.pointerType };
+    inicio = { x: e.clientX, y: e.clientY, ux: e.clientX, uy: e.clientY, t: Date.now(), tipo: e.pointerType, arrastando: false, id: e.pointerId };
+    if (L.prefs.regua) moverRegua(e.clientY);
   });
-  ouvir(palco, 'pointercancel', () => { inicio = null; });
-  ouvir(palco, 'pointerup', (e) => {
+  ouvir(palco, 'pointermove', (e) => {
+    if (L?.prefs.regua && (e.pointerType === 'pen' || e.buttons)) moverRegua(e.clientY);
     if (!inicio || !L) return;
+    // O último ponto por onde o dedo passou e a velocidade (um impulso rápido vira a página).
+    const agora = Date.now();
+    inicio.v = (e.clientX - inicio.ux) / Math.max(1, agora - (inicio.ut || inicio.t));
+    inicio.ux = e.clientX;
+    inicio.uy = e.clientY;
+    inicio.ut = agora;
+    if (!arrastavel()) return;
     const dx = e.clientX - inicio.x;
     const dy = e.clientY - inicio.y;
-    const rapido = Date.now() - inicio.t < 600;
+    if (!inicio.arrastando) {
+      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+      if (!document.getSelection()?.isCollapsed) return;
+      inicio.arrastando = true;
+      texto().classList.add('lv-arrastando');
+      try { palco.setPointerCapture(e.pointerId); } catch { /* sem captura */ }
+    }
+    // Nas pontas (primeira/última página do livro) o arraste resiste.
+    const noLimite = (dx > 0 && L.pagina === 0 && L.capitulo === 0) || (dx < 0 && L.pagina >= L.paginas - 1 && L.capitulo >= L.epub.capitulos.length - 1);
+    texto().style.transform = `translateX(${-L.pagina * L.largura + (noLimite ? dx / 3 : dx)}px)`;
+  });
+  ouvir(palco, 'pointercancel', () => {
+    if (inicio?.arrastando) irParaPaginaEpub(L.pagina);
+    inicio = null;
+  });
+  ouvir(palco, 'pointerup', (e) => {
+    if (!inicio || !L) return;
+    // Um soltar sem coordenadas (toque) usa o último ponto do arrasto.
+    const fimX = e.pointerType === 'touch' && e.clientX === 0 && e.clientY === 0 ? inicio.ux : e.clientX;
+    const fimY = e.pointerType === 'touch' && e.clientX === 0 && e.clientY === 0 ? inicio.uy : e.clientY;
+    const dx = fimX - inicio.x;
+    const dy = fimY - inicio.y;
+    const dt = Date.now() - inicio.t;
+    const rapido = dt < 600;
     const s = inicio;
     inicio = null;
-    if (!document.getSelection()?.isCollapsed) return; // selecionando texto
+    if (s.arrastando) {
+      try { palco.releasePointerCapture(s.id); } catch { /* ok */ }
+      // Solta: passou de um terço da tela, ou um impulso rápido no mesmo sentido, vira; senão volta.
+      const impulso = Math.abs(s.v || 0) > 0.6 && Math.sign(s.v) === Math.sign(dx) && Date.now() - (s.ut || 0) < 120;
+      const vira = Math.abs(dx) > L.largura / 3 || (impulso && Math.abs(dx) > 30);
+      if (vira) { if (dx < 0) proxima(); else anterior(); } else irParaPaginaEpub(L.pagina);
+      return;
+    }
+    const parado = Math.abs(dx) <= 10 && Math.abs(dy) <= 10;
+    // Toque parado com um trecho ainda selecionado de antes: só limpa a seleção (como no Kindle).
+    if (!document.getSelection()?.isCollapsed) {
+      if (parado && rapido && el('lv-menu').hidden) document.getSelection().removeAllRanges();
+      return;
+    }
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4 && rapido && L.prefs.modo !== 'rolagem') {
       if (dx < 0) proxima(); else anterior();
       return;
@@ -800,7 +1006,7 @@ function ligarGestos() {
     if (!el('lv-menu').hidden) { esconderMenu(); return; }
     if (!el('lv-painel').hidden && innerWidth < 1000) { fecharPainel(); return; }
     const r = palco.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width;
+    const x = (fimX - r.left) / r.width;
     if (x < 0.25) anterior();
     else if (x > 0.75) proxima();
     else el('lv').classList.toggle('lv-calmo');
@@ -820,6 +1026,30 @@ function ligarGestos() {
       } else if (i >= 0) abrirCapitulo(i, { ancora: frag });
     }
   });
+  // PDF: pinça dá zoom (a página ganha pointer-events só com a caneta; aqui o palco escuta).
+  if (L.formato === 'pdf') {
+    const dedos = new Map();
+    let distancia0 = 0;
+    let zoom0 = 1;
+    ouvir(palco, 'pointerdown', (e) => { if (e.pointerType === 'touch') dedos.set(e.pointerId, [e.clientX, e.clientY]); });
+    ouvir(palco, 'pointermove', (e) => {
+      if (e.pointerType !== 'touch' || !dedos.has(e.pointerId)) return;
+      dedos.set(e.pointerId, [e.clientX, e.clientY]);
+      if (dedos.size !== 2) return;
+      const [a, b] = [...dedos.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (!distancia0) { distancia0 = d; zoom0 = L.zoom; return; }
+      inicio = null; // dois dedos: não é virar página
+      const novo = Math.max(0.75, Math.min(2.5, zoom0 * (d / distancia0)));
+      if (Math.abs(novo - L.zoom) > 0.03) { L.zoom = Math.round(novo * 20) / 20; mostrarPaginaPdf(L.pagina); }
+    });
+    const soltar = (e) => {
+      dedos.delete(e.pointerId);
+      if (dedos.size < 2) { if (distancia0) mudarArtigo({ dados: { zoom: L.zoom, ajuste: L.ajuste } }); distancia0 = 0; }
+    };
+    ouvir(palco, 'pointerup', soltar);
+    ouvir(palco, 'pointercancel', soltar);
+  }
   const janela = el('lv-janela');
   if (janela) ouvir(janela, 'scroll', () => { if (L?.prefs.modo === 'rolagem') { clearTimeout(L.tempoRolar); L.tempoRolar = setTimeout(depoisDeAndar, 200); } }, { passive: true });
 }
@@ -829,6 +1059,7 @@ function aoTeclar(e) {
   if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); proxima(); }
   else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); anterior(); }
   else if (e.key === 'Escape') { if (!el('lv-menu').hidden) esconderMenu(); else if (!el('lv-painel').hidden) fecharPainel(); }
+  else if (e.key === 'Backspace') { e.preventDefault(); voltarParaOndeEstava(); }
 }
 
 // ---------------------------------------------------------------------------
@@ -857,9 +1088,46 @@ function aoClicar(e) {
       depoisDeAndar();
       break;
     }
+    case 'voltar': voltarParaOndeEstava(); break;
+    case 'rodape': {
+      const i = RODAPES.indexOf(L.prefs.rodape);
+      L.prefs = prefsLeitor({ ...L.prefs, rodape: RODAPES[(i + 1) % RODAPES.length] });
+      guardarPrefs();
+      depoisDeAndar();
+      break;
+    }
+    case 'tema-pronto': {
+      const t = alvo.dataset.valor === 'meu' ? { prefs: L.meuTema } : TEMAS_PRONTOS.find((x) => x.id === alvo.dataset.valor);
+      if (!t?.prefs) break;
+      L.prefs = prefsLeitor({ ...L.prefs, ...t.prefs });
+      guardarPrefs();
+      relayout();
+      painelAjustesAbrir();
+      break;
+    }
+    case 'tema-guardar':
+      L.meuTema = temaDasPrefs(L.prefs);
+      guardarConfigLeitor({ meuTema: L.meuTema }).then(() => { aviso('Seu tema ficou guardado.'); painelAjustesAbrir(); });
+      break;
+    case 'tela-cheia':
+      if (document.fullscreenElement) sairDaTelaCheia(); else entrarEmTelaCheia();
+      break;
+    case 'definir': definir(); break;
+    case 'vocabulario': painelVocabulario(); break;
+    case 'vocab-aprendida': {
+      const palavra = alvo.dataset.palavra;
+      L.vocabulario = L.vocabulario.map((v) => (v.palavra === palavra ? { ...v, aprendida: !v.aprendida } : v));
+      guardarConfigLeitor({ vocabulario: L.vocabulario }).then(painelVocabulario);
+      break;
+    }
+    case 'vocab-tirar':
+      L.vocabulario = L.vocabulario.filter((v) => v.palavra !== alvo.dataset.palavra);
+      guardarConfigLeitor({ vocabulario: L.vocabulario }).then(painelVocabulario);
+      break;
     case 'ir-marcador': {
       const p = posicaoDaChave(alvo.dataset.chave);
       if (!p) break;
+      lembrarDeOndeSaiu();
       if (L.formato === 'pdf') irParaPaginaPdf(p.pagina);
       else if (p.capitulo === L.capitulo) irParaFracao(p.fracao);
       else abrirCapitulo(p.capitulo, { fracao: p.fracao });
@@ -872,6 +1140,7 @@ function aoClicar(e) {
       depoisDeAndar();
       break;
     case 'ir': {
+      lembrarDeOndeSaiu();
       if (alvo.dataset.pagina) irParaPaginaPdf(Number(alvo.dataset.pagina));
       else if (alvo.dataset.sumario !== undefined) {
         const s = L.epub.sumario[Number(alvo.dataset.sumario)];
@@ -979,7 +1248,15 @@ function aoMudar(e) {
   if (!L) return;
   const alvo = e.target;
   if (alvo.matches?.('[data-leitor-barra]')) {
-    if (e.type !== 'change') return;
+    if (e.type !== 'change') {
+      // Arrastando: mostra para onde vai (capítulo e página), sem sair do lugar ainda.
+      const previa = el('lv-previa');
+      if (previa) { previa.hidden = false; previa.textContent = previaDaBarra(Number(alvo.value) / 1000); }
+      return;
+    }
+    const previa = el('lv-previa');
+    if (previa) previa.hidden = true;
+    lembrarDeOndeSaiu();
     const pct = Number(alvo.value) / 1000;
     if (L.formato === 'pdf') irParaPaginaPdf(Math.max(1, Math.round(pct * (L.total - 1)) + 1));
     else {
@@ -991,9 +1268,13 @@ function aoMudar(e) {
   }
   if (alvo.matches?.('[data-leitor-pref]')) {
     const campo = alvo.dataset.leitorPref;
-    L.prefs = prefsLeitor({ ...L.prefs, [campo]: alvo.type === 'checkbox' ? alvo.checked : Number(alvo.value) });
+    const valor = alvo.type === 'checkbox' ? (campo === 'animacao' ? (alvo.checked ? 'deslizar' : 'nenhuma') : alvo.checked) : (Number.isFinite(Number(alvo.value)) ? Number(alvo.value) : alvo.value);
+    L.prefs = prefsLeitor({ ...L.prefs, [campo]: valor });
     guardarPrefs();
-    if (campo === 'brilho' || campo === 'pdfNoite') aplicarPrefs();
+    if (['brilho', 'pdfNoite', 'regua', 'reguaEstilo', 'animacao', 'telaAcesa'].includes(campo)) {
+      aplicarPrefs();
+      if (campo === 'regua') painelAjustesAbrir();
+    }
     else if (e.type === 'change' || campo !== 'linhas') relayout();
     const rotulo = alvo.closest('.campo')?.querySelector('.campo-rotulo');
     if (rotulo && campo === 'linhas') rotulo.textContent = `Espaço entre linhas: ${L.prefs.linhas.toFixed(1)}`;
