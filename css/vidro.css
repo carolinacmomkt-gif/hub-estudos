@@ -121,27 +121,86 @@ body[data-menu="icones"] .nav-lateral {
   border-radius: var(--raio);
 }
 
+/* No modo "só ícones": a seta aponta para fora (mostrar os nomes) e o × esconde o menu */
+.nav-expandir svg {
+  transform: rotate(180deg);
+}
+
+body[data-menu="icones"] .nav-lateral .nav-topo {
+  gap: 2px;
+}
+
 /* ---------------------------------------------------------------------------
-   Celular: barra de baixo flutuante que encolhe ao rolar
+   Celular (revisão de 29/10/2026, seguindo a prévia aprovada)
+   - lupa flutuando no canto de cima, em vidro, na margem dos cards;
+   - barra de baixo flutuante com o "+" dentro dela; ao rolar para baixo ela fica baixa, só com
+     ícones, e volta ao subir ou parar;
+   - cards com 16px de respiro e canto 16; tudo alinhado numa margem só de 16px.
    --------------------------------------------------------------------------- */
 @media (max-width: 700px) {
+  /* Lupa (e o que mais houver nas ações do cabeçalho) flutuando no canto, sem roubar espaço */
+  .cabecalho-acoes {
+    position: fixed;
+    top: calc(10px + env(safe-area-inset-top));
+    right: 16px;
+    z-index: 21;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--vidro-borda);
+    border-radius: 16px;
+    background: var(--vidro);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    backdrop-filter: blur(22px) saturate(1.5);
+    box-shadow: var(--vidro-sombra);
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s;
+  }
+
+  .cabecalho-acoes:empty {
+    display: none;
+  }
+
+  .cabecalho-busca {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--cor-texto);
+  }
+
+  /* O título não passa por baixo da lupa */
+  .cabecalho > div:first-child {
+    padding-right: 52px;
+  }
+
+  body[data-rolando="baixo"] .cabecalho-acoes {
+    transform: translateY(-8px) scale(0.9);
+    opacity: 0.85;
+  }
+
+  /* Barra de baixo: flutuante, na margem dos cards, com lugar para o "+" na ponta */
   .nav-inferior {
     left: 16px;
     right: 16px;
     bottom: calc(12px + env(safe-area-inset-bottom));
-    padding: 5px;
+    padding: 5px 60px 5px 5px;
     border-top: 1px solid var(--vidro-borda);
-    border-radius: 22px;
-    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), padding 0.28s;
+    border-radius: 20px;
+    transition: padding 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .nav-inferior .nav-link {
     min-height: 50px;
-    border-radius: 16px;
-    transition: background-color 0.15s, color 0.15s, min-height 0.28s;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 14px;
+    font-size: 0.72rem;
+    transition: background-color 0.15s, color 0.15s, min-height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .nav-inferior .nav-link svg {
+    width: 22px;
+    height: 22px;
     padding: 0;
     border-radius: 0;
     transition: none;
@@ -159,35 +218,45 @@ body[data-menu="icones"] .nav-lateral {
     background: none;
   }
 
-  /* Rolando para baixo a barra vira uma pílula só com ícones; ao subir ou parar, volta */
-  body[data-rolando="baixo"] .nav-inferior {
-    left: 50%;
-    right: auto;
-    padding: 4px;
-    transform: translate(-50%, var(--ajuste-base, 0px));
+  /* O "+" mora na ponta direita da barra, com o mesmo canto dela */
+  .fab {
+    right: 21px;
+    bottom: calc(17px + env(safe-area-inset-bottom));
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    box-shadow: none;
+    transition: width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), bottom 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.12s;
+    translate: 0 var(--ajuste-base, 0px);
   }
 
-  body[data-rolando="baixo"] .nav-inferior li {
-    flex: none;
-    width: 50px;
+  .fab svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Rolando para baixo a barra fica baixa, só com os ícones; ao subir ou parar, volta inteira */
+  body[data-rolando="baixo"] .nav-inferior {
+    padding: 4px 50px 4px 4px;
   }
 
   body[data-rolando="baixo"] .nav-inferior .nav-link {
     min-height: 40px;
-    border-radius: 13px;
+    border-radius: 12px;
   }
 
   body[data-rolando="baixo"] .nav-inferior .nav-nome {
     display: none;
   }
 
-  /* O "+" senta na mesma linha da barra, com o mesmo canto */
-  .fab {
-    right: 16px;
-    bottom: calc(76px + env(safe-area-inset-bottom));
-    width: 52px;
-    height: 52px;
-    border-radius: 16px;
+  body[data-rolando="baixo"] .fab {
+    width: 40px;
+    height: 40px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    border-radius: 12px;
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   /* Borda de rolagem: o conteúdo some num degradê ao passar atrás da barra */
@@ -204,8 +273,36 @@ body[data-menu="icones"] .nav-lateral {
     transform: translateY(var(--ajuste-base, 0px));
   }
 
+  body[data-teclado="aberto"] .cabecalho-acoes {
+    visibility: hidden;
+  }
+
   .aviso {
-    bottom: calc(96px + env(safe-area-inset-bottom));
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  /* Cards e conteúdo: o respiro e o canto da prévia */
+  .card {
+    padding: 16px;
+    border-radius: var(--raio-lg);
+  }
+
+  .painel {
+    gap: 12px;
+  }
+
+  .proximo {
+    padding: 18px;
+  }
+
+  .proximo .botao {
+    min-height: 44px;
+    padding: 0 16px;
+  }
+
+  body[data-menu] .conteudo,
+  .conteudo {
+    padding: 14px 16px calc(96px + env(safe-area-inset-bottom));
   }
 }
 

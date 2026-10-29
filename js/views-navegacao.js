@@ -49,7 +49,10 @@ export function montarNavegacao() {
           <span class="marca-sub">da Carol</span>
         </span>
       </a>
-      <button class="nav-recolher botao-icone" type="button" data-acao="menu-modo" aria-label="${modo === 'aberto' ? 'Mostrar só os ícones' : 'Esconder o menu'}" title="${modo === 'aberto' ? 'Mostrar só os ícones' : 'Esconder o menu'} (Ctrl + \\)">${icone('recolher')}</button>
+      ${modo === 'icones' ? `
+      <button class="nav-recolher nav-expandir botao-icone" type="button" data-acao="menu-mostrar" aria-label="Mostrar os nomes" title="Mostrar os nomes (Ctrl + \\)">${icone('recolher')}</button>
+      <button class="nav-recolher botao-icone" type="button" data-acao="menu-ocultar" aria-label="Esconder o menu" title="Esconder o menu">${icone('fechar')}</button>` : `
+      <button class="nav-recolher botao-icone" type="button" data-acao="menu-modo" aria-label="Mostrar só os ícones" title="Mostrar só os ícones (Ctrl + \\)">${icone('recolher')}</button>`}
     </div>
     ${org.favoritos.length ? `<section class="nav-grupo nav-favoritos"><p class="nav-grupo-titulo nav-grupo-fixo">${icone('estrela')}<span>Favoritos</span></p>${lista(org.favoritos)}</section>` : ''}
     <div class="nav-grupos">${grupos(org)}</div>
@@ -228,6 +231,10 @@ export function cliqueMenu(alvo) {
       definirModoDoMenu('aberto');
       montarNavegacao();
       document.querySelector('#nav-lateral .nav-link')?.focus();
+      break;
+    case 'menu-ocultar':
+      definirModoDoMenu('oculto');
+      montarNavegacao();
       break;
     case 'menu-definir-modo':
       definirModoDoMenu(alvo.dataset.valor);
