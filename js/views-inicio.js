@@ -5,6 +5,7 @@ import { cardTarefasHoje, cardProjetosHoje } from './views-tarefas.js';
 import { cardFinancasHoje, cardContasHoje } from './views-financas.js';
 import { cardDiaLeve, botaoDiaLeve } from './views-protegidos.js';
 import { cardLeituraHoje } from './views-leitura.js';
+import { cardPadroes } from './views-padroes.js';
 import { emDiaLeve } from './dados-dialeve.js';
 import { dataLocal } from './views-dia.js';
 import { cardRecompensasHoje } from './views-recompensas.js';
@@ -434,6 +435,7 @@ export function renderInicio(estado) {
     youtube: () => ((estado.videos || []).some((v) => !v.excluido_em) ? cardYoutubeInicio(estado, agora) : ''),
     foco: () => cardFocoInicio(estado),
     resumo: () => (estado.usandoExemplo ? '' : cardResumoInicio(estado)),
+    padroes: () => (estado.usandoExemplo ? '' : cardPadroes(estado, { limite: 2 })),
     leitura: () => (estado.usandoExemplo ? '' : cardLeituraHoje(estado, agora)),
     leituras: () => (estado.usandoExemplo ? '' : cardLeiturasInicio(estado)),
     substack: () => (estado.usandoExemplo ? '' : cardSubstackInicio(estado, agora)),

@@ -43,6 +43,13 @@ export function mudancaRituais(alvo) {
 }
 
 export function cliqueRituais(alvo) {
+  if (alvo.dataset.acao === 'padrao-dispensar') {
+    const id = alvo.dataset.id;
+    const li = alvo.closest('.padrao');
+    if (li) li.remove();
+    mudarConfig('padroes', { dispensados: [] }, (v) => { v.dispensados = [...new Set([...(v.dispensados || []), id])]; }).then(() => app.avisoCurto('Achado escondido.', { rotulo: 'Desfazer', fn: () => mudarConfig('padroes', { dispensados: [] }, (v) => { v.dispensados = (v.dispensados || []).filter((x) => x !== id); }).then(() => app.renderizar()) }));
+    return true;
+  }
   if (alvo.dataset.acao !== 'retro-refazer') return false;
   const mes = alvo.dataset.mes;
   confirmar('Refazer a retrospectiva? O que você escreveu neste mês some; as metas que ela criou ficam.', { botao: 'Refazer', perigo: true }).then((ok) => {

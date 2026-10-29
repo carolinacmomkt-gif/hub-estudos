@@ -12,6 +12,7 @@ import {
   STATUS, CORES_DESTAQUE, PARTES_FICHAMENTO, nomeStatus, artigoPeloId, filtrarArtigos, tagsDosArtigos,
   contagemPorStatus, minutosDeLeitura, contarPalavras, paragrafos, marcarDestaques, dominio, artigosAtivos,
 } from './dados-biblioteca.js';
+import { trechosDosDestaques, destaquesSemFichar, referenciaPronta } from './dados-biblioteca.js';
 import { ehLivro, formatoDoLivro, textoPct } from './dados-livros.js';
 
 const ABAS = [
@@ -254,7 +255,7 @@ function abaDestaques(a) {
       <h2 class="card-titulo">Destaques</h2>
       ${destaques.length ? `<ul class="bib-destaques">${destaques.map((d) => `
         <li class="bib-destaque">
-          <blockquote class="destaque-${esc(d.cor || 'amarelo')}">${esc(d.texto)}</blockquote>
+          <blockquote class="destaque-${esc(d.cor || 'amarelo')}">${esc(d.texto)}${(a.fichamento?.trechos || []).some((t) => t.destaque_id === d.id) ? ' <span class="selo">no fichamento</span>' : ''}</blockquote>
           <label class="campo"><span class="campo-rotulo">Nota</span>
             <textarea rows="2" data-bib-nota-destaque="${esc(d.id)}" maxlength="2000" placeholder="O que esse trecho significa para você?">${esc(d.nota || '')}</textarea></label>
           <div class="acoes">
@@ -269,14 +270,39 @@ function abaDestaques(a) {
     </section>`;
 }
 
+function secaoPelosDestaques(a) {
+  const trechos = a.fichamento?.trechos || [];
+  const novos = destaquesSemFichar(a);
+  const total = (a.destaques || []).length;
+  return `
+    <section class="card bib-ficha-destaques">
+      <div class="card-topo"><h2 class="card-titulo">Pelos destaques${trechos.length ? ` <span class="selo">${trechos.length}</span>` : ''}</h2></div>
+      ${total ? `<p class="campo-ajuda">Cada destaque vira uma citação com de onde veio e uma linha sua. ${novos ? `${novos} ${novos === 1 ? 'destaque ainda não está' : 'destaques ainda não estão'} aqui.` : 'Tudo o que você destacou já está aqui.'}</p>
+      <div class="acoes">
+        ${novos || !trechos.length ? `<button class="botao botao-primario botao-pequeno" type="button" data-acao="bib-fichar-destaques">${trechos.length ? (novos === 1 ? 'Trazer o destaque novo' : `Trazer os ${novos} novos`) : `Montar com ${total === 1 ? 'o destaque' : `os ${total} destaques`}`}</button>` : ''}
+        ${trechos.length ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-ficha-ia">Resumir as ideias com a IA</button>
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-ficha-substack">Levar para o Substack</button>
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-ficha-video">Virar ideia de vídeo</button>` : ''}
+      </div>` : '<p class="texto-suave">Destaque trechos no leitor e eles aparecem aqui prontos para fichar.</p>'}
+      ${trechos.length ? `<ol class="bib-trechos">${trechos.map((t) => `
+        <li class="bib-trecho">
+          <blockquote>“${esc(t.citacao)}”${t.onde ? ` <small class="campo-ajuda">(${esc(t.onde)})</small>` : ''}</blockquote>
+          ${t.nota ? `<p class="campo-ajuda">Sua nota: ${esc(t.nota)}</p>` : ''}
+          <input type="text" maxlength="300" data-bib-trecho="${esc(t.destaque_id)}" value="${esc(t.minha || '')}" placeholder="Uma linha sua: o que isso diz para você" aria-label="Minha linha">
+          <button class="botao-icone botao-icone-p" type="button" data-acao="bib-trecho-remover" data-id="${esc(t.destaque_id)}" aria-label="Tirar do fichamento" title="Tirar">×</button>
+        </li>`).join('')}</ol>` : ''}
+    </section>`;
+}
+
 function abaFichamento(a) {
   const f = a.fichamento || {};
   return `
+    ${secaoPelosDestaques(a)}
     <section class="card">
       <p class="campo-ajuda">Fichamento de leitura. Salva sozinho enquanto você escreve.</p>
       ${PARTES_FICHAMENTO.map((p) => `
         <label class="campo"><span class="campo-rotulo">${esc(p.nome)}</span>
-          <textarea rows="${p.id === 'referencia' ? 2 : 4}" data-bib-ficha="${p.id}" maxlength="20000" placeholder="${esc(p.ajuda)}">${esc(f[p.id] || (p.id === 'referencia' ? [a.autor, a.titulo, a.url].filter(Boolean).join('. ') : ''))}</textarea></label>`).join('')}
+          <textarea rows="${p.id === 'referencia' ? 2 : 4}" data-bib-ficha="${p.id}" maxlength="20000" placeholder="${esc(p.ajuda)}">${esc(f[p.id] || (p.id === 'referencia' ? referenciaPronta(a) : ''))}</textarea></label>`).join('')}
       <div class="acoes">
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-copiar-ficha">Copiar fichamento</button>
         ${a.status !== 'fichado' ? '<button class="botao botao-primario botao-pequeno" type="button" data-acao="bib-status" data-valor="fichado">Marcar como fichado</button>' : ''}

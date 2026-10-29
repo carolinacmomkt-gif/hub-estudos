@@ -5,7 +5,9 @@ import { chamar } from './funcoes.js';
 import { enviarArquivo, baixarArquivo, idDaUsuaria } from './nuvem.js';
 import { iniciarTrabalho, trabalhosDoTipo, encerrarTrabalho } from './trabalhos-ia.js';
 import { gravar, criarGravador } from './gravacao.js';
-import { artigoPeloId, lerTags, fichamentoEmTexto, paragrafos, STATUS } from './dados-biblioteca.js';
+import { artigoPeloId, lerTags, fichamentoEmTexto, paragrafos, STATUS, trechosDosDestaques } from './dados-biblioteca.js';
+import { novoVideo } from './dados-youtube.js';
+import { salvar } from './persistencia.js';
 import { lerLivro, guardarLivro } from './livros.js';
 import { confirmar } from './confirmar.js';
 
@@ -179,6 +181,52 @@ export function cliqueBiblioteca(alvo) {
     case 'bib-ler-pdf':
       if (a?.pdf_path) lerPdfComIa(a);
       break;
+    case 'bib-fichar-destaques': {
+      const a = artigoPeloId(obterEstado(), obterEstado().parametro);
+      if (!a) return true;
+      const trechos = trechosDosDestaques(a);
+      mudarArtigo({ fichamento: { ...(a.fichamento || {}), trechos } }).then(() => app.avisoCurto(`${trechos.length} ${trechos.length === 1 ? 'trecho' : 'trechos'} no fichamento. Escreva a sua linha em cada um.`));
+      return true;
+    }
+    case 'bib-trecho-remover': {
+      const a = artigoPeloId(obterEstado(), obterEstado().parametro);
+      if (!a) return true;
+      mudarArtigo({ fichamento: { ...(a.fichamento || {}), trechos: (a.fichamento?.trechos || []).filter((t) => t.destaque_id !== alvo.dataset.id) } });
+      return true;
+    }
+    case 'bib-ficha-ia': {
+      const a = artigoPeloId(obterEstado(), obterEstado().parametro);
+      if (!a) return true;
+      const texto = (a.fichamento?.trechos || []).map((t) => `${t.citacao}${t.minha ? ` (nota: ${t.minha})` : ''}`).join('\n\n');
+      if (texto.length < 200) { app.avisoCurto('Poucos destaques para resumir: destaque mais trechos.'); return true; }
+      alvo.disabled = true;
+      chamar('livro-ia', { acao: 'resumir', texto: texto.slice(0, 80000), capitulo: 'os destaques', livro: a.titulo }).then((r) => {
+        const resumo = [r?.resumo, ...(r?.pontos || []).map((x) => `• ${x}`)].filter(Boolean).join('\n');
+        if (!r?.ok || !resumo) throw new Error(r?.erro || 'A IA não respondeu.');
+        const atual = String(a.fichamento?.ideias || '').trim();
+        return mudarArtigo({ fichamento: { ...(a.fichamento || {}), ideias: `${atual ? `${atual}\n\n` : ''}${resumo}` } }).then(() => app.avisoCurto('Resumo das ideias adicionado ao fichamento.'));
+      }).catch((e) => { alvo.disabled = false; app.avisoCurto(e.message); });
+      return true;
+    }
+    case 'bib-ficha-substack': {
+      const a = artigoPeloId(obterEstado(), obterEstado().parametro);
+      if (!a) return true;
+      gravar('pautas_substack', 'pautas', {
+        titulo: `Sobre "${a.titulo}"`.slice(0, 120), etapa: 'ideia', texto: fichamentoEmTexto(a), referencias: [a.id], tags: [], checklist: {},
+        detalhes: { angulo: 'Fichamento pelos destaques' }, link: null, publicado_em: null, agendado_para: null,
+      }).then((p) => { app.avisoCurto('Pauta criada no Substack com o fichamento e a referência.', { rotulo: 'Abrir', fn: () => { location.hash = `#substack/${p.id}`; } }); });
+      return true;
+    }
+    case 'bib-ficha-video': {
+      const a = artigoPeloId(obterEstado(), obterEstado().parametro);
+      if (!a) return true;
+      const v = novoVideo({ titulo: `Ideia do livro: ${a.titulo}`.slice(0, 100), etapa: 'ideia', detalhes: { ideia: fichamentoEmTexto(a).slice(0, 4000), origem: 'fichamento', artigo_id: a.id } });
+      salvar('videos', v).then(async () => {
+        atualizarEstado({ videos: await (await import('./persistencia.js')).listar('videos') });
+        app.avisoCurto('Ideia guardada no banco de ideias do YouTube.', { rotulo: 'Abrir', fn: () => { location.hash = '#youtube/ideias'; } });
+      });
+      return true;
+    }
     case 'bib-copiar-ficha':
       if (a) copiar(fichamentoEmTexto(a), 'Fichamento copiado.');
       break;
@@ -247,6 +295,11 @@ export function mudancaBiblioteca(alvo, tipo) {
   if (alvo.dataset?.bibFicha) {
     const v = gravador.vigente(base);
     gravador.adiar(base, { fichamento: { ...(v.fichamento || {}), [alvo.dataset.bibFicha]: alvo.value } });
+    return true;
+  }
+  if (alvo.dataset?.bibTrecho) {
+    const v = gravador.vigente(base);
+    gravador.adiar(base, { fichamento: { ...(v.fichamento || {}), trechos: (v.fichamento?.trechos || []).map((t) => (t.destaque_id === alvo.dataset.bibTrecho ? { ...t, minha: alvo.value.slice(0, 300) } : t)) } });
     return true;
   }
   if (alvo.dataset?.bibNotaDestaque) {
@@ -405,3 +458,4 @@ export function iniciarBiblioteca() {
   }
   for (const t of trabalhosDoTipo('artigo')) if (t.status === 'pronto') aplicarLeituraDoPdf(t);
 }
+

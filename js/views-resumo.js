@@ -4,6 +4,7 @@ import { cabecalho, barraProgresso } from './componentes.js';
 import { esc, diaEHora } from './utilidades.js';
 import { semanaDe, resumoDaSemana, textoMinutos } from './dados-resumo.js';
 import { chamadaRetrospectiva } from './views-retrospectiva.js';
+import { cardPadroes } from './views-padroes.js';
 
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' });
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -68,6 +69,7 @@ export function renderResumo(estado) {
         ${r.publicados.map((x) => `<li><span class="campo-ajuda">${esc(x.tipo)}: ${esc(x.titulo)}</span></li>`).join('')}
       </ul>
     </section>
+    ${cardPadroes(estado, { limite: 6 })}
     <section class="card">
       <h2 class="card-titulo">Na semana seguinte</h2>
       ${r.proximos.length ? `<ul class="lista-simples">${r.proximos.map((e) => `

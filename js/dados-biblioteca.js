@@ -108,7 +108,37 @@ export function fichamentoVazio(f) {
 // Fichamento em Markdown, para copiar.
 export function fichamentoEmTexto(artigo) {
   const f = artigo.fichamento || {};
-  return [`# Fichamento: ${artigo.titulo}`, ...PARTES_FICHAMENTO.filter((p) => String(f[p.id] || '').trim()).map((p) => `## ${p.nome}\n${f[p.id].trim()}`)].join('\n\n');
+  const trechos = (f.trechos || []).map((t) => `“${t.citacao}”${t.onde ? ` (${t.onde})` : ''}${t.minha ? `\n— ${t.minha}` : ''}`);
+  return [
+    `# Fichamento: ${artigo.titulo}`,
+    ...PARTES_FICHAMENTO.filter((p) => String(f[p.id] || '').trim()).map((p) => `## ${p.nome}\n${f[p.id].trim()}`),
+    ...(trechos.length ? [`## Pelos destaques\n${trechos.join('\n\n')}`] : []),
+  ].join('\n\n');
+}
+
+// Fichamento pelos destaques (29/10/2026): cada destaque vira um trecho com a citação, de onde
+// veio e uma linha sua. Guarda o que já foi escrito e põe os destaques novos no fim.
+export function trechosDosDestaques(artigo) {
+  const antigos = new Map((artigo.fichamento?.trechos || []).map((t) => [t.destaque_id, t]));
+  const destaques = Array.isArray(artigo.destaques) ? artigo.destaques : [];
+  return destaques.map((d) => ({
+    destaque_id: d.id, citacao: String(d.texto || '').trim().slice(0, 1200), onde: String(d.onde || '').slice(0, 80),
+    nota: String(d.nota || '').slice(0, 600), minha: antigos.get(d.id)?.minha || '',
+  }));
+}
+
+export const destaquesSemFichar = (artigo) => {
+  const no = new Set((artigo.fichamento?.trechos || []).map((t) => t.destaque_id));
+  return (artigo.destaques || []).filter((d) => !no.has(d.id)).length;
+};
+
+// Referência pronta a partir do que o arquivo trouxe: SOBRENOME, Nome. Título. ano.
+export function referenciaPronta(artigo) {
+  const autor = String(artigo.autor || '').trim();
+  const partes = autor.split(/\s+/);
+  const nome = partes.length > 1 ? `${partes[partes.length - 1].toUpperCase()}, ${partes.slice(0, -1).join(' ')}` : autor.toUpperCase();
+  const ano = (String(artigo.dados?.ano || artigo.criado_em || '').match(/\d{4}/) || [''])[0];
+  return [nome, artigo.titulo, artigo.url, ano].filter(Boolean).join('. ') + (ano ? '.' : '');
 }
 
 // Endereço mostrado no cartão: só o domínio.

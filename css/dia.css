@@ -176,3 +176,15 @@ button.dia-texto:hover {
 .lv-fim-numeros { display: flex; gap: 18px; margin-bottom: 16px; }
 .lv-fim-numeros li { display: flex; flex-direction: column; }
 .lv-fim-numeros strong { font-size: 1.5rem; }
+
+/* Padrões que você não vê e fichamento pelos destaques, 29/10/2026 */
+.padroes-lista { display: flex; flex-direction: column; }
+.padrao { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-top: 1px solid var(--cor-linha); }
+.padrao:first-child { border-top: 0; padding-top: 0; }
+.padrao p { line-height: 1.45; }
+.padrao .botao { align-self: flex-start; }
+.bib-trechos { display: flex; flex-direction: column; counter-reset: trecho; }
+.bib-trecho { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 12px 0; border-top: 1px solid var(--cor-linha); }
+.bib-trecho blockquote, .bib-trecho p { grid-column: 1 / -1; margin: 0; }
+.bib-trecho blockquote { padding-left: 12px; border-left: 3px solid var(--cor-destaque); line-height: 1.45; }
+.bib-trecho input { min-width: 0; }
