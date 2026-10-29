@@ -6,6 +6,7 @@ import {
   blocosDoInicio, TIPOS_PROPRIOS, colocarBloco, redimensionar, removerBloco, adicionarBloco, ALTURA_MIN, ALTURA_MAX,
 } from './inicio-layout.js';
 import { renderFormProprio, lerFormProprio } from './views-inicio-proprios.js';
+import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -219,15 +220,13 @@ export function cliqueInicio(alvo) {
       return true;
     }
     case 'inicio-remover':
-      if (!window.confirm('Excluir este card de vez? O conteúdo dele se perde.')) return true;
-      removerProprio(id).then(() => {
+      confirmar('Excluir este card de vez? O conteúdo dele se perde.').then((ok) => ok && removerProprio(id).then(() => {
         document.getElementById('folha-evento')?.close();
         redesenhar();
-      });
+      }));
       return true;
     case 'inicio-padrao':
-      if (!window.confirm('Voltar o Hoje ao padrão? Seus cards próprios ficam guardados, só que ocultos.')) return true;
-      voltarAoPadrao().then(() => redesenhar());
+      confirmar('Voltar o Hoje ao padrão? Seus cards próprios ficam guardados, só que ocultos.').then((ok) => ok && voltarAoPadrao().then(() => redesenhar()));
       return true;
     case 'inicio-marcar':
       marcarItem(id, Number(alvo.dataset.indice)).then(() => redesenhar());

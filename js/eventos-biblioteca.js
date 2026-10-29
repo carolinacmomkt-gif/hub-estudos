@@ -7,6 +7,7 @@ import { iniciarTrabalho, trabalhosDoTipo, encerrarTrabalho } from './trabalhos-
 import { gravar, criarGravador } from './gravacao.js';
 import { artigoPeloId, lerTags, fichamentoEmTexto, paragrafos, STATUS } from './dados-biblioteca.js';
 import { lerLivro, guardarLivro } from './livros.js';
+import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 const gravador = criarGravador('artigos', 'artigos');
@@ -207,12 +208,12 @@ export function cliqueBiblioteca(alvo) {
       app.renderizar();
       break;
     case 'bib-excluir':
-      if (a && window.confirm(`Excluir "${a.titulo}"? Os destaques e o fichamento vão junto.`)) {
+      if (a) confirmar(`Excluir "${a.titulo}"? Os destaques e o fichamento vão junto.`).then((ok) => { if (!ok) return;
         mudarArtigo({ excluido_em: new Date().toISOString() }, { redesenhar: false }).then(() => {
           location.hash = '#biblioteca';
           app.avisoCurto('Leitura excluída.');
         });
-      }
+      });
       break;
     default:
       return false;

@@ -21,6 +21,8 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 - Nunca coloque chaves, tokens ou senhas no front-end ou no repositório. Tudo que é secreto fica em variáveis de ambiente da Netlify e é usado só nas Netlify Functions.
 - Antes de cada módulo novo, descreva o plano em poucas linhas e espere o OK da Carol. Ao terminar, diga como testar.
 - A usabilidade precisa ser fluida e gostosa: resposta imediata ao toque, movimento leve (respeitando "reduzir animações") e nada de tela pulando com a sincronização.
+- **Nunca use `window.confirm`, `window.prompt` ou `alert`**: eles travam a tela e ficam fora do tema. Use `confirmar(texto, { titulo, botao, perigo })` e `perguntarTexto(rotulo, { padrao, maximo })` de `js/confirmar.js` (os dois devolvem Promise; num handler síncrono, use `.then`). A primeira frase até o "?" vira o título, o resto a explicação, e o verbo da pergunta vira o botão ("Excluir", "Mandar para a lixeira"); ações que apagam ganham o botão de perigo. É folha de baixo no toque e cartão no meio no computador. O `ligarConfirmar()` também redireciona qualquer `window.confirm` esquecido.
+- Toque de 44px vale também para abas (`.segmentado`), chips de filtro e botões de ícone no celular e no tablet (regra `@media (pointer: coarse)` em `padroes.css`).
 - Teste sempre em largura de tablet na horizontal e na vertical (1340×800 / 800×1340) e no celular (375px).
 
 ## Stack

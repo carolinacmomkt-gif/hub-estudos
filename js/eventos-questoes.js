@@ -14,6 +14,7 @@ import {
   sortear, cabeNoModo, MODOS, LETRAS,
 } from './dados-questoes.js';
 import { chaveDia, somarDias } from './dados-calendario.js';
+import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 const MAX_IMAGEM = 1600;
@@ -163,7 +164,7 @@ async function terminar() {
   const { questoes } = questaoAtual(s);
   if (s.modo === 'prova') {
     const semResposta = questoes.filter((q) => !s.respostas?.[q.id]?.resposta).length;
-    if (semResposta && !window.confirm(`${semResposta} ${semResposta === 1 ? 'questão está' : 'questões estão'} sem resposta e vão contar como erradas. Terminar mesmo assim?`)) return;
+    if (semResposta && !(await confirmar(`${semResposta} ${semResposta === 1 ? 'questão está' : 'questões estão'} sem resposta e vão contar como erradas. Terminar mesmo assim?`, { botao: 'Terminar', perigo: false }))) return;
     const respostas = { ...(s.respostas || {}) };
     for (const q of questoes) {
       const resposta = respostas[q.id]?.resposta || '';
@@ -423,12 +424,12 @@ export function cliqueQuestoes(alvo) {
       break;
     case 'q-excluir': {
       const q = questaoPeloId(estado, alvo.dataset.id);
-      if (q && window.confirm('Excluir esta questão do banco?')) {
+      if (q) confirmar('Excluir esta questão do banco?').then((ok) => { if (!ok) return;
         gravar('questoes', 'questoes', { ...q, excluido_em: new Date().toISOString() }).then(() => {
           app.renderizar();
           app.avisoCurto('Questão excluída.');
         });
-      }
+      });
       break;
     }
     case 'q-revisar-amanha': {
@@ -468,11 +469,11 @@ export function cliqueQuestoes(alvo) {
       break;
     case 'q-abandonar': {
       const s = simuladoAberto();
-      if (s && window.confirm('Desistir deste simulado? As respostas dele não entram na sua nota.')) {
+      if (s) confirmar('Desistir deste simulado? As respostas dele não entram na sua nota.').then((ok) => { if (!ok) return;
         gravar('simulados', 'simulados', { ...s, excluido_em: new Date().toISOString() }).then(() => {
           location.hash = '#questoes';
         });
-      }
+      });
       break;
     }
     default:

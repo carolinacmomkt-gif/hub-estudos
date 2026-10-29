@@ -4,6 +4,7 @@ import { obterEstado } from './estado.js';
 import { salvar, excluir, obter } from './persistencia.js';
 import { renderFolhaEvento, situacaoCalendario } from './views-calendario.js';
 import { chaveDia, chaveValida, instanteLocal, moverFoco } from './dados-calendario.js';
+import { confirmar } from './confirmar.js';
 import {
   iniciarImportacao, mudarItemImportado, marcarTodosImportados, descartarImportacao, salvarImportacao,
 } from './importar-calendario.js';
@@ -81,7 +82,7 @@ export function cliqueCalendario(alvo) {
       marcarTodosImportados(alvo.dataset.valor === '1');
       return true;
     case 'imp-descartar':
-      if (window.confirm('Descartar esta leitura? Nada entra no calendário.')) descartarImportacao();
+      confirmar('Descartar esta leitura? Nada entra no calendário.').then((ok) => ok && descartarImportacao());
       return true;
     default:
       return false;
@@ -90,7 +91,7 @@ export function cliqueCalendario(alvo) {
 
 async function excluirEvento(id) {
   const evento = await obter('eventos', id);
-  if (!evento || !window.confirm(`Excluir "${evento.titulo}"?`)) return;
+  if (!evento || !await confirmar(`Excluir "${evento.titulo}"?`)) return;
   await excluir('eventos', id);
   folha().close();
   app.avisoCurto('Evento excluído.');

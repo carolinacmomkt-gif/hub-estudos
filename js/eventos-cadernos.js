@@ -11,6 +11,7 @@ import { novaPaginaVazia } from './editor-tinta.js';
 import { lerTags, artigoPeloId } from './dados-biblioteca.js';
 import { abrirPdf, paginaDoPdf, arquivoGuardado, guardarNoAparelho, apagarDoAparelho } from './fundos.js';
 import { pastaEDescendentes, segundaDaSemana, primeiroDoMes, somarPeriodo, TIPOS_CADERNO, cadernosAtivos } from './dados-cadernos.js';
+import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 const MAX_PAGINAS_PDF = 200;
@@ -242,13 +243,13 @@ export function cliqueCadernos(alvo) {
     }
     case 'caderno-excluir': {
       const c = cadernoPeloId(id);
-      if (c && window.confirm(`Mandar "${c.titulo}" para a lixeira? Dá para restaurar depois.`)) {
+      if (c) confirmar(`Mandar "${c.titulo}" para a lixeira? Dá para restaurar depois.`).then((ok) => { if (!ok) return;
         gravar('cadernos', 'cadernos', { ...c, excluido_em: new Date().toISOString() }).then(() => {
           fecharFolha();
           app.renderizar();
           app.avisoCurto('Caderno na lixeira.');
         });
-      }
+      });
       break;
     }
     case 'caderno-visao':
@@ -265,16 +266,17 @@ export function cliqueCadernos(alvo) {
       });
       break;
     case 'caderno-apagar':
-      if (window.confirm('Apagar de vez? O caderno e todas as páginas somem do aparelho e da nuvem. Não dá para desfazer.')) {
+      confirmar('Apagar de vez? O caderno e todas as páginas somem do aparelho e da nuvem. Não dá para desfazer.', { botao: 'Apagar de vez' }).then((ok) => {
+        if (!ok) return;
         if (!navigator.onLine) {
           app.avisoCurto('Para apagar de vez, o app precisa de internet.');
-          break;
+          return;
         }
         apagarCaderno(id).then(() => {
           app.avisoCurto('Caderno apagado.');
           abrirLixeira();
         }).catch(() => app.avisoCurto('Não deu para apagar agora. Tente de novo com internet.'));
-      }
+      });
       break;
     case 'caderno-pasta-abrir':
       atualizarEstado({ cadPasta: id || null });
@@ -287,7 +289,7 @@ export function cliqueCadernos(alvo) {
       abrirFolha('Renomear pasta', renderFormPasta((obterEstado().pastas || []).find((p) => p.id === id)));
       break;
     case 'caderno-pasta-excluir':
-      if (window.confirm('Excluir esta pasta (e as subpastas)? Os cadernos não são apagados: voltam para fora das pastas.')) excluirPasta(id);
+      confirmar('Excluir esta pasta (e as subpastas)? Os cadernos não são apagados: voltam para fora das pastas.').then((ok) => ok && excluirPasta(id));
       break;
     default:
       return false;

@@ -32,6 +32,7 @@ import { ligarFinancas, cliqueFinancas, enviarFinancas, mudancaFinancas } from '
 import { ligarRecompensas, cliqueRecompensas, enviarRecompensas } from './eventos-recompensas.js';
 import { ligarHabitos, cliqueHabitos, enviarHabitos, mudancaHabitos } from './eventos-habitos.js';
 import { ligarFolhas } from './folhas-dialogo.js';
+import { ligarConfirmar } from './confirmar.js';
 import { ligarDia, cliqueDia, enviarDia } from './eventos-dia.js';
 import { ligarDemandas, cliqueDemandas, enviarDemandas, mudancaDemandas } from './eventos-demandas.js';
 import { ligarOrganizar, cliqueOrganizar, enviarOrganizar, mudancaOrganizar } from './eventos-organizar.js';
@@ -40,6 +41,7 @@ import { ligarCaptura, cliqueCaptura, enviarCaptura } from './eventos-captura.js
 import { ligarWidgets, cliqueWidgets, enviarWidgets, mudancaWidgets } from './eventos-widgets.js';
 import { ligarMetas, cliqueMetas, enviarMetas, mudancaMetas } from './eventos-metas.js';
 import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './eventos-estudos.js';
+import { confirmar } from './confirmar.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
 const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaQuestoes(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
@@ -101,7 +103,7 @@ async function sairDaConta() {
   const aviso = depois.pendentes
     ? `Ainda há ${depois.pendentes} mudança(s) que não subiram para a nuvem. Se sair agora, elas se perdem. Exporte um backup antes. Sair mesmo assim?`
     : 'Sair da conta? Os dados saem deste aparelho, mas continuam guardados na nuvem.';
-  if (!window.confirm(aviso)) return;
+  if (!await confirmar(aviso)) return;
   await sair();
   await apagarDadosLocais();
   atualizarEstado({ caixa: [], conexoes: [], email: null });
@@ -148,7 +150,7 @@ async function conectarServico(form, servico) {
 async function desconectarServico(servico) {
   const nome = servico === 'ava' ? 'o AVA' : 'o Lyceum';
   const extra = servico === 'lyceum' ? ' A senha guardada é apagada.' : ' O acesso guardado é apagado.';
-  if (!window.confirm(`Desconectar ${nome}?${extra} Para voltar, é só conectar de novo.`)) return;
+  if (!await confirmar(`Desconectar ${nome}?${extra} Para voltar, é só conectar de novo.`)) return;
   const resultado = await ocupado(() => desconectar(servico));
   if (!resultado.ok) {
     avisoCurto(resultado.erro || 'Não foi possível desconectar agora.');
@@ -193,7 +195,7 @@ async function fazerBackup() {
 // Widget do iPhone: o código aparece uma vez; o app guarda só o hash (config "widget").
 async function gerarCodigoWidget() {
   const atual = (obterEstado().config || []).find((c) => c.chave === 'widget' && !c.excluido_em);
-  if (atual && !window.confirm('Gerar outro código? O widget que usa o código atual para de funcionar até você colar o novo.')) return;
+  if (atual && !await confirmar('Gerar outro código? O widget que usa o código atual para de funcionar até você colar o novo.')) return;
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const codigo = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codigo)))].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -205,7 +207,7 @@ async function gerarCodigoWidget() {
 
 async function desligarWidget() {
   const atual = (obterEstado().config || []).find((c) => c.chave === 'widget' && !c.excluido_em);
-  if (!atual || !window.confirm('Desligar os widgets? Eles param de mostrar os resumos até você gerar um código novo.')) return;
+  if (!atual || !await confirmar('Desligar os widgets? Eles param de mostrar os resumos até você gerar um código novo.')) return;
   await salvar('config', { ...atual, valor: {}, excluido_em: new Date().toISOString() });
   atualizarEstado({ widgetCodigo: null });
   app.renderizar();
@@ -266,7 +268,7 @@ function pedirRestaurar(caminho, dia) {
 
 async function restaurarCopia(modo) {
   if (!copiaEscolhida) return;
-  if (modo === 'tudo' && !window.confirm('Tudo volta como estava na cópia, e o que mudou depois dela se perde. Restaurar assim mesmo?')) return;
+  if (modo === 'tudo' && !await confirmar('Tudo volta como estava na cópia, e o que mudou depois dela se perde. Restaurar assim mesmo?')) return;
   const { caminho } = copiaEscolhida;
   copiaEscolhida = null;
   document.getElementById('folha-evento').close();
@@ -285,7 +287,7 @@ async function restaurarBackup(input) {
   input.value = '';
   if (!arquivo) return;
   const saida = document.getElementById('backup-resultado');
-  if (!window.confirm('Importar este backup? Ele se junta aos dados atuais (o que tiver o mesmo registro é substituído pelo do backup).')) return;
+  if (!await confirmar('Importar este backup? Ele se junta aos dados atuais (o que tiver o mesmo registro é substituído pelo do backup).')) return;
   try {
     const total = await importarBackup(arquivo);
     const texto = `Backup importado: ${total} ${total === 1 ? 'registro' : 'registros'}. Sincronizando com a nuvem…`;
@@ -336,7 +338,7 @@ async function juntarDisciplinas(form) {
   const esta = estado.disciplinas.find((d) => d.id === form.dataset.id);
   const outra = estado.disciplinas.find((d) => d.id === form.elements.outra.value);
   if (!esta || !outra) return;
-  if (!window.confirm(`Juntar "${esta.nome}" com "${outra.nome}"? Tudo das duas passa a aparecer em uma só.`)) return;
+  if (!await confirmar(`Juntar "${esta.nome}" com "${outra.nome}"? Tudo das duas passa a aparecer em uma só.`)) return;
 
   // Fica a que tem o AVA (materiais e prazos); a outra empresta o que vem do Lyceum.
   const [fica, sai] = esta.ava_course_id || !outra.ava_course_id ? [esta, outra] : [outra, esta];
@@ -398,6 +400,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
   for (const ligar of [ligarTarefas, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   ligarFolhas();
+  ligarConfirmar(); // os diálogos do navegador viram folhas do app
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
 
@@ -486,9 +489,9 @@ export function ligarEventos(funcoesDoApp) {
         escolherCursoAva(alvo.dataset.curso, true);
         return;
       case 'ava-curso-esconder':
-        if (window.confirm('Esconder esta disciplina? Ela sai da Faculdade e do Início. Dá para trazer de volta em "Disciplinas do AVA fora deste semestre".')) {
+        confirmar('Esconder esta disciplina? Ela sai da Faculdade e do Início. Dá para trazer de volta em "Disciplinas do AVA fora deste semestre".').then((ok) => { if (!ok) return;
           escolherCursoAva(alvo.dataset.curso, false);
-        }
+        });
         return;
       case 'faltei-hoje':
         mudarFaltasManuais(alvo.dataset.id, 1);

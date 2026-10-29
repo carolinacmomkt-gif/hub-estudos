@@ -6,6 +6,7 @@ import { renderFormArea } from './views-estudos.js';
 import { areaPeloId, areasAtivas, novoItem, conteudoDaArea } from './dados-estudos.js';
 import { criarSimulado } from './eventos-questoes.js';
 import { sortear } from './dados-questoes.js';
+import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -42,12 +43,12 @@ export function cliqueEstudos(alvo) {
       if (a) abrirFolha(`Editar: ${a.nome}`, renderFormArea(a));
       break;
     case 'est-excluir':
-      if (a && window.confirm(`Excluir "${a.nome}"? As leituras, cadernos e questões continuam, só deixam de estar ligados.`)) {
+      if (a) confirmar(`Excluir "${a.nome}"? As leituras, cadernos e questões continuam, só deixam de estar ligados.`).then((ok) => { if (!ok) return;
         gravar('areas', 'areas', { ...a, excluido_em: new Date().toISOString() }).then(() => {
           location.hash = '#estudos';
           app.avisoCurto('Excluído.');
         });
-      }
+      });
       break;
     case 'est-item-mover': {
       const passo = Number(alvo.dataset.passo);

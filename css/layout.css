@@ -706,3 +706,53 @@ body[data-menu="oculto"] #menu-voltar {
 @keyframes tela-entrar {
   from { opacity: 0; }
 }
+
+/* Confirmar e perguntar (no lugar dos diálogos do navegador) */
+.folha-confirmar {
+  max-width: 440px;
+}
+
+.confirmar-corpo {
+  display: grid;
+  gap: 10px;
+}
+
+.confirmar-texto {
+  margin: 0 4px;
+  color: var(--cor-texto-suave);
+  line-height: 1.45;
+}
+
+.confirmar-texto[hidden] {
+  display: none;
+}
+
+.confirmar-campo[hidden] {
+  display: none;
+}
+
+.confirmar-acoes {
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.confirmar-acoes .botao {
+  flex: 1 1 0;
+}
+
+/* No computador e no tablet deitado, um cartão no meio em vez de uma folha de baixo */
+@media (min-width: 1000px) and (hover: hover) {
+  .folha-confirmar {
+    margin: auto;
+    border-radius: 22px;
+  }
+
+  .folha-confirmar .folha-alca {
+    display: none;
+  }
+
+  .confirmar-acoes .botao {
+    flex: 0 1 auto;
+    min-width: 120px;
+  }
+}

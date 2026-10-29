@@ -14,6 +14,7 @@ import {
 import { imagemDoTexto, alturaDoTexto, corDoTextoNoPapel } from './texto-imagem.js';
 import { reduzirImagem, guardarImagemLocal, carregarThumbsDaTela } from './thumbs-youtube.js';
 import { enviarArquivo, idDaUsuaria } from './nuvem.js';
+import { perguntarTexto } from './confirmar.js';
 
 let caderno = null;
 let formato = 'documento';
@@ -425,7 +426,10 @@ function comando(cmd) {
       break;
     }
     case 'link': {
-      const endereco = prompt('Endereço do link (https://…)');
+      if (endereco === undefined) {
+        perguntarTexto('Endereço do link (https://…)').then((e) => { if (e) comando('link', e); });
+        return;
+      }
       if (!endereco) break;
       const url = /^https?:\/\//i.test(endereco.trim()) ? endereco.trim() : `https://${endereco.trim()}`;
       if (getSelection().isCollapsed) document.execCommand('insertHTML', false, `<a href="${esc(url)}">${esc(url)}</a>`);

@@ -281,3 +281,26 @@ body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):no
   accent-color: var(--cor-destaque);
   cursor: pointer;
 }
+
+/* Dedo (celular e tablet): abas, chips de filtro e botões de ícone com 44px de verdade */
+@media (pointer: coarse) {
+  /* O botão em si com 44px; o contorno do grupo encosta nele */
+  .segmentado button,
+  .segmentado > a {
+    min-height: var(--toque);
+  }
+
+  .segmentado {
+    padding: 0;
+  }
+
+  .chip-filtro {
+    min-height: var(--toque);
+  }
+
+  .botao-icone,
+  .botao-icone-p {
+    width: var(--toque);
+    height: var(--toque);
+  }
+}

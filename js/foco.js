@@ -13,6 +13,7 @@ import { obterEstado } from './estado.js';
 import { listar, salvar, puxarTabela, agendarSincronizacao } from './persistencia.js';
 import { esc } from './utilidades.js';
 import { idDoAparelho, tipoDoAparelho, noAparelho } from './aparelho.js';
+import { confirmar } from './confirmar.js';
 import {
   atualizarFlip, entrarEmTelaCheia, sairDaTelaCheia, emTelaCheia, telaAcesa, controlesSomem, somAmbiente,
   sino, comemorar, ligarPalco, AMBIENTES,
@@ -530,7 +531,7 @@ export function cliqueFoco(alvo) {
     }
     case 'foco-pular': pularFase(); return true;
     case 'foco-encerrar':
-      if (window.confirm('Encerrar a sessão de foco? O tempo que já passou fica registrado.')) encerrarFoco();
+      confirmar('Encerrar a sessão de foco? O tempo que já passou fica registrado.').then((ok) => ok && encerrarFoco());
       return true;
     default:
       return false;

@@ -5,6 +5,7 @@ import { listar, salvar } from './persistencia.js';
 import { gravar, criarGravador } from './gravacao.js';
 import { renderFormPauta } from './views-substack.js';
 import { lerTags, artigoPeloId } from './dados-biblioteca.js';
+import { confirmar, perguntarTexto } from './confirmar.js';
 import {
   pautaPeloId, etapaVizinhaSubstack, eventoDaPauta, estatisticasDoTexto, markdownDaPauta, htmlDaPauta, textoPuroDaPauta,
   ETAPAS_SUBSTACK, nomeEtapaSubstack,
@@ -127,7 +128,10 @@ function formatar(tipo) {
       cursor = [ini + 7, ini + 7];
       break;
     case 'link': {
-      const url = window.prompt('Endereço do link (https://…)');
+      if (url === undefined) {
+        perguntarTexto('Endereço do link (https://…)').then((u) => u && formatar('link', u));
+        return;
+      }
       if (!url || !/^https?:\/\//i.test(url.trim())) return;
       const txt = sel || 'texto do link';
       novo = `${value.slice(0, ini)}[${txt}](${url.trim()})${value.slice(fim)}`;
@@ -198,12 +202,12 @@ export function cliqueSubstack(alvo) {
       app.renderizar();
       break;
     case 'ss-excluir':
-      if (p && window.confirm(`Excluir a pauta "${p.titulo}"?`)) {
+      if (p) confirmar(`Excluir a pauta "${p.titulo}"?`).then((ok) => { if (!ok) return;
         mudarPauta(p.id, { excluido_em: new Date().toISOString() }, { redesenhar: false }).then(() => {
           location.hash = '#substack';
           app.avisoCurto('Pauta excluída.');
         });
-      }
+      });
       break;
     default:
       return false;

@@ -10,6 +10,7 @@ import {
 import { flutuar } from './celebracao.js';
 import { pontosDoLancamento, PONTOS } from './dados-recompensas.js';
 import { diaNoMes } from './dados-financas.js';
+import { confirmar, perguntarTexto } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -180,17 +181,14 @@ export function cliqueFinancas(alvo) {
     }
     case 'fin-ajuste-novo': {
       const tipo = alvo.dataset.tipo;
-      const nome = window.prompt(tipo === 'categorias' ? 'Nome da nova categoria de gasto:' : 'Nome da nova fonte de dinheiro:');
-      if (nome?.trim()) {
-        mudarAjustes((v) => mexerNaLista(v, tipo, `p-${Date.now().toString(36)}`, { nome: nome.trim().slice(0, 40), palavras: [] }))
-          .then(() => app.renderizar());
-      }
+      perguntarTexto(tipo === 'categorias' ? 'Nome da nova categoria de gasto' : 'Nome da nova fonte de dinheiro', { maximo: 40 }).then((nome) => {
+        if (nome?.trim()) mudarAjustes((v) => mexerNaLista(v, tipo, `p-${Date.now().toString(36)}`, { nome: nome.trim().slice(0, 40), palavras: [] })).then(() => app.renderizar());
+      });
       return true;
     }
     case 'fin-ajuste-remover': {
       const tipo = alvo.dataset.tipo;
-      if (!window.confirm('Tirar da lista? Os lançamentos antigos continuam, aparecendo como "Outros".')) return true;
-      mudarAjustes((v) => mexerNaLista(v, tipo, id, { removida: true })).then(() => app.renderizar());
+      confirmar('Tirar da lista? Os lançamentos antigos continuam, aparecendo como "Outros".').then((ok) => ok && mudarAjustes((v) => mexerNaLista(v, tipo, id, { removida: true })).then(() => app.renderizar()));
       return true;
     }
     case 'fin-cartao-novo':
@@ -256,8 +254,8 @@ export function cliqueFinancas(alvo) {
     case 'fin-parcelas-cancelar': {
       const grupo = alvo.dataset.grupo;
       const futuras = (obterEstado().financas || []).filter((l) => !l.excluido_em && l.dados?.parcela?.grupo === grupo && mesDe(l.data) > mesDe(hojeIso()));
-      if (!futuras.length || !window.confirm(`Tirar as ${futuras.length} parcelas que ainda vão vir? (Use quando quitar antes ou cancelar a compra. As já lançadas continuam.)`)) return true;
-      Promise.all(futuras.map((l) => salvarLinha({ ...l, excluido_em: new Date().toISOString() }))).then(() => {
+      if (!futuras.length) return true;
+      confirmar(`Tirar as ${futuras.length} parcelas que ainda vão vir? Use quando quitar antes ou cancelar a compra. As já lançadas continuam.`, { botao: 'Tirar as parcelas' }).then((ok) => ok && Promise.all(futuras.map((l) => salvarLinha({ ...l, excluido_em: new Date().toISOString() }))).then(() => {
         app.renderizar();
         app.avisoCurto('Parcelas futuras retiradas.', {
           rotulo: 'Desfazer',
@@ -266,7 +264,7 @@ export function cliqueFinancas(alvo) {
             app.renderizar();
           },
         });
-      });
+      }));
       return true;
     }
     case 'fin-csv':

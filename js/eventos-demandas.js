@@ -8,6 +8,7 @@ import { chaveDoTrello } from './nuvem.js';
 import { demandaDoTexto, sugestaoSimples, aplicarSugestao, tarefaDaDemanda } from './dados-demandas.js';
 import { formDemanda, formColar, folhaCompartilhado, hojeLocal, linkDoTrello, opcoesListas, opcoesEtiquetas } from './views-demandas.js';
 import { sugerirEtiqueta } from './dados-demandas.js';
+import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 const UMA_HORA = 60 * 60 * 1000;
@@ -107,7 +108,7 @@ export function tokenDoTrelloNoEndereco() {
   // Pedido feito agora há pouco nesta janela: segue direto. Se o Trello voltou em outra janela
   // (acontece no app instalado), ou se o link veio de outro lugar, pergunta antes de conectar.
   if (pedido && Date.now() - Number(pedido) < 30 * 60 * 1000) return m[1];
-  return window.confirm('O Trello devolveu um acesso para a Bússola. Conectar este Trello?') ? m[1] : null;
+  return confirmar('O Trello devolveu um acesso para a Bússola. Conectar este Trello?', { botao: 'Conectar' }).then((ok) => (ok ? m[1] : null));
 }
 
 // ---------------------------------------------------------------------------
@@ -267,13 +268,12 @@ export function cliqueDemandas(alvo) {
     case 'dem-desconectar': {
       const servico = alvo.dataset.servico;
       const nome = servico === 'trello' ? 'o Trello' : 'o Notion';
-      if (!window.confirm(`Desconectar ${nome}? O acesso guardado é apagado. As demandas que já viraram tarefa continuam.`)) break;
-      desconectar(servico).then(async (r) => {
+      confirmar(`Desconectar ${nome}? O acesso guardado é apagado. As demandas que já viraram tarefa continuam.`).then((ok) => ok && desconectar(servico).then(async (r) => {
         if (!r.ok) return app.avisoCurto(r.erro || 'Não foi possível desconectar agora.');
         await sincronizar();
         app.renderizar();
         return app.avisoCurto(`${servico === 'trello' ? 'Trello' : 'Notion'} desconectado.`);
-      });
+      }));
       break;
     }
     default:

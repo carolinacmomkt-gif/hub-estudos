@@ -14,6 +14,7 @@ import { imagemDoTexto, corDoTextoNoPapel } from './texto-imagem.js';
 import { seletorDeFormato, trocarFormato } from './editor-texto.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 import { paginaPedida, notarPaginaDoCaderno } from './continuar.js';
+import { confirmar, perguntarTexto } from './confirmar.js';
 
 const CHAVE_PREFS = 'hub.editor.prefs';
 
@@ -450,7 +451,7 @@ async function duplicarPagina(i) {
 async function excluirPagina(i) {
   await salvarAgora();
   const p = paginas[i];
-  if (!p || !window.confirm(`Mandar a página ${i + 1} para a lixeira? Dá para restaurar no painel de páginas.`)) return;
+  if (!p || !await confirmar(`Mandar a página ${i + 1} para a lixeira? Dá para restaurar no painel de páginas.`)) return;
   await salvar('paginas', { ...p, excluido_em: new Date().toISOString() });
   paginas.splice(i, 1);
   lixeira = null;
@@ -495,7 +496,7 @@ async function mudarSecaoDaPagina(i, secaoId) {
 }
 
 async function novaSecao() {
-  const titulo = window.prompt('Nome da divisória', `Matéria ${secoes.length + 1}`);
+  const titulo = await perguntarTexto('Nome da divisória', `Matéria ${secoes.length + 1}`);
   if (!titulo?.trim()) return;
   await salvarAgora();
   const secao = await salvar('secoes', { caderno_id: caderno.id, titulo: titulo.trim().slice(0, 60), ordem: secoes.length, cor: String((secoes.length % 6) + 1) });
@@ -525,7 +526,7 @@ async function moverSecao(id) {
 
 async function excluirSecao(id) {
   const s = secoes.find((x) => x.id === id);
-  if (!s || !window.confirm(`Excluir a divisória "${s.titulo}"? As páginas dela continuam no caderno, sem divisória.`)) return;
+  if (!s || !await confirmar(`Excluir a divisória "${s.titulo}"? As páginas dela continuam no caderno, sem divisória.`)) return;
   await salvarAgora();
   await salvar('secoes', { ...s, excluido_em: new Date().toISOString() });
   secoes = secoes.filter((x) => x.id !== id);
@@ -581,7 +582,7 @@ async function importarModelo(input) {
     avisar('O arquivo passa de 25 MB.');
     return;
   }
-  const nome = window.prompt('Nome do modelo', arquivo.name.replace(/\.[^.]+$/, '').slice(0, 60));
+  const nome = await perguntarTexto('Nome do modelo', { padrao: arquivo.name.replace(/\.[^.]+$/, '').slice(0, 60) });
   if (nome === null) return;
   try {
     mostrarSalvo('Preparando o modelo…');
@@ -602,7 +603,7 @@ async function importarModelo(input) {
 async function excluirModelo() {
   const modelo = paginas[indice]?.modelo_folha || '';
   const m = modelosProprios().find((x) => `proprio:${x.id}` === modelo);
-  if (!m || !window.confirm(`Excluir o modelo "${m.nome}"? As páginas que usam ele ficam em branco.`)) return;
+  if (!m || !await confirmar(`Excluir o modelo "${m.nome}"? As páginas que usam ele ficam em branco.`)) return;
   await salvar('config', { ...m.linha, excluido_em: new Date().toISOString() });
   atualizarEstado({ config: await listar('config') });
   await mudarModelo('branco');
@@ -743,7 +744,7 @@ function inserirMeuAdesivo(id) {
 async function selecaoVirarAdesivo() {
   const n = editor.selecaoNormalizada();
   if (!n) return;
-  const nome = window.prompt('Nome do adesivo', 'Meu adesivo');
+  const nome = await perguntarTexto('Nome do adesivo', 'Meu adesivo');
   if (nome === null) return;
   const blob = await editor.imagemDaSelecao(1);
   const previa = blob ? await new Promise((resolver) => { const r = new FileReader(); r.onload = () => resolver(r.result); r.readAsDataURL(blob); }) : null;
@@ -1028,17 +1029,17 @@ function aoClicar(evento) {
       atualizarBarra();
       return;
     case 'camada-mesclar':
-      if (window.confirm('Juntar esta camada com a de baixo? Os traços passam para a de baixo.')) {
+      confirmar('Juntar esta camada com a de baixo? Os traços passam para a de baixo.').then((ok) => { if (!ok) return;
         editor.mesclarComAbaixo(valor);
         atualizarBarra();
-      }
+      });
       return;
     case 'camada-excluir': {
       const c = editor.camada(valor);
-      if (c && window.confirm(`Excluir a camada "${c.nome}"${c.itens.length ? ` e os ${c.itens.length} itens dela` : ''}?`)) {
+      if (c) confirmar(`Excluir a camada "${c.nome}"${c.itens.length ? ` e os ${c.itens.length} itens dela` : ''}?`).then((ok) => { if (!ok) return;
         editor.excluirCamada(valor);
         atualizarBarra();
-      }
+      });
       return;
     }
     case 'inserir-adesivo':
@@ -1048,9 +1049,9 @@ function aoClicar(evento) {
       inserirMeuAdesivo(valor);
       return;
     case 'excluir-meu-adesivo':
-      if (window.confirm('Excluir este adesivo da sua coleção? O que já está nas páginas continua.')) {
+      confirmar('Excluir este adesivo da sua coleção? O que já está nas páginas continua.').then((ok) => { if (!ok) return;
         guardarAdesivos(adesivosProprios().filter((a) => a.id !== valor)).then(atualizarBarra);
-      }
+      });
       return;
     case 'selecao-espessura':
       editor.mudarEspessuraSelecao(Number(valor));

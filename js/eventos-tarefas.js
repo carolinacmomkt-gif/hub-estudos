@@ -5,6 +5,7 @@ import { gravar } from './gravacao.js';
 import { lerTarefaRapida, aoConcluir, aoDesfazer, iso } from './dados-tarefas.js';
 import { registrarDeslize, ligarDeslizar } from './deslizar.js';
 import { formTarefa, lerFormTarefa, formProjeto, lerFormProjeto, textoPrevia, hojeIso } from './views-tarefas.js';
+import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -138,12 +139,15 @@ export function cliqueTarefas(alvo) {
     }
     case 'projeto-excluir': {
       const p = projeto(id);
-      if (!p || !window.confirm(`Excluir o projeto "${p.titulo}"? As tarefas dele continuam, só que sem projeto.`)) return true;
-      const soltas = (obterEstado().tarefas || []).filter((t) => t.projeto_id === id && !t.excluido_em);
-      Promise.all([salvarProjeto({ ...p, excluido_em: new Date().toISOString() }), ...soltas.map((t) => salvarTarefa({ ...t, projeto_id: null }))]).then(() => {
-        fecharFolha();
-        location.hash = '#tarefas/projetos';
-        app.avisoCurto('Projeto excluído.');
+      if (!p) return true;
+      confirmar(`Excluir o projeto "${p.titulo}"? As tarefas dele continuam, só que sem projeto.`).then((ok) => {
+        if (!ok) return;
+        const soltas = (obterEstado().tarefas || []).filter((t) => t.projeto_id === id && !t.excluido_em);
+        Promise.all([salvarProjeto({ ...p, excluido_em: new Date().toISOString() }), ...soltas.map((t) => salvarTarefa({ ...t, projeto_id: null }))]).then(() => {
+          fecharFolha();
+          location.hash = '#tarefas/projetos';
+          app.avisoCurto('Projeto excluído.');
+        });
       });
       return true;
     }

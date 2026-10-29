@@ -4,6 +4,7 @@
 import { EditorDeTinta, novaPaginaVazia } from './editor-tinta.js';
 import { listar, salvar } from './persistencia.js';
 import { esc } from './utilidades.js';
+import { confirmar } from './confirmar.js';
 
 const CHAVE_PREFS = 'hub.caneta.prefs';
 const MARCA_RASCUNHO = 'rascunho-caneta';
@@ -249,7 +250,7 @@ function aoClicar(evento) {
       atualizarBotoesHistorico();
       return;
     case 'limpar':
-      if (window.confirm('Limpar a página inteira? Dá para desfazer depois.')) editor.limpar();
+      confirmar('Limpar a página inteira? Dá para desfazer depois.').then((ok) => ok && editor.limpar());
       atualizarBotoesHistorico();
       return;
     case 'diagnostico':

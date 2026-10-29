@@ -280,7 +280,7 @@ export async function entrarNoApp() {
   document.body.classList.remove('modo-login');
   await carregarDadosLocais();
   aplicarCompartilhado();
-  const tokenTrello = tokenDoTrelloNoEndereco(); // volta da autorização do Trello
+  const tokenTrello = tokenDoTrelloNoEndereco(); // volta da autorização do Trello (pode perguntar antes: Promise)
   montarNavegacao(); // o menu guardado só chega com a config
   conferirConquistas(); // anota o que já existe neste aparelho (sem comemorar o antigo)
   renderizar();
@@ -288,7 +288,7 @@ export async function entrarNoApp() {
     abrirCompartilhado(compartilhadoPendente);
     compartilhadoPendente = null;
   }
-  if (tokenTrello) conectarComToken('trello', tokenTrello);
+  if (tokenTrello) Promise.resolve(tokenTrello).then((t) => t && conectarComToken('trello', t));
   if (!sincronizacaoIniciada) {
     sincronizacaoIniciada = true;
     iniciarSincronizacaoAutomatica();

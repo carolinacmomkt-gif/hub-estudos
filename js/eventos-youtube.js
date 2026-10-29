@@ -12,6 +12,7 @@ import {
 import { instanteLocal, chaveDia, dataDaChave } from './dados-calendario.js';
 import { enviarThumb, apagarThumb, carregarThumbsDaTela, MAX_THUMBS } from './thumbs-youtube.js';
 import { abrirTeleprompter } from './teleprompter.js';
+import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
 let tempoSalvar = null;
@@ -255,20 +256,22 @@ export function cliqueYoutube(alvo) {
       return true;
     case 'yt-bloco-remover': {
       const v = videoPeloId(obterEstado().parametro);
-      if (v?.roteiro?.blocos?.[i]?.texto?.trim() && !window.confirm('Remover este bloco? O texto dele se perde.')) return true;
-      mudarVideo((x) => ({ roteiro: { ...x.roteiro, blocos: (x.roteiro?.blocos || []).filter((_, k) => k !== i) } }));
+      const remover = () => mudarVideo((x) => ({ roteiro: { ...x.roteiro, blocos: (x.roteiro?.blocos || []).filter((_, k) => k !== i) } }));
+      if (v?.roteiro?.blocos?.[i]?.texto?.trim()) confirmar('Remover este bloco? O texto dele se perde.').then((ok) => ok && remover());
+      else remover();
       return true;
     }
     case 'yt-modelo': {
       const v = videoPeloId(obterEstado().parametro);
       if (!v) return true;
-      if ((v.roteiro?.blocos || []).some((b) => b.texto?.trim()) && !window.confirm('Trocar a estrutura do roteiro? Os blocos com texto ficam no fim.')) return true;
-      mudarVideo((x) => ({
+      const trocar = () => mudarVideo((x) => ({
         roteiro: {
           ...x.roteiro,
           blocos: [...(MODELOS_ROTEIRO[x.formato] || MODELOS_ROTEIRO.longo).map((m) => ({ ...m, id: crypto.randomUUID() })), ...(x.roteiro?.blocos || []).filter((b) => b.texto?.trim())],
         },
       }));
+      if ((v.roteiro?.blocos || []).some((b) => b.texto?.trim())) confirmar('Trocar a estrutura do roteiro? Os blocos com texto ficam no fim.', { botao: 'Trocar' }).then((ok) => ok && trocar());
+      else trocar();
       return true;
     }
     case 'yt-cenas-roteiro':
@@ -306,16 +309,19 @@ export function cliqueYoutube(alvo) {
       mudarVideo((v) => ({ thumbs: (v.thumbs || []).map((t, k) => ({ ...t, escolhida: k === i ? !t.escolhida : false })), checklist: { ...(v.checklist || {}), thumb: true } }));
       return true;
     case 'yt-thumb-remover': {
-      if (!window.confirm('Remover esta imagem?')) return true;
-      const t = videoPeloId(obterEstado().parametro)?.thumbs?.[i];
-      mudarVideo((x) => ({ thumbs: (x.thumbs || []).filter((_, k) => k !== i) })).then(() => t && apagarThumb(t.caminho));
+      confirmar('Remover esta imagem?').then((ok) => {
+        if (!ok) return;
+        const t = videoPeloId(obterEstado().parametro)?.thumbs?.[i];
+        mudarVideo((x) => ({ thumbs: (x.thumbs || []).filter((_, k) => k !== i) })).then(() => t && apagarThumb(t.caminho));
+      });
       return true;
     }
     case 'yt-descricao-modelo': {
       const v = videoPeloId(obterEstado().parametro);
       if (!v) return true;
-      if (v.descricao?.trim() && !window.confirm('Trocar a descrição pelo modelo do canal?')) return true;
-      mudarVideo((x) => ({ descricao: descricaoDoModelo(x, configDoCanal(obterEstado())) }));
+      const aplicar = () => mudarVideo((x) => ({ descricao: descricaoDoModelo(x, configDoCanal(obterEstado())) }));
+      if (v.descricao?.trim()) confirmar('Trocar a descrição pelo modelo do canal?', { botao: 'Trocar', perigo: false }).then((ok) => ok && aplicar());
+      else aplicar();
       return true;
     }
     case 'yt-copiar': {
@@ -341,13 +347,16 @@ export function cliqueYoutube(alvo) {
       return true;
     case 'yt-excluir': {
       const v = videoPeloId(id);
-      if (!v || !window.confirm(`Excluir "${v.titulo}"? As datas dele saem do Calendário.`)) return true;
+      if (!v) return true;
+      confirmar(`Excluir "${v.titulo}"? As datas dele saem do Calendário.`).then((ok) => {
+      if (!ok) return;
       clearTimeout(tempoSalvar);
       pendente = null;
       excluir('videos', id).then(async (removido) => {
         if (removido) await sincronizarEventos(removido);
         location.hash = '#youtube';
         app.avisoCurto('Vídeo excluído.');
+      });
       });
       return true;
     }
