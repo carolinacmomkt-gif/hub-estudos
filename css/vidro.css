@@ -259,7 +259,8 @@ body[data-menu="icones"] .nav-lateral .nav-topo {
     pointer-events: auto;
   }
 
-  /* Borda de rolagem: o conteúdo some num degradê ao passar atrás da barra */
+  /* Borda de rolagem: o conteúdo some num degradê ao passar atrás da barra; embaixo dela
+     (a faixa do indicador do iPhone) fica cheio, para não aparecer texto pelo vão */
   body:not(.modo-login):not([data-teclado="aberto"]) .app::after {
     content: "";
     position: fixed;
@@ -267,10 +268,30 @@ body[data-menu="icones"] .nav-lateral .nav-topo {
     right: 0;
     bottom: 0;
     z-index: 19;
-    height: calc(84px + env(safe-area-inset-bottom));
-    background: linear-gradient(to bottom, transparent, var(--cor-fundo) 85%);
+    height: calc(108px + env(safe-area-inset-bottom));
+    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--cor-fundo) 92%, transparent) 46%, var(--cor-fundo) 62%);
     pointer-events: none;
     transform: translateY(var(--ajuste-base, 0px));
+  }
+
+  /* Folha aberta: a página atrás não rola (no iPhone ela rolava por baixo e o vidro perdia o
+     desfoque no meio do gesto) e a folha fica mais cheia, porque no celular ela cobre a leitura */
+  html:has(dialog.folha[open]) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body:has(dialog.folha[open]) {
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  body:has(dialog.folha[open]) dialog.folha {
+    touch-action: pan-y;
+  }
+
+  dialog.folha {
+    background: color-mix(in srgb, var(--vidro) 100%, var(--cor-superficie-elevada) 55%);
   }
 
   body[data-teclado="aberto"] .cabecalho-acoes {
