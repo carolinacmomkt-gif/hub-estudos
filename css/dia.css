@@ -137,3 +137,21 @@ button.dia-texto:hover {
     animation: none;
   }
 }
+
+/* Horas protegidas (Configurações) e Dia leve (Hoje), 29/10/2026 */
+.protegidos { margin: 10px 0; }
+.protegido { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 4px 12px; padding: 8px 0; border-top: 1px solid var(--cor-linha); }
+.protegidos-sugestoes { margin: 8px 0 14px; }
+.protegido-dias { display: flex; flex-wrap: wrap; gap: 6px; }
+.protegido-form .cal-form-linha { align-items: flex-end; }
+.painel-leve .acoes-topo { margin-bottom: 12px; }
+.dialeve { border-left: 4px solid var(--cor-sucesso); }
+.dialeve-lista, .dialeve-habitos { display: flex; flex-direction: column; }
+.dialeve-item, .dialeve-habitos li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: var(--toque); padding: 6px 0; border-top: 1px solid var(--cor-linha); }
+.dialeve-habitos li { grid-template-columns: minmax(0, 1fr) auto auto; }
+.dialeve-hora { min-width: 52px; font-variant-numeric: tabular-nums; color: var(--cor-texto-suave); font-size: 0.9rem; }
+.dialeve-item a { text-decoration: none; font-weight: 600; }
+.dialeve-item.tipo-prazo a::before { content: "⏳ "; }
+.dialeve-item.tipo-conta a::before { content: "💳 "; }
+.dialeve-passo { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--raio); background: var(--cor-superficie-2); }
+.dialeve-passo .botao { align-self: flex-start; margin-top: 6px; }

@@ -2,6 +2,7 @@
 // Aceito, o plano aparece na Agenda de hoje e cada bloco avisa quando começa.
 
 import { esc } from './utilidades.js';
+import { protegidosDe, protegidosComoEventos } from './dados-protegidos.js';
 import { tarefasDeHoje } from './dados-tarefas.js';
 import { situacaoDasContas, mesDe } from './dados-financas.js';
 import { habitosDoDia, feitoNoDia } from './dados-habitos.js';
@@ -44,8 +45,9 @@ export function montarEntrada(estado, { nota = '', agora = Date.now() } = {}) {
     .map((h) => ({ nome: h.nome, periodo: h.periodo || 'qualquer' }));
   const diario = (estado.diario || []).filter((d) => !d.excluido_em && d.data === hoje)
     .sort((a, b) => String(b.atualizado_em).localeCompare(String(a.atualizado_em)))[0];
+  const protegidos = protegidosComoEventos(protegidosDe(estado.config), hoje);
   return entradaDoDia({
-    tarefas: [...t.atrasadas, ...t.hoje], eventos: eventosHoje, contas, habitos, prazos,
+    tarefas: [...t.atrasadas, ...t.hoje], eventos: [...eventosHoje, ...protegidos], contas, habitos, prazos,
     energia: diario?.energia || null, humor: diario?.humor || null, nota, hoje, minutoDoEvento,
   });
 }

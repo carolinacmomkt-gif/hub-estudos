@@ -3,6 +3,9 @@
 import { cardAgendaHoje, cardHumor, resumoDoDia } from './hoje.js';
 import { cardTarefasHoje, cardProjetosHoje } from './views-tarefas.js';
 import { cardFinancasHoje, cardContasHoje } from './views-financas.js';
+import { cardDiaLeve, botaoDiaLeve } from './views-protegidos.js';
+import { emDiaLeve } from './dados-dialeve.js';
+import { dataLocal } from './views-dia.js';
 import { cardRecompensasHoje } from './views-recompensas.js';
 import { cardHabitosHoje } from './views-habitos.js';
 import { cardMeuDia } from './views-dia.js';
@@ -437,6 +440,19 @@ export function renderInicio(estado) {
     progresso: () => cardProgresso(dados),
   };
 
+  // Dia leve: o Hoje encolhe para o card do dia leve, a agenda e as demandas que precisam de resposta.
+  const hojeIsoLocal = dataLocal(agora);
+  const diaLeve = !estado.usandoExemplo && !editando && emDiaLeve(estado.config, hojeIsoLocal);
+  if (diaLeve) {
+    return `
+      ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
+      <div class="acoes-topo">${botaoDiaLeve(true)}</div>
+      <div class="painel painel-leve">
+        <div class="bloco tam-inteiro" data-bloco="dialeve"><div class="bloco-conteudo">${cardDiaLeve(estado, hojeIsoLocal)}</div></div>
+        ${[['agenda', doApp.agenda], ['demandas', doApp.demandas]].map(([id, fn]) => { const c = fn(); return c ? `<div class="bloco tam-metade" data-bloco="${id}"><div class="bloco-conteudo">${c}</div></div>` : ''; }).join('')}
+      </div>`;
+  }
+
   const visiveis = blocos.filter((b) => b.visivel);
   const html = visiveis.map((bloco, i) => {
     let conteudo = proprios[bloco.id] ? renderProprio(bloco.id, proprios[bloco.id], agora) : doApp[bloco.id]();
@@ -454,6 +470,6 @@ export function renderInicio(estado) {
 
   return `
     ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
-    ${editando ? painelPersonalizar(blocos, proprios) : '<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar</button></div>'}
+    ${editando ? painelPersonalizar(blocos, proprios) : `<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar</button>${estado.usandoExemplo ? '' : botaoDiaLeve(false)}</div>`}
     <div class="painel${editando ? ' painel-editando' : ''}">${html}</div>`;
 }

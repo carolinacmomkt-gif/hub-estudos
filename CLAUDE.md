@@ -233,6 +233,11 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - Botões: **Comprei** (lança o gasto, parcelado se for o caso), **Esperar 48h** (guarda em `config` "desejos" `{ lista: [{ id, descricao, valor, parcelas, criado_em, lembrar_em, decidido }] }`; passado o tempo, o card Finanças do Hoje pergunta "ainda quer?") e **Deixa para lá** (`decidido: 'deixei'`, soma no "deixou de gastar").
 - **Livre hoje** (`livreHoje`): a parte de hoje do livre do mês menos o que já saiu hoje; aparece no card do livre, no card Finanças do Hoje e no widget (`livreHoje`, `gastoHoje`).
 
+## Horas protegidas e Dia leve
+
+- **Horas protegidas** (decisão da Carol, 29/10/2026; `js/dados-protegidos.js`, card em Configurações): blocos da semana (`config` "protegidos" `{ lista: [{ id, nome, emoji, dias, inicio, fim }] }`) que nada invade. Entram como ocupados no organizador de demandas (`montarEntradaSemana`, 14 dias) e como compromissos no "Planejar meu dia" (`montarEntrada`), então nem a IA nem o encaixe simples passam por cima; o que não cabe vai para "Sem espaço" com a mensagem pronta. Sugestões prontas (Academia, Descanso, Noite sem trabalho). O almoço continua vindo do horário do dia.
+- **Dia leve** (`js/dados-dialeve.js`, botão no Hoje ao lado de Personalizar): "hoje estou mal" encolhe o Hoje em vez de esconder tudo. As tarefas de hoje sem hora (e sem prazo de demanda até amanhã) vão para amanhã (com Desfazer), e o Hoje mostra só: os inegociáveis (compromissos e tarefas com hora, prazos de hoje e amanhã, contas de hoje), um passo pequeno no lugar do Próximo passo, os hábitos na versão mínima, a Agenda e as Demandas. Fica em `config` "dia_leve" `{ data, movidas, historico }`; o `historico` alimenta "Padrões que você não vê". "Voltar ao dia normal" desliga sem mexer nas tarefas movidas.
+
 ## Calendário da faculdade (requisito importante)
 
 - Fontes:

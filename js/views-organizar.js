@@ -6,6 +6,7 @@ import { esc } from './utilidades.js';
 import { prefsDoDia } from './dados-dia.js';
 import { valorMeuDia, dataLocal, minutoAgora } from './views-dia.js';
 import { entradaDaSemana, prefsOrganizar, pedeReorganizar, textoDoDia, somarDias } from './dados-organizar.js';
+import { protegidosDe, protegidosDoDia } from './dados-protegidos.js';
 
 const NOMES_DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 // "na sexta", "no sábado"
@@ -31,6 +32,12 @@ export function montarEntradaSemana(estado, agora = Date.now()) {
       const data = dataLocal(ini.getTime());
       return { data, inicio: minutoAgora(ini.getTime()), fim: fim && dataLocal(fim.getTime()) === data ? minutoAgora(fim.getTime()) : null, titulo: e.titulo };
     });
+  // Horas protegidas: ocupadas em cada dia do horizonte, como compromissos.
+  const protegidos = protegidosDe(estado.config);
+  for (let i = 0; i < 14; i += 1) {
+    const data = somarDias(hoje, i);
+    for (const b of protegidosDoDia(protegidos, data)) eventos.push({ data, inicio: b.inicio, fim: b.fim, titulo: b.titulo });
+  }
   return entradaDaSemana({
     demandas: estado.demandas || [], tarefas: estado.tarefas || [], eventos, hoje, agoraMin: minutoAgora(agora),
     horario: prefsDoDia(valorMeuDia(estado)), prefs: valorOrganizar(estado).prefs,
