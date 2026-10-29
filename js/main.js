@@ -27,6 +27,8 @@ import { renderMetas } from './views-metas.js';
 import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
 import { renderRetrospectiva } from './views-retrospectiva.js';
+import { renderCantinho } from './views-cantinho.js';
+import { montarCantinho, desmontarCantinho } from './eventos-cantinho.js';
 import { renderBusca } from './views-busca.js';
 import { montarBusca, dadosDaBusca } from './eventos-busca.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
@@ -72,6 +74,7 @@ const VIEWS = {
   metas: renderMetas,
   resumo: renderResumo,
   retrospectiva: renderRetrospectiva,
+  cantinho: renderCantinho,
   buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
 };
 
@@ -94,6 +97,7 @@ const CICLO = {
     },
   },
   livro: { montar: (id) => id && montarLeitor(id), desmontar: desmontarLeitor },
+  cantinho: { montar: montarCantinho, desmontar: desmontarCantinho },
 };
 let telaMontada = null;
 

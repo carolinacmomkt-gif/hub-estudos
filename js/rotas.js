@@ -20,6 +20,7 @@ export const ROTAS = [
   { id: 'buscar', titulo: 'Pergunte à Bússola', curto: 'Buscar', icone: 'buscar', grupo: 'dia' },
   { id: 'financas', titulo: 'Finanças', curto: 'Finanças', icone: 'financas', grupo: 'vida' },
   { id: 'metas', titulo: 'Metas e lazer', curto: 'Metas', icone: 'metas', grupo: 'vida' },
+  { id: 'cantinho', titulo: 'Meu cantinho', curto: 'Cantinho', icone: 'cantinho', grupo: 'vida' },
 ];
 
 export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configurações', icone: 'configuracoes' };

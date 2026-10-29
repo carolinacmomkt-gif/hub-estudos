@@ -4,6 +4,7 @@ const CAMINHOS = {
   menu: 'M4 6h16M4 12h16M4 18h16',
   recolher: 'M15 6l-6 6 6 6',
   fechar: 'M6 6l12 12M18 6L6 18',
+  cantinho: 'M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a7 7 0 1 0 10.7 10.7z',
   seta: 'M6 9l6 6 6-6',
   estrela: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z',
   editar: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',

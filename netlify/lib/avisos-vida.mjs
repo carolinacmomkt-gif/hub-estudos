@@ -76,12 +76,27 @@ export function habitosPendentes(habitos, registros, hoje) {
 export function avisosDaVida({ dados, config, fuso = 'America/Sao_Paulo', agora = Date.now(), enviados = new Set() }) {
   const cfg = configVida(config);
   const { data: hoje, minutos: agoraMin } = noFuso(agora, fuso);
-  if (emSilencio(agoraMin, cfg.silencio)) return [];
+  const saida = [];
+  // Hora de desligar: 30 min antes da hora de deitar escolhida no Meu cantinho (uma vez por dia).
+  const cantinho = dados.cantinho || {};
+  if (cantinho.lembrete !== false && /^\d{2}:\d{2}$/.test(cantinho.deitar || '')) {
+    const alvo = minutos(cantinho.deitar) - 30;
+    if (agoraMin >= alvo && agoraMin < alvo + 45 && !enviados.has(`dormir:${hoje}`)) {
+      saida.push({
+        chave: `dormir:${hoje}`,
+        titulo: `Hora de desligar: deitar às ${cantinho.deitar}`,
+        texto: 'Telas longe, luz baixa. O cantinho está pronto para a mesinha.',
+        tag: `dormir-${hoje}`,
+        url: '/#cantinho/mesinha',
+      });
+    }
+  }
+  // O "hora de desligar" é o único que passa pelo silêncio (ele é justamente para a noite).
+  if (emSilencio(agoraMin, cfg.silencio)) return saida;
   // O resumo da manhã só vale até 4h depois do horário (um "bom dia" à noite não ajuda).
   const LIMITE = { manha: 4 * 60, contas: 24 * 60, habitos: 24 * 60 };
   const devido = (id) => cfg[id].ativo && agoraMin >= minutos(cfg[id].hora) && agoraMin < minutos(cfg[id].hora) + LIMITE[id]
     && !enviados.has(`${id}:${hoje}`);
-  const saida = [];
 
   const contas = contasDeHoje(dados.financas || [], hoje);
   if (devido('contas') && contas.length) {
