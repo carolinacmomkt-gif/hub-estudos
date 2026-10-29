@@ -417,10 +417,13 @@
   min-width: 0;
 }
 
-.fin-comprar-botao {
+.fin-comprar .tarefa-rapida .fin-comprar-botao {
   flex: none;
+  width: auto;
+  padding: 0 16px;
+  border-radius: var(--raio);
+  font-size: 1rem;
   white-space: nowrap;
-  padding: 0 14px;
 }
 
 .fin-veredito {
