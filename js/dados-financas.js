@@ -46,7 +46,7 @@ export function somarMeses(mes, n) {
   const d = new Date(a, m - 1 + n, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
-const ultimoDia = (mes) => { const [a, m] = mes.split('-').map(Number); return new Date(a, m, 0).getDate(); };
+export const ultimoDia = (mes) => { const [a, m] = mes.split('-').map(Number); return new Date(a, m, 0).getDate(); };
 export const diaNoMes = (mes, dia) => `${mes}-${String(Math.min(dia, ultimoDia(mes))).padStart(2, '0')}`;
 
 // "1.234,56" | "1234.56" | "120" | "R$ 35,90" → número

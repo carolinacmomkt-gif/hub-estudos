@@ -5,6 +5,9 @@ import { cabecalho } from './componentes.js';
 import { icone } from './icones.js';
 import { esc } from './utilidades.js';
 import { buscar, pareceUmaPergunta } from './dados-busca.js';
+import { lerDesejo, avaliarCompra } from './dados-comprar.js';
+import { situacaoGamificacao } from './dados-recompensas.js';
+import { htmlVeredito, hojeIso } from './views-financas.js';
 
 export const SUGESTOES_BUSCA = [
   'O que tenho amanhã?',
@@ -49,6 +52,16 @@ function itemResultado(r) {
     </li>`;
 }
 
+// "posso comprar um tênis de 400?" → o veredito na hora, sem IA
+function vereditoDaBusca(estado, t) {
+  if (!/\b(posso|compr|cabe|gastar)/i.test(t)) return '';
+  const desejo = lerDesejo(t.replace(/\?/g, ' ').replace(/\b(cabe|gastar|um|uma|o|a)\b/gi, ' '));
+  if (!(desejo.valor > 0) || !(estado.financas || []).length) return '';
+  const { saldo, itens } = situacaoGamificacao(estado);
+  const r = avaliarCompra(estado.financas, hojeIso(), desejo, { saldo, itens });
+  return r ? htmlVeredito(r, desejo, { compacto: true }) : '';
+}
+
 export function htmlResultados(estado, termo, paginas) {
   const t = String(termo || '').trim();
   if (!t) {
@@ -57,11 +70,12 @@ export function htmlResultados(estado, termo, paginas) {
       <p class="campo-ajuda">Experimente:</p>
       <div class="busca-sugestoes">${[...recentes, ...SUGESTOES_BUSCA.filter((s) => !recentes.includes(s))].slice(0, 6).map((s) => `<button class="chip-filtro" type="button" data-acao="busca-sugestao" data-texto="${esc(s)}">${esc(s)}</button>`).join('')}</div>`;
   }
+  const compra = vereditoDaBusca(estado, t);
   const achados = buscar(estado, t, { paginas });
   if (!achados.length) {
-    return `<p class="texto-suave">Nada com "${esc(t)}" no app.${pareceUmaPergunta(t) ? ' Toque em <strong>Perguntar</strong> para a IA olhar a agenda, as tarefas e as finanças.' : ''}</p>`;
+    return `${compra}<p class="texto-suave">Nada com "${esc(t)}" no app.${pareceUmaPergunta(t) ? ' Toque em <strong>Perguntar</strong> para a IA olhar a agenda, as tarefas e as finanças.' : ''}</p>`;
   }
-  return `
+  return `${compra}
     <p class="campo-ajuda" aria-live="polite">${achados.length === 40 ? 'Os 40 mais parecidos' : `${achados.length} ${achados.length === 1 ? 'resultado' : 'resultados'}`}</p>
     <ul class="busca-lista">${achados.map(itemResultado).join('')}</ul>`;
 }

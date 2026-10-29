@@ -3,7 +3,7 @@
 // pesam nos próximos meses, em quantos dias atrasa cada caixinha com prazo e se dá para resgatar
 // com os pontos. "Esperar 48h" guarda o desejo em config "desejos" e o app pergunta de novo depois.
 
-import { lerValor, livreParaGastar, caixinhas, planoDaCaixinha, parcelasEmAberto, mesDe, somarMeses, ultimoDia, progressoCaixinha } from './dados-financas.js';
+import { lerValor, livreParaGastar, caixinhas, planoDaCaixinha, parcelasEmAberto, mesDe, somarMeses, ultimoDia, progressoCaixinha, lancamentos } from './dados-financas.js';
 
 export const ESPERA_HORAS = 48;
 const DIA_MS = 864e5;
@@ -23,7 +23,7 @@ export function lerDesejo(texto) {
 
 // O veredito. "livre" vem de livreParaGastar; a compra à vista sai toda do mês; parcelada, só a
 // primeira parcela sai agora e o resto pesa nos próximos meses.
-export function avaliarCompra(linhas, hoje, { valor, parcelas = 1 }, { pontos = 0, valorDoPonto = 0 } = {}) {
+export function avaliarCompra(linhas, hoje, { valor, parcelas = 1 }, { saldo = 0, itens = [] } = {}) {
   if (!(valor > 0)) return null;
   const livre = livreParaGastar(linhas, hoje);
   const porMes = Math.round((valor / parcelas) * 100) / 100;
@@ -54,12 +54,21 @@ export function avaliarCompra(linhas, hoje, { valor, parcelas = 1 }, { pontos = 
     return { id: c.id, descricao: c.descricao, dias: diasDeAtraso, ...progressoCaixinha(c) };
   }).filter((x) => x && x.dias >= 1).sort((a, b) => b.dias - a.dias).slice(0, 3);
 
-  // Dá para resgatar com os pontos das recompensas?
-  const valePontos = valorDoPonto > 0 ? Math.round(pontos * valorDoPonto * 100) / 100 : 0;
-  const comPontos = valePontos >= valor ? { pontos: Math.ceil(valor / valorDoPonto) } : null;
+  // Dá para tirar dos pontos? Uma recompensa que cobre o valor e que o saldo já paga (a mais barata).
+  const comPontos = itens.filter((i) => Number(i.valor) >= valor && Number(i.custo) <= saldo).sort((a, b) => a.custo - b.custo)[0] || null;
 
   return { veredito, valor, parcelas, porMes, agora, livre: livre.livre, sobra, sobraPorDia, livrePorDia: livre.porDia, dias, meses, atrasos, comPontos };
 }
+
+// Livre para gastar HOJE: a parte de hoje do livre do mês, menos o que já saiu hoje.
+export function livreHoje(linhas, hoje) {
+  const l = livreParaGastar(linhas, hoje);
+  const gastoHoje = lancamentos(linhas).filter((x) => x.tipo === 'saida' && x.data === hoje).reduce((t, x) => t + (Number(x.valor) || 0), 0);
+  const sobra = Math.round((l.porDia - gastoHoje) * 100) / 100;
+  return { porDia: l.porDia, gastoHoje: Math.round(gastoHoje * 100) / 100, sobra, livre: l.livre, diasRestantes: l.diasRestantes };
+}
+
+export const desejosDe = (config) => (config || []).find((c) => c.chave === 'desejos' && !c.excluido_em)?.valor?.lista || [];
 
 export const TEXTO_VEREDITO = {
   cabe: { titulo: 'Cabe', texto: 'Dá para comprar sem apertar o mês.' },

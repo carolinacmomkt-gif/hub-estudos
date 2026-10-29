@@ -11,6 +11,8 @@ import { flutuar } from './celebracao.js';
 import { pontosDoLancamento, PONTOS } from './dados-recompensas.js';
 import { diaNoMes } from './dados-financas.js';
 import { confirmar, perguntarTexto } from './confirmar.js';
+import { lerDesejo, avaliarCompra, novoDesejo, desejosDe } from './dados-comprar.js';
+import { situacaoGamificacao } from './dados-recompensas.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -56,6 +58,22 @@ function mexerNaLista(valor, tipo, id, campos) {
 }
 
 // Grava uma compra: à vista ou dividida em parcelas mensais (todas com o mesmo grupo).
+// Desejos do "Posso comprar?" ficam em config "desejos" ({ lista })
+async function mudarDesejos(fn) {
+  const atual = (await listar('config')).find((c) => c.chave === 'desejos');
+  const valor = { lista: [], ...(atual?.valor || {}) };
+  fn(valor);
+  valor.lista = valor.lista.slice(-60);
+  await salvar('config', { ...(atual || {}), chave: 'desejos', valor });
+  atualizarEstado({ config: await listar('config') });
+}
+
+function avaliar(desejo) {
+  const estado = obterEstado();
+  const { saldo, itens } = situacaoGamificacao(estado);
+  return avaliarCompra(estado.financas, hojeIso(), desejo, { saldo, itens });
+}
+
 async function gravarCompra(base, parcelas) {
   if (parcelas > 1 && base.tipo === 'saida') {
     const grupo = `pc-${Date.now().toString(36)}`;
@@ -122,6 +140,52 @@ export function cliqueFinancas(alvo) {
       ocultarValores(!valoresOcultos());
       app.renderizar();
       return true;
+    case 'fin-comprar-comprei': {
+      const c = obterEstado().compra;
+      if (!c?.resultado) return true;
+      const d = c.desejo;
+      gravarCompra({ tipo: 'saida', valor: d.valor, data: hojeIso(), descricao: d.descricao || 'Compra', categoria: 'outros', pago: true, dados: {} }, d.parcelas).then(async () => {
+        if (d.id) await mudarDesejos((v) => { const x = v.lista.find((y) => y.id === d.id); if (x) x.decidido = 'comprei'; });
+        atualizarEstado({ compra: null });
+        app.renderizar();
+        app.avisoCurto(`${dinheiro(d.valor)} lançados${d.parcelas > 1 ? ` em ${d.parcelas}x` : ''}. Pode ajustar a categoria na lista.`);
+      });
+      return true;
+    }
+    case 'fin-comprar-esperar': {
+      const c = obterEstado().compra;
+      if (!c?.resultado) return true;
+      mudarDesejos((v) => { v.lista.push(novoDesejo(c.desejo)); }).then(() => {
+        atualizarEstado({ compra: null });
+        app.renderizar();
+        app.avisoCurto('Guardado. Daqui a 48h eu pergunto se ainda quer.');
+      });
+      return true;
+    }
+    case 'fin-comprar-deixar': {
+      const c = obterEstado().compra;
+      const fim = () => { atualizarEstado({ compra: null }); app.renderizar(); };
+      if (c?.desejo?.id) mudarDesejos((v) => { const x = v.lista.find((y) => y.id === c.desejo.id); if (x) x.decidido = 'deixei'; }).then(() => { fim(); app.avisoCurto(`${dinheiro(c.desejo.valor)} que ficaram com você.`); });
+      else fim();
+      return true;
+    }
+    case 'fin-desejo-ver': {
+      const d = desejosDe(obterEstado().config).find((x) => x.id === id);
+      if (!d) return true;
+      atualizarEstado({ compra: { texto: `${d.descricao} ${d.valor}${d.parcelas > 1 ? ` em ${d.parcelas}x` : ''}`, desejo: d, resultado: avaliar(d) }, parametro: 'mes' });
+      if (!location.hash.startsWith('#financas')) location.hash = '#financas';
+      else app.renderizar();
+      document.querySelector('.fin-veredito')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return true;
+    }
+    case 'fin-desejo-deixei': {
+      const d = desejosDe(obterEstado().config).find((x) => x.id === id);
+      mudarDesejos((v) => { const x = v.lista.find((y) => y.id === id); if (x) x.decidido = 'deixei'; }).then(() => {
+        app.renderizar();
+        if (d) app.avisoCurto(`${dinheiro(d.valor)} que ficaram com você.`);
+      });
+      return true;
+    }
     case 'fin-filtro':
       atualizarEstado({ filtroFinancas: alvo.dataset.valor || '' });
       app.renderizar();
@@ -337,6 +401,19 @@ export function enviarFinancas(form) {
         },
       });
     });
+    return true;
+  }
+  if (tipoForm === 'fin-comprar') {
+    const texto = String(f.get('texto') || '').trim();
+    const desejo = lerDesejo(texto);
+    if (!(desejo.valor > 0)) {
+      atualizarEstado({ compra: { texto, erro: 'Falta o valor (ex.: "tênis 400").' } });
+      app.renderizar();
+      document.getElementById('fin-comprar-campo')?.focus();
+      return true;
+    }
+    atualizarEstado({ compra: { texto, desejo, resultado: avaliar(desejo) } });
+    app.renderizar();
     return true;
   }
   if (tipoForm === 'fin-lancamento') {

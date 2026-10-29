@@ -10,6 +10,7 @@ import {
   entradasFixas, situacaoDasEntradas, planoDaCaixinha, mesesDeReserva, sugestoesDeContaFixa, buscarLancamentos,
 } from './dados-financas.js';
 import { abaRecompensas } from './views-recompensas.js';
+import { livreHoje, desejosDe, desejosAbertos, desejosProntos, textoEspera, economizado, TEXTO_VEREDITO, mesNome as mesCurto, diasAteNome } from './dados-comprar.js';
 
 export const ABAS_FINANCAS = [
   { id: 'mes', nome: 'Mês' },
@@ -212,6 +213,7 @@ function abaMes(estado, mes, prefs) {
         <small class="campo-ajuda">${r.quantidade} ${r.quantidade === 1 ? 'lançamento' : 'lançamentos'}</small></section>
     </div>
     ${mes === mesDe(hojeIso()) && r.entrou > 0 ? cardLivre(estado) : ''}
+    ${mes === mesDe(hojeIso()) ? cardComprar(estado) : ''}
     <div class="fin-duas">
       <section class="card"><h2 class="card-titulo">De onde veio</h2>${barras(r.porOrigem, r.entrou)}</section>
       <section class="card"><div class="card-topo"><h2 class="card-titulo">Para onde foi</h2><a class="card-link" href="#financas/ajustes">Limites</a></div>${barras(r.porCategoria, r.saiu, { limites })}</section>
@@ -240,6 +242,79 @@ function cardLivre(estado) {
         <p class="campo-ajuda">${l.livre > 0 ? `Dá ${dinheiro(l.porDia)} por dia nos ${l.diasRestantes} ${l.diasRestantes === 1 ? 'dia que falta' : 'dias que faltam'}.` : 'As contas do mês já passam do que entrou. Vale segurar os gastos.'}${detalhes.length ? ` Já descontados: ${detalhes.join(' e ')}.` : ''}</p>
         ${aReceber > 0 ? `<p class="campo-ajuda">Ainda vão entrar ${dinheiro(aReceber)} das entradas fixas: com elas, ficam ${dinheiro(l.livre + aReceber)}.</p>` : ''}
       </div>
+      ${l.livre > 0 ? linhaLivreHoje(estado) : ''}
+    </section>`;
+}
+
+// "Livre hoje": a parte de hoje, menos o que já saiu hoje.
+function linhaLivreHoje(estado) {
+  const h = livreHoje(estado.financas, hojeIso());
+  return `
+    <p class="fin-hoje-livre ${h.sobra < 0 ? 'negativo' : ''}" data-livre-hoje>
+      <span>Livre hoje</span>
+      <strong>${h.sobra < 0 ? '−' : ''}${dinheiro(Math.abs(h.sobra))}</strong>
+      <small class="campo-ajuda">${h.gastoHoje > 0 ? `${dinheiro(h.gastoHoje)} já saíram hoje` : 'nada saiu hoje ainda'}</small>
+    </p>`;
+}
+
+// ---------------------------------------------------------------------------
+// "Posso comprar?": a pergunta, o veredito e os desejos que estão esperando 48h
+// ---------------------------------------------------------------------------
+
+export function htmlVeredito(r, desejo, { compacto = false } = {}) {
+  const t = TEXTO_VEREDITO[r.veredito];
+  const parcelas = r.parcelas > 1 ? ` em ${r.parcelas}x de ${dinheiro(r.porMes)}` : '';
+  const linhas = [];
+  linhas.push(r.sobra >= 0
+    ? `Sobram ${dinheiro(r.sobra)} livres até o fim do mês (${dinheiro(Math.max(0, r.sobraPorDia))} por dia nos ${r.dias} ${r.dias === 1 ? 'dia' : 'dias'} que faltam, contra ${dinheiro(r.livrePorDia)} hoje).`
+    : `Faltam ${dinheiro(Math.abs(r.sobra))}: o livre do mês é ${dinheiro(r.livre)}.`);
+  if (r.meses.length) linhas.push(`Parcelas: ${r.meses.slice(0, 3).map((m) => `${mesCurto(m.mes)} ${dinheiro(m.total)}${m.jaTem > 0 ? ` (${dinheiro(m.jaTem)} já marcados)` : ''}`).join(', ')}${r.meses.length > 3 ? '…' : ''}.`);
+  if (r.atrasos.length) linhas.push(`Atrasa ${r.atrasos.map((a) => `${esc(a.descricao)} em ${diasAteNome(a.dias)}`).join(' e ')}.`);
+  if (r.comPontos) linhas.push(`Dá para tirar dos pontos: ${esc(r.comPontos.emoji || '')} ${esc(r.comPontos.nome)} (${r.comPontos.custo} pontos).`);
+  return `
+    <div class="fin-veredito fin-veredito--${r.veredito}" role="status">
+      <p class="fin-veredito-titulo">${esc(t.titulo)}<small>${esc(desejo.descricao || 'Essa compra')} · ${dinheiro(r.valor)}${parcelas}</small></p>
+      <p class="fin-veredito-texto">${esc(t.texto)} ${linhas.map(esc).join(' ')}</p>
+      ${compacto ? `<a class="card-link" href="#financas">Abrir em Finanças</a>` : `
+      <div class="acoes">
+        <button class="botao botao-primario" type="button" data-acao="fin-comprar-comprei">Comprei${desejo.id ? '' : ' (lançar)'}</button>
+        ${desejo.id ? '' : `<button class="botao botao-secundario" type="button" data-acao="fin-comprar-esperar">Esperar 48h</button>`}
+        <button class="botao botao-secundario" type="button" data-acao="fin-comprar-deixar">${desejo.id ? 'Deixei para lá' : 'Deixa para lá'}</button>
+      </div>`}
+    </div>`;
+}
+
+function itemDesejo(d, agora) {
+  const pronto = Date.parse(d.lembrar_em) <= agora;
+  return `
+    <li class="fin-desejo${pronto ? ' pronto' : ''}" data-id="${esc(d.id)}">
+      <div class="fin-desejo-texto">
+        <strong>${esc(d.descricao)}</strong>
+        <span class="campo-ajuda">${dinheiro(d.valor)}${d.parcelas > 1 ? ` em ${d.parcelas}x` : ''} · ${pronto ? 'Já deu o tempo: ainda quer?' : textoEspera(d, agora)}</span>
+      </div>
+      <div class="acoes">
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="fin-desejo-ver" data-id="${esc(d.id)}">Ver se cabe</button>
+        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="fin-desejo-deixei" data-id="${esc(d.id)}">Deixei</button>
+      </div>
+    </li>`;
+}
+
+export function cardComprar(estado) {
+  const agora = Date.now();
+  const desejos = desejosAbertos(desejosDe(estado.config));
+  const poupado = economizado(desejosDe(estado.config));
+  const c = estado.compra;
+  return `
+    <section class="card fin-comprar" aria-labelledby="fin-comprar-titulo">
+      <div class="card-topo"><h2 class="card-titulo" id="fin-comprar-titulo">Posso comprar?</h2>${poupado > 0 ? `<span class="selo">deixou de gastar ${dinheiro(poupado)}</span>` : ''}</div>
+      <form class="tarefa-rapida" data-form="fin-comprar" novalidate>
+        <label class="visualmente-oculto" for="fin-comprar-campo">O que você quer comprar e quanto custa</label>
+        <input id="fin-comprar-campo" name="texto" type="text" maxlength="120" autocomplete="off" enterkeyhint="go" placeholder='Ex.: "tênis 400" ou "celular 2400 em 6x"' value="${esc(c?.texto || '')}">
+        <button class="botao botao-primario fin-comprar-botao" type="submit" aria-label="Ver se cabe">Cabe?</button>
+      </form>
+      ${c?.erro ? `<p class="campo-ajuda" role="alert">${esc(c.erro)}</p>` : ''}
+      ${c?.resultado ? htmlVeredito(c.resultado, c.desejo) : '<p class="campo-ajuda">Responde na hora, sem internet: cabe, aperta ou não cabe, o peso nas parcelas e nas caixinhas. "Esperar 48h" guarda o desejo e pergunta de novo depois.</p>'}
+      ${desejos.length ? `<h3 class="ava-subtitulo">Esperando</h3><ul class="fin-desejos">${desejos.map((d) => itemDesejo(d, agora)).join('')}</ul>` : ''}
     </section>`;
 }
 
@@ -570,9 +645,10 @@ export function cardFinancasHoje(estado) {
         <li><span>Entrou</span><strong class="fin-valor positivo">${dinheiro(r.entrou)}</strong></li>
         <li><span>Saiu</span><strong>${dinheiro(r.saiu)}</strong></li>
         <li><span>${r.sobrou < 0 ? 'Faltou' : 'Sobrou'}</span><strong class="${r.sobrou < 0 ? 'fin-negativo' : ''}">${dinheiro(Math.abs(r.sobrou))}</strong></li>
-        ${r.entrou > 0 ? (() => { const l = livreParaGastar(estado.financas, hojeIso()); return `<li><span>Livre por dia</span><strong class="${l.livre < 0 ? 'fin-negativo' : 'fin-valor positivo'}">${l.livre < 0 ? '−' : ''}${dinheiro(Math.abs(l.porDia))}</strong></li>`; })() : ''}
+        ${r.entrou > 0 ? (() => { const h = livreHoje(estado.financas, hojeIso()); return h.livre > 0 ? `<li data-livre-hoje><span>Livre hoje</span><strong class="${h.sobra < 0 ? 'fin-negativo' : 'fin-valor positivo'}">${h.sobra < 0 ? '−' : ''}${dinheiro(Math.abs(h.sobra))}</strong></li>` : `<li><span>Livre por dia</span><strong class="fin-negativo">−${dinheiro(Math.abs(h.porDia))}</strong></li>`; })() : ''}
         ${maior ? `<li><span class="campo-ajuda">Mais gasto: ${esc(maior.nome)}</span><span class="campo-ajuda">${dinheiro(maior.total)}</span></li>` : ''}
       </ul>
+      ${(() => { const prontos = desejosProntos(desejosDe(estado.config)); return prontos.length ? `<ul class="fin-desejos fin-desejos-hoje">${prontos.slice(0, 2).map((d) => itemDesejo(d, Date.now())).join('')}</ul>` : ''; })()}
     </section>`;
 }
 

@@ -244,7 +244,7 @@ function principal(d) {
     case 'tarefas': return { valor: String(x.total), fracao: x.progresso, rotulo: x.total === 1 ? 'tarefa' : 'tarefas', linha: x.lista[0]?.titulo || 'Tudo feito hoje' };
     case 'habitos': return { valor: `${x.feitos}/${x.total}`, fracao: x.progresso, rotulo: 'hábitos', linha: x.lista.find((h) => !h.feito)?.nome || 'Todos feitos' };
     case 'demandas': return { valor: String(x.total), fracao: null, rotulo: x.aprovacao ? `${x.aprovacao} p/ aprovar` : 'demandas', linha: x.lista[0]?.titulo || 'Nada esperando' };
-    case 'financas': return { valor: dinheiro(x.livre), fracao: null, rotulo: 'dá para gastar', linha: `${dinheiro(x.porDia)} por dia` };
+    case 'financas': return { valor: dinheiro(x.livre), fracao: null, rotulo: 'dá para gastar', linha: x.livreHoje !== undefined ? `${dinheiro(x.livreHoje)} livres hoje` : `${dinheiro(x.porDia)} por dia` };
     case 'faculdade': return x.prova ? { valor: String(x.prova.dias), fracao: null, rotulo: x.prova.dias === 1 ? 'dia p/ prova' : 'dias p/ prova', linha: x.prova.disciplina || x.prova.titulo } : { valor: '–', fracao: null, rotulo: 'sem prova', linha: x.notas[0] ? `${x.notas[0].disciplina}: ${x.notas[0].texto}` : 'Tudo encaminhado' };
     case 'foco': return { valor: `${x.hoje}`, fracao: Math.min(1, x.hoje / 120), rotulo: 'min hoje', linha: `${horas(x.semana)} na semana` };
     case 'substack': return { valor: `${x.feitos}/${x.meta}`, fracao: x.fracao, rotulo: 'no mês', linha: x.proxima?.titulo || 'Sem pauta aberta' };
@@ -337,7 +337,7 @@ function conteudo(w, d, familia) {
     esq.layoutVertically();
     txt(esq, 'Dá para gastar', { tam: 12, cor: C.suave });
     txt(esq, dinheiro(x.livre), { tam: grande ? 34 : 28, fonte: 'numero', cor: x.livre < 0 ? C.alerta : C.texto });
-    txt(esq, `${dinheiro(x.porDia)} por dia · ${x.diasRestantes} dias`, { tam: 11, cor: C.suave });
+    txt(esq, x.livreHoje !== undefined ? `${dinheiro(x.livreHoje)} livres hoje · ${dinheiro(x.porDia)} por dia` : `${dinheiro(x.porDia)} por dia · ${x.diasRestantes} dias`, { tam: 11, cor: C.suave });
     l.addSpacer(10);
     const v = vidro(l, { pad: 8 });
     txt(v, 'Saiu no mês', { tam: 11, cor: C.suave });

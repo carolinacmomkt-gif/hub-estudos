@@ -386,3 +386,107 @@
 .fin-sugestoes {
   border-left: 4px solid var(--cor-destaque);
 }
+
+/* "Posso comprar?" (29/10/2026): veredito na hora e os desejos esperando 48h */
+.fin-hoje-livre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.fin-hoje-livre strong {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-sucesso);
+}
+
+.fin-hoje-livre.negativo strong {
+  color: var(--urg-atrasado-texto);
+}
+
+.fin-comprar .tarefa-rapida {
+  margin-bottom: 12px;
+}
+
+.fin-comprar-botao {
+  flex: none;
+  white-space: nowrap;
+  padding: 0 16px;
+}
+
+.fin-veredito {
+  --veredito-cor: var(--cor-sucesso);
+  --veredito-fundo: var(--cor-sucesso-fundo);
+  padding: 14px 16px;
+  border-left: 4px solid var(--veredito-cor);
+  border-radius: var(--raio);
+  background: var(--veredito-fundo);
+}
+
+.fin-veredito--aperta {
+  --veredito-cor: var(--urg-urgente);
+  --veredito-fundo: var(--urg-urgente-fundo);
+}
+
+.fin-veredito--nao-cabe {
+  --veredito-cor: var(--urg-atrasado);
+  --veredito-fundo: var(--urg-atrasado-fundo);
+}
+
+.fin-veredito-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 1.3rem;
+  font-weight: 750;
+}
+
+.fin-veredito-titulo small {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--cor-texto-suave);
+}
+
+.fin-veredito-texto {
+  margin: 6px 0 12px;
+  color: var(--cor-texto);
+  line-height: 1.45;
+}
+
+.fin-veredito .card-link {
+  margin: 0;
+}
+
+.fin-desejos {
+  display: flex;
+  flex-direction: column;
+}
+
+.fin-desejo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.fin-desejo-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fin-desejo.pronto strong::before {
+  content: "⏰ ";
+}
+
+.fin-desejos-hoje {
+  margin-top: 10px;
+}

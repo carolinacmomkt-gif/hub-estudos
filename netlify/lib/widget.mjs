@@ -8,6 +8,7 @@ import { noFuso } from './avisos.mjs';
 import { tarefasDeHoje } from '../../js/dados-tarefas.js';
 import { habitosDoDia, feitoNoDia, valorNoDia } from '../../js/dados-habitos.js';
 import { resumoDoMes, mesDe, livreParaGastar, contasDaSemana, CATEGORIAS_PADRAO } from '../../js/dados-financas.js';
+import { livreHoje } from '../../js/dados-comprar.js';
 import { planoDeHoje, blocoAgora } from '../../js/dados-dia.js';
 import { listaQuantoPrecisa, situacaoFaltas } from '../../js/dados-faculdade.js';
 import { ativas, progressoDaMeta } from '../../js/dados-metas.js';
@@ -82,8 +83,10 @@ const AREAS = {
     const cats = configs[0]?.valor?.categorias || CATEGORIAS_PADRAO;
     const r = resumoDoMes(linhas, mesDe(hoje), { categorias: cats });
     const l = livreParaGastar(linhas, hoje);
+    const h = livreHoje(linhas, hoje);
     return {
       saiu: r2(r.saiu), entrou: r2(r.entrou), livre: r2(l.livre), porDia: r2(l.porDia), diasRestantes: l.diasRestantes,
+      livreHoje: r2(h.sobra), gastoHoje: r2(h.gastoHoje),
       categorias: r.porCategoria.slice(0, 4).map((c) => ({ nome: c.nome, total: r2(c.total) })),
       contas: contasDaSemana(linhas, hoje).slice(0, 4).map((x) => ({ nome: x.conta.descricao, valor: r2(x.conta.valor), dias: x.dias, atrasada: x.estado === 'atrasada' })),
     };
