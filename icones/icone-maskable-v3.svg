@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Versão maskable (Android): fundo até a borda e o desenho dentro da zona segura -->
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#3E322A"/><stop offset="0.6" stop-color="#231D19"/><stop offset="1" stop-color="#151311"/></linearGradient>
+    <linearGradient id="vidro" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF8F0" stop-opacity="0.96"/><stop offset="1" stop-color="#E3CDB6" stop-opacity="0.8"/></linearGradient>
+    <linearGradient id="luz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.7"/><stop offset="0.6" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <radialGradient id="brilho" cx="0.3" cy="0.2" r="0.6"><stop offset="0" stop-color="#fff" stop-opacity="0.3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <filter id="sombra" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000" flood-opacity="0.45"/></filter>
+    <filter id="sombraLeve" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#2B1E16" flood-opacity="0.3"/></filter>
+    <filter id="blur"><feGaussianBlur stdDeviation="20"/></filter>
+    <clipPath id="quadro"><rect width="512" height="512" rx="118"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="url(#fundo)"/>
+  <ellipse cx="400" cy="90" rx="200" ry="150" fill="#8C7462" opacity="0.35" filter="url(#blur)"/>
+  <g transform="translate(256 256) scale(0.8) translate(-256 -256)">
+    <g filter="url(#sombraLeve)">
+      <rect x="130" y="120" width="252" height="252" rx="46" fill="#fff" fill-opacity="0.12" stroke="#fff" stroke-opacity="0.35" stroke-width="3" transform="rotate(-14 256 256)"/>
+      <rect x="130" y="120" width="252" height="252" rx="46" fill="#fff" fill-opacity="0.16" stroke="#fff" stroke-opacity="0.4" stroke-width="3" transform="rotate(-7 256 256)"/>
+    </g>
+    <g filter="url(#sombra)"><rect x="130" y="120" width="252" height="252" rx="46" fill="url(#vidro)"/></g>
+    <rect x="130" y="120" width="252" height="126" rx="46" fill="url(#luz)"/>
+    <path d="M256 186l18 52 52 18-52 18-18 52-18-52-52-18 52-18z" fill="#2B1E16" fill-opacity="0.85"/>
+  </g>
+  <rect width="512" height="512" fill="url(#brilho)"/>
+</svg>
