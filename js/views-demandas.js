@@ -144,7 +144,7 @@ export function formDemanda(d) {
           <select name="prioridade">${PRIORIDADES.map((p) => `<option value="${p.valor}"${p.valor === (Number(d.prioridade) || 0) ? ' selected' : ''}>${esc(p.nome)}</option>`).join('')}</select></label>
       </div>
       <label class="campo"><span class="campo-rotulo">Área</span>
-        <select name="area">${AREAS_TAREFA.map((a) => `<option value="${a.id}"${a.id === (d.dados?.area || 'consultoria') ? ' selected' : ''}>${esc(a.nome)}</option>`).join('')}</select></label>
+        <select name="area">${AREAS_TAREFA.map((a) => `<option value="${a.id}"${a.id === (d.dados?.area || 'trabalho') ? ' selected' : ''}>${esc(a.nome)}</option>`).join('')}</select></label>
       ${d.detalhe ? `<details class="detalhes"><summary>Ver o texto original</summary><p class="dem-original">${esc(d.detalhe)}</p></details>` : ''}
       <div class="acoes">
         <button class="botao botao-primario" type="submit">Aceitar e virar tarefa</button>

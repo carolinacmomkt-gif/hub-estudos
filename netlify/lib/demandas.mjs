@@ -106,7 +106,7 @@ async function lerTrelloAgencia(token, cfg, { hoje, agora, jaVistos }) {
           ...base, tipo: 'aprovacao', origem_id: `apr:${c.id}`, titulo: limpar(c.name, 200),
           onde: [nomeDoCliente(d.nome), nomeLista.get(c.idList)].filter(Boolean).join(' › '),
           detalhe: `Entrou em ${nomeLista.get(c.idList) || 'Aprovação'} no quadro dos designers. Depois de mandar para ${nome}, passe o card para "Posts para aprovação" no Trello dela.`,
-          fixo: { titulo: limpar(`Mandar para ${nome} aprovar: ${c.name}`, 120), prioridade: 2, minutos: 15, prazo: hoje, area: 'consultoria', motivo: 'Post novo em aprovação.' },
+          fixo: { titulo: limpar(`Mandar para ${nome} aprovar: ${c.name}`, 120), prioridade: 2, minutos: 15, prazo: hoje, area: 'trabalho', motivo: 'Post novo em aprovação.' },
         });
       } else if (c.idList === d.aprovado) {
         // Só o que acabou de ser aprovado (passou pela aprovação aqui ou mexeu nos últimos 3 dias).
@@ -116,7 +116,7 @@ async function lerTrelloAgencia(token, cfg, { hoje, agora, jaVistos }) {
           ...base, tipo: 'aprovado', origem_id: `aprov:${c.id}`, titulo: limpar(c.name, 200),
           onde: [nomeDoCliente(d.nome), nomeLista.get(c.idList)].filter(Boolean).join(' › '),
           detalhe: `${nome} aprovou. Passe o card para "Aprovados" no Trello dela.`,
-          fixo: { titulo: limpar(`Atualizar o Trello de ${nome}: "${c.name}" aprovado`, 120), prioridade: 1, minutos: 5, prazo: hoje, area: 'consultoria', motivo: 'Saiu de Aprovação para Aprovado.' },
+          fixo: { titulo: limpar(`Atualizar o Trello de ${nome}: "${c.name}" aprovado`, 120), prioridade: 1, minutos: 5, prazo: hoje, area: 'trabalho', motivo: 'Saiu de Aprovação para Aprovado.' },
         });
       }
     }
@@ -150,7 +150,7 @@ async function lerTrelloAgencia(token, cfg, { hoje, agora, jaVistos }) {
         origem: 'trello', tipo: 'alinhar', origem_id: `alinhar:${cl.id}:${semanaDe(hoje)}`, origem_url: quadro?.url || null,
         titulo: `Atualizar o Trello de ${nome}`, onde: nome, quem: nome, prazo: null, hora: null, cliente: nome,
         detalhe: [atrasados.length ? `Com prazo vencido e ainda fora de Aprovados:\n${atrasados.slice(0, 12).join('\n')}${atrasados.length > 12 ? `\n… e mais ${atrasados.length - 12}` : ''}` : '', parado >= 7 ? `Nenhuma mudança no quadro há ${parado} dias.` : ''].filter(Boolean).join('\n\n'),
-        fixo: { titulo: `Atualizar o Trello de ${nome}`, prioridade: 1, minutos: 15, prazo: hoje, area: 'consultoria', motivo },
+        fixo: { titulo: `Atualizar o Trello de ${nome}`, prioridade: 1, minutos: 15, prazo: hoje, area: 'trabalho', motivo },
       });
     }
   }));
@@ -270,7 +270,7 @@ Para cada item, devolva:
 - minutos: estimativa realista do tempo de trabalho (15, 30, 45, 60, 90, 120...).
 - prioridade: 2 se for urgente ou vencer em até 1 dia, 1 se for importante ou vencer em até 3 dias, 0 no resto.
 - quem: quem pediu, se der para saber pelo texto; senão "".
-- area: uma de ${AREAS_DEMANDA.join(', ')} (agência e clientes = consultoria; conteúdo próprio = criacao).
+- area: uma de ${AREAS_DEMANDA.join(', ')} (agência e clientes dela = trabalho; a consultoria Sensus = consultoria; conteúdo próprio = criacao).
 - motivo: uma frase curta explicando a prioridade (ex.: "Cliente pediu para amanhã").
 Não invente tarefas nem detalhes que não estão no texto.`;
 

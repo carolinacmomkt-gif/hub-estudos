@@ -173,9 +173,11 @@ body[data-menu="icones"] .nav-lateral .nav-topo {
     padding-right: 52px;
   }
 
+  /* Rolando para baixo a lupa sai do caminho (ela cobria o "+" dos campos no topo da tela) */
   body[data-rolando="baixo"] .cabecalho-acoes {
-    transform: translateY(-8px) scale(0.9);
-    opacity: 0.85;
+    transform: translateY(-140%);
+    opacity: 0;
+    pointer-events: none;
   }
 
   /* Barra de baixo: flutuante, na margem dos cards, com lugar para o "+" na ponta */

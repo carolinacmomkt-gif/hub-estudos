@@ -13,7 +13,7 @@ export const ORIGENS_DEMANDA = {
 const FEITO = /\b(conclu[ií]d[oa]s?|feit[oa]s?|done|pront[oa]s?|entregue|publicad[oa]s?|arquivad[oa]s?|finalizad[oa]s?|complete[d]?|cancelad[oa]s?)\b/i;
 export const pareceFeito = (nome) => FEITO.test(String(nome || ''));
 
-export const AREAS_DEMANDA = ['pessoal', 'casa', 'consultoria', 'criacao', 'saude', 'financas']; // as de AREAS_TAREFA
+export const AREAS_DEMANDA = ['pessoal', 'trabalho', 'casa', 'consultoria', 'criacao', 'saude', 'financas']; // as de AREAS_TAREFA
 const limpo = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 const DIA_MS = 864e5;
 const dataOk = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : null);
@@ -54,7 +54,7 @@ export function sugestaoSimples(item, hoje) {
     minutos: tamanho > 600 ? 90 : tamanho > 200 ? 60 : 30,
     prioridade,
     quem: limpo(item.quem, 80) || null,
-    area: item.origem === 'compartilhado' ? 'pessoal' : 'consultoria',
+    area: item.origem === 'compartilhado' ? 'pessoal' : 'trabalho',
     motivo: dias === null ? '' : dias < 0 ? 'Prazo já passou.' : dias === 0 ? 'Vence hoje.' : dias === 1 ? 'Vence amanhã.' : '',
   };
 }
@@ -111,7 +111,7 @@ export function tarefaDaDemanda(d, hoje) {
   return {
     titulo: limpo(d.titulo, 200) || 'Demanda',
     notas: notas.slice(0, 4000) || null,
-    area: d.dados?.area || 'consultoria',
+    area: d.dados?.area || 'trabalho',
     data: prazo ? (prazo < hoje ? hoje : prazo) : null,
     prazo,
     hora: d.hora || null,

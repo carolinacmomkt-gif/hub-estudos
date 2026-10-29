@@ -73,7 +73,7 @@ export function registroDoItem(x, hoje) {
     case 'pauta':
       return { tabela: 'pautas_substack', dados: { titulo: x.titulo, etapa: 'ideia', notas: x.notas } };
     case 'demanda':
-      return { tabela: 'demandas', dados: { origem: 'manual', origem_id: null, titulo: x.titulo, detalhe: x.notas, prazo: x.data, hora: x.hora, prioridade: x.prioridade, minutos: 30, status: 'nova', dados: { area: x.area || 'consultoria', ia: true, motivo: 'Anotada por voz.' } } };
+      return { tabela: 'demandas', dados: { origem: 'manual', origem_id: null, titulo: x.titulo, detalhe: x.notas, prazo: x.data, hora: x.hora, prioridade: x.prioridade, minutos: 30, status: 'nova', dados: { area: x.area || 'trabalho', ia: true, motivo: 'Anotada por voz.' } } };
     default:
       return { tabela: 'caixa_entrada', dados: { texto: [x.titulo, x.notas].filter(Boolean).join('\n') } };
   }

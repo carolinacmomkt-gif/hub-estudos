@@ -3,6 +3,7 @@
 
 export const AREAS_TAREFA = [
   { id: 'pessoal', nome: 'Pessoal' },
+  { id: 'trabalho', nome: 'Trabalho' },
   { id: 'casa', nome: 'Casa' },
   { id: 'consultoria', nome: 'Consultoria' },
   { id: 'criacao', nome: 'Criação' },
