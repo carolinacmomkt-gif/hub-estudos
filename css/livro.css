@@ -1,0 +1,692 @@
+/* Leitor de livros (#livro/<id>): tela cheia, fundo e letra escolhidos pela Carol. */
+
+.lv {
+  --lv-fundo: var(--livro-escuro-fundo);
+  --lv-texto: var(--livro-escuro-texto);
+  --lv-suave: var(--livro-escuro-suave);
+  --lv-linha: color-mix(in srgb, var(--lv-texto) 14%, transparent);
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--lv-fundo);
+  color: var(--lv-texto);
+}
+
+.lv.lv-tema-claro { --lv-fundo: var(--livro-claro-fundo); --lv-texto: var(--livro-claro-texto); --lv-suave: var(--livro-claro-suave); }
+.lv.lv-tema-sepia { --lv-fundo: var(--livro-sepia-fundo); --lv-texto: var(--livro-sepia-texto); --lv-suave: var(--livro-sepia-suave); }
+.lv.lv-tema-escuro { --lv-fundo: var(--livro-escuro-fundo); --lv-texto: var(--livro-escuro-texto); --lv-suave: var(--livro-escuro-suave); }
+.lv.lv-tema-preto { --lv-fundo: var(--livro-preto-fundo); --lv-texto: var(--livro-preto-texto); --lv-suave: var(--livro-preto-suave); }
+
+/* Topo e base: somem com um toque no meio da página (como no Kindle) */
+.lv-topo,
+.lv-base {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px clamp(6px, 2vw, 16px);
+  background: var(--lv-fundo);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.lv-topo {
+  padding-top: calc(6px + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--lv-linha);
+}
+
+.lv-base {
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--lv-linha);
+}
+
+.lv-calmo .lv-topo,
+.lv-calmo .lv-base {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lv-calmo .lv-topo { transform: translateY(-6px); }
+.lv-calmo .lv-base { transform: translateY(6px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lv-topo,
+  .lv-base,
+  .lv-texto {
+    transition: none !important;
+  }
+}
+
+.lv-titulo {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 6px;
+}
+
+.lv-titulo strong,
+.lv-titulo small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lv-titulo small {
+  color: var(--lv-suave);
+  font-size: 0.82rem;
+}
+
+.lv-botao {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1.15rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lv-botao:hover,
+.lv-botao[aria-pressed="true"] {
+  background: var(--lv-linha);
+}
+
+.lv-progresso {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+.lv-progresso input {
+  width: 100%;
+  accent-color: var(--lv-suave);
+}
+
+.lv-progresso small {
+  overflow: hidden;
+  color: var(--lv-suave);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Palco: a página */
+.lv-palco {
+  position: relative;
+  overflow: hidden;
+  /* O deslizar de lado vira a página (o navegador não rouba o gesto); rolar para baixo e pinça continuam. */
+  touch-action: pan-y pinch-zoom;
+}
+
+/* PDF com zoom: a página passa da largura e precisa rolar de lado. */
+.lv-pdf-zoom .lv-palco {
+  touch-action: auto;
+}
+
+.lv-carregando {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 24px;
+  color: var(--lv-suave);
+  text-align: center;
+}
+
+.lv-brilho {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: var(--livro-veu);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lv-janela {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.lv-texto {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 28px var(--leitor-margem, 36px);
+  font-family: var(--leitor-fonte);
+  font-size: var(--leitor-tamanho, 19px);
+  line-height: var(--leitor-linhas, 1.6);
+  text-align: var(--leitor-alinhamento, justify);
+  hyphens: auto;
+  overflow-wrap: break-word;
+  column-fill: auto;
+  transition: transform 0.22s ease;
+  will-change: transform;
+}
+
+.lv-texto p {
+  margin: 0 0 0.7em;
+  orphans: 2;
+  widows: 2;
+}
+
+.lv-texto :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0.6em 0 0.5em;
+  line-height: 1.25;
+  text-align: left;
+  break-after: avoid;
+}
+
+.lv-texto h1 { font-size: 1.5em; }
+.lv-texto h2 { font-size: 1.3em; }
+.lv-texto h3 { font-size: 1.12em; }
+
+.lv-texto img {
+  display: block;
+  max-width: 100%;
+  max-height: var(--leitor-img-max, 70vh);
+  height: auto;
+  margin: 1em auto;
+  break-inside: avoid;
+}
+
+.lv-texto blockquote {
+  margin: 0.8em 0 0.8em 1em;
+  padding-left: 0.8em;
+  border-left: 3px solid var(--lv-linha);
+}
+
+.lv-texto a {
+  color: inherit;
+}
+
+.lv-texto table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.lv-texto :is(td, th) {
+  padding: 4px 6px;
+  border: 1px solid var(--lv-linha);
+}
+
+.lv-texto .l-centro { text-align: center; }
+.lv-texto .l-versalete { font-variant: small-caps; }
+
+.lv-texto mark.destaque {
+  color: inherit;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.lv-texto mark.com-nota {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+/* Rolando: uma coluna, centralizada */
+.lv-rolagem .lv-janela {
+  overflow-y: auto;
+}
+
+.lv-rolagem .lv-texto {
+  max-width: 760px;
+  height: auto;
+  margin: 0 auto;
+  padding-bottom: 40vh;
+  transition: none;
+}
+
+/* PDF: a página desenhada com a caneta por cima */
+.lv-pdf {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12px 8px 24px;
+}
+
+.lv:not(.com-caneta) .lv-pdf .folha-tinta {
+  pointer-events: none;
+}
+
+.lv-pdf-noite .lv-pdf .folha-tinta {
+  filter: invert(0.92) hue-rotate(180deg);
+}
+
+.lv-caneta {
+  position: absolute;
+  right: 0;
+  bottom: 72px;
+  left: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  padding: 6px 10px;
+  border-radius: 18px;
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto);
+  box-shadow: var(--sombra);
+}
+
+.lv-caneta[hidden] {
+  display: none;
+}
+
+.lv-ferramenta {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.lv-ferramenta[aria-pressed="true"] {
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
+}
+
+.lv-cores {
+  display: inline-flex;
+}
+
+.lv-tinta {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--tinta) 0 13px, transparent 14px);
+}
+
+.lv-tinta[aria-pressed="true"] {
+  background: radial-gradient(circle, var(--tinta) 0 13px, var(--cor-borda) 14px 16px, transparent 17px);
+}
+
+.lv-dedo {
+  min-height: 44px;
+}
+
+/* Menu do trecho selecionado */
+.lv-menu {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto);
+  box-shadow: var(--sombra);
+}
+
+.lv-menu[hidden] {
+  display: none;
+}
+
+.lv-cor {
+  width: 36px;
+  height: 36px;
+  margin: 4px;
+  border: 2px solid var(--cor-superficie-elevada);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--cor-borda);
+}
+
+.lv-menu-botao {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.lv-menu-botao:hover {
+  background: var(--cor-destaque-suave);
+}
+
+/* Painel: sumário, busca, ajustes, marcadores e destaques */
+.lv-painel {
+  position: absolute;
+  top: var(--lv-topo, 57px); /* abaixo do topo: os botões continuam à mão */
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, 100%);
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto);
+  box-shadow: var(--sombra);
+}
+
+.lv-painel[hidden] {
+  display: none;
+}
+
+.lv-painel-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px 16px;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+.lv-painel-topo h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.lv-painel-corpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+}
+
+.lv-rotulo,
+.lv-subtitulo {
+  margin: 14px 0 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.lv-escolha {
+  flex-wrap: wrap;
+}
+
+.lv-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.lv-linha .botao-pequeno,
+.lv-painel .botao-pequeno {
+  min-height: 44px;
+}
+
+.lv-valor {
+  min-width: 48px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.lv-lista {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lv-item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lv-item:hover,
+.lv-item[aria-current="true"] {
+  background: var(--cor-destaque-suave);
+}
+
+.lv-item small {
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+}
+
+.lv-item.nivel-1 { padding-left: 24px; }
+.lv-item.nivel-2 { padding-left: 38px; }
+.lv-item.nivel-3 { padding-left: 52px; }
+
+.lv-linha-item {
+  display: flex;
+  align-items: center;
+}
+
+.lv-trecho {
+  display: block;
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.lv-paginas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lv-busca {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.lv-busca input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--cor-borda-campo);
+  border-radius: 12px;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+/* Celular: o painel vira folha que sobe de baixo */
+@media (max-width: 700px) {
+  .lv-painel {
+    top: auto;
+    left: 0;
+    width: 100%;
+    max-height: 78%;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .lv-topo .lv-botao {
+    min-width: 40px;
+    padding: 0 4px;
+  }
+
+  .lv-caneta {
+    bottom: 64px;
+  }
+}
+
+/* Celular: a busca vai para o ⋯ e o título do livro ganha espaço */
+.lv-painel .lv-so-celular {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .lv-topo [data-leitor="painel-busca"] {
+    display: none;
+  }
+
+  .lv-painel .lv-so-celular {
+    display: flex;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Livros na Biblioteca: estante com capas, cartão do livro e progresso
+   --------------------------------------------------------------------------- */
+.bib-estante {
+  margin: 4px 0 14px;
+}
+
+.bib-estante-lista {
+  display: flex;
+  gap: 14px;
+  margin: 8px 0 0;
+  padding: 4px 2px 10px;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x proximity;
+}
+
+.bib-estante-livro {
+  display: grid;
+  gap: 6px;
+  width: 104px;
+  color: inherit;
+  text-decoration: none;
+  scroll-snap-align: start;
+}
+
+.bib-estante-capa,
+.bib-capa {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: var(--sombra-capa);
+}
+
+.bib-capa {
+  flex: none;
+  width: 64px;
+}
+
+.bib-estante-capa--lisa,
+.bib-capa--lisa {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: var(--capa-2);
+  color: var(--capa-2-texto);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  overflow: hidden;
+}
+
+.bib-capa--lisa span,
+.bib-estante-capa--lisa span {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bib-progresso {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--cor-trilho);
+}
+
+.bib-progresso > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cor-destaque);
+}
+
+.bib-cartao-livro .bib-cartao-link {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.bib-livro-texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bib-cartao-livro {
+  position: relative;
+}
+
+.bib-livro-detalhes {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 6px;
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+}
+
+.bib-cartao-livro .bib-cartao-link {
+  padding-bottom: 48px;
+}
+
+.bib-livro-aqui {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.bib-livro-aqui .bib-capa {
+  width: 96px;
+}
+
+/* Escolhas do painel: botões do mesmo tamanho, que quebram linha sem cortar nenhum */
+.lv-painel .lv-escolha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  width: 100%;
+  border-radius: 18px;
+}
+
+.lv-painel .lv-escolha button {
+  min-width: 0;
+  padding: 0 8px;
+}
+
+.lv-painel .campo {
+  margin-top: 14px;
+}
+
+.lv-painel input[type="range"] {
+  width: 100%;
+}

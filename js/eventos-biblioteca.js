@@ -6,6 +6,7 @@ import { enviarArquivo, baixarArquivo, idDaUsuaria } from './nuvem.js';
 import { iniciarTrabalho, trabalhosDoTipo, encerrarTrabalho } from './trabalhos-ia.js';
 import { gravar, criarGravador } from './gravacao.js';
 import { artigoPeloId, lerTags, fichamentoEmTexto, paragrafos, STATUS } from './dados-biblioteca.js';
+import { lerLivro, guardarLivro } from './livros.js';
 
 let app; // { renderizar, avisoCurto }
 const gravador = criarGravador('artigos', 'artigos');
@@ -127,7 +128,8 @@ export function cliqueBiblioteca(alvo) {
       break;
     case 'bib-fonte':
       atualizarEstado({ bibFonte: alvo.dataset.valor });
-      app.renderizar();
+      if (alvo.dataset.ir === 'novo' && location.hash !== '#biblioteca/novo') location.hash = '#biblioteca/novo';
+      else app.renderizar();
       break;
     case 'bib-aba':
       gravador.agora().then(() => {
@@ -308,6 +310,22 @@ async function adicionar(form) {
       if (!r.ok) throw new Error(r.erro || 'Não foi possível ler esse link.');
       const x = r.artigo || {};
       artigo = { ...comum, url: x.url || url, titulo: comum.titulo || x.titulo || url, autor: comum.autor || x.autor || null, resumo: x.resumo || null, texto: x.texto || '' };
+    } else if (fonte === 'livro') {
+      const arquivo = el.livro.files?.[0];
+      if (!arquivo) throw new Error('Escolha o arquivo do livro (PDF ou EPUB).');
+      if (!idDaUsuaria()) throw new Error('Entre no app para guardar livros.');
+      if (!navigator.onLine) throw new Error('Sem internet agora. O livro precisa subir para a nuvem uma vez (depois lê sem internet).');
+      botao.textContent = 'Abrindo o livro…';
+      const info = await lerLivro(arquivo);
+      botao.textContent = `Enviando o livro (${Math.max(1, Math.round(arquivo.size / 1024 / 1024))} MB)…`;
+      const id = crypto.randomUUID();
+      const caminho = `${idDaUsuaria()}/biblioteca/${id}.${info.formato}`;
+      await guardarLivro(caminho, arquivo, info.formato);
+      artigo = {
+        ...comum, id, fonte: 'livro', pdf_path: caminho, texto: '',
+        titulo: comum.titulo || info.titulo || 'Livro sem título', autor: comum.autor || info.autor || null,
+        dados: { formato: info.formato, capa: info.capa, tamanho: arquivo.size, paginas: info.paginas || null },
+      };
     } else if (fonte === 'pdf') {
       const arquivo = el.pdf.files?.[0];
       if (!arquivo) throw new Error('Escolha o PDF.');
@@ -330,8 +348,8 @@ async function adicionar(form) {
     const salvo = await gravar('artigos', 'artigos', artigo);
     atualizarEstado({ bibPreenchido: null, bibAba: 'ler' });
     if (fonte === 'pdf' && el.ia?.checked) await lerPdfComIa(salvo, { trocarTitulo: !comum.titulo }).catch(() => {});
-    location.hash = `#biblioteca/${salvo.id}`;
-    app.avisoCurto('Salvo na Biblioteca.');
+    location.hash = fonte === 'livro' ? `#livro/${salvo.id}` : `#biblioteca/${salvo.id}`;
+    app.avisoCurto(fonte === 'livro' ? 'Livro na estante. Boa leitura!' : 'Salvo na Biblioteca.');
   } catch (erro) {
     mostrarErro(form, erro.message || 'Não deu certo agora.');
     botao.disabled = false;
@@ -361,7 +379,8 @@ async function editar(form) {
     tags: lerTags(el.tags.value),
     resumo: el.resumo.value.trim() || null,
     texto,
-    destaques: (v.destaques || []).filter((d) => pars.some((p) => p.includes(d.texto))),
+    // Destaque de livro (com capítulo) fica sempre; o de texto só se o trecho continua lá.
+    destaques: (v.destaques || []).filter((d) => Number.isFinite(d.capitulo) || pars.some((p) => p.includes(d.texto))),
   });
   atualizarEstado({ bibEditando: null });
   app.renderizar();

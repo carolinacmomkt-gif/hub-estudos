@@ -12,6 +12,7 @@ import {
   STATUS, CORES_DESTAQUE, PARTES_FICHAMENTO, nomeStatus, artigoPeloId, filtrarArtigos, tagsDosArtigos,
   contagemPorStatus, minutosDeLeitura, contarPalavras, paragrafos, marcarDestaques, dominio, artigosAtivos,
 } from './dados-biblioteca.js';
+import { ehLivro, formatoDoLivro, textoPct } from './dados-livros.js';
 
 const ABAS = [
   { id: 'ler', nome: 'Ler' },
@@ -20,7 +21,8 @@ const ABAS = [
 ];
 const FONTES = [
   { id: 'link', nome: 'Link' },
-  { id: 'pdf', nome: 'PDF' },
+  { id: 'livro', nome: 'Livro (PDF ou EPUB)' },
+  { id: 'pdf', nome: 'Artigo em PDF' },
   { id: 'texto', nome: 'Texto colado' },
 ];
 const TAMANHOS_LEITURA = [0.9, 1, 1.15, 1.3, 1.5];
@@ -41,7 +43,51 @@ export function seletorDeLigacao(estado, { disciplina = '', area = '' } = {}) {
     </div>`;
 }
 
+// Capa do livro (a do arquivo ou uma lisa com o título).
+export function capaDoLivro(a, classe = 'bib-capa') {
+  return a.dados?.capa && /^data:image\/(jpeg|png);base64,/.test(a.dados.capa)
+    ? `<img class="${classe}" src="${a.dados.capa}" alt="" loading="lazy">`
+    : `<span class="${classe} ${classe}--lisa" aria-hidden="true"><span>${esc(a.titulo)}</span></span>`;
+}
+
+function cartaoLivro(estado, a) {
+  const pct = Number(a.dados?.pct) || 0;
+  const busca = `${a.titulo} ${a.autor || ''} ${(a.tags || []).join(' ')}`.toLowerCase();
+  const meta = [a.autor, `Livro em ${(formatoDoLivro(a) || '').toUpperCase()}`, pct ? `${textoPct(pct)} lido` : ''].filter(Boolean);
+  return `
+    <li class="bib-cartao bib-cartao-livro" data-busca="${esc(busca)}">
+      <a class="bib-cartao-link" href="#livro/${esc(a.id)}">
+        ${capaDoLivro(a)}
+        <span class="bib-livro-texto">
+          <span class="bib-status status-${esc(a.status)}">${esc(nomeStatus(a.status))}</span>
+          <span class="bib-titulo">${a.favorito ? '<span aria-label="Favorito">★</span> ' : ''}${esc(a.titulo)}</span>
+          <span class="bib-meta">${esc(meta.join(' · '))}</span>
+          ${pct ? `<span class="bib-progresso" role="progressbar" aria-label="Lido" aria-valuenow="${Math.round(pct * 100)}" aria-valuemin="0" aria-valuemax="100"><span style="width: ${Math.round(pct * 100)}%"></span></span>` : ''}
+        </span>
+      </a>
+      <a class="bib-livro-detalhes" href="#biblioteca/${esc(a.id)}">Notas e fichamento</a>
+    </li>`;
+}
+
+// Estante: os livros que está lendo primeiro (o último aberto na frente).
+function estante(estado) {
+  const livros = artigosAtivos(estado).filter(ehLivro)
+    .sort((a, b) => (b.status === 'lendo') - (a.status === 'lendo') || String(b.dados?.ultima_leitura || b.criado_em).localeCompare(String(a.dados?.ultima_leitura || a.criado_em)))
+    .slice(0, 12);
+  if (!livros.length) return '';
+  return `
+    <section class="bib-estante" aria-label="Seus livros">
+      <h2 class="card-titulo">Seus livros</h2>
+      <ul class="bib-estante-lista">${livros.map((a) => `
+        <li><a class="bib-estante-livro" href="#livro/${esc(a.id)}" aria-label="${esc(a.titulo)}${a.dados?.pct ? `, ${textoPct(a.dados.pct)} lido` : ''}">
+          ${capaDoLivro(a, 'bib-estante-capa')}
+          ${a.dados?.pct ? `<span class="bib-progresso"><span style="width: ${Math.round(a.dados.pct * 100)}%"></span></span>` : ''}
+        </a></li>`).join('')}</ul>
+    </section>`;
+}
+
 function cartaoArtigo(estado, a, agora) {
+  if (ehLivro(a)) return cartaoLivro(estado, a);
   const min = minutosDeLeitura(a.texto);
   const lendoPdf = trabalhosDoTipo('artigo').some((t) => t.ligado?.artigo_id === a.id && t.status !== 'erro' && t.status !== 'pronto');
   const meta = [a.autor, dominio(a.url), min ? `${min} min de leitura` : (a.pdf_path ? 'PDF' : ''), `salvo ${haQuantoTempo(new Date(a.criado_em).getTime(), agora)}`].filter(Boolean);
@@ -74,14 +120,17 @@ function lista(estado) {
       <section class="card vazio">
         <div class="vazio-icone">${icone('biblioteca')}</div>
         <h2>Sua biblioteca de leitura</h2>
-        <p class="texto-suave">Salve um artigo por link, PDF ou texto colado. Depois é só ler aqui, destacar, anotar, fazer o fichamento e gerar questões.</p>
-        <a class="botao botao-primario" href="#biblioteca/novo">Adicionar leitura</a>
+        <p class="texto-suave">Guarde livros (PDF ou EPUB) e artigos por link, PDF ou texto colado. Depois é só ler aqui, destacar, anotar, fazer o fichamento e gerar questões.</p>
+        <div class="acoes"><button class="botao botao-primario" type="button" data-acao="bib-fonte" data-valor="livro" data-ir="novo">Adicionar livro</button>
+          <a class="botao botao-secundario" href="#biblioteca/novo">Adicionar artigo</a></div>
       </section>`;
   }
 
   return `
-    ${cabecalho('Biblioteca', 'Artigos, PDFs e textos para ler, destacar e fichar')}
-    <div class="acoes cal-acoes"><a class="botao botao-primario" href="#biblioteca/novo">Adicionar leitura</a></div>
+    ${cabecalho('Biblioteca', 'Livros, artigos, PDFs e textos para ler, destacar e fichar')}
+    <div class="acoes cal-acoes"><a class="botao botao-primario" href="#biblioteca/novo">Adicionar leitura</a>
+      <button class="botao botao-secundario" type="button" data-acao="bib-fonte" data-valor="livro" data-ir="novo">Adicionar livro</button></div>
+    ${estante(estado)}
     <div class="segmentado bib-status-filtro" role="group" aria-label="Filtrar por status">
       <button type="button" data-acao="bib-filtro" data-campo="status" data-valor="" aria-pressed="${!f.status}">Todos <span class="selo">${total}</span></button>
       ${STATUS.map((s) => `<button type="button" data-acao="bib-filtro" data-campo="status" data-valor="${s.id}" aria-pressed="${f.status === s.id}">${s.nome} <span class="selo">${contagem[s.id] || 0}</span></button>`).join('')}
@@ -111,6 +160,10 @@ function formNovo(estado) {
       <label class="campo"><span class="campo-rotulo">Link do artigo</span>
         <input name="url" type="url" inputmode="url" required placeholder="https://…" value="${esc(pre.url || '')}"></label>
       <p class="campo-ajuda">O app busca a página e guarda só o texto (sem anúncios). Se o site bloquear, cole o texto.</p>`,
+    livro: `
+      <label class="campo"><span class="campo-rotulo">Arquivo do livro <small>(PDF ou EPUB, até 50 MB)</small></span>
+        <input name="livro" type="file" accept=".epub,.pdf,application/epub+zip,application/pdf" required></label>
+      <p class="campo-ajuda">Abre no leitor da Bússola, como num Kindle: letra, espaçamento, fundo e brilho do seu jeito, marcadores, destaques, busca e a caneta por cima do PDF. Depois da primeira vez, lê sem internet.</p>`,
     pdf: `
       <label class="campo"><span class="campo-rotulo">Arquivo PDF <small>(até 25 MB)</small></span>
         <input name="pdf" type="file" accept="application/pdf,.pdf" required></label>
@@ -121,7 +174,7 @@ function formNovo(estado) {
         <textarea name="texto" rows="10" required placeholder="Cole o texto aqui.">${esc(pre.texto || '')}</textarea></label>`,
   }[fonte];
   return `
-    ${cabecalho('Adicionar leitura', 'Por link, PDF ou texto colado')}
+    ${cabecalho(fonte === 'livro' ? 'Adicionar livro' : 'Adicionar leitura', 'Livro, link, PDF ou texto colado')}
     <div class="acoes cal-acoes"><a class="botao botao-secundario botao-pequeno" href="#biblioteca">← Biblioteca</a></div>
     <section class="card">
       <div class="segmentado" role="group" aria-label="De onde vem">${FONTES.map((x) => `
@@ -129,7 +182,7 @@ function formNovo(estado) {
       </div>
       <form class="formulario" data-form="bib-novo" data-fonte="${fonte}" novalidate>
         ${campoFonte}
-        <label class="campo"><span class="campo-rotulo">Título ${fonte === 'texto' ? '' : '<small>(opcional: vem do link ou do PDF)</small>'}</span>
+        <label class="campo"><span class="campo-rotulo">Título ${fonte === 'texto' ? '' : `<small>(opcional: vem do ${fonte === 'livro' ? 'livro' : fonte === 'link' ? 'link' : 'PDF'})</small>`}</span>
           <input name="titulo" type="text" maxlength="300"${fonte === 'texto' ? ' required' : ''} value="${esc(pre.titulo || '')}"></label>
         <label class="campo"><span class="campo-rotulo">Autor <small>(opcional)</small></span>
           <input name="autor" type="text" maxlength="200"></label>
@@ -147,6 +200,18 @@ function formNovo(estado) {
 }
 
 function abaLer(estado, a) {
+  if (ehLivro(a) && !String(a.texto || '').trim()) {
+    const pct = Number(a.dados?.pct) || 0;
+    return `
+      <section class="card bib-livro-aqui">
+        ${capaDoLivro(a)}
+        <div>
+          <p>${pct ? `Você leu ${esc(textoPct(pct))} deste livro.` : 'Este livro abre no leitor, com letra, fundo e brilho do seu jeito.'}</p>
+          <a class="botao botao-primario" href="#livro/${esc(a.id)}">${pct ? 'Continuar lendo' : 'Começar a ler'}</a>
+          <p class="campo-ajuda">Os destaques que você fizer no livro aparecem em "Destaques e notas" e vão para o fichamento.</p>
+        </div>
+      </section>`;
+  }
   const tam = TAMANHOS_LEITURA.includes(Number(estado.bibTamanho)) ? Number(estado.bibTamanho) : 1;
   const destaques = Array.isArray(a.destaques) ? a.destaques : [];
   const pars = paragrafos(a.texto);
@@ -261,7 +326,8 @@ function leitor(estado, a) {
         <select data-acao-mudar="bib-status">${opcoes(STATUS, a.status)}</select></label>
       <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-favorito" aria-pressed="${Boolean(a.favorito)}">${a.favorito ? '★ Favorito' : '☆ Favoritar'}</button>
       ${a.url ? `<a class="botao botao-secundario botao-pequeno" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">Abrir o site</a>` : ''}
-      ${a.pdf_path ? '<button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-abrir-pdf">Abrir o PDF</button>' : ''}
+      ${a.pdf_path ? `<a class="botao botao-primario botao-pequeno" href="#livro/${esc(a.id)}">${a.dados?.pct ? `Continuar lendo (${textoPct(a.dados.pct)})` : 'Ler no leitor'}</a>` : ''}
+      ${a.pdf_path && formatoDoLivro(a) !== 'epub' ? '<button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-abrir-pdf">Abrir o PDF fora</button>' : ''}
       <details class="menu-mais">
         <summary class="botao botao-secundario botao-pequeno">Mais</summary>
         <div class="menu-mais-lista">

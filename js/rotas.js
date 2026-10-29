@@ -27,6 +27,7 @@ export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configuraçõe
 // Telas que não aparecem no menu (abertas por um botão).
 const ROTAS_INTERNAS = [
   { id: 'caneta', titulo: 'Testar a caneta', icone: 'cadernos' },
+  { id: 'livro', titulo: 'Leitor', icone: 'biblioteca' },
 ];
 
 const TODAS = [...ROTAS, ROTA_CONFIGURACOES, ...ROTAS_INTERNAS];

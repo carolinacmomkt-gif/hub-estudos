@@ -167,6 +167,16 @@
   --flip-cartao-baixo: #251B15;
   --flip-texto: #F4E9DC;
   --flip-dobra: rgba(0, 0, 0, 0.45);
+  /* Leitor de livros: os quatro fundos (iguais nos dois temas do app) e a caneta no PDF */
+  --livro-claro-fundo: #FBF8F3;  --livro-claro-texto: #241C16;  --livro-claro-suave: #6B5A4C;
+  --livro-sepia-fundo: #F3E7D3;  --livro-sepia-texto: #3B2C20;  --livro-sepia-suave: #6A5440;
+  --livro-escuro-fundo: #1E1E1E; --livro-escuro-texto: #E6DED4; --livro-escuro-suave: #A99E92;
+  --livro-preto-fundo: #000000;  --livro-preto-texto: #CFC7BE;  --livro-preto-suave: #918981;
+  --livro-veu: #000000;
+  --tinta-livro-preto: #1F1A17;
+  --tinta-livro-azul: #2C5AA6;
+  --tinta-livro-vermelho: #B3372A;
+  --tinta-livro-verde: #3B7537;
   /* Marca-texto do texto digitado nos cadernos */
   --cor-marca-texto: rgba(255, 214, 102, 0.55);
 

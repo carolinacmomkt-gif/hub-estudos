@@ -20,6 +20,7 @@ import { ligarInicio, cliqueInicio, enviarInicio, mudancaInicio } from './evento
 import { ligarCadernos, cliqueCadernos, enviarCadernos, mudancaCadernos } from './eventos-cadernos.js';
 import { ligarFoco, cliqueFoco, enviarFoco, mudancaFoco } from './foco.js';
 import { ligarContinuar, cliqueContinuar } from './continuar.js';
+import { ligarLeitor, enviarLeitor } from './leitor-livro.js';
 import { ligarYoutube, cliqueYoutube, enviarYoutube, mudancaYoutube } from './eventos-youtube.js';
 import { ligarBiblioteca, cliqueBiblioteca, enviarBiblioteca, mudancaBiblioteca } from './eventos-biblioteca.js';
 import { ligarQuestoes, cliqueQuestoes, enviarQuestoes, mudancaQuestoes } from './eventos-questoes.js';
@@ -395,7 +396,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarTarefas, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarTarefas, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarQuestoes, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   ligarFolhas();
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
@@ -543,7 +544,7 @@ export function ligarEventos(funcoesDoApp) {
     evento.preventDefault();
     // Qual botão enviou (ex.: "Salvar e fazer agora" ou "Só salvar").
     form.dataset.enviadoPor = evento.submitter?.value || '';
-    if (enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarQuestoes(form) || enviarSubstack(form) || enviarEstudos(form)) return;
+    if (enviarLeitor(form) || enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarQuestoes(form) || enviarSubstack(form) || enviarEstudos(form)) return;
     if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form) || enviarYoutube(form)) return;
     switch (form.dataset.form) {
       case 'login':

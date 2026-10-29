@@ -17,6 +17,7 @@ const ESPERA = 8000; // junta as mudanças de alguns segundos numa gravação s�
 export const TIPOS_CONTINUAR = {
   caderno: { nome: 'Caderno', acao: 'Abrir o caderno' },
   leitura: { nome: 'Leitura', acao: 'Continuar lendo' },
+  livro: { nome: 'Livro', acao: 'Continuar lendo' },
   simulado: { nome: 'Simulado', acao: 'Continuar' },
   pauta: { nome: 'Rascunho do Substack', acao: 'Continuar escrevendo' },
   roteiro: { nome: 'Roteiro do YouTube', acao: 'Abrir o roteiro' },
@@ -29,7 +30,7 @@ export const TIPOS_CONTINUAR = {
 function aindaExiste(estado, tipo, id) {
   const ativo = (lista) => (lista || []).find((x) => x.id === id && !x.excluido_em);
   if (tipo === 'caderno') return ativo(estado.cadernos);
-  if (tipo === 'leitura') return ativo(estado.artigos);
+  if (tipo === 'leitura' || tipo === 'livro') return ativo(estado.artigos);
   if (tipo === 'simulado') { const s = ativo(estado.simulados); return s && !s.concluido_em ? s : null; }
   if (tipo === 'pauta') return ativo(estado.pautas);
   if (tipo === 'roteiro') return ativo(estado.videos);
@@ -153,6 +154,11 @@ export function notarTela(estado = obterEstado()) {
     const v = aindaExiste(estado, 'roteiro', id);
     if (v) marcar('roteiro', { id, titulo: v.titulo, rota: `#youtube/${id}` });
   }
+}
+
+// Livro: onde parou fica no próprio livro (artigos.dados.posicao); aqui só o card do outro aparelho.
+export function notarLivro(artigo, detalhe) {
+  if (artigo?.id) marcar('livro', { id: artigo.id, titulo: artigo.titulo, rota: `#livro/${artigo.id}`, detalhe });
 }
 
 export function notarPaginaDoCaderno(caderno, pagina, numero) {

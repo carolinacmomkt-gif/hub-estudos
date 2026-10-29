@@ -6,6 +6,8 @@ import { obterEstado, atualizarEstado } from './estado.js';
 import { montarNavegacao, marcarRotaAtiva, atualizarIndicadorSincronizacao } from './views-navegacao.js';
 import { renderInicio } from './views-inicio.js';
 import { renderBiblioteca } from './views-biblioteca.js';
+import { renderLivro } from './views-livro.js';
+import { montarLeitor, desmontarLeitor } from './leitor-livro.js';
 import { renderQuestoes } from './views-questoes.js';
 import { renderSubstack } from './views-substack.js';
 import { renderEstudos } from './views-estudos.js';
@@ -58,6 +60,7 @@ const VIEWS = {
   cadernos: renderCadernos,
   youtube: renderYoutube,
   biblioteca: renderBiblioteca,
+  livro: renderLivro,
   questoes: renderQuestoes,
   substack: renderSubstack,
   estudos: renderEstudos,
@@ -88,6 +91,7 @@ const CICLO = {
       desmontarEditorTexto();
     },
   },
+  livro: { montar: (id) => id && montarLeitor(id), desmontar: desmontarLeitor },
 };
 let telaMontada = null;
 
@@ -241,7 +245,7 @@ const TELAS_DA_TABELA = {
   disciplinas: ['inicio', 'faculdade', 'calendario'],
   config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'metas'],
   videos: ['youtube', 'inicio'],
-  artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes'],
+  artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes', 'livro'],
   questoes: ['questoes', 'inicio', 'estudos'],
   revisoes: ['questoes', 'inicio'],
   simulados: ['questoes'],
@@ -325,6 +329,8 @@ window.addEventListener('hub:dados', async (evento) => {
   // O editor de caderno nunca é redesenhado por fora: ele perderia o traço em andamento.
   const { id: rotaVista, parametro: parametroVisto } = rotaAtual();
   if (rotaVista === 'cadernos' && parametroVisto) return;
+  // O leitor também não (ele cuida da própria página); só se o livro ainda não tinha chegado.
+  if (rotaVista === 'livro' && document.getElementById('lv')) return;
   if (!noApp || !telas.includes(obterEstado().rota)) return;
   // Mudança feita aqui aparece na hora; o que chega da nuvem em leva vira um redesenho só.
   if (daNuvem) redesenharEmBreve();

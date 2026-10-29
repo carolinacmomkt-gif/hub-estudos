@@ -204,6 +204,7 @@ create table if not exists public.artigos (
   fichamento jsonb not null default '{}'::jsonb,
   favorito boolean not null default false,
   lido_em timestamptz,
+  dados jsonb not null default '{}'::jsonb,   -- livros: formato, capa, onde parou, marcadores (migração 011)
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
@@ -387,6 +388,19 @@ create table if not exists public.conexoes (
   excluido_em timestamptz,
   unique (user_id, servico)
 );
+
+-- Tinta por cima das páginas dos livros em PDF, migração 011.
+create table if not exists public.livro_paginas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  artigo_id uuid not null references public.artigos (id) on delete cascade,
+  pagina integer not null,
+  tracos_json jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create unique index if not exists livro_paginas_uk on public.livro_paginas (user_id, artigo_id, pagina);
 
 -- Caixa de demandas (Trello, Notion e mensagens compartilhadas), migração 010.
 create table if not exists public.demandas (
@@ -753,7 +767,7 @@ declare
     'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
     'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
     'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'importacoes', 'assinaturas_push', 'videos', 'simulados', 'sessoes_foco',
-    'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer', 'demandas'
+    'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer', 'demandas', 'livro_paginas'
   ];
 begin
   foreach tabela in array tabelas loop

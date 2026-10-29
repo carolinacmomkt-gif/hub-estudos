@@ -22,7 +22,7 @@ const CHAVE_DE_CONFLITO = { config: 'user_id,chave' };
 
 // Tabelas e tipos que dependem de uma migração (supabase/migracoes). Se a migração ainda não
 // foi rodada, só aquela tabela espera; as outras continuam sincronizando normalmente.
-const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)', simulados: '007-areas.sql', sessoes_foco: '008-foco.sql', demandas: '010-demandas.sql',
+const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)', simulados: '007-areas.sql', sessoes_foco: '008-foco.sql', demandas: '010-demandas.sql', livro_paginas: '011-livros.sql',
   ...Object.fromEntries(['projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer'].map((t) => [t, '009-vida.sql'])),
 };
 const tabelaNaoExiste = (erro) => erro instanceof ErroNuvem && (erro.codigo === 'PGRST205' || erro.codigo === '42P01' || erro.status === 404);
@@ -39,7 +39,8 @@ function explicar(tabela, erro) {
     return { tipo: 'aviso', texto: `A tabela "${tabela}" ainda não existe no Supabase.${migracao ? ` Rode a migração ${migracao} no SQL Editor.` : ' Rode as migrações em supabase/migracoes.'}` };
   }
   if (faltaMigracao(erro)) {
-    return { tipo: 'aviso', texto: `O Supabase ainda não aceita alguns dados de "${tabela}" (${erro.detalhe || erro.message}). Rode no SQL Editor as migrações que faltam em supabase/migracoes, na ordem.` };
+    const livros = tabela === 'artigos' && /dados/.test(`${erro.detalhe || ''} ${erro.message || ''}`);
+    return { tipo: 'aviso', texto: livros ? 'Os livros ainda não sobem para a nuvem: rode a migração 011-livros.sql no SQL Editor do Supabase. Neste aparelho eles já abrem.' : `O Supabase ainda não aceita alguns dados de "${tabela}" (${erro.detalhe || erro.message}). Rode no SQL Editor as migrações que faltam em supabase/migracoes, na ordem.` };
   }
   if (recusaDeDados(erro)) {
     return { tipo: 'erro', texto: `O Supabase recusou um registro de "${tabela}": ${erro.detalhe || erro.message}` };

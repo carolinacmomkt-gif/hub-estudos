@@ -6,6 +6,6 @@ export const TABELAS = [
   'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
   'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'videos', 'simulados', 'sessoes_foco',
   'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer',
-  'demandas',
+  'demandas', 'livro_paginas',
 ];
 export const SOMENTE_LEITURA = new Set(['conexoes']); // quem escreve são as funções da Netlify
