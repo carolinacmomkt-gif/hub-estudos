@@ -35,7 +35,7 @@ export function guardarPergunta(texto) {
 
 const ICONE_TIPO = {
   tarefa: 'tarefas', projeto: 'tarefas', evento: 'calendario', disciplina: 'faculdade', caderno: 'cadernos', pagina: 'cadernos',
-  leitura: 'biblioteca', questao: 'questoes', pauta: 'substack', video: 'youtube', lancamento: 'financas', demanda: 'tarefas',
+  leitura: 'biblioteca', pauta: 'substack', video: 'youtube', lancamento: 'financas', demanda: 'tarefas',
   meta: 'metas', lazer: 'metas', habito: 'habitos', ideia: 'editar',
 };
 

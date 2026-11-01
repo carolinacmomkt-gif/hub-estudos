@@ -4,8 +4,6 @@ import { obterEstado, atualizarEstado } from './estado.js';
 import { gravar } from './gravacao.js';
 import { renderFormArea } from './views-estudos.js';
 import { areaPeloId, areasAtivas, novoItem, conteudoDaArea } from './dados-estudos.js';
-import { criarSimulado } from './eventos-questoes.js';
-import { sortear } from './dados-questoes.js';
 import { confirmar } from './confirmar.js';
 
 let app; // { renderizar, avisoCurto }
@@ -64,30 +62,10 @@ export function cliqueEstudos(alvo) {
     case 'est-item-tirar':
       mudarItens((itens) => itens.filter((x) => x.id !== alvo.dataset.id));
       break;
-    case 'est-questoes':
-      if (a) {
-        atualizarEstado({ questoesPreset: { fonte: 'tema', tema: a.nome + (a.descricao ? `: ${a.descricao}` : ''), area: a.id }, qFonte: 'tema' });
-        location.hash = '#questoes/gerar';
-      }
-      break;
-    case 'est-simulado':
-      if (a) {
-        const todas = conteudoDaArea(obterEstado(), a.id).questoes;
-        const objetivas = todas.filter((q) => q.tipo !== 'dissertativa');
-        const modo = objetivas.length ? 'prova' : 'fixacao';
-        criarSimulado({ modo, ids: sortear(objetivas.length ? objetivas : todas, 10).map((q) => q.id), titulo: `Simulado · ${a.nome}`, area_id: a.id });
-      }
-      break;
     case 'est-leitura':
       if (a) {
         atualizarEstado({ bibPreenchido: { area: a.id } });
         location.hash = '#biblioteca/novo';
-      }
-      break;
-    case 'est-ver-questoes':
-      if (a) {
-        atualizarEstado({ qFiltros: { area: a.id }, qVisao: 'banco' });
-        location.hash = '#questoes';
       }
       break;
     default:

@@ -95,12 +95,6 @@ export function marcarDestaques(htmlParagrafo, destaques, esc) {
   return html;
 }
 
-// Texto que vai para a IA gerar questões: o artigo inteiro (até ~100 mil caracteres).
-export function textoParaQuestoes(artigo) {
-  const partes = [artigo.titulo, artigo.autor && `Autor: ${artigo.autor}`, artigo.resumo && `Resumo: ${artigo.resumo}`, artigo.texto].filter(Boolean);
-  return partes.join('\n\n').slice(0, 100000);
-}
-
 export function fichamentoVazio(f) {
   return !PARTES_FICHAMENTO.some((p) => String(f?.[p.id] || '').trim());
 }

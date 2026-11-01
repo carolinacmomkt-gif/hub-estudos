@@ -43,7 +43,7 @@ function ehPrazoAberto(e, agora) {
   return e.prazo >= agora || (Boolean(e.status) && agora - e.prazo <= 14 * DIA);
 }
 
-// Prioridade: prova próxima (7 dias) > entrega pendente > revisão pendente > leitura.
+// Prioridade: prova próxima (7 dias) > entrega pendente > leitura.
 export function escolherProximoPasso(dados, agora = Date.now()) {
   const pendentes = dados.eventos
     .filter((e) => ehPrazoAberto(e, agora))
@@ -71,16 +71,6 @@ export function escolherProximoPasso(dados, agora = Date.now()) {
     };
   }
 
-  const totalRevisoes = dados.revisoes.reduce((soma, r) => soma + r.quantidade, 0);
-  if (totalRevisoes > 0) {
-    return {
-      titulo: `Revisar ${totalRevisoes} ${totalRevisoes === 1 ? 'questão' : 'questões'}`,
-      texto: 'Refazer as que você errou é o que mais fixa o conteúdo.',
-      acao: 'Abrir Questões',
-      destino: '#questoes',
-    };
-  }
-
   const leitura = dados.leituras.find((l) => l.status === 'lendo' || l.status === 'ler');
   if (leitura) {
     return {
@@ -93,7 +83,7 @@ export function escolherProximoPasso(dados, agora = Date.now()) {
 
   return {
     titulo: 'Tudo em dia por aqui',
-    texto: 'Nenhum prazo, prova ou revisão pendente. Aproveite para descansar ou adiantar algo.',
+    texto: 'Nenhum prazo ou prova pendente. Aproveite para descansar ou adiantar algo.',
     acao: 'Ver o calendário',
     destino: '#calendario',
   };
@@ -173,30 +163,6 @@ function cardProvas(dados, agora) {
         <h2 class="card-titulo" id="provas-titulo">Provas</h2>
       </div>
       ${itens ? `<ul class="provas">${itens}</ul>` : '<p class="texto-suave">Nenhuma prova marcada.</p>'}
-    </section>`;
-}
-
-function cardRevisoes(dados) {
-  const total = dados.revisoes.reduce((soma, r) => soma + r.quantidade, 0);
-  if (!total) {
-    return `
-      <section class="card" aria-labelledby="revisoes-titulo">
-        <div class="card-topo"><h2 class="card-titulo" id="revisoes-titulo">Revisões pendentes</h2></div>
-        <p class="texto-suave">Nenhuma questão para revisar hoje. As que você errar voltam aqui em 1, 3, 7 e 15 dias.</p>
-        <a class="botao botao-secundario" href="#questoes/gerar">Gerar questões</a>
-      </section>`;
-  }
-  const itens = dados.revisoes.map((r) => `
-    <li><span>${esc(r.disciplina)}</span><strong>${r.quantidade}</strong></li>`).join('');
-
-  return `
-    <section class="card" aria-labelledby="revisoes-titulo">
-      <div class="card-topo">
-        <h2 class="card-titulo" id="revisoes-titulo">Revisões pendentes</h2>
-      </div>
-      <p class="revisao-total"><strong>${total}</strong><span class="texto-suave">${total === 1 ? 'questão para revisar hoje' : 'questões para revisar hoje'}</span></p>
-      <ul class="revisao-lista">${itens}</ul>
-      <button class="botao botao-secundario" type="button" data-acao="q-revisar">Revisar agora</button>
     </section>`;
 }
 
@@ -427,7 +393,6 @@ export function renderInicio(estado) {
     prazos: () => cardPrazos(dados, agora),
     provas: () => cardProvas(dados, agora),
     plano: () => (estado.usandoExemplo ? '' : cardPlano(estado, { agora })),
-    revisoes: () => cardRevisoes(dados),
     notas: () => cardNotas(dados, agora),
     faltas: () => (estado.usandoExemplo ? '' : cardFaltas(estado)),
     precisa: () => (estado.usandoExemplo ? '' : cardPrecisa(estado, agora)),

@@ -1,7 +1,6 @@
 // Cálculos sobre os dados da faculdade (AVA + Lyceum) que as telas usam.
 
 import { DIA } from './utilidades.js';
-import { revisoesPorGrupo } from './dados-questoes.js';
 import { areasAtivas, nomeDaArea, progressoDaArea } from './dados-estudos.js';
 import { filtrarArtigos } from './dados-biblioteca.js';
 import { pautasAtivas, configSubstack, publicadosNoMesSubstack } from './dados-substack.js';
@@ -21,7 +20,7 @@ export function nomeDaDisciplina(estado, id) {
 // Dados reais = qualquer coisa que a Carol já guardou (disciplinas, leituras, questões, pautas…).
 export function temDadosReais(estado) {
   if (disciplinasAtivas(estado).length) return true;
-  return ['cadernos', 'artigos', 'questoes', 'pautas', 'areas', 'videos'].some((k) => (estado[k] || []).some((x) => !x.excluido_em));
+  return ['cadernos', 'artigos', 'pautas', 'areas', 'videos'].some((k) => (estado[k] || []).some((x) => !x.excluido_em));
 }
 
 // Situação efetiva de um evento: "pendente" com prazo vencido conta como atrasado.
@@ -171,7 +170,6 @@ export function dadosReaisDoInicio(estado, agora = Date.now()) {
   return {
     nome: estado.dados?.nome || 'Carol',
     eventos,
-    revisoes: revisoesPorGrupo(estado, (q) => (q?.disciplina_id ? nome(q.disciplina_id) : nomeDaArea(estado, q?.area_id))),
     notas,
     cadernos,
     areas: [

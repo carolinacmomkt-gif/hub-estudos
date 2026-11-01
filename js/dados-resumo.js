@@ -49,7 +49,7 @@ export function textoMinutos(min) {
   return r ? `${h}h${String(r).padStart(2, '0')}` : `${h}h`;
 }
 
-// dados: { sessoes, respostas, artigos, pautas, videos, eventos, disciplinas, areas, cadernos }
+// dados: { sessoes, artigos, pautas, videos, eventos, disciplinas, areas, cadernos }
 export function resumoDaSemana(dados, semana) {
   const ativos = (lista) => (lista || []).filter((x) => !x.excluido_em);
   const nomeDisciplina = new Map(ativos(dados.disciplinas).map((d) => [d.id, d.nome]));
@@ -67,9 +67,6 @@ export function resumoDaSemana(dados, semana) {
     if (i >= 0 && i < 7) porDia[i] += Number(s.minutos) || 0;
   }
 
-  const respostas = ativos(dados.respostas).filter((r) => dentro(r.respondida_em || r.criado_em, semana));
-  const acertos = respostas.filter((r) => r.correta).length;
-  const revisoesFeitas = respostas.filter((r) => r.modo === 'revisao').length;
   const leituras = ativos(dados.artigos).filter((a) => (a.status === 'lido' || a.status === 'fichado') && dentro(a.lido_em, semana));
   const publicados = [
     ...ativos(dados.pautas).filter((p) => p.etapa === 'publicado' && dentro(p.publicado_em, semana)).map((p) => ({ tipo: 'Substack', titulo: p.titulo })),
@@ -89,14 +86,12 @@ export function resumoDaSemana(dados, semana) {
     sessoes: sessoes.length,
     porAssunto: [...porAssunto].map(([nome, minutos]) => ({ nome, minutos })).sort((a, b) => b.minutos - a.minutos),
     porDia,
-    questoes: { respondidas: respostas.length, acertos, taxa: respostas.length ? acertos / respostas.length : null },
-    revisoesFeitas,
     leituras: leituras.map((a) => a.titulo),
     publicados,
     entregues,
     cadernos,
     proximos,
-    vazia: !sessoes.length && !respostas.length && !leituras.length && !publicados.length && !entregues && !cadernos,
+    vazia: !sessoes.length && !leituras.length && !publicados.length && !entregues && !cadernos,
   };
 }
 
@@ -105,7 +100,6 @@ export function textoDaNotificacao(r) {
   if (r.vazia) return { titulo: 'Sua semana de estudos', texto: 'Semana mais calma por aqui. Que tal planejar a próxima? Toque para ver os prazos.' };
   const partes = [];
   if (r.minutosFoco) partes.push(`${textoMinutos(r.minutosFoco)} de foco`);
-  if (r.questoes.respondidas) partes.push(`${r.questoes.respondidas} questões (${Math.round(r.questoes.taxa * 100)}% de acerto)`);
   if (r.leituras.length) partes.push(`${r.leituras.length} ${r.leituras.length === 1 ? 'leitura' : 'leituras'}`);
   if (r.publicados.length) partes.push(`${r.publicados.length} ${r.publicados.length === 1 ? 'publicação' : 'publicações'}`);
   if (r.entregues) partes.push(`${r.entregues} ${r.entregues === 1 ? 'entrega' : 'entregas'}`);

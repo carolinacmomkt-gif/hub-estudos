@@ -855,11 +855,8 @@ function painelMais() {
       <p class="campo-ajuda">Os destaques também ficam na Biblioteca, em "Destaques e notas", e dá para levar para o fichamento.</p>` : '<p class="texto-suave">Selecione um trecho e escolha uma cor.</p>'}`}
     <div class="acoes"><button class="botao botao-secundario botao-pequeno lv-so-celular" type="button" data-leitor="painel-busca">Buscar no livro</button>
       <button class="botao botao-secundario botao-pequeno" type="button" data-leitor="vocabulario">Vocabulário${L.vocabulario.length ? ` (${L.vocabulario.length})` : ''}</button></div>
-    <h3 class="lv-subtitulo">IA</h3>
-    <div class="acoes">
-      ${L.formato === 'epub' ? '<button class="botao botao-secundario botao-pequeno" type="button" data-leitor="resumir">Resumo deste capítulo</button>' : ''}
-      <button class="botao botao-secundario botao-pequeno" type="button" data-leitor="questoes">Gerar questões ${L.formato === 'epub' ? 'deste capítulo' : 'destas páginas'}</button>
-    </div>
+    ${L.formato === 'epub' ? `<h3 class="lv-subtitulo">IA</h3>
+    <div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-leitor="resumir">Resumo deste capítulo</button></div>` : ''}
     <h3 class="lv-subtitulo">Livro</h3>
     <div class="acoes">
       ${L.artigo.status === 'lido' || L.artigo.status === 'fichado' ? '' : '<button class="botao botao-secundario botao-pequeno" type="button" data-leitor="lido">Marcar como lido</button>'}
@@ -909,16 +906,6 @@ async function resumir() {
        <div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-leitor="guardar-ia">Guardar nas notas do livro</button></div>`
     : `<p class="ava-alerta" role="alert">${esc(r.erro || 'A IA não respondeu.')}</p>`;
   L.ultimaIa = r.ok ? `Resumo de ${capitulo}:\n${r.resumo}\n${r.pontos.map((p) => `• ${p}`).join('\n')}` : null;
-}
-
-async function textoParaQuestoes() {
-  if (L.formato === 'epub') return textoDoDom();
-  const partes = [];
-  for (let n = L.pagina; n <= Math.min(L.total, L.pagina + 9); n += 1) {
-    const pagina = await L.pdf.getPage(n);
-    partes.push((await pagina.getTextContent()).items.map((x) => x.str).join(' '));
-  }
-  return partes.join('\n\n');
 }
 
 function previaDaBarra(pct) {
@@ -1253,14 +1240,6 @@ function aoClicar(e) {
         mudarArtigo({ notas: [L.artigo.notas, L.ultimaIa].filter(Boolean).join('\n\n') }).then(() => aviso('Guardado nas notas do livro.'));
         alvo.disabled = true;
       }
-      break;
-    case 'questoes':
-      textoParaQuestoes().then((texto) => {
-        if (texto.trim().length < 80) return aviso('Esta parte tem pouco texto para gerar questões.');
-        atualizarEstado({ questoesPreset: { fonte: 'texto', texto: texto.slice(0, 100000), disciplina: L.artigo.disciplina_id || '', area: L.artigo.area_id || '' }, qFonte: 'texto' });
-        location.hash = '#questoes/gerar';
-        return null;
-      });
       break;
     case 'lido':
       mudarArtigo({ status: 'lido', lido_em: new Date().toISOString() }).then(() => { aviso('Marcado como lido. Que bom!'); if (L?.fimMostrado) fecharPainel(); else painelMais(); });

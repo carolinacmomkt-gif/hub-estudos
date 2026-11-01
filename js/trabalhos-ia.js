@@ -39,7 +39,7 @@ function mudar(id, campos) {
   window.dispatchEvent(new CustomEvent('hub:trabalho', { detail: { id, ...todos[id] } }));
 }
 
-// tipo: 'questoes' | 'artigo'. pedido: objeto (vai como JSON). arquivo: Blob opcional (imagem ou PDF).
+// tipo: 'artigo'. pedido: objeto (vai como JSON). arquivo: Blob opcional (imagem ou PDF).
 // caminho: arquivo que já está no Storage (ex.: o PDF salvo na Biblioteca).
 export async function iniciarTrabalho({ tipo, pedido = {}, arquivo = null, caminho = null, extensao = 'bin', rotulo = '', ligado = null }) {
   const usuaria = idDaUsuaria();

@@ -55,7 +55,6 @@ export function itensBuscaveis(estado, { paginas = [] } = {}) {
     if (plano && caderno) add('pagina', 'Página de caderno', p, `${caderno.titulo}: ${String(plano).split('\n').find((l) => l.trim()) || ''}`, plano, `#cadernos/${caderno.id}`);
   }
   for (const a of vivos(estado.artigos)) add('leitura', 'Leitura', a, a.titulo, `${a.autor || ''} ${(a.tags || []).join(' ')} ${a.resumo || ''} ${String(a.texto || '').slice(0, 6000)} ${a.notas || ''}`, `#biblioteca/${a.id}`, { detalhe: [a.autor, a.status].filter(Boolean).join(' · ') });
-  for (const q of vivos(estado.questoes)) add('questao', 'Questão', q, q.enunciado, `${q.explicacao || ''} ${(q.tags || []).join(' ')}`, '#questoes');
   for (const p of vivos(estado.pautas)) add('pauta', 'Pauta do Substack', p, p.titulo, `${p.subtitulo || ''} ${String(p.texto || '').slice(0, 4000)} ${p.notas || ''}`, `#substack/${p.id}`, { detalhe: p.etapa });
   for (const v of vivos(estado.videos)) add('video', 'Vídeo', v, v.titulo, `${v.gancho || ''} ${v.notas || ''} ${(v.tags || []).join?.(' ') || ''}`, `#youtube/${v.id}`, { detalhe: v.etapa });
   for (const l of lancamentos(estado.financas || [])) add('lancamento', l.tipo === 'entrada' ? 'Entrada' : 'Gasto', l, l.descricao || nomeCat(l.categoria) || 'Lançamento', `${nomeCat(l.categoria)} ${l.categoria || ''} ${l.origem || ''}`, '#financas/lancamentos', { data: l.data, detalhe: `${brl(l.valor)} · ${l.data}${nomeCat(l.categoria) ? ` · ${nomeCat(l.categoria)}` : ''}`, valor: Number(l.valor) || 0 });

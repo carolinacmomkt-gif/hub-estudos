@@ -77,3 +77,8 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 ## Para depois (ideias grandes)
 - Busca na letra: transcrever os cadernos inteiros para buscar dentro da escrita à mão.
 - Gravar a aula junto com as anotações (áudio sincronizado com os traços).
+
+## Depois do fechamento (01/11/2026)
+
+- [x] **Questões fora do app** ✓: a faculdade está acabando; tela, gerador, simulados, revisão espaçada e atalhos saíram. As tabelas ficam no Supabase.
+- [ ] **Pauta dentro do Bússola (grupo Trabalho)**: Conteúdo, Aprovar, Clientes e Criar, no padrão do Bússola, juntando o resto do Pauta com Hoje, Organizar, Foco e Caixa de demandas. Prévia aprovada pela Carol em 01/11/2026.

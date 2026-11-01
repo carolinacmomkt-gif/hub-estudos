@@ -8,7 +8,6 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 - **Substack**.
 - **YouTube** (planejamento do canal).
 - **Cadernos** com escrita à mão.
-- **Gerador de questões** com IA.
 - **Calendário**.
 - **Vida** (fase 2, ver ROTEIRO.md): Hoje, tarefas e projetos, hábitos e rotinas, finanças (com gamificação e recompensas), diário, casa, consultoria (carteira de clientes e produto), metas e lazer.
 
@@ -35,7 +34,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que gera questões e lê PDFs da Biblioteca, `questoes-corrigir`, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens, e `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros) |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens, e `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -63,17 +62,15 @@ A base é a identidade da Central de Conteúdo.
 1. **Início (Hoje)**: painel-resumo geral, com um arranjo próprio para cada aparelho (celular, tablet e computador, em `config` "inicio-<aparelho>"), com:
    - os próximos prazos (7 dias) e as provas;
    - o card "Próximo passo";
-   - revisões de questões pendentes;
    - as últimas notas do AVA;
    - os cadernos recentes;
    - o progresso por área.
-2. **Faculdade**: painel geral e um painel por disciplina, com materiais, atividades e prazos, notas, frequência (se disponível), avisos, cadernos e questões daquela disciplina. A calculadora de média tem o "E se eu tirar…" (só simula), e o Hoje tem o card "Quanto preciso tirar" (`listaQuantoPrecisa` em `dados-faculdade.js`).
-3. **Estudos gerais**: painel com trilhas ou temas, a biblioteca filtrada, cadernos, questões e o progresso.
+2. **Faculdade**: painel geral e um painel por disciplina, com materiais, atividades e prazos, notas, frequência (se disponível), avisos e cadernos daquela disciplina. A calculadora de média tem o "E se eu tirar…" (só simula), e o Hoje tem o card "Quanto preciso tirar" (`listaQuantoPrecisa` em `dados-faculdade.js`).
+3. **Estudos gerais**: painel com trilhas ou temas, a biblioteca filtrada, cadernos e o progresso.
 4. **Substack**: painel com pautas (ideia → rascunho → revisão → publicado), rascunhos com editor de texto, referências da biblioteca ligadas a cada texto e uma meta de publicação.
 5. **YouTube**: painel do canal (próximo vídeo, meta semanal, "precisa de atenção"), quadro por etapas com arrastar (ideia → pesquisa → roteiro → gravação → edição → thumb e SEO → agendado → publicado), calendário de publicação, banco de ideias com nota (potencial × esforço) e pilares de conteúdo, desempenho (médias de CTR, retenção e visualizações). Cada vídeo: ideia, roteiro em blocos com modelos e teleprompter, gravação (cenas e takes), edição (marcações), thumbnail (até 3 imagens no Storage para comparar), publicação (título final, descrição pelo modelo do canal, tags, hashtags, capítulos, comentário fixado, tudo com copiar), cortes que viram Shorts ligados ao vídeo, checklist (com itens próprios) e resultados. A IA sugere títulos, ganchos, roteiro, descrição e tags, conceitos de thumbnail e cortes, só quando a Carol pede. As datas de gravação e de publicação viram eventos do Calendário (com avisos).
 6. **Biblioteca**: livros (PDF e EPUB, com o leitor estilo Kindle, abaixo) e artigos por link (extrai o texto), por PDF ou por texto colado, com tags, área, status (ler / lendo / lido / fichado), destaques e notas.
 7. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
-8. **Questões**: gerador, banco de questões, modo prova, modo fixação e revisão espaçada.
 9. **Calendário**: visão de mês, semana e lista, com eventos da faculdade e eventos próprios.
 10. **Pergunte à Bússola** (`#buscar`, lupa no topo de todas as telas): busca no aparelho em tudo (`js/dados-busca.js`) e "Perguntar", que manda à IA só o resumo da pergunta (`contextoDaPergunta`) e mostra a resposta com links para os itens.
 
@@ -111,7 +108,6 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - **Páginas**: adicionar, duplicar, reordenar, excluir com lixeira e ver as miniaturas.
 - **Organização**: estantes por área, favoritos, busca por título e tag, e a ligação de um caderno a uma disciplina ou tema.
 - **Exportação**: página ou caderno em PDF/PNG.
-- **IA**: o botão "gerar questões desta página/caderno" manda a imagem da página para a função de questões.
 - Formato salvo: os traços ficam em JSON vetorial (pontos + pressão + ferramenta + cor), por página e **organizados em camadas**, para manter o arquivo leve e editável. A miniatura fica em PNG. O formato já nasce com camadas desde o primeiro editor, para não precisar migrar depois.
 
 ### Legibilidade da letra
@@ -154,7 +150,7 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - **Ajustes** (no aparelho, `hub.leitor.prefs`): fonte (serifada, sem serifa, para cansaço), tamanho, espaço entre linhas, margens, justificado, fundo (como o app, claro, sépia, escuro, preto; tokens `--livro-*` em `temas.css`), brilho (véu por cima) e virar páginas × rolar. PDF: página inteira ou largura, zoom e modo noite.
 - **Destaques** em 4 cores com nota, no mesmo `artigos.destaques` da Biblioteca (com `capitulo`, `inicio`, `fim` = posições no texto do capítulo): aparecem em "Destaques e notas" e vão para o fichamento. Marcadores (🔖), sumário, busca no livro todo, tempo para acabar o capítulo e o livro, toque nas bordas, deslizar (o palco tem `touch-action: pan-y` para o gesto ser do leitor), teclado.
 - **Caneta no PDF**: o `EditorDeTinta` dos Cadernos por cima da página (desenhada pelo pdf.js), com cores `--tinta-livro-*` que não mudam com o tema; a tinta fica em `livro_paginas` (uma linha por página). Só a S Pen escreve (ou o dedo, se ligar); o dedo continua virando a página.
-- **IA só quando ela pede** (`livro-ia`): explicar o trecho, resumo do capítulo (os dois podem ir para as notas do livro) e "Gerar questões" (leva o texto do capítulo para o gerador).
+- **IA só quando ela pede** (`livro-ia`): explicar o trecho, resumo do capítulo (os dois podem ir para as notas do livro).
 - Onde parou segue para os outros aparelhos (e o card "Continuar de onde parou" ganhou o tipo `livro`).
 
 ## Integração com o AVA (Moodle 5.1)
@@ -271,17 +267,12 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - Cada evento tem: tipo (prova, trabalho, atividade, aula, feriado, pessoal), disciplina, data/hora, status (pendente / entregue / atrasado, vindo do AVA) e um link para o AVA.
 - **Avisos**: contagem regressiva no Início e destaque vermelho para atrasados, laranja para menos de 48h e bege para a semana. Notificações do PWA 3 dias antes, 1 dia antes e no dia, com horário configurável. Como o PWA fechado não dispara avisos sozinho no Android, elas chegam por **Web Push**: a Scheduled Function verifica os prazos e envia o push (chaves VAPID).
 - **Avisos do dia a dia** (28/10/2026, `netlify/lib/avisos-vida.mjs`): resumo da manhã (até 4h depois do horário), contas fixas e faturas que vencem hoje e hábitos que faltam, cada um com liga/desliga e horário, mais um horário de silêncio. A função `avisos-agendado` roda a cada 15 minutos; cada aviso sai uma vez por dia (marcas em `config` "avisos_vida_enviados"). No iPhone, só com o app adicionado à Tela de Início pelo Safari (iOS 16.4+); a tela de Configurações mostra o passo a passo.
-- **Plano de estudo automático para provas**: ao surgir uma prova, o app sugere sessões de revisão nos dias anteriores, já com os cadernos e as questões daquela disciplina.
+- **Plano de estudo automático para provas**: ao surgir uma prova, o app sugere sessões de revisão nos dias anteriores, já com os cadernos e as leituras daquela disciplina.
 - Opcional: exportar tudo como um link .ics para assinar no Google Agenda.
 
-## Gerador de questões
+## Questões (fora do app)
 
-- Entradas possíveis: um tema digitado, um artigo da Biblioteca, um material do AVA, uma página ou um caderno inteiro (imagem).
-- Configurações: quantidade, dificuldade, área/disciplina e modo.
-  - **Prova**: múltipla escolha (4 ou 5 alternativas) e verdadeiro/falso, com nota final.
-  - **Fixação**: perguntas dissertativas; a IA corrige a resposta da Carol, com nota de 0 a 10 e um comentário.
-- A função `ia-background` (pedido do tipo `questoes`) usa a web search da Anthropic para pesquisar o tema e devolve **JSON validado** com: enunciado, alternativas, resposta correta, explicação comentada, fontes (título + URL) e nível.
-- Questões salvas no banco, com tags, acertos/erros e **revisão espaçada** (refazer as erradas em 1, 3, 7 e 15 dias).
+- Decisão da Carol (01/11/2026): a faculdade está acabando e o gerador de questões saiu do Bússola: tela, gerador, simulados, revisão espaçada, as funções `questoes-corrigir` e `ia-questoes` e todos os atalhos "Gerar questões". As tabelas `questoes`, `respostas`, `revisoes` e `simulados` ficam guardadas no Supabase, mas saíram de `js/tabelas.js` (o app não sincroniza nem faz backup delas).
 
 ## Modelo de dados (Supabase)
 
@@ -295,11 +286,7 @@ Tabelas:
 - `cadernos`
 - `secoes`
 - `paginas` (`modelo_folha`, `tracos_json`, `miniatura_url`)
-- `questoes`
-- `respostas`
-- `revisoes`
 - `pautas_substack`
-- `simulados` (Questões)
 - `videos` (YouTube)
 - `config` (tema, horários de aviso, token do AVA criptografado)
 - `demandas` (migração 010): Caixa de demandas

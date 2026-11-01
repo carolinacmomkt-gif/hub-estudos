@@ -15,7 +15,6 @@ export function renderFolhaCriar() {
       <li><button class="atalho-criar" type="button" data-acao="caderno-novo">${icone('cadernos')}<span>Novo caderno</span></button></li>
       <li><button class="atalho-criar" type="button" data-acao="yt-novo">${icone('youtube')}<span>Ideia de vídeo</span></button></li>
       <li><a class="atalho-criar" href="#biblioteca/novo" data-acao="fechar-criar">${icone('biblioteca')}<span>Nova leitura</span></a></li>
-      <li><a class="atalho-criar" href="#questoes/gerar" data-acao="fechar-criar">${icone('questoes')}<span>Gerar questões</span></a></li>
       <li><button class="atalho-criar" type="button" data-acao="ss-nova">${icone('substack')}<span>Pauta do Substack</span></button></li>
       <li><button class="atalho-criar" type="button" data-acao="est-nova">${icone('estudos')}<span>Trilha ou tema</span></button></li>
       <li><a class="atalho-criar" href="#foco" data-acao="fechar-criar">${icone('estudos')}<span>Sessão de foco</span></a></li>

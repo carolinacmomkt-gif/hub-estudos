@@ -2,7 +2,6 @@
 // Cada trilha ou tema junta os artigos, cadernos e questões ligados a ele.
 
 import { artigosAtivos } from './dados-biblioteca.js';
-import { questoesAtivas, taxaDeAcerto } from './dados-questoes.js';
 
 export const TIPOS_AREA = [
   { id: 'trilha', nome: 'Trilha', descricao: 'Um caminho com etapas em ordem (ex.: um curso, um livro por capítulos).' },
@@ -24,8 +23,7 @@ export const nomeDaArea = (estado, id) => (id ? areaPeloId(estado, id)?.nome || 
 export function conteudoDaArea(estado, id) {
   const artigos = artigosAtivos(estado).filter((a) => a.area_id === id);
   const cadernos = (estado.cadernos || []).filter((c) => !c.excluido_em && c.area_id === id);
-  const questoes = questoesAtivas(estado).filter((q) => q.area_id === id);
-  return { artigos, cadernos, questoes };
+  return { artigos, cadernos };
 }
 
 // Progresso: trilha = etapas feitas; tema = leituras terminadas (lido ou fichado).
@@ -38,12 +36,9 @@ export function progressoDaArea(estado, area) {
       detalhe: itens.length ? `${feitos} de ${itens.length} etapas` : 'Sem etapas ainda',
     };
   }
-  const { artigos, questoes } = conteudoDaArea(estado, area.id);
+  const { artigos } = conteudoDaArea(estado, area.id);
   const lidos = artigos.filter((a) => a.status === 'lido' || a.status === 'fichado').length;
-  const respondidas = questoes.filter((q) => taxaDeAcerto(q) !== null);
-  const acerto = respondidas.length ? respondidas.reduce((s, q) => s + taxaDeAcerto(q), 0) / respondidas.length : null;
-  const partes = [artigos.length ? `${lidos} de ${artigos.length} leituras` : 'Sem leituras', acerto !== null ? `${Math.round(acerto * 100)}% de acerto` : ''];
-  return { fracao: artigos.length ? lidos / artigos.length : (acerto ?? 0), detalhe: partes.filter(Boolean).join(' · ') };
+  return { fracao: artigos.length ? lidos / artigos.length : 0, detalhe: artigos.length ? `${lidos} de ${artigos.length} leituras` : 'Sem leituras' };
 }
 
 export function proximaEtapa(area) {

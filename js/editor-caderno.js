@@ -129,7 +129,6 @@ export function renderEditorCaderno() {
           <button type="button" class="ferramenta-botao" data-ed="pagina-proxima" aria-label="Próxima página">›</button>
           <button type="button" class="ferramenta-botao" data-ed="pagina-nova">+ Página</button>
           <button type="button" class="ferramenta-botao" data-ed="painel" aria-controls="editor-painel">Páginas</button>
-          <button type="button" class="ferramenta-botao" data-ed="gerar-questoes" aria-label="Gerar questões desta página" title="Manda a imagem desta página para o gerador de questões">Gerar questões</button>
         </div>
       </header>
       <div class="secoes-abas" id="editor-secoes" role="group" aria-label="Divisórias"></div>
@@ -772,24 +771,6 @@ function mudarParaLaco() {
   atualizarBarra();
 }
 
-// Leva a imagem da página para Questões → Gerar, já com a disciplina e o tema do caderno.
-async function gerarQuestoesDaPagina() {
-  if (!editor.totalDeTracos()) {
-    avisar('Esta página ainda está em branco.');
-    return;
-  }
-  await salvarAgora();
-  const blob = await editor.imagemDaPagina();
-  const anterior = obterEstado().questoesImagem;
-  if (anterior?.url) URL.revokeObjectURL(anterior.url);
-  atualizarEstado({
-    questoesImagem: { blob, url: URL.createObjectURL(blob), rotulo: `${caderno.titulo} · página ${indice + 1}`, caderno_id: caderno.id },
-    questoesPreset: { fonte: 'imagem', disciplina: caderno.disciplina_id || '', area: caderno.area_id || '' },
-    qFonte: 'imagem',
-  });
-  location.hash = '#questoes/gerar';
-}
-
 async function mudarModelo(modelo) {
   const p = paginas[indice];
   if (!p) return;
@@ -1101,9 +1082,6 @@ function aoClicar(evento) {
       return;
     case 'pagina-nova':
       novaPagina();
-      return;
-    case 'gerar-questoes':
-      gerarQuestoesDaPagina();
       return;
     case 'painel': {
       const painel = document.getElementById('editor-painel');

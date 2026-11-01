@@ -1,5 +1,5 @@
 // Continuar de onde parei, em outro aparelho: o caderno (e a página), a leitura da Biblioteca
-// (e até onde leu), o simulado em andamento, o rascunho do Substack e o roteiro do YouTube.
+// (e até onde leu), o rascunho do Substack e o roteiro do YouTube.
 // Cada tipo guarda só o último lugar, em config "continuar-<tipo>" (uma linha por tipo, para dois
 // aparelhos não apagarem o lugar um do outro), com o aparelho e a hora. No outro
 // aparelho, o Hoje mostra um card discreto (até 6h depois); nada abre sozinho.
@@ -18,7 +18,6 @@ export const TIPOS_CONTINUAR = {
   caderno: { nome: 'Caderno', acao: 'Abrir o caderno' },
   leitura: { nome: 'Leitura', acao: 'Continuar lendo' },
   livro: { nome: 'Livro', acao: 'Continuar lendo' },
-  simulado: { nome: 'Simulado', acao: 'Continuar' },
   pauta: { nome: 'Rascunho do Substack', acao: 'Continuar escrevendo' },
   roteiro: { nome: 'Roteiro do YouTube', acao: 'Abrir o roteiro' },
 };
@@ -31,7 +30,6 @@ function aindaExiste(estado, tipo, id) {
   const ativo = (lista) => (lista || []).find((x) => x.id === id && !x.excluido_em);
   if (tipo === 'caderno') return ativo(estado.cadernos);
   if (tipo === 'leitura' || tipo === 'livro') return ativo(estado.artigos);
-  if (tipo === 'simulado') { const s = ativo(estado.simulados); return s && !s.concluido_em ? s : null; }
   if (tipo === 'pauta') return ativo(estado.pautas);
   if (tipo === 'roteiro') return ativo(estado.videos);
   return null;
@@ -140,13 +138,6 @@ export function notarTela(estado = obterEstado()) {
     // Abrir marca a leitura; até onde leu vem da rolagem (um redesenho não zera a posição).
     if (pedido?.tipo === 'leitura' && pedido.id === id) restaurarLeitura(id);
     else if (a && (pendentes.leitura || gravados.leitura)?.id !== id) marcar('leitura', { id, titulo: a.titulo, rota: `#biblioteca/${id}`, posicao: 0, detalhe: '' });
-  } else if (rota === 'questoes' && id !== 'gerar') {
-    const s = aindaExiste(estado, 'simulado', id);
-    if (s) {
-      const total = (s.questoes || []).length;
-      const feitas = Object.values(s.respostas || {}).filter((r) => r?.respondida || r?.resposta).length;
-      marcar('simulado', { id, titulo: s.titulo, rota: `#questoes/${id}`, detalhe: `${feitas} de ${total} respondidas` });
-    }
   } else if (rota === 'substack') {
     const p = aindaExiste(estado, 'pauta', id);
     if (p) marcar('pauta', { id, titulo: p.titulo, rota: `#substack/${id}` });

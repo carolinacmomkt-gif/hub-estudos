@@ -5,7 +5,6 @@ import { cabecalho, barraProgresso } from './componentes.js';
 import { icone } from './icones.js';
 import { esc } from './utilidades.js';
 import { nomeStatus } from './dados-biblioteca.js';
-import { taxaDeAcerto } from './dados-questoes.js';
 import {
   TIPOS_AREA, CORES_AREA, areasAtivas, areaPeloId, conteudoDaArea, progressoDaArea, proximaEtapa,
 } from './dados-estudos.js';
@@ -45,10 +44,8 @@ function painel(estado) {
 
 function detalhe(estado, a) {
   const prog = progressoDaArea(estado, a);
-  const { artigos, cadernos, questoes } = conteudoDaArea(estado, a.id);
+  const { artigos, cadernos } = conteudoDaArea(estado, a.id);
   const itens = Array.isArray(a.itens) ? a.itens : [];
-  const respondidas = questoes.filter((q) => taxaDeAcerto(q) !== null);
-  const acerto = respondidas.length ? Math.round((respondidas.reduce((s, q) => s + taxaDeAcerto(q), 0) / respondidas.length) * 100) : null;
   return `
     ${cabecalho(a.nome, esc(a.descricao || (a.tipo === 'trilha' ? 'Trilha' : 'Tema')))}
     <div class="acoes cal-acoes leitor-acoes">
@@ -61,8 +58,6 @@ function detalhe(estado, a) {
       ${barraProgresso(prog.fracao, `Progresso em ${a.nome}`)}
       ${a.meta?.texto ? `<p><strong>Meta:</strong> ${esc(a.meta.texto)}${a.meta.ate ? ` · até ${esc(new Date(`${a.meta.ate}T12:00`).toLocaleDateString('pt-BR'))}` : ''}</p>` : ''}
       <div class="acoes">
-        <button class="botao botao-primario botao-pequeno" type="button" data-acao="est-questoes">Gerar questões sobre o tema</button>
-        ${questoes.length ? '<button class="botao botao-secundario botao-pequeno" type="button" data-acao="est-simulado">Fazer simulado</button>' : ''}
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="est-leitura">Adicionar leitura</button>
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="caderno-novo" data-area="${esc(a.id)}">Novo caderno</button>
       </div>
@@ -96,12 +91,6 @@ function detalhe(estado, a) {
       <h2 class="card-titulo">Cadernos <span class="selo">${cadernos.length}</span></h2>
       ${cadernos.length ? `<ul class="lista-simples">${cadernos.map((c) => `<li><a href="#cadernos/${esc(c.id)}">${esc(c.titulo)}</a></li>`).join('')}</ul>`
       : '<p class="texto-suave">Nenhum caderno ligado.</p>'}
-    </section>
-    <section class="card">
-      <h2 class="card-titulo">Questões <span class="selo">${questoes.length}</span></h2>
-      ${questoes.length ? `<p>${acerto !== null ? `<strong>${acerto}%</strong> de acerto nas respondidas.` : 'Nenhuma respondida ainda.'}</p>
-        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="est-ver-questoes">Ver no banco</button>`
-      : '<p class="texto-suave">Nenhuma questão deste tema ainda.</p>'}
     </section>`;
 }
 

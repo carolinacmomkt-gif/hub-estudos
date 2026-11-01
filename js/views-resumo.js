@@ -20,7 +20,7 @@ function semanaDoParametro(parametro, agora = Date.now()) {
 
 export function dadosDoResumo(estado) {
   return {
-    sessoes: estado.sessoesFoco, respostas: estado.respostas, artigos: estado.artigos, pautas: estado.pautas, videos: estado.videos,
+    sessoes: estado.sessoesFoco, artigos: estado.artigos, pautas: estado.pautas, videos: estado.videos,
     eventos: estado.eventos, disciplinas: estado.disciplinas, areas: estado.areas, cadernos: estado.cadernos,
   };
 }
@@ -49,11 +49,6 @@ export function renderResumo(estado) {
         <p class="revisao-total"><strong>${esc(textoMinutos(r.minutosFoco))}</strong><span class="texto-suave">em ${r.sessoes} ${r.sessoes === 1 ? 'sessão' : 'sessões'}</span></p>
         <div class="resumo-dias" role="img" aria-label="Minutos de foco por dia">${r.porDia.map((m, i) => `
           <span class="resumo-dia"><span class="resumo-coluna" style="height: ${Math.round((m / maior) * 100)}%"></span><small>${DIAS[i]}</small></span>`).join('')}</div>
-      </section>
-      <section class="card">
-        <p class="proximo-rotulo">Questões</p>
-        <p class="revisao-total"><strong>${r.questoes.respondidas}</strong><span class="texto-suave">respondidas${r.revisoesFeitas ? ` · ${r.revisoesFeitas} na revisão` : ''}</span></p>
-        ${r.questoes.taxa !== null ? barraProgresso(r.questoes.taxa, 'Acerto na semana') : '<p class="campo-ajuda">Nenhuma questão respondida.</p>'}
       </section>
     </div>
     ${r.porAssunto.length ? `<section class="card"><h2 class="card-titulo">Onde foi o seu foco</h2>
@@ -91,7 +86,6 @@ export function cardResumoInicio(estado) {
       </div>
       <ul class="lista-simples">
         <li><span>Foco</span><strong>${esc(textoMinutos(r.minutosFoco))}</strong></li>
-        <li><span>Questões</span><strong>${r.questoes.respondidas}${r.questoes.taxa !== null ? ` · ${Math.round(r.questoes.taxa * 100)}%` : ''}</strong></li>
         <li><span>Leituras terminadas</span><strong>${r.leituras.length}</strong></li>
       </ul>
       ${chamadaRetrospectiva(estado)}

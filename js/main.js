@@ -8,7 +8,6 @@ import { renderInicio } from './views-inicio.js';
 import { renderBiblioteca } from './views-biblioteca.js';
 import { renderLivro } from './views-livro.js';
 import { montarLeitor, desmontarLeitor } from './leitor-livro.js';
-import { renderQuestoes } from './views-questoes.js';
 import { renderSubstack } from './views-substack.js';
 import { renderEstudos } from './views-estudos.js';
 import { renderFoco } from './views-foco.js';
@@ -33,7 +32,6 @@ import { renderBusca } from './views-busca.js';
 import { montarBusca, dadosDaBusca } from './eventos-busca.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
 import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
-import { filtrarListaNaTela } from './eventos-questoes.js';
 import { salvarSubstackAgora } from './eventos-substack.js';
 import { reaplicarBuscaCadernos } from './eventos-cadernos.js';
 import { atualizarTela as atualizarFoco } from './foco.js';
@@ -64,7 +62,6 @@ const VIEWS = {
   youtube: renderYoutube,
   biblioteca: renderBiblioteca,
   livro: renderLivro,
-  questoes: renderQuestoes,
   substack: renderSubstack,
   estudos: renderEstudos,
   foco: renderFoco,
@@ -158,7 +155,6 @@ export function renderizar({ mudouDeTela = false } = {}) {
   // As buscas filtram na tela (sem redesenhar a cada letra): reaplica depois de redesenhar.
   if (rota.id === 'biblioteca') reaplicarBusca();
   if (rota.id === 'cadernos' && !rota.parametro) reaplicarBuscaCadernos();
-  if (rota.id === 'questoes' && !rota.parametro) filtrarListaNaTela('q-lista', document.getElementById('q-busca')?.value);
   if (CICLO[rota.id]) {
     telaMontada = rota.id;
     CICLO[rota.id].montar(rota.parametro);
@@ -203,12 +199,8 @@ const TABELAS_NA_MEMORIA = {
   config: 'config',
   videos: 'videos',
   artigos: 'artigos',
-  questoes: 'questoes',
-  revisoes: 'revisoes',
-  simulados: 'simulados',
   pautas_substack: 'pautas',
   areas: 'areas',
-  respostas: 'respostas',
   sessoes_foco: 'sessoesFoco',
   diario: 'diario',
   tarefas: 'tarefas',
@@ -246,17 +238,13 @@ const TELAS_DA_TABELA = {
   habito_registros: ['habitos', 'inicio', 'metas'],
   metas: ['metas', 'inicio'],
   lazer: ['metas', 'inicio'],
-  respostas: ['resumo', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
   config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'metas'],
   videos: ['youtube', 'inicio'],
-  artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'questoes', 'livro'],
-  questoes: ['questoes', 'inicio', 'estudos'],
-  revisoes: ['questoes', 'inicio'],
-  simulados: ['questoes'],
+  artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'livro'],
   pautas_substack: ['substack', 'inicio'],
-  areas: ['estudos', 'inicio', 'biblioteca', 'questoes', 'cadernos'],
+  areas: ['estudos', 'inicio', 'biblioteca', 'cadernos'],
 };
 
 // Link ou texto compartilhado de outro app (Web Share Target, no Android): a Carol escolhe se

@@ -230,15 +230,6 @@ export function cliqueBiblioteca(alvo) {
     case 'bib-copiar-ficha':
       if (a) copiar(fichamentoEmTexto(a), 'Fichamento copiado.');
       break;
-    case 'bib-questoes':
-      if (!a) break;
-      if (!String(a.texto || '').trim()) {
-        app.avisoCurto('Esta leitura ainda não tem texto para gerar questões.');
-        break;
-      }
-      atualizarEstado({ questoesPreset: { fonte: 'artigo', artigo: a.id, disciplina: a.disciplina_id || '', area: a.area_id || '' } });
-      location.hash = '#questoes/gerar';
-      break;
     case 'bib-substack':
       if (!a) break;
       atualizarEstado({ substackReferencia: a.id });

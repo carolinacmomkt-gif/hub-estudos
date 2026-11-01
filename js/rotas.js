@@ -11,7 +11,6 @@ export const ROTAS = [
   { id: 'foco', titulo: 'Sessão de foco', curto: 'Foco', icone: 'foco', grupo: 'dia' },
   { id: 'faculdade', titulo: 'Faculdade', curto: 'Faculdade', icone: 'faculdade', fixaCelular: true, grupo: 'faculdade' },
   { id: 'cadernos', titulo: 'Cadernos', curto: 'Cadernos', icone: 'cadernos', grupo: 'faculdade' },
-  { id: 'questoes', titulo: 'Questões', curto: 'Questões', icone: 'questoes', grupo: 'faculdade' },
   { id: 'estudos', titulo: 'Estudos gerais', curto: 'Estudos', icone: 'estudos', grupo: 'estudos' },
   { id: 'biblioteca', titulo: 'Biblioteca', curto: 'Biblioteca', icone: 'biblioteca', grupo: 'estudos' },
   { id: 'youtube', titulo: 'YouTube', curto: 'YouTube', icone: 'youtube', grupo: 'criacao' },

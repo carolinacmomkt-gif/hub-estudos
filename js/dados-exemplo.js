@@ -17,11 +17,6 @@ export function gerarDadosExemplo(agora = Date.now()) {
       { id: 'ev6', tipo: 'prova', titulo: 'Prova N1', disciplina: 'Metodologia Científica', prazo: agora + 12 * DIA, status: 'pendente' },
     ],
 
-    revisoes: [
-      { disciplina: 'Estatística Aplicada', quantidade: 4 },
-      { disciplina: 'Metodologia Científica', quantidade: 2 },
-      { disciplina: 'Estudos gerais', quantidade: 1 },
-    ],
 
     notas: [
       { disciplina: 'Comunicação e Sociedade', item: 'Atividade avaliativa 1', nota: 9, maximo: 10, data: agora - 1 * DIA },

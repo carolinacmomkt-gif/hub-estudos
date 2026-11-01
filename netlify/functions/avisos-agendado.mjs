@@ -21,12 +21,12 @@ export async function enviarResumoDaUsuaria(userId, assinaturas, valorAvisos, ag
   const depois = new Date(semana.fim + 7 * DIA).toISOString();
   const entre = (campo, a = de, b = ate) => `${campo}=gte.${a}&${campo}=lt.${b}`;
   const ler = (tabela, filtro) => banco.listar(tabela, userId, filtro).catch(() => []); // tabela que ainda não existe: segue sem ela
-  const [sessoes, respostas, artigos, pautas, videos, eventos, disciplinas, areas, cadernos] = await Promise.all([
-    ler('sessoes_foco', entre('inicio')), ler('respostas', entre('respondida_em')), ler('artigos', entre('lido_em')),
+  const [sessoes, artigos, pautas, videos, eventos, disciplinas, areas, cadernos] = await Promise.all([
+    ler('sessoes_foco', entre('inicio')), ler('artigos', entre('lido_em')),
     ler('pautas_substack', entre('publicado_em')), ler('videos', entre('data_publicacao')), ler('eventos', entre('inicio', de, depois)),
     ler('disciplinas', ''), ler('areas', ''), ler('cadernos', entre('atualizado_em')),
   ]);
-  const r = resumoDaSemana({ sessoes, respostas, artigos, pautas, videos, eventos, disciplinas, areas, cadernos }, semana);
+  const r = resumoDaSemana({ sessoes, artigos, pautas, videos, eventos, disciplinas, areas, cadernos }, semana);
   const n = { ...textoDaNotificacao(r), tag: `resumo-${semana.chave}`, url: `/#resumo/${semana.chave}` };
   let entregue = false;
   for (const assinatura of assinaturas) {

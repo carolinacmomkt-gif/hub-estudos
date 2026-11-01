@@ -357,7 +357,6 @@ function leitor(estado, a) {
       <details class="menu-mais">
         <summary class="botao botao-secundario botao-pequeno">Mais</summary>
         <div class="menu-mais-lista">
-          <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-questoes">Gerar questões deste texto</button>
           <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-substack">Usar numa pauta do Substack</button>
           <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-editar">Editar dados e texto</button>
           <button class="botao botao-secundario botao-pequeno botao-perigo" type="button" data-acao="bib-excluir">Excluir</button>

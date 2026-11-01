@@ -3,8 +3,8 @@
 
 export const TABELAS = [
   'areas', 'disciplinas', 'materiais', 'eventos', 'notas_ava', 'notas_lyceum', 'frequencias',
-  'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas', 'questoes', 'respostas',
-  'revisoes', 'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'videos', 'simulados', 'sessoes_foco',
+  'avisos', 'artigos', 'pastas', 'cadernos', 'secoes', 'paginas',
+  'pautas_substack', 'caixa_entrada', 'config', 'conexoes', 'videos', 'sessoes_foco',
   'projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer',
   'demandas', 'livro_paginas',
 ];

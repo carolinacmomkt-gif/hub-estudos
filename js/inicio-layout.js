@@ -24,7 +24,6 @@ export const CARDS_DO_APP = [
   { id: 'prazos', nome: 'Prazos dos próximos 7 dias', tamanho: '2/3' },
   { id: 'provas', nome: 'Provas', tamanho: '1/3' },
   { id: 'plano', nome: 'Plano para a prova', tamanho: '2/3' },
-  { id: 'revisoes', nome: 'Revisões pendentes', tamanho: '1/3' },
   { id: 'notas', nome: 'Últimas notas', tamanho: '2/3' },
   { id: 'precisa', nome: 'Quanto preciso tirar', tamanho: '1/3' },
   { id: 'faltas', nome: 'Atenção às faltas', tamanho: '1/3' },

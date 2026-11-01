@@ -94,7 +94,7 @@ function eventoDaSessao(prova, sessao) {
     dia_inteiro: false,
     status: null,
     origem: 'manual',
-    descricao: 'Sessão do plano de estudo. Revise os cadernos e refaça as questões desta disciplina.',
+    descricao: 'Sessão do plano de estudo. Revise os cadernos e as leituras desta disciplina.',
   };
 }
 
