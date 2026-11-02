@@ -865,6 +865,36 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Com as mãos (migração 013)
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.maos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  tipo text not null check (tipo in ('colorir', 'desenhar', 'escrever', 'caligrafia', 'croche', 'ideia')),
+  titulo text,
+  modelo text,                   -- id do modelo (desenho para colorir, risco, passo a passo, folha)
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+create index if not exists maos_sinc_idx on public.maos (user_id, atualizado_em);
+
+create or replace trigger tocar_atualizado_em before insert or update on public.maos
+  for each row execute function public.tocar_atualizado_em();
+
+alter table public.maos enable row level security;
+
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'maos' and policyname = 'dona') then
+    create policy "dona" on public.maos for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Storage: PDFs, imagens e páginas de caderno (pasta = id da usuária)
 -- ---------------------------------------------------------------------------
 

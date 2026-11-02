@@ -82,4 +82,6 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 
 - [x] **Questões fora do app** ✓: a faculdade está acabando; tela, gerador, simulados, revisão espaçada e atalhos saíram. As tabelas ficam no Supabase.
 - [x] **Pauta dentro do Bússola (grupo Trabalho)** ✓ (02/11/2026): Conteúdo (semana, lista, ficha da peça, "O que mudou sem você", radar de buracos), Aprovar (design → você → cliente → agendar, com arrastar), Clientes (casas, saúde, memória de feedback, ficha do Notion), Criar (IA com o método e a memória, revisor ao vivo, modelos, rascunhos, criar no calendário do Notion). Junções: "Comece por aqui" + tese do dia no Hoje (dias úteis), "Focar nesta peça" no Foco e os avisos das 7h, 12h e 17h.
+- [x] **Trabalho, lógica certa** ✓ (02/11/2026): Essence (com você só planejamento, copy e o que é seu; o resto com a equipe), Confluir (quadro da designer e de vídeos, meses fora, quadro do cliente como calendário), visões Todos/Essence/Confluir/Minha marca, filtro de clientes e Seus clientes.
+- [x] **Com as mãos** ✓ (02/11/2026): colorir, desenhar, escrever, caligrafia, crochê e ideias, na Mesinha e no Meu cantinho; papel no padrão do app.
 - [ ] Ainda do Pauta, para depois: blocos por cliente no Organizar minhas demandas, intenções da semana, importar a memória de feedback e os rascunhos do Neon, editor de páginas do Notion.

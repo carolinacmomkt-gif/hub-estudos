@@ -1,6 +1,7 @@
 // Cliques, formulários e as partes vivas do Meu cantinho: relógio, pausa com tempo, respiração,
 // sons, mesinha (relógio de cabeceira que escurece sozinho) e o lembrete de parar.
 
+import { montarMaos, desmontarMaos, sairDasMaos } from './eventos-maos.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 import { listar, salvar } from './persistencia.js';
 import { gravar } from './gravacao.js';
@@ -40,11 +41,15 @@ export function montarCantinho(parametro) {
   const tic = () => { document.querySelectorAll('[data-ct-relogio]').forEach((el) => { el.textContent = relogioAgora(); }); };
   relogio = setInterval(tic, 1000);
   if (parametro === 'mesinha') ligarMesinha();
+  if (String(parametro || '').startsWith('maos')) montarMaos(parametro); else sairDasMaos();
   ligarLembreteDeParar();
 }
 
 export function desmontarCantinho() {
   desmontarRelogio();
+  desmontarMaos();
+  // Saiu do "Com as mãos" para outra tela: solta a folha e a tela acesa.
+  setTimeout(() => { if (!location.hash.startsWith('#cantinho/maos')) sairDasMaos(); }, 0);
   desligarMesinha();
   if (lembreteParar) { clearInterval(lembreteParar); lembreteParar = null; }
   // A pausa continua se já estava correndo (ela fica por cima do app inteiro).

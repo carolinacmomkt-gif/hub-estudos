@@ -212,8 +212,8 @@ const JANELAS_TRABALHO = { 'trabalho-manha': [7 * 60, 11 * 60], 'trabalho-meio':
 export function avisosDoTrabalho(dados, cfg, hoje, agoraMin, enviados) {
   const dia = new Date(`${hoje}T12:00:00Z`).getUTCDay();
   if (!cfg.trabalho?.ativo || dia === 0 || dia === 6) return [];
-  const estado = { conteudos: dados.conteudos || [], clientesTrabalho: dados.clientesTrabalho || [] };
-  const pecas = pecasAtivas(estado);
+  const estado = { conteudos: dados.conteudos || [], clientesTrabalho: dados.clientesTrabalho || [], configTrabalho: dados.configTrabalho || {} };
+  const pecas = pecasAtivas(estado, hoje);
   if (!pecas.length) return [];
   const momento = Object.keys(JANELAS_TRABALHO).find((k) => agoraMin >= JANELAS_TRABALHO[k][0] && agoraMin < JANELAS_TRABALHO[k][1]);
   if (!momento || enviados.has(`${momento}:${hoje}`)) return [];
@@ -227,12 +227,14 @@ export function avisosDoTrabalho(dados, cfg, hoje, agoraMin, enviados) {
     const texto = [itens.map((i, n) => `${n + 1}. ${i.titulo}`).join(' · '), mudou ? `${plural(mudou, 'peça mudou', 'peças mudaram')} sem você.` : ''].filter(Boolean).join(' ');
     return [{ chave, titulo: 'Trabalho: comece por aqui', texto, tag, url: '/#aprovar' }];
   }
-  const mandar = q.voce.length;
+  const mandar = q.voce.filter((p) => p.origem === 'trello').length;
+  const copy = q.voce.length - mandar;
   const agendar = q.agendar.length;
   if (momento === 'trabalho-meio') {
-    const partes = [mandar && `${plural(mandar, 'arte', 'artes')} para mandar ao cliente`, agendar && `${agendar} para agendar`].filter(Boolean);
+    const partes = [mandar && `${plural(mandar, 'arte', 'artes')} para mandar ao cliente`, agendar && `${agendar} para agendar`, copy && `${plural(copy, 'copy', 'copies')} com você`].filter(Boolean);
     return partes.length ? [{ chave, titulo: 'Meio do dia', texto: `${partes.join(' · ')}.`, tag, url: '/#aprovar' }] : [];
   }
-  if (!mandar && !agendar) return [];
-  return [{ chave, titulo: 'Perto de fechar', texto: `Ainda ${mandar + agendar === 1 ? 'tem 1 arte' : `tem ${mandar + agendar} artes`} com você. O que ficar aberto passa para amanhã. Sem culpa.`, tag, url: '/#aprovar' }];
+  const abertas = mandar + agendar + copy;
+  if (!abertas) return [];
+  return [{ chave, titulo: 'Perto de fechar', texto: `Ainda ${abertas === 1 ? 'tem 1 peça' : `tem ${abertas} peças`} com você. O que ficar aberto passa para amanhã. Sem culpa.`, tag, url: '/#aprovar' }];
 }

@@ -38,6 +38,7 @@ import { ligarRituais, cliqueRituais, enviarRituais, mudancaRituais } from './ev
 import { ligarCantinho, cliqueCantinho, enviarCantinho, mudancaCantinho } from './eventos-cantinho.js';
 import { ligarCuidar, cliqueCuidar, enviarCuidar } from './eventos-cuidar.js';
 import { ligarTrabalho, cliqueTrabalho, enviarTrabalho, mudancaTrabalho } from './eventos-trabalho.js';
+import { ligarMaos, cliqueMaos, enviarMaos, mudancaMaos } from './eventos-maos.js';
 import { ligarDemandas, cliqueDemandas, enviarDemandas, mudancaDemandas } from './eventos-demandas.js';
 import { ligarOrganizar, cliqueOrganizar, enviarOrganizar, mudancaOrganizar } from './eventos-organizar.js';
 import { cliqueBusca, enviarBusca, mudancaBusca } from './eventos-busca.js';
@@ -48,7 +49,7 @@ import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './ev
 import { confirmar } from './confirmar.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -402,7 +403,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarTrabalho, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarMaos, ligarTrabalho, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   ligarFolhas();
   ligarConfirmar(); // os diálogos do navegador viram folhas do app
   const folhaMais = document.getElementById('folha-mais');
@@ -513,7 +514,7 @@ export function ligarEventos(funcoesDoApp) {
           return;
         }
         if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo)
-          || cliqueFoco(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueTrabalho(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
+          || cliqueFoco(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueMaos(alvo) || cliqueTrabalho(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -555,7 +556,7 @@ export function ligarEventos(funcoesDoApp) {
     evento.preventDefault();
     // Qual botão enviou (ex.: "Salvar e fazer agora" ou "Só salvar").
     form.dataset.enviadoPor = evento.submitter?.value || '';
-    if (enviarLeitor(form) || enviarProtegidos(form) || enviarRituais(form) || enviarCantinho(form) || enviarCuidar(form) || enviarTrabalho(form) || enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarSubstack(form) || enviarEstudos(form)) return;
+    if (enviarLeitor(form) || enviarProtegidos(form) || enviarRituais(form) || enviarCantinho(form) || enviarCuidar(form) || enviarMaos(form) || enviarTrabalho(form) || enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarBiblioteca(form) || enviarSubstack(form) || enviarEstudos(form)) return;
     if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form) || enviarYoutube(form)) return;
     switch (form.dataset.form) {
       case 'login':

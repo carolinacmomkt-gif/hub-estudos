@@ -10,6 +10,7 @@ Rode só as que ainda não rodou (o app avisa em Configurações → Sincroniza�
 - `supabase/migracoes/010-demandas.sql` (Caixa de demandas)
 - `supabase/migracoes/011-livros.sql` (livros na Biblioteca e a caneta por cima do PDF)
 - `supabase/migracoes/012-trabalho.sql` (grupo Trabalho: o Pauta dentro da Bússola)
+- `supabase/migracoes/013-maos.sql` (Com as mãos, no Meu cantinho; já liga o RLS e não apaga nada)
 
 ## 2. Netlify → Site configuration → Environment variables
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
@@ -33,6 +34,8 @@ Depois de criar ou mudar uma variável, faça um novo deploy ("Trigger deploy").
 - Ligue a conexão a cada um dos 8 calendários e às 2 bases de clientes (na página de cada um: ••• → Conexões → a sua conexão).
 - No app: Configurações → Trabalho → cole o segredo novo → Conectar. Ele fica criptografado e nunca volta para a tela.
 - Configurações → Demandas → Trello: toque em "Conectar" de novo, para a autorização passar a deixar mover cartões e comentar (nada é apagado no Trello).
+- Configurações → Demandas: confira o quadro de vídeos da Confluir e as listas de aprovação dele.
+- Configurações → Trabalho → Seus clientes: desmarque quem não é seu.
 - Deixe o Pauta da Vercel no ar até conferir que Conteúdo, Aprovar, Clientes e Criar mostram o mesmo que ele.
 - A memória de feedback, as fichas e os rascunhos do Pauta (no Neon) não vêm sozinhos: as fichas voltam do Notion na primeira sincronização; a memória você pode reescrever em Clientes → Memória.
 

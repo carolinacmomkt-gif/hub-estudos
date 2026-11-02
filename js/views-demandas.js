@@ -230,7 +230,10 @@ function formConfigTrello(c) {
   const designers = quadroDosDesigners(quadros, config);
   const salvos = new Map((config.clientes || []).map((x) => [x.id, x]));
   const temConfig = Boolean(config.designers?.id || config.clientes?.length);
-  const linhas = quadros.filter((q) => q.id !== designers?.id).map((q) => {
+  // Quadro de produção de vídeos da Confluir (opcional): o mesmo caminho, filtrado pelos seus clientes.
+  const videos = config.videos?.id ? quadros.find((q) => q.id === config.videos.id) || null
+    : temConfig ? null : quadros.find((q) => q.id !== designers?.id && /v[ií]deo/i.test(q.nome)) || null;
+  const linhas = quadros.filter((q) => q.id !== designers?.id && q.id !== videos?.id).map((q) => {
     const salvo = salvos.get(q.id);
     const sugerida = sugerirEtiqueta(designers?.etiquetas, q.nome);
     const marcado = temConfig ? Boolean(salvo) : Boolean(sugerida);
@@ -248,7 +251,13 @@ function formConfigTrello(c) {
         <label class="campo"><span class="campo-rotulo">Lista de aprovação</span><select name="aprovacao">${opcoesListas(designers, config.designers?.aprovacao, LISTA_APROVACAO)}</select></label>
         <label class="campo"><span class="campo-rotulo">Lista de aprovados</span><select name="aprovado">${opcoesListas(designers, config.designers?.aprovado, LISTA_APROVADO)}</select></label>
       </div>
-      <p class="campo-ajuda">Post de cliente seu que cair na aprovação avisa no celular na hora. Quando for aprovado, a Bússola lembra de atualizar o Trello do cliente.</p>
+      <p class="campo-ajuda">Post de cliente seu que cair na aprovação avisa no celular na hora. Quando for aprovado, a Bússola lembra de atualizar o Trello do cliente. As listas com nome de mês são o arquivo do design e nunca contam.</p>
+      <label class="campo"><span class="campo-rotulo">Quadro de vídeos (Confluir)</span>
+        <select name="videos" data-acao-mudar="dem-videos"><option value="">Nenhum</option>${quadros.filter((q) => q.id !== designers?.id).map((q) => `<option value="${esc(q.id)}"${q.id === videos?.id ? ' selected' : ''}>${esc(q.nome)}</option>`).join('')}</select></label>
+      <div class="cal-form-linha">
+        <label class="campo"><span class="campo-rotulo">Lista de aprovação dos vídeos</span><select name="aprovacao-videos">${opcoesListas(videos, config.videos?.aprovacao, LISTA_APROVACAO)}</select></label>
+        <label class="campo"><span class="campo-rotulo">Lista de aprovados dos vídeos</span><select name="aprovado-videos">${opcoesListas(videos, config.videos?.aprovado, LISTA_APROVADO)}</select></label>
+      </div>
       <fieldset class="campo dem-bases"><legend class="campo-rotulo">Quadros dos seus clientes</legend>
         <p class="campo-ajuda">Marque os seus (os de influência ficam de fora). Ao lado, a etiqueta do cliente no quadro dos designers. A lista "Demandas" de cada quadro vira demanda, e card com prazo vencido (fora de Aprovados) ou quadro parado há 7 dias pede atualização, uma vez por semana.</p>
         ${linhas}

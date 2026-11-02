@@ -213,7 +213,7 @@ export function telaDesejos(estado, topo) {
   const abertos = desejosAbertos(lista);
   const realizados = desejosRealizados(lista).slice(0, 8);
   return `
-    ${topo('Lista de desejos', { voltar: true, sub: 'O que você gostaria de ter. Sem preço, sem pressa: o tempo mostra o que ainda faz sentido.' })}
+    ${topo('Lista de desejos', { voltar: true, voltarPara: '#cantinho/pessoas', sub: 'O que você gostaria de ter. Sem preço, sem pressa: o tempo mostra o que ainda faz sentido.' })}
     <div class="ct-grade">
       <section class="ct-card">
         <div class="ct-card-topo"><p class="ct-rotulo">Quero</p>${abertos.length ? `<span class="ct-selo">${abertos.length}</span>` : ''}</div>
@@ -252,6 +252,7 @@ export function telaPessoas(estado, topo, hoje) {
   const falar = paraFalar(lista, hoje);
   return `
     ${topo('Pessoas', { voltar: true, sub: 'A sua gente: aniversários, o que cada um gosta e quem faz tempo que você não fala.' })}
+    <a class="ct-faixa ct-faixa-link maos-desejos-link" href="#cantinho/desejos"><div><strong>🎁 Lista de desejos</strong><small>${(() => { const n = desejosAbertos(listaDesejosDe(estado.config)).length; return n ? `${n} ${n === 1 ? 'desejo esperando' : 'desejos esperando'}` : 'o que você gostaria de ter, sem pressa'; })()}</small></div><span class="botao botao-secundario">Abrir</span></a>
     <div class="ct-grade">
       <section class="ct-card">
         <p class="ct-rotulo">Próximos aniversários</p>

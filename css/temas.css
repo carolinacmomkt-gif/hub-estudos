@@ -77,8 +77,9 @@
   --vidro-sombra: inset 0 1px 0 rgba(255, 240, 225, 0.06), 0 10px 30px rgba(0, 0, 0, 0.35);
 
   /* Papel e tintas dos cadernos (os traços guardam o nome da tinta, não a cor:
-     assim a escrita continua legível ao trocar o tema) */
-  --papel: #221A14;
+     assim a escrita continua legível ao trocar o tema). O papel segue o app: grafite no escuro
+     (o mesmo dos cards), branco no claro (pedido da Carol, 02/11/2026: nada de folha marrom). */
+  --papel: #242424;
   --papel-linha: rgba(232, 211, 191, 0.14);
   --papel-margem: rgba(236, 124, 102, 0.35);
   --papel-texto: rgba(232, 211, 191, 0.5);
@@ -156,7 +157,7 @@
   --vidro-brilho: rgba(255, 255, 255, 0.9);
   --vidro-sombra: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 10px 30px rgba(43, 30, 22, 0.14);
 
-  --papel: #FFFDF9;
+  --papel: #FFFFFF;
   --papel-linha: rgba(43, 30, 22, 0.13);
   --papel-margem: rgba(192, 57, 43, 0.35);
   --papel-texto: rgba(43, 30, 22, 0.45);
@@ -198,6 +199,42 @@
   --tinta-livro-azul: #2C5AA6;
   --tinta-livro-vermelho: #B3372A;
   --tinta-livro-verde: #3B7537;
+  /* Com as mãos (02/11/2026): as 16 tintas da caixa de lápis (iguais nos dois temas, como as tintas
+     dos livros). O papel e o traço do desenho seguem o tema, como o papel dos cadernos. */
+  --maos-vazio: var(--papel);
+  --maos-linha: var(--tinta-tinta);
+  --pinta-1: #F4EADF;
+  --pinta-2: #E8D3BF;
+  --pinta-3: #D9BC9C;
+  --pinta-4: #E2B866;
+  --pinta-5: #C99A3B;
+  --pinta-6: #C46F4E;
+  --pinta-7: #C98585;
+  --pinta-8: #8E3B46;
+  --pinta-9: #A99BC9;
+  --pinta-10: #9DBBD6;
+  --pinta-11: #2E4A6B;
+  --pinta-12: #A8B89A;
+  --pinta-13: #7D8A55;
+  --pinta-14: #4F6B45;
+  --pinta-15: #9A9A9A;
+  --pinta-16: #3A3A3A;
+  --tinta-pinta-1: var(--pinta-1);
+  --tinta-pinta-2: var(--pinta-2);
+  --tinta-pinta-3: var(--pinta-3);
+  --tinta-pinta-4: var(--pinta-4);
+  --tinta-pinta-5: var(--pinta-5);
+  --tinta-pinta-6: var(--pinta-6);
+  --tinta-pinta-7: var(--pinta-7);
+  --tinta-pinta-8: var(--pinta-8);
+  --tinta-pinta-9: var(--pinta-9);
+  --tinta-pinta-10: var(--pinta-10);
+  --tinta-pinta-11: var(--pinta-11);
+  --tinta-pinta-12: var(--pinta-12);
+  --tinta-pinta-13: var(--pinta-13);
+  --tinta-pinta-14: var(--pinta-14);
+  --tinta-pinta-15: var(--pinta-15);
+  --tinta-pinta-16: var(--pinta-16);
   /* Marca-texto do texto digitado nos cadernos */
   --cor-marca-texto: rgba(255, 214, 102, 0.55);
 

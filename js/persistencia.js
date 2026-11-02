@@ -22,7 +22,7 @@ const CHAVE_DE_CONFLITO = { config: 'user_id,chave' };
 
 // Tabelas e tipos que dependem de uma migração (supabase/migracoes). Se a migração ainda não
 // foi rodada, só aquela tabela espera; as outras continuam sincronizando normalmente.
-const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)', simulados: '007-areas.sql', sessoes_foco: '008-foco.sql', demandas: '010-demandas.sql', livro_paginas: '011-livros.sql', conteudos: '012-trabalho.sql', clientes_trabalho: '012-trabalho.sql', rascunhos: '012-trabalho.sql',
+const MIGRACAO_DA_TABELA = { videos: '005-youtube.sql (e depois a 006-youtube-completo.sql)', simulados: '007-areas.sql', sessoes_foco: '008-foco.sql', demandas: '010-demandas.sql', livro_paginas: '011-livros.sql', conteudos: '012-trabalho.sql', clientes_trabalho: '012-trabalho.sql', rascunhos: '012-trabalho.sql', maos: '013-maos.sql',
   ...Object.fromEntries(['projetos', 'tarefas', 'habitos', 'habito_registros', 'diario', 'saude', 'clientes', 'consultoria', 'financas', 'casa', 'metas', 'lazer'].map((t) => [t, '009-vida.sql'])),
 };
 const tabelaNaoExiste = (erro) => erro instanceof ErroNuvem && (erro.codigo === 'PGRST205' || erro.codigo === '42P01' || erro.status === 404);

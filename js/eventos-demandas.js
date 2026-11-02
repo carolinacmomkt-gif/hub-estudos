@@ -284,6 +284,16 @@ export function cliqueDemandas(alvo) {
 
 // Trocou o quadro dos designers: listas e etiquetas acompanham, sem perder o que já foi marcado.
 export function mudancaDemandas(alvo, tipo) {
+  if (alvo.dataset?.acaoMudar === 'dem-videos') {
+    if (tipo !== 'change') return true;
+    const form = alvo.closest('form');
+    const quadros = (obterEstado().conexoes || []).find((c) => c.servico === 'trello')?.detalhe?.quadros || [];
+    const q = quadros.find((x) => x.id === alvo.value) || null;
+    form.elements['aprovacao-videos'].innerHTML = opcoesListas(q, '', /^\s*aprova[cç][aã]o\s*$/i);
+    form.elements['aprovado-videos'].innerHTML = opcoesListas(q, '', /^\s*aprovad[oa]s?\s*$/i);
+    form.querySelectorAll('.dem-cliente').forEach((linha) => { linha.hidden = linha.dataset.quadro === alvo.value || linha.dataset.quadro === form.elements.designers.value; });
+    return true;
+  }
   if (alvo.dataset?.acaoMudar !== 'dem-designers') return false;
   if (tipo !== 'change') return true;
   const form = alvo.closest('form');
@@ -310,10 +320,11 @@ export function enviarDemandas(form) {
   }
   if (tipo === 'dem-trello-config') {
     const designers = form.elements.designers.value;
+    const videos = form.elements.videos?.value || '';
     const clientes = [...form.querySelectorAll('input[name="cliente"]:checked')]
-      .filter((i) => i.value !== designers)
+      .filter((i) => i.value !== designers && i.value !== videos)
       .map((i) => ({ id: i.value, etiqueta: form.elements[`etiqueta-${i.value}`]?.value || '' }));
-    pedirDemandas({ acao: 'trello-config', designers: { id: designers, aprovacao: form.elements.aprovacao.value, aprovado: form.elements.aprovado.value }, clientes }).then(async (r) => {
+    pedirDemandas({ acao: 'trello-config', designers: { id: designers, aprovacao: form.elements.aprovacao.value, aprovado: form.elements.aprovado.value }, videos: { id: videos, aprovacao: form.elements['aprovacao-videos']?.value || '', aprovado: form.elements['aprovado-videos']?.value || '' }, clientes }).then(async (r) => {
       if (!r.ok) return app.avisoCurto(r.erro || 'Não deu para salvar.');
       await sincronizar();
       app.renderizar();

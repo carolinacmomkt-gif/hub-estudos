@@ -194,6 +194,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
 
 // Tabelas que as telas usam (as páginas de caderno ficam de fora: são pesadas e só o editor abre).
 const TABELAS_NA_MEMORIA = {
+  maos: 'maos',
   caixa_entrada: 'caixa',
   demandas: 'demandas',
   conexoes: 'conexoes',
@@ -241,6 +242,7 @@ const TELAS_DA_TABELA = {
   demandas: ['inicio'],
   conexoes: ['configuracoes', 'faculdade', 'inicio', 'conteudo', 'aprovar', 'clientes', 'criar'],
   conteudos: ['conteudo', 'aprovar', 'clientes', 'inicio'],
+  maos: [], // o Com as mãos cuida da própria tela (a folha não pode ser refeita no meio do traço)
   clientes_trabalho: ['clientes', 'criar', 'conteudo', 'aprovar'],
   rascunhos: ['criar'],
   cadernos: ['inicio', 'cadernos', 'estudos'],

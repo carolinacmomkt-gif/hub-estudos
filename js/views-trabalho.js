@@ -6,10 +6,10 @@ import { icone } from './icones.js';
 import { esc } from './utilidades.js';
 import { dataLocal } from './views-dia.js';
 import {
-  pecasAtivas, clientesAtivos, clientePelaChave, CASAS, casaDoCliente, corDoCliente, GRUPOS, grupoDoStatus, nomeDoGrupo, quando, diaMes,
+  clientesAtivos, clientePelaChave, CASAS, casaDoCliente, corDoCliente, GRUPOS, grupoDoStatus, nomeDoGrupo, quando, diaMes,
   somarDias, segundaDe, nomeDoDia, radar, riscos, ETAPAS, quadroDeAprovar, atrasoNoDesign, diasDesde, mensagemParaCliente, lembreteParaCliente,
   cobrancaParaDesigner, visaoDosClientes, SAUDES, ritmo, oQueMudou, textoDaMudanca, FORMATOS, OBJETIVOS, revisar, clienteDeSaude, etapaDaPeca,
-  NOME_COM_QUEM, comQuem,
+  NOME_COM_QUEM, comQuem, todasAsPecas, ehMeuCliente,
 } from './dados-trabalho.js';
 
 const conexaoDe = (estado, servico) => (estado.conexoes || []).find((c) => c.servico === servico && !c.excluido_em);
@@ -27,29 +27,66 @@ const seloGrupo = (p) => {
 };
 const codigo = (p) => (p.formato ? `<span class="tb-cod">${esc(p.formato)}</span>` : '');
 
-function filtroDeCasa(estado) {
-  return estado.trabCasa || '';
+// Filtro (fica no aparelho): visão (todos, essence, confluir, minha) e clientes (null = pelo
+// atalho "só os meus" ou "todos"; lista = os que ela marcou).
+export const FILTRO_PADRAO = { visao: 'todos', clientes: null, meus: true };
+export function filtroTrabalho(estado) {
+  if (estado.trabFiltro) return estado.trabFiltro;
+  try { return { ...FILTRO_PADRAO, ...(JSON.parse(localStorage.getItem('hub.trabalho.filtro') || 'null') || {}) }; } catch { return FILTRO_PADRAO; }
+}
+
+const casaDe = (estado, chave, pecas) => {
+  const c = clientePelaChave(estado, chave);
+  return casaDoCliente(c || { nome: pecas[0]?.cliente_nome || '', casa: null }, pecas);
+};
+
+// O cliente passa pelo filtro? (visão + clientes marcados, ou só os meus)
+function clienteVisivel(estado, chave, pecasDoCliente = []) {
+  const f = filtroTrabalho(estado);
+  if (f.visao !== 'todos' && casaDe(estado, chave, pecasDoCliente) !== f.visao) return false;
+  if (Array.isArray(f.clientes)) return f.clientes.includes(chave);
+  return f.meus ? ehMeuCliente(estado, chave) : true;
 }
 
 function filtrar(estado, pecas) {
-  const casa = filtroDeCasa(estado);
-  const cliente = estado.trabCliente || '';
-  const clientes = clientesAtivos(estado);
-  return pecas.filter((p) => {
-    if (cliente && p.cliente !== cliente) return false;
-    if (!casa) return true;
-    const c = clientes.find((x) => x.chave === p.cliente);
-    return casaDoCliente(c || { nome: p.cliente_nome || '', casa: null }, [p]) === casa;
-  });
+  const porCliente = new Map();
+  for (const p of pecas) porCliente.set(p.cliente, [...(porCliente.get(p.cliente) || []), p]);
+  const ok = new Map([...porCliente].map(([chave, lista]) => [chave, clienteVisivel(estado, chave, lista)]));
+  return pecas.filter((p) => ok.get(p.cliente));
 }
 
-function chipsCasa(estado, { comClientes = false } = {}) {
-  const casa = filtroDeCasa(estado);
-  const clientes = clientesAtivos(estado).filter((c) => !casa || casaDoCliente(c, pecasAtivas(estado).filter((p) => p.cliente === c.chave)) === casa);
+// Os clientes que aparecem na lista do filtro, por casa.
+function clientesPorCasa(estado) {
+  const pecas = todasAsPecas(estado);
+  const grupos = Object.fromEntries(CASAS.map((c) => [c.id, []]));
+  for (const c of clientesAtivos(estado)) grupos[casaDe(estado, c.chave, pecas.filter((p) => p.cliente === c.chave))]?.push(c);
+  for (const lista of Object.values(grupos)) lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  return grupos;
+}
+
+function chipsCasa(estado) {
+  const f = filtroTrabalho(estado);
+  const grupos = clientesPorCasa(estado);
+  const visiveis = Object.values(grupos).flat().filter((c) => clienteVisivel(estado, c.chave, todasAsPecas(estado).filter((p) => p.cliente === c.chave)));
+  const rotulo = Array.isArray(f.clientes) ? `${visiveis.length} ${visiveis.length === 1 ? 'cliente' : 'clientes'}` : f.meus ? 'Só os meus' : 'Todos os clientes';
+  const marcado = (chave) => (Array.isArray(f.clientes) ? f.clientes.includes(chave) : !f.meus || ehMeuCliente(estado, chave));
   return `<div class="tb-chips" role="group" aria-label="Filtrar">
-    <button class="chip-filtro" type="button" data-acao="tb-casa" data-valor="" aria-pressed="${!casa && !estado.trabCliente}">Todos</button>
-    ${CASAS.map((c) => `<button class="chip-filtro" type="button" data-acao="tb-casa" data-valor="${c.id}" aria-pressed="${casa === c.id && !estado.trabCliente}">${esc(c.nome)}</button>`).join('')}
-    ${comClientes ? clientes.slice(0, 14).map((c) => `<button class="chip-filtro" type="button" data-acao="tb-cliente" data-valor="${esc(c.chave)}" aria-pressed="${estado.trabCliente === c.chave}"><i class="tb-cor tb-cor-${corDe(estado, c.chave)}" aria-hidden="true"></i>${esc(c.nome)}</button>`).join('') : ''}
+    <div class="segmentado tb-visoes" role="tablist" aria-label="Visão">${[['todos', 'Todos'], ...CASAS.map((c) => [c.id, c.nome])].map(([id, nome]) => `
+      <button type="button" role="tab" data-acao="tb-visao-casa" data-valor="${id}" aria-selected="${f.visao === id}" aria-pressed="${f.visao === id}">${esc(nome)}</button>`).join('')}</div>
+    <details class="tb-filtro"${estado.trabFiltroAberto ? ' open' : ''} data-tb-filtro>
+      <summary class="chip-filtro" aria-label="Escolher clientes">${icone('clientes')}<span>${esc(rotulo)}</span></summary>
+      <div class="tb-filtro-caixa" role="group" aria-label="Clientes na visualização">
+        <div class="tb-filtro-atalhos">
+          <button class="chip-filtro" type="button" data-acao="tb-filtro-atalho" data-valor="meus" aria-pressed="${!Array.isArray(f.clientes) && f.meus}">Só os meus</button>
+          <button class="chip-filtro" type="button" data-acao="tb-filtro-atalho" data-valor="todos" aria-pressed="${!Array.isArray(f.clientes) && !f.meus}">Todos</button>
+          <button class="chip-filtro" type="button" data-acao="tb-filtro-atalho" data-valor="nenhum">Nenhum</button>
+        </div>
+        ${CASAS.filter((c) => grupos[c.id].length && (f.visao === 'todos' || f.visao === c.id)).map((c) => `
+          <fieldset class="tb-filtro-casa"><legend>${esc(c.nome)}</legend>
+            ${grupos[c.id].map((cl) => `<label class="campo-marcar"><input type="checkbox" data-acao-mudar="tb-filtro-cliente" value="${esc(cl.chave)}"${marcado(cl.chave) ? ' checked' : ''}><i class="tb-cor tb-cor-${corDe(estado, cl.chave)}" aria-hidden="true"></i>${esc(cl.nome)}</label>`).join('')}
+          </fieldset>`).join('')}
+      </div>
+    </details>
   </div>`;
 }
 
@@ -76,10 +113,10 @@ function barraSync(estado) {
 // ---------------------------------------------------------------------------
 
 export function renderConteudo(estado) {
-  if (!notionLigado(estado) && !pecasAtivas(estado).length) return semConexao(estado, 'Conteúdo');
+  if (!notionLigado(estado) && !todasAsPecas(estado).length) return semConexao(estado, 'Conteúdo');
   if (estado.parametro) return fichaDaPeca(estado, estado.parametro);
   const hoje = dataLocal();
-  const todas = pecasAtivas(estado).filter((p) => !p.dados?.producao);
+  const todas = todasAsPecas(estado).filter((p) => !p.dados?.producao);
   const pecas = filtrar(estado, todas);
   const visao = estado.trabVisao || 'semana';
   const inicio = estado.trabSemana || segundaDe(hoje);
@@ -96,7 +133,7 @@ export function renderConteudo(estado) {
       ${barraSync(estado)}
       <a class="botao botao-primario botao-pequeno" href="#criar">+ Peça nova</a>
     </div>
-    ${chipsCasa(estado, { comClientes: true })}
+    ${chipsCasa(estado)}
     ${cardMudou(estado, pecas)}
     ${visao === 'semana' ? semana(estado, pecas, inicio, hoje) : lista(estado, pecas, hoje)}
     ${cardRadar(estado, pecas, hoje)}`;
@@ -156,7 +193,7 @@ function cardMudou(estado, pecas) {
 }
 
 function fichaDaPeca(estado, id) {
-  const p = pecasAtivas(estado).find((x) => x.id === id);
+  const p = todasAsPecas(estado).find((x) => x.id === id) || (estado.conteudos || []).find((x) => x.id === id && !x.excluido_em);
   if (!p) return `${cabecalho('Conteúdo')}<section class="card"><p class="texto-suave">Esta peça não está mais aqui.</p><a class="botao botao-secundario" href="#conteudo">Voltar</a></section>`;
   const hoje = dataLocal();
   const opcoes = p.origem === 'trello' ? Object.keys(p.dados?.listas || {}) : (p.dados?.opcoes || []);
@@ -228,22 +265,25 @@ export function marcarTexto(texto, alertas) {
 // Aprovar
 // ---------------------------------------------------------------------------
 
-const ABA_CURTA = { design: 'Design', voce: 'Você', cliente: 'Cliente', agendar: 'Agendar' };
+const ABA_CURTA = { design: 'Design', voce: 'Você', cliente: 'Cliente', agendar: 'Agendar', equipe: 'Equipe' };
 
 export function renderAprovar(estado) {
-  if (!notionLigado(estado) && !pecasAtivas(estado).length) return semConexao(estado, 'Aprovar');
+  if (!notionLigado(estado) && !todasAsPecas(estado).length) return semConexao(estado, 'Aprovar');
   const hoje = dataLocal();
-  const pecas = filtrar(estado, pecasAtivas(estado));
+  const pecas = filtrar(estado, todasAsPecas(estado));
   const q = quadroDeAprovar(pecas);
-  const total = ETAPAS.reduce((t, e) => t + q[e.id].length, 0);
-  const aba = estado.aprovarAba || 'voce';
+  const visao = filtroTrabalho(estado).visao;
+  // Essence não passa pelo design da Confluir nem pelo Agendar; a Confluir não tem "equipe".
+  const etapas = ETAPAS.filter((e) => (visao === 'essence' ? ['voce', 'equipe'].includes(e.id) : visao === 'confluir' || visao === 'minha' ? e.id !== 'equipe' : true));
+  const total = etapas.reduce((t, e) => t + q[e.id].length, 0);
+  const aba = etapas.some((e) => e.id === estado.aprovarAba) ? estado.aprovarAba : 'voce';
   return `
     ${cabecalho('Aprovar', 'O caminho de cada arte, da designer até o agendamento. Arraste ou use os botões.')}
     <div class="acoes cal-acoes tb-acoes">${chipsCasa(estado)}${barraSync(estado)}</div>
-    <div class="segmentado tb-abas-aprovar" role="tablist" aria-label="Etapas">${ETAPAS.map((e) => `
+    <div class="segmentado tb-abas-aprovar" role="tablist" aria-label="Etapas">${etapas.map((e) => `
       <button type="button" role="tab" data-acao="tb-aba" data-valor="${e.id}" aria-selected="${aba === e.id}" aria-pressed="${aba === e.id}">${esc(ABA_CURTA[e.id] || e.nome)} ${q[e.id].length}</button>`).join('')}</div>
     ${total ? '' : '<section class="card"><p class="texto-suave">Nada no caminho da aprovação agora. Quando a designer puser uma arte em aprovação, ela aparece aqui.</p></section>'}
-    <div class="tb-quadro" data-aba="${esc(aba)}">${ETAPAS.map((e) => `
+    <div class="tb-quadro" data-aba="${esc(aba)}">${etapas.map((e) => `
       <section class="tb-coluna${e.id === 'voce' ? ' destaque' : ''}" data-etapa="${e.id}" aria-label="${esc(e.nome)}">
         <h2 class="tb-coluna-titulo">${esc(e.nome)} <small>${q[e.id].length}</small></h2>
         <p class="tb-coluna-ajuda">${esc(e.ajuda)}</p>
@@ -259,6 +299,12 @@ function cartaoArte(estado, p, etapa, hoje) {
   if (etapa === 'design') {
     pe = `<span class="tb-arte-pe"><small>${esc(quandoTxt)}</small>${atraso ? `<span class="selo tb-g-risco">${atraso.tipo === 'prazo' ? 'atrasada' : `parada há ${atraso.dias} dias`}</span>` : '<span class="selo">no prazo</span>'}</span>
       ${atraso ? `<span class="tb-arte-acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="tb-copiar" data-texto="${esc(cobrancaParaDesigner(p))}">Copiar cobrança</button></span>` : ''}`;
+  } else if (etapa === 'voce' && p.origem === 'notion') {
+    // Essence: planejamento, copy ou algo atribuído a você.
+    pe = `<span class="tb-arte-pe"><small>${esc(quandoTxt || 'sem data')}</small>${seloGrupo(p)}</span>
+      <span class="tb-arte-acoes"><a class="botao botao-secundario botao-pequeno" href="#conteudo/${esc(p.id)}">Abrir</a><button class="botao botao-secundario botao-pequeno" type="button" data-acao="tb-criar-de" data-id="${esc(p.id)}">Escrever no Criar</button></span>`;
+  } else if (etapa === 'equipe') {
+    pe = `<span class="tb-arte-pe"><small>${esc(quandoTxt || 'sem data')}</small>${seloGrupo(p)}</span>`;
   } else if (etapa === 'voce') {
     pe = `<p class="tb-msg">${esc(mensagemParaCliente(p))}</p>
       <span class="tb-arte-acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="tb-copiar" data-texto="${esc(mensagemParaCliente(p))}">Copiar mensagem</button><button class="botao botao-primario botao-pequeno" type="button" data-acao="tb-etapa" data-id="${esc(p.id)}" data-valor="mandei">Mandei ›</button></span>`;
@@ -268,8 +314,9 @@ function cartaoArte(estado, p, etapa, hoje) {
   } else if (etapa === 'agendar') {
     pe = `<span class="tb-arte-pe"><small>${esc(quandoTxt || 'sem data')}</small><button class="botao botao-primario botao-pequeno" type="button" data-acao="tb-etapa" data-id="${esc(p.id)}" data-valor="agendei">Agendei ✓</button></span>`;
   }
-  return `<article class="tb-arte" data-id="${esc(p.id)}">
-    <button class="tb-alca" type="button" data-tb-arrastar="${esc(p.id)}" aria-label="Arrastar ${esc(p.titulo)}" title="Arrastar">⠿</button>
+  const arrasta = p.origem === 'trello' && p.dados?.producao;
+  return `<article class="tb-arte${etapa === 'equipe' ? ' tb-arte-leve' : ''}" data-id="${esc(p.id)}">
+    ${arrasta ? `<button class="tb-alca" type="button" data-tb-arrastar="${esc(p.id)}" aria-label="Arrastar ${esc(p.titulo)}" title="Arrastar">⠿</button>` : ''}
     <a class="tb-arte-topo" href="#conteudo/${esc(p.id)}">${ponto(estado, p)}<b>${esc(p.titulo)}</b></a>
     ${pe}
   </article>`;
@@ -282,9 +329,10 @@ function cartaoArte(estado, p, etapa, hoje) {
 export function renderClientes(estado) {
   if (!notionLigado(estado) && !clientesAtivos(estado).length) return semConexao(estado, 'Clientes');
   const hoje = dataLocal();
-  const pecas = pecasAtivas(estado);
-  const visoes = visaoDosClientes(clientesAtivos(estado), pecas, hoje);
+  const pecas = todasAsPecas(estado);
   const chave = estado.parametro || null;
+  const visiveis = clientesAtivos(estado).filter((c) => c.chave === chave || clienteVisivel(estado, c.chave, pecas.filter((p) => p.cliente === c.chave)));
+  const visoes = visaoDosClientes(visiveis, pecas, hoje);
   const aberta = chave ? visoes.find((v) => v.cliente.chave === chave) : null;
   const listaHtml = `<nav class="card tb-clientes-lista${aberta ? ' tem-aberto' : ''}" aria-label="Clientes">${CASAS.map((casa) => {
     const daCasa = visoes.filter((v) => v.casa === casa.id);
@@ -299,6 +347,7 @@ export function renderClientes(estado) {
   return `
     ${cabecalho(aberta ? aberta.cliente.nome : 'Clientes', aberta ? esc([nomeCasa(aberta.casa), aberta.cliente.dados?.nicho, aberta.cliente.dados?.instagram, (aberta.cliente.dados?.servicos || []).join(', ')].filter(Boolean).join(' · ')) : `${visoes.length} clientes · ${visoes.filter((v) => v.saude === 'urgente').length} urgentes`)}
     <div class="acoes cal-acoes tb-acoes">
+      ${aberta ? '' : chipsCasa(estado)}
       ${aberta ? `<a class="botao botao-secundario botao-pequeno tb-voltar-lista" href="#clientes">← Clientes</a>` : ''}
       ${aberta && aberta.cliente.url ? `<a class="botao botao-secundario botao-pequeno" href="${esc(aberta.cliente.url)}" target="_blank" rel="noopener">Abrir no ${String(aberta.cliente.url).includes('trello') ? 'Trello' : 'Notion'}</a>` : ''}
       ${aberta ? `<button class="botao botao-primario botao-pequeno" type="button" data-acao="tb-criar-para" data-valor="${esc(aberta.cliente.chave)}">Criar para ${esc(aberta.cliente.nome.split(' ')[0] === 'Dra.' || aberta.cliente.nome.split(' ')[0] === 'Dr.' ? 'ela' : aberta.cliente.nome.split(' ')[0])}</button>` : barraSync(estado)}
@@ -396,6 +445,19 @@ export function listaAlertas(alertas) {
 // Configurações → Trabalho
 // ---------------------------------------------------------------------------
 
+// Quais clientes são seus: o "Só os meus" do filtro, o Hoje e os avisos seguem esta lista.
+function listaMeusClientes(estado) {
+  const grupos = clientesPorCasa(estado);
+  if (!Object.values(grupos).some((l) => l.length)) return '';
+  return `
+      <h3 class="ava-subtitulo">Seus clientes</h3>
+      <p class="campo-ajuda">Desmarque os que não são seus (por exemplo, clientes de outra pessoa na Confluir). Eles saem do "Só os meus", do Hoje e dos avisos, mas continuam no filtro "Todos".</p>
+      <div class="tb-meus">${CASAS.filter((c) => grupos[c.id].length).map((c) => `
+        <fieldset class="tb-filtro-casa"><legend>${esc(c.nome)}</legend>
+          ${grupos[c.id].map((cl) => `<label class="campo-marcar"><input type="checkbox" data-acao-mudar="tb-meu-cliente" value="${esc(cl.chave)}"${ehMeuCliente(estado, cl.chave) ? ' checked' : ''}><i class="tb-cor tb-cor-${corDe(estado, cl.chave)}" aria-hidden="true"></i>${esc(cl.nome)}</label>`).join('')}
+        </fieldset>`).join('')}</div>`;
+}
+
 export function cardTrabalhoConfig(estado) {
   const c = conexaoDe(estado, 'notion_trabalho');
   const ligado = c?.status === 'conectado';
@@ -416,6 +478,7 @@ export function cardTrabalhoConfig(estado) {
         <div class="acoes"><button class="botao botao-primario" type="submit">Conectar</button></div>
         <p class="campo-ajuda" data-erro hidden></p>
       </form>`}
+      ${listaMeusClientes(estado)}
       <h3 class="ava-subtitulo">Trello</h3>
       ${conexaoDe(estado, 'trello') ? (escreve === false ? '<p class="ava-alerta" role="alert">O Trello está conectado só para ler. Para mover cartões pelo Aprovar, conecte de novo em Configurações → Demandas (a nova autorização pede ler e escrever).</p>'
     : escreve ? '<p class="texto-suave">✓ O Trello deixa mover cartões. Os quadros vêm da escolha feita em Demandas (quadro dos designers e quadros dos clientes).</p>'

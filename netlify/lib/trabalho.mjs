@@ -72,6 +72,19 @@ export function valorDe(p) {
     default: return null;
   }
 }
+// Quem está atribuído na página: campos de pessoa e campos com "respons"/"atribu"/"quem" no nome.
+function pessoasDe(pagina) {
+  const nomes = [];
+  for (const [nome, p] of Object.entries(pagina.properties || {})) {
+    if (p?.type === 'people') nomes.push(...(p.people || []).map((x) => x.name || x.person?.email || '').filter(Boolean));
+    else if (/respons|atribu|quem|dono/i.test(nome)) {
+      if (p?.type === 'select' && p.select?.name) nomes.push(p.select.name);
+      if (p?.type === 'multi_select') nomes.push(...(p.multi_select || []).map((x) => x.name));
+      if (p?.type === 'rich_text') nomes.push(rico(p.rich_text));
+    }
+  }
+  return [...new Set(nomes.map((n) => String(n).trim()).filter(Boolean))].slice(0, 10);
+}
 const tituloDe = (pagina) => rico(Object.values(pagina.properties || {}).find((p) => p.type === 'title')?.title).trim();
 const campo = (pagina, ...nomes) => {
   for (const n of nomes) { const v = valorDe(pagina.properties?.[n]); if (v) return v; }
@@ -338,7 +351,7 @@ export async function sincronizarCalendario(userId, indice) {
       titulo: tituloDe(p) || 'Sem título', data: campo(p, 'Data de publicação')?.slice(0, 10) || null, entrega: campo(p, 'Entrega interna')?.slice(0, 10) || null,
       status: campo(p, 'Liberação'), formato: formatoDe(p), url: p.url, editado_em: p.last_edited_time,
       ...(porOrigem.get(p.id)?.editado_em === p.last_edited_time ? {} : { texto: undefined }),
-      dados: { pilar: campo(p, 'Pilar'), objetivo: campo(p, 'Objetivo'), serie: campo(p, 'Série'), feedback: campo(p, 'Feedback do cliente'), link_arte: campo(p, 'Link da arte'), opcoes, banco: cal.banco },
+      dados: { responsaveis: pessoasDe(p), pilar: campo(p, 'Pilar'), objetivo: campo(p, 'Objetivo'), serie: campo(p, 'Série'), feedback: campo(p, 'Feedback do cliente'), link_arte: campo(p, 'Link da arte'), opcoes, banco: cal.banco },
     };
   });
   if (clientesNovos.length) await gravarClientes(userId, clientesNovos, clientes);
@@ -379,21 +392,26 @@ export async function sincronizarTrello(userId) {
     dados: { listas: Object.fromEntries(listas.map((l) => [l.name, l.id])), etiquetas: (c.labels || []).map((l) => l.name), ...extra.dados },
     ...extra.campos,
   });
-  if (cfg.designers?.id) {
-    const nomeQuadro = quadros.find((q) => q.id === cfg.designers.id)?.nome || cfg.designers.nome || 'Designers';
-    const { listas, cartoes } = await lerQuadro(cfg.designers.id);
+  // Quadros de produção da Confluir: o da designer (posts) e o de vídeos. Só cartões com etiqueta de
+  // cliente dela; as listas de mês (arquivo do design) já ficaram de fora em lerQuadro.
+  for (const [tipo, q] of [['posts', cfg.designers], ['videos', cfg.videos]]) {
+    if (!q?.id) continue;
+    const nomeQuadro = quadros.find((x) => x.id === q.id)?.nome || q.nome || (tipo === 'videos' ? 'Vídeos' : 'Designers');
+    const { listas, cartoes } = await lerQuadro(q.id);
     const nomeLista = (id) => listas.find((l) => l.id === id)?.name || null;
     const producao = {
-      aprovacao: nomeLista(cfg.designers.aprovacao) || listas.find((l) => /^(em )?aprova[cç][aã]o$/i.test(normalizar(l.name)))?.name || 'APROVAÇÃO',
-      aprovado: nomeLista(cfg.designers.aprovado) || listas.find((l) => /^aprovad/i.test(normalizar(l.name)))?.name || 'APROVADO',
+      tipo,
+      aprovacao: nomeLista(q.aprovacao) || listas.find((l) => /^(em )?aprovacao$/.test(normalizar(l.name)))?.name || 'APROVAÇÃO',
+      aprovado: nomeLista(q.aprovado) || listas.find((l) => /^aprovad/.test(normalizar(l.name)))?.name || 'APROVADO',
       alteracao: listas.find((l) => /altera|ajuste|revis/.test(normalizar(l.name)))?.name || null,
     };
     for (const c of cartoes) {
       const etiquetas = (c.labels || []).map((l) => l.name);
-      const dono = donos.find((d) => etiquetas.some((e) => (d.etiqueta && normalizar(d.etiqueta) === normalizar(e)) || etiquetaDoCliente(e, d.nome)));
+      const dono = donos.find((d) => etiquetas.some((e) => (d.etiqueta && tipo === 'posts' && normalizar(d.etiqueta) === normalizar(e)) || etiquetaDoCliente(e, d.nome)));
       if (!dono) continue;
-      // No quadro da designer a data é o prazo do design (entrega), não a data de postagem.
-      novas.push(peca(c, nomeQuadro, listas, dono, { dados: { producao }, campos: { data: null, entrega: c.due ? c.due.slice(0, 10) : null } }));
+      // No quadro de produção a data é o prazo do design (entrega), não a data de postagem.
+      const extra = { dados: { producao }, campos: { data: null, entrega: c.due ? c.due.slice(0, 10) : null, ...(tipo === 'videos' ? { formato: 'Vídeo' } : {}) } };
+      novas.push(peca(c, nomeQuadro, listas, dono, extra));
     }
   }
   for (const d of donos) {
@@ -430,7 +448,14 @@ async function pecaDaUsuaria(userId, id) {
 export async function mudarPeca(userId, id, mudanca) {
   const p = await pecaDaUsuaria(userId, id);
   let status;
-  if (mudanca.etapa === 'aprovou') {
+  const listaDoQuadro = (re) => Object.keys(p.dados?.listas || {}).find((n) => re.test(normalizar(n))) || null;
+  if (mudanca.etapa === 'aprovou' && p.origem === 'trello' && !p.dados?.producao) {
+    status = listaDoQuadro(/^aprovad/);
+    if (!status) throw new ErroOrigem('Não achei a lista de aprovados neste quadro. Mude direto no Trello.');
+  } else if (mudanca.etapa === 'ajuste' && p.origem === 'trello' && !p.dados?.producao) {
+    status = listaDoQuadro(/altera|ajuste|revis/);
+    if (!status) throw new ErroOrigem('Não achei a lista de ajuste neste quadro. Mude direto no Trello.');
+  } else if (mudanca.etapa === 'aprovou') {
     status = p.dados?.producao ? p.dados.producao.aprovado : destinoDaAprovacao(p.dados?.opcoes);
     if (!status) throw new ErroOrigem('Este calendário não tem um status de aprovado. Mude direto no Notion.');
   } else if (mudanca.etapa === 'ajuste') {

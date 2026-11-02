@@ -15,6 +15,8 @@ import { AMBIENTES } from './foco-palco.js';
 import { telaCuidar, telaDesejos, telaPessoas, resumoParaCantos } from './views-cuidar.js';
 import { telaFechar, telaDiario } from './views-fechar.js';
 import { linhaDoDiario, fechamentoDe } from './dados-fechar.js';
+import { telaMaos, atalhosDaMesinha } from './views-maos.js';
+import { vivosMaos } from './dados-maos.js';
 
 const fmtData = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 const SONS = AMBIENTES.filter((a) => a.id).map((a) => ({ ...a, emoji: { chuva: '🌧️', marrom: '🌊', lareira: '🔥' }[a.id] || '🎧' }));
@@ -25,10 +27,10 @@ export function relogioAgora(agora = Date.now()) {
 }
 
 // Cabeçalho próprio do cantinho (sem a lupa nem o seletor de tema: aqui é descanso).
-function topoCantinho(titulo, { voltar = false, sub = '', acoes = '' } = {}) {
+function topoCantinho(titulo, { voltar = false, voltarPara = '#cantinho', sub = '', acoes = '' } = {}) {
   return `
     <header class="ct-topo">
-      ${voltar ? `<a class="botao-icone ct-voltar" href="#cantinho" aria-label="Voltar ao cantinho" title="Voltar">‹</a>` : ''}
+      ${voltar ? `<a class="botao-icone ct-voltar" href="${esc(voltarPara)}" aria-label="Voltar" title="Voltar">‹</a>` : ''}
       <div class="ct-topo-texto"><p class="ct-rotulo">Meu cantinho</p><h1 class="ct-titulo" tabindex="-1">${esc(titulo)}</h1>${sub ? `<p class="ct-sub">${esc(sub)}</p>` : ''}</div>
       <div class="ct-topo-acoes">
         ${acoes}${voltar ? '' : `<button class="botao botao-secundario botao-pequeno ct-botao-lua" type="button" data-acao="ct-mesinha">${icone('cantinho')}Mesinha</button>`}
@@ -75,6 +77,11 @@ function cartaoPausaQueCabe(estado, c, hoje, agoraMin) {
     </div>`;
 }
 
+function textoMaos(estado) {
+  const ultimo = vivosMaos(estado).find((m) => m.tipo !== 'ideia');
+  return ultimo ? `continuar: ${ultimo.titulo || 'seu último trabalho'}` : 'colorir, desenhar, caligrafia, crochê';
+}
+
 function cantos(estado, c, hoje) {
   const feitas = pausasDoDia(c, hoje);
   const deitar = c.deitar || horasDeDeitar(c.acordar)[1]?.hora;
@@ -88,7 +95,7 @@ function cantos(estado, c, hoje) {
     { rota: '#cantinho/cuidar', emoji: '💧', nome: 'Cuidar de mim', texto: r.cuidar },
     { rota: livro ? `#livro/${livro.livro.id}` : '#biblioteca', emoji: '📖', nome: 'Ler devagar', texto: livro ? `${livro.livro.titulo}${faltaLer ? ` · faltam ${faltaLer} min` : ' · meta de hoje batida'}` : 'nenhum livro na estante ainda' },
     { rota: '#cantinho/pessoas', emoji: '🎂', nome: 'Pessoas', texto: r.pessoas },
-    { rota: '#cantinho/desejos', emoji: '🎁', nome: 'Desejos', texto: r.desejos },
+    { rota: '#cantinho/maos', emoji: '🧶', nome: 'Com as mãos', texto: textoMaos(estado) },
   ];
   return `<div class="ct-cantos">${lista.map((x) => `
     <a class="ct-card ct-canto" href="${esc(x.rota)}">
@@ -108,6 +115,7 @@ export function renderCantinho(estado) {
   if (sub === 'mesinha') return telaMesinha(estado, c, agoraMin);
   if (sub === 'cuidar') return telaCuidar(estado, topoCantinho, hoje);
   if (sub === 'desejos') return telaDesejos(estado, topoCantinho);
+  if (String(sub || '').startsWith('maos')) return telaMaos(estado, topoCantinho, sub, hoje);
   if (sub === 'pessoas') return telaPessoas(estado, topoCantinho, hoje);
   if (sub === 'fechar') return telaFechar(estado, topoCantinho, c, hoje);
   if (sub === 'diario') return telaDiario(estado, topoCantinho, hoje);
@@ -268,6 +276,7 @@ function telaMesinha(estado, c, agoraMin) {
       <div class="ct-mesinha-lado">
         <div class="ct-card ct-mesinha-card"><p class="ct-rotulo">${c.deitar ? 'Deitar até' : 'Deitar até (sugestão)'}</p><strong>${esc(deitar)}</strong><small>para acordar às ${esc(c.acordar)}</small></div>
         <div class="ct-card ct-mesinha-card"><p class="ct-rotulo">Som</p>${somChips(c)}</div>
+        ${atalhosDaMesinha()}
       </div>
       <div class="ct-mesinha-pe">
         <button class="ct-chip" type="button" data-acao="ct-pausa" data-tipo="respirar" data-noite="1">Respirar</button>

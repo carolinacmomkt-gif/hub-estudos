@@ -52,11 +52,14 @@ function configTrello(entrada, quadros) {
   const d = porId.get(String(entrada?.designers?.id || ''));
   const lista = (id) => (d?.listas || []).find((l) => l.id === String(id || '')) || null;
   const designers = d ? { id: d.id, nome: d.nome, aprovacao: lista(entrada.designers.aprovacao)?.id || null, aprovado: lista(entrada.designers.aprovado)?.id || null } : null;
+  const v = porId.get(String(entrada?.videos?.id || ''));
+  const listaV = (id) => (v?.listas || []).find((l) => l.id === String(id || '')) || null;
+  const videos = v && v.id !== d?.id ? { id: v.id, nome: v.nome, aprovacao: listaV(entrada.videos.aprovacao)?.id || null, aprovado: listaV(entrada.videos.aprovado)?.id || null } : null;
   const clientes = (Array.isArray(entrada?.clientes) ? entrada.clientes : []).map((c) => porId.get(String(c?.id || '')) && {
     id: String(c.id), nome: porId.get(String(c.id)).nome,
     etiqueta: (d?.etiquetas || []).includes(c.etiqueta) ? c.etiqueta : '',
-  }).filter((c) => c && c.id !== designers?.id).slice(0, 30);
-  return { designers, clientes };
+  }).filter((c) => c && c.id !== designers?.id && c.id !== videos?.id).slice(0, 30);
+  return { designers, videos, clientes };
 }
 
 async function tokenNotion(userId) {

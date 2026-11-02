@@ -1,0 +1,133 @@
+/*
+  Com as mãos (Meu cantinho e Mesinha, 02/11/2026): colorir, desenhar, escrever, caligrafia, crochê e ideias.
+  Mesmo clima do cantinho (cards em vidro, texto creme); o papel do desenho e das folhas segue o tema do app
+  (grafite no escuro, branco no claro), como o papel dos cadernos. Só tokens: --pinta-*, --maos-*, --ct-* e os do app.
+*/
+
+.maos-tipos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 12px; margin-bottom: 14px; }
+.maos-secao { margin-bottom: 14px; }
+.maos-secao .ct-faixa { margin-bottom: 10px; }
+
+/* Galeria e modelos */
+.maos-galeria, .maos-modelos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 12px; }
+.maos-mini, .maos-modelo {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 8px;
+  border: 1px solid var(--ct-vidro-borda); border-radius: var(--raio); background: var(--ct-vidro);
+  color: var(--ct-texto); font: inherit; text-align: left; text-decoration: none; cursor: pointer;
+}
+.maos-mini:hover, .maos-modelo:hover { background: var(--ct-vidro-forte); }
+.maos-modelo:disabled { opacity: 0.6; cursor: progress; }
+.maos-modelo > span:last-child { font-size: 0.86rem; font-weight: 600; }
+.maos-mini-arte {
+  display: grid; place-items: center; aspect-ratio: 1; overflow: hidden;
+  border-radius: calc(var(--raio) - 4px); background: var(--maos-vazio);
+}
+.maos-mini-arte img { width: 100%; height: 100%; object-fit: cover; }
+.maos-mini-emoji { font-size: 2.4rem; }
+.maos-mini-texto { display: grid; min-width: 0; }
+.maos-mini-texto b { overflow: hidden; font-size: 0.88rem; text-overflow: ellipsis; white-space: nowrap; }
+.maos-mini-texto small { color: var(--ct-suave); font-size: 0.76rem; }
+.maos-mini-svg, .maos-svg { display: block; width: 100%; height: 100%; }
+.maos-mini-svg path, .maos-svg path { stroke: var(--maos-linha); stroke-width: 1.4; stroke-linejoin: round; }
+.maos-mini-svg path { stroke-width: 2; }
+.maos-so-linha { fill: none !important; stroke-linecap: round; }
+.maos-mini-risco path { fill: var(--maos-vazio) !important; stroke-width: 1.6; opacity: 0.55; }
+
+/* Passo a passo */
+.maos-passo-svg { display: block; width: 100%; height: auto; border-radius: calc(var(--raio) - 4px); background: var(--maos-vazio); }
+.maos-passo-svg path, .maos-mini-passo path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.maos-passo-feito { stroke: var(--pinta-15); stroke-width: 2; }
+.maos-passo-atual { stroke: var(--pinta-6); stroke-width: 4; }
+.maos-mini-passo .maos-passo-feito, .maos-mini-passo .maos-passo-atual { stroke: var(--maos-linha); stroke-width: 2.6; }
+.maos-passo-texto { margin: 10px 0; font-size: 1.02rem; font-weight: 600; }
+
+/* Pintar */
+.maos-pintar { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+.maos-pintar-arte {
+  width: min(100%, calc(100dvh - 220px)); aspect-ratio: 1; margin-inline: auto; overflow: hidden;
+  border-radius: var(--raio-lg); background: var(--maos-vazio); box-shadow: var(--ct-sombra); touch-action: manipulation;
+}
+.maos-pintar-arte path[data-r] { cursor: pointer; transition: fill 0.12s ease; }
+.maos-pintar-cores { position: sticky; top: 16px; }
+.ct-dica-pequena { margin: 10px 0 0; color: var(--ct-fraco); font-size: 0.8rem; }
+
+.maos-paleta { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 8px; }
+.maos-paleta-curta { display: flex; flex-wrap: wrap; gap: 6px; }
+.maos-tinta {
+  width: 44px; height: 44px; padding: 0; border: 2px solid var(--ct-vidro-borda); border-radius: 50%;
+  background: var(--cor); color: var(--ct-texto); font-size: 1rem; cursor: pointer;
+}
+.maos-paleta-curta .maos-tinta { width: 36px; height: 36px; }
+.maos-tinta[aria-checked="true"] { border-color: var(--ct-texto); box-shadow: 0 0 0 3px var(--ct-cheio); }
+.maos-tinta-borracha { background: var(--ct-vidro-forte); }
+.maos-tinta-padrao { background: var(--cor); }
+
+/* Folha com a caneta */
+.maos-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.maos-seg { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.maos-barra-fim { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.maos-dedo { min-height: 44px; color: var(--ct-suave); font-size: 0.86rem; }
+.maos-folha-area { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.maos-folha-area.com-passo { grid-template-columns: 280px minmax(0, 1fr); }
+.maos-passo { position: sticky; top: 16px; }
+.maos-folha { height: calc(100dvh - 210px); min-height: 420px; overflow: auto; border-radius: var(--raio-lg); }
+.maos-folha .folha-tinta { margin-inline: auto; box-shadow: var(--ct-sombra); }
+
+/* Caligrafia */
+.maos-lista-botoes { display: grid; gap: 8px; }
+.maos-linha-botao {
+  display: grid; gap: 2px; min-height: 64px; padding: 10px 14px; border: 1px solid var(--ct-vidro-borda); border-radius: var(--raio);
+  background: var(--ct-vidro); color: var(--ct-texto); font: inherit; text-align: left; cursor: pointer;
+}
+.maos-linha-botao small { color: var(--ct-suave); }
+.maos-cal-amostra { overflow: hidden; font-size: 1.5rem; font-weight: 400; white-space: nowrap; text-overflow: ellipsis; }
+.maos-cal-cursiva { font-family: 'Segoe Script', 'Snell Roundhand', 'Apple Chancery', 'Dancing Script', 'Brush Script MT', cursive; }
+
+/* Crochê */
+.maos-croche { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.maos-contadores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.maos-contadores > .campo-marcar { grid-column: 1 / -1; color: var(--ct-suave); }
+.maos-contador { display: grid; gap: 8px; text-align: center; }
+.maos-contador-mais {
+  display: grid; place-items: center; gap: 2px; min-height: 160px; padding: 12px;
+  border: 1px solid var(--ct-cheio-borda); border-radius: var(--raio-lg); background: var(--ct-cheio);
+  color: var(--ct-texto); font: inherit; cursor: pointer; touch-action: manipulation; user-select: none;
+}
+.maos-contador-mais:active { transform: scale(0.98); }
+.maos-contador-mais b { font-size: 4rem; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
+.maos-contador-mais small { color: var(--ct-suave); }
+.maos-contador-pe { display: flex; justify-content: center; gap: 8px; }
+.maos-foto { display: block; width: 100%; max-height: 260px; margin-bottom: 12px; object-fit: cover; border-radius: var(--raio); }
+
+.maos-sugestoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.maos-desejos-link { margin-bottom: 14px; }
+
+/* Mesinha: a fileira do "Com as mãos" */
+.ct-mesinha-maos { display: flex; flex-wrap: wrap; gap: 8px; }
+.ct-mesinha-maos .ct-chip { text-decoration: none; }
+
+@media (max-width: 1000px) {
+  .maos-pintar { grid-template-columns: minmax(0, 1fr); }
+  .maos-pintar-cores { position: static; }
+  .maos-pintar-arte { width: min(100%, 620px); }
+  .maos-folha-area.com-passo { grid-template-columns: minmax(0, 1fr); }
+  .maos-passo { position: static; display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 14px; align-items: center; }
+  .maos-passo .ct-rotulo, .maos-passo .acoes, .maos-passo .campo-marcar { grid-column: 2; }
+  .maos-passo .maos-passo-svg { grid-row: 1 / span 4; }
+  .maos-croche { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .maos-tipos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .maos-galeria, .maos-modelos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .maos-barra-fim { margin-left: 0; }
+  .maos-folha { height: calc(100dvh - 260px); min-height: 360px; }
+  .maos-passo { grid-template-columns: 100px minmax(0, 1fr); }
+  .maos-contador-mais { min-height: 130px; }
+  .maos-contador-mais b { font-size: 3.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maos-pintar-arte path[data-r] { transition: none; }
+  .maos-contador-mais:active { transform: none; }
+}

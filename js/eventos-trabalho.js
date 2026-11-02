@@ -3,18 +3,37 @@
 // (mandei, agendei), a memória e os rascunhos são gravados aqui e sincronizam como o resto.
 
 import { obterEstado, atualizarEstado } from './estado.js';
-import { sincronizar } from './persistencia.js';
+import { sincronizar, listar, salvar } from './persistencia.js';
 import { gravar } from './gravacao.js';
 import { chamar } from './funcoes.js';
 import { iniciarFoco } from './foco.js';
 import { dataLocal } from './views-dia.js';
-import { pecasAtivas, clientePelaChave, segundaDe, somarDias, MODELOS, FORMATOS, revisar, clienteDeSaude, statusInicial, ETAPAS } from './dados-trabalho.js';
-import { listaAlertas } from './views-trabalho.js';
+import { todasAsPecas, clientePelaChave, clientesAtivos, ehMeuCliente, segundaDe, somarDias, MODELOS, FORMATOS, revisar, clienteDeSaude, statusInicial, ETAPAS } from './dados-trabalho.js';
+import { listaAlertas, filtroTrabalho } from './views-trabalho.js';
 import { confirmar } from './confirmar.js';
 
 let app;
 const pedir = (corpo) => chamar('trabalho', corpo);
-const peca = (id) => pecasAtivas(obterEstado()).find((p) => p.id === id);
+const peca = (id) => (obterEstado().conteudos || []).find((p) => p.id === id && !p.excluido_em);
+
+// O filtro fica no aparelho (visão e clientes marcados).
+function mudarFiltro(campos) {
+  const f = { ...filtroTrabalho(obterEstado()), ...campos };
+  try { localStorage.setItem('hub.trabalho.filtro', JSON.stringify(f)); } catch { /* sem armazenamento: vale até fechar */ }
+  atualizarEstado({ trabFiltro: f });
+  app.renderizar();
+}
+
+// Quais clientes são seus (Configurações → Trabalho): config "trabalho" { naoMeus }.
+async function marcarMeu(chave, meu) {
+  const atual = (await listar('config', { incluirExcluidos: true })).find((c) => c.chave === 'trabalho');
+  const valor = { ...(atual?.valor || {}) };
+  const fora = new Set(valor.naoMeus || []);
+  if (meu) fora.delete(chave); else fora.add(chave);
+  valor.naoMeus = [...fora];
+  await salvar('config', { ...(atual || {}), excluido_em: null, chave: 'trabalho', valor });
+  atualizarEstado({ config: await listar('config') });
+}
 const avisar = (t, extra) => app.avisoCurto(t, extra);
 
 export function ligarTrabalho(funcoes) {
@@ -23,6 +42,12 @@ export function ligarTrabalho(funcoes) {
   document.addEventListener('pointermove', aoMover, { passive: false });
   document.addEventListener('pointerup', aoSoltar);
   document.addEventListener('pointercancel', aoCancelar);
+  // O filtro de clientes lembra se está aberto (para marcar vários seguidos) e fecha ao tocar fora.
+  document.addEventListener('toggle', (e) => { if (e.target.matches?.('[data-tb-filtro]')) atualizarEstado({ trabFiltroAberto: e.target.open }); }, true);
+  document.addEventListener('pointerdown', (e) => {
+    const aberto = document.querySelector('[data-tb-filtro][open]');
+    if (aberto && !aberto.contains(e.target)) aberto.open = false;
+  });
 }
 
 function mostrarErro(form, texto) {
@@ -216,6 +241,21 @@ function atualizarRevisor(r) {
 let esperaRevisor = null;
 export function mudancaTrabalho(alvo) {
   const acao = alvo.dataset?.acaoMudar;
+  if (acao === 'tb-filtro-cliente') {
+    const estado = obterEstado();
+    const f = filtroTrabalho(estado);
+    const base = Array.isArray(f.clientes) ? f.clientes : clientesAtivos(estado).map((c) => c.chave).filter((k) => !f.meus || ehMeuCliente(estado, k));
+    const lista = new Set(base);
+    if (alvo.checked) lista.add(alvo.value); else lista.delete(alvo.value);
+    if (f.clientes && lista.size === f.clientes.length && f.clientes.every((k) => lista.has(k))) return true; // input e change do mesmo toque
+    atualizarEstado({ trabFiltroAberto: true });
+    mudarFiltro({ clientes: [...lista] });
+    return true;
+  }
+  if (acao === 'tb-meu-cliente') {
+    marcarMeu(alvo.value, alvo.checked).then(() => app.renderizar());
+    return true;
+  }
   if (acao === 'tb-criar-texto' || acao === 'tb-criar-campo') {
     const r = lerCriar(alvo.form);
     atualizarEstado({ criar: r });
@@ -276,13 +316,12 @@ export function cliqueTrabalho(alvo) {
       app.renderizar();
       return true;
     }
-    case 'tb-casa':
-      atualizarEstado({ trabCasa: valor || '', trabCliente: '' });
-      app.renderizar();
+    case 'tb-visao-casa':
+      mudarFiltro({ visao: valor || 'todos' });
       return true;
-    case 'tb-cliente':
-      atualizarEstado({ trabCliente: estado.trabCliente === valor ? '' : valor });
-      app.renderizar();
+    case 'tb-filtro-atalho':
+      atualizarEstado({ trabFiltroAberto: true });
+      mudarFiltro(valor === 'nenhum' ? { clientes: [] } : { clientes: null, meus: valor === 'meus' });
       return true;
     case 'tb-aba':
       atualizarEstado({ aprovarAba: valor });
@@ -297,7 +336,7 @@ export function cliqueTrabalho(alvo) {
       return true;
     }
     case 'tb-mudou-visto': {
-      const lista = id ? [peca(id)].filter(Boolean) : pecasAtivas(estado).filter((p) => p.dados?.mudanca && !p.dados.mudanca.visto);
+      const lista = id ? [peca(id)].filter(Boolean) : todasAsPecas(estado).filter((p) => p.dados?.mudanca && !p.dados.mudanca.visto);
       Promise.all(lista.map((p) => gravar('conteudos', 'conteudos', { ...p, dados: { ...p.dados, mudanca: { ...p.dados.mudanca, visto: true } } }))).then(() => app.renderizar());
       return true;
     }

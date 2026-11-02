@@ -104,8 +104,11 @@ export function destinoDaAprovacao(opcoes) {
 export const destinoDoAjuste = (opcoes) => (opcoes || []).find((o) => normalizar(o) === 'ajuste')
   || (opcoes || []).find((o) => ['revisao', 'alteracao'].includes(normalizar(o))) || null;
 
-// Informações, links, ideias e os arquivos por mês não são trabalho em andamento.
-export const listaAtiva = (lista) => !/^(informa|infos?\b|links?\b|ideias?\b)|^\d+ [a-z]+$|^\d{4}$|^[a-z]+ \d{2,4}$/.test(normalizar(lista));
+// Informações, links, ideias e os arquivos por mês não são trabalho em andamento. As listas com nome
+// de mês (JANEIRO, "Fevereiro 2026", "03 - Março") são o arquivo interno do design: nunca contam.
+const MES = /\b(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/;
+export const ehListaDeMes = (lista) => MES.test(normalizar(lista));
+export const listaAtiva = (lista) => !ehListaDeMes(lista) && !/^(informa|infos?\b|links?\b|ideias?\b)|^\d+ [a-z]+$|^\d{4}$|^[a-z]+ \d{2,4}$/.test(normalizar(lista));
 
 export function formatoDasEtiquetas(etiquetas) {
   const l = (etiquetas || []).map(normalizar);
@@ -169,7 +172,20 @@ export function corDoCliente(chave) {
 }
 
 export const vivos = (lista) => (lista || []).filter((x) => !x.excluido_em);
-export const pecasAtivas = (estado) => vivos(estado.conteudos);
+const hojeLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+// Só o que está valendo: data de 14 dias atrás em diante; sem data, mexida nos últimos 30 dias.
+export function vigente(p, hoje = hojeLocal()) {
+  if (p.data) return p.data >= somarDias(hoje, -14);
+  const ref = p.entrega || (p.editado_em ? String(p.editado_em).slice(0, 10) : null);
+  return !ref || ref >= somarDias(hoje, -30);
+}
+// Clientes que não são dela (Configurações → Trabalho): config "trabalho" { naoMeus: [chaves] }.
+export const configTrabalho = (estado) => estado.configTrabalho || (estado.config || []).find((c) => c.chave === 'trabalho' && !c.excluido_em)?.valor || {};
+export const naoMeus = (estado) => new Set(configTrabalho(estado).naoMeus || []);
+export const ehMeuCliente = (estado, chave) => !naoMeus(estado).has(chave);
+export const todasAsPecas = (estado, hoje) => vivos(estado.conteudos).filter((p) => vigente(p, hoje));
+// O que conta como trabalho dela (Hoje, avisos, Comece por aqui): só os clientes dela.
+export const pecasAtivas = (estado, hoje) => todasAsPecas(estado, hoje).filter((p) => ehMeuCliente(estado, p.cliente));
 export const clientesAtivos = (estado) => vivos(estado.clientesTrabalho).filter((c) => !/\bteste\b/.test(normalizar(c.nome)));
 export const clientePelaChave = (estado, chave) => clientesAtivos(estado).find((c) => c.chave === chave) || null;
 
@@ -180,36 +196,48 @@ export const clientePelaChave = (estado, chave) => clientesAtivos(estado).find((
 // aprova (agendar) ou pede ajuste (volta para a designer). No Notion, a mesma coisa pelo status.
 
 export const ETAPAS = [
-  { id: 'design', nome: 'Com o design', ajuda: 'prazo do design, 5 dias' },
-  { id: 'voce', nome: 'Com você', ajuda: 'pronta para mandar ao cliente' },
+  { id: 'design', nome: 'Com o design', ajuda: 'Confluir: prazo do design, 5 dias' },
+  { id: 'voce', nome: 'Com você', ajuda: 'planejamento, copy e arte pronta para mandar' },
   { id: 'cliente', nome: 'Com o cliente', ajuda: 'esperando a resposta' },
   { id: 'agendar', nome: 'Agendar', ajuda: 'aprovada: falta pôr no quadro do cliente' },
+  { id: 'equipe', nome: 'Com a equipe', ajuda: 'Essence: design, aprovação e agendamento. Só acompanhar' },
 ];
+
+// Essence: o que é da Carol é o planejamento e a copy (pelo status) e o que está atribuído a ela no
+// Notion. O resto (design, aprovação interna, envio e agendamento) é da gestora ou da sócia.
+const STATUS_DA_CAROL = new Set(['copy em desenvolvimento', 'legenda pendente', 'copy pendente', 'roteiro', 'roteiro pendente', 'pauta', 'planejamento', 'a fazer', 'demandas', 'ajuste', 'ajuste de copy', 'nao iniciada', 'nao iniciado']);
+export const atribuidaACarol = (p) => (p.dados?.responsaveis || []).some((n) => /\bcarol/.test(normalizar(n)));
+export const ehDaCarol = (p) => STATUS_DA_CAROL.has(normalizar(p.status)) || atribuidaACarol(p);
 export const DIAS_LIMITE_DESIGN = 5;
 
 // Em que etapa está a peça (ou null, se não está no caminho da aprovação agora).
 export function etapaDaPeca(p) {
   const fluxo = p.dados?.fluxo || {};
+  const s = normalizar(p.status);
+  // Confluir, quadro de produção (designer ou vídeos): o caminho da arte.
   if (p.dados?.producao) {
-    const s = normalizar(p.status);
     const l = p.dados.producao;
     if (s === normalizar(l.aprovacao)) return fluxo.enviadoEm ? 'cliente' : 'voce';
     if (s === normalizar(l.aprovado)) return fluxo.agendadoEm ? null : 'agendar';
     return 'design';
   }
-  const s = normalizar(p.status);
-  if (s === 'aprovacao interna') return fluxo.enviadoEm ? 'cliente' : 'voce';
-  if (s === 'cliente aprovar' || s === 'em aprovacao' || s === 'posts para aprovacao' || s === 'aprovacao') return 'cliente';
-  if (s === 'copy aprovada' || s === 'aprovado' || s === 'aprovados') return fluxo.agendadoEm ? null : 'agendar';
-  if (s === 'fazer design' || s === 'editar video' || s === 'ajuste realizado') return 'design';
-  return null;
+  // Confluir, quadro do cliente: é o calendário de postagem. Só "Posts para aprovação" espera o cliente.
+  if (p.origem === 'trello') return s === 'posts para aprovacao' ? 'cliente' : null;
+  // Essence (Notion): o que é seu fica com você; o resto, com a equipe (só acompanhar).
+  const g = grupoDoStatus(p.status);
+  if (g === 'postado' || s === 'agendado') return null;
+  if (ehDaCarol(p)) return 'voce';
+  return g === 'sem' && !p.status ? null : 'equipe';
 }
 
 export function quadroDeAprovar(pecas) {
   const colunas = Object.fromEntries(ETAPAS.map((e) => [e.id, []]));
+  const noQuadroDoCliente = pecas.filter((p) => p.origem === 'trello' && !p.dados?.producao);
   for (const p of pecas) {
     if (grupoDoStatus(p.status) === 'postado') continue;
     const etapa = etapaDaPeca(p);
+    // Aprovada que já foi para o quadro do cliente: está agendada, sai sozinha.
+    if (etapa === 'agendar' && noQuadroDoCliente.some((c) => c.cliente === p.cliente && parecidos(c.titulo, p.titulo))) continue;
     if (etapa) colunas[etapa].push(p);
   }
   for (const lista of Object.values(colunas)) lista.sort((a, b) => String(a.data || a.entrega || '9999').localeCompare(String(b.data || b.entrega || '9999')));
@@ -293,9 +321,9 @@ export function radar(pecas, hoje) {
 export function riscos(pecas, hoje) {
   const ate = somarDias(hoje, 1);
   const desde = somarDias(hoje, -3);
-  const frase = { voce: 'ainda está com você', cliente: 'ainda está com o cliente', design: 'ainda está com o design' };
+  const frase = { voce: 'ainda está com você', cliente: 'ainda está com o cliente', design: 'ainda está com o design', equipe: 'ainda está com a equipe' };
   return pecas.flatMap((p) => {
-    const dono = comQuem(p.status);
+    const dono = p.origem === 'notion' ? ({ voce: 'voce', equipe: 'equipe' }[etapaDaPeca(p)] || comQuem(p.status)) : comQuem(p.status);
     if (!p.data || p.data < desde || p.data > ate || dono === 'pronto' || dono === 'feito' || p.dados?.producao) return [];
     return [{ peca: p, dono, texto: p.data < hoje ? `Era para ${quando(p.data, hoje)} e ${frase[dono]}` : `Publica ${quando(p.data, hoje)} e ${frase[dono]}` }];
   }).sort((a, b) => a.peca.data.localeCompare(b.peca.data));
@@ -348,13 +376,17 @@ export function ritmo(pecas, hoje) {
 // ---------------------------------------------------------------------------
 
 export function comecePorAqui(estado, hoje, limite = 3) {
-  const pecas = pecasAtivas(estado);
+  const pecas = pecasAtivas(estado, hoje);
   const itens = [];
   for (const r of riscos(pecas, hoje).filter((x) => x.dono === 'voce')) {
     itens.push({ id: r.peca.id, titulo: r.peca.titulo, motivo: `${r.peca.cliente_nome || ''} · ${r.texto.toLowerCase()}`, rota: `#conteudo/${r.peca.id}` });
   }
   const q = quadroDeAprovar(pecas);
-  for (const p of q.voce) itens.push({ id: p.id, titulo: `Mandar para aprovar: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · arte pronta`, rota: '#aprovar' });
+  for (const p of q.voce) {
+    itens.push(p.origem === 'notion'
+      ? { id: p.id, titulo: `Copy: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · ${String(p.status || 'com você').toLowerCase()}`, rota: `#conteudo/${p.id}` }
+      : { id: p.id, titulo: `Mandar para aprovar: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · arte pronta`, rota: '#aprovar' });
+  }
   for (const p of q.agendar) itens.push({ id: p.id, titulo: `Agendar: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · aprovada`, rota: '#aprovar' });
   // Uma linha por peça (a primeira, que é a mais urgente).
   const vistos = new Set();
