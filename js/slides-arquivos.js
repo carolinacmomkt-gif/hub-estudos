@@ -1,10 +1,17 @@
-// Relatório de métricas: desenha os slides (prévia e PDF) num canvas e monta o PPTX no aparelho.
-// O PPTX é um ZIP sem compressão com o mestre e o tema do modelo da Confluir (pasta modelos/relatorio).
+// Slides no aparelho (relatório de métricas e pauta): desenha cada slide num canvas (prévia e PDF) e
+// monta o PPTX (ZIP sem compressão com o mestre e o tema da pasta modelos/relatorio).
+// Um slide é { fundo?, elementos: [texto | paragrafos | retangulo | imagem] } em pontos de 1200 × 675.
 
-import { LARGURA, ALTURA, MARCA, ASCENDENTE, ALTURA_LINHA, quebrar, montarSlides, nomeDoArquivo } from './dados-relatorio.js';
+import { LARGURA, ALTURA, MARCA, quebrar, montarSlides, nomeDoArquivo } from './dados-relatorio.js';
 import { pdfDeCanvases, baixar } from './exportar-caderno.js';
 
-const FAMILIA = 'Relatorio Open Sans';
+// asc: do topo da linha até a linha de base; linha: altura de uma linha simples (em "em").
+export const FONTES = {
+  open: { familia: 'Bussola Open Sans', nome: 'Open Sans', arquivo: 'open-sans', asc: 1.069, linha: 1.362 },
+  raleway: { familia: 'Bussola Raleway', nome: 'Raleway', arquivo: 'raleway', asc: 0.94, linha: 1.174 },
+  lato: { familia: 'Bussola Lato', nome: 'Lato', arquivo: 'lato', asc: 0.987, linha: 1.2 },
+};
+const fonteDe = (f) => FONTES[f] || FONTES.open;
 let fontes = null;
 
 export function carregarFontes() {
@@ -12,10 +19,7 @@ export function carregarFontes() {
   fontes = (async () => {
     if (typeof FontFace === 'undefined' || !document.fonts) return false;
     try {
-      const lista = [
-        new FontFace(FAMILIA, 'url(js/vendor/fontes/open-sans-400.woff2)', { weight: '400' }),
-        new FontFace(FAMILIA, 'url(js/vendor/fontes/open-sans-700.woff2)', { weight: '700' }),
-      ];
+      const lista = Object.values(FONTES).flatMap((f) => [400, 700].map((peso) => new FontFace(f.familia, `url(js/vendor/fontes/${f.arquivo}-${peso}.woff2)`, { weight: String(peso) })));
       await Promise.all(lista.map((f) => f.load()));
       lista.forEach((f) => document.fonts.add(f));
       return true;
@@ -27,25 +31,29 @@ export function carregarFontes() {
   return fontes;
 }
 
-const fonte = (tam, negrito) => `${negrito ? 700 : 400} ${tam}px "${FAMILIA}", "Open Sans", system-ui, sans-serif`;
+const fonte = (tam, negrito, f) => `${negrito ? 700 : 400} ${tam}px "${fonteDe(f).familia}", "${fonteDe(f).nome}", system-ui, sans-serif`;
 
 let ctxMedida = null;
 const medidas = new Map();
-export function medir(texto, tam, negrito) {
+export function medir(texto, tam, negrito, f = 'open') {
   if (!texto) return 0;
-  const chave = `${negrito ? 1 : 0}|${tam}|${texto}`;
+  const chave = `${f}|${negrito ? 1 : 0}|${tam}|${texto}`;
   if (medidas.has(chave)) return medidas.get(chave);
   if (!ctxMedida) ctxMedida = document.createElement('canvas').getContext('2d');
-  ctxMedida.font = fonte(tam, negrito);
+  ctxMedida.font = fonte(tam, negrito, f);
   const w = ctxMedida.measureText(texto).width;
-  if (medidas.size > 4000) medidas.clear();
+  if (medidas.size > 6000) medidas.clear();
   medidas.set(chave, w);
   return w;
 }
 
-export async function slidesDoRelatorio(rel) {
+export async function prepararMedidas() {
   await carregarFontes();
   medidas.clear();
+}
+
+export async function slidesDoRelatorio(rel) {
+  await prepararMedidas();
   return montarSlides(rel, medir);
 }
 
@@ -58,32 +66,51 @@ function imagemDe(src) {
       img.onerror = () => resolver(null);
       img.src = src;
     }));
-    if (imagens.size > 30) imagens.delete(imagens.keys().next().value);
+    if (imagens.size > 80) imagens.delete(imagens.keys().next().value);
   }
   return imagens.get(src);
 }
 
-const cor = (nome) => MARCA[nome] || MARCA.texto;
+const cor = (c) => (String(c || '').startsWith('#') ? c : MARCA[c] || MARCA.texto);
+const linhaDe = (el) => (el.entrelinha || fonteDe(el.f).linha) * el.tam;
 
-function desenharRuns(ctx, runs, x, base, tam) {
+function desenharRuns(ctx, runs, x, base, tam, fPadrao) {
   let cx = x;
   for (const r of runs) {
     if (!r.t) continue;
-    ctx.font = fonte(tam, r.b);
+    const f = r.f || fPadrao;
+    ctx.font = fonte(tam, r.b, f);
     ctx.fillStyle = cor(r.cor);
     ctx.fillText(r.t, cx, base);
-    cx += medir(r.t, tam, r.b);
+    cx += medir(r.t, tam, r.b, f);
   }
 }
 
 function caminhoArredondado(ctx, x, y, w, h, r) {
   ctx.beginPath();
+  if (!r) { ctx.rect(x, y, w, h); return; }
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
   ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
+}
+
+// Linhas de um bloco de parágrafos: [{ runs, y }] (y = topo da linha).
+export function linhasDosParagrafos(el) {
+  const saida = [];
+  const passo = linhaDe(el);
+  let y = el.y;
+  el.paragrafos.forEach((p, i) => {
+    if (i) y += el.espaco ?? passo;
+    const runs = p.map((r) => ({ ...r, f: r.f || el.f }));
+    for (const linha of quebrar(runs, el.w, el.tam, medir)) {
+      saida.push({ runs: linha, y });
+      y += passo;
+    }
+  });
+  return saida;
 }
 
 // Desenha um slide num canvas de "largura" px (a altura segue o 16:9).
@@ -93,38 +120,35 @@ export async function canvasDoSlide(slide, largura = 1920, canvas = document.cre
   canvas.height = Math.round(ALTURA * escala);
   const ctx = canvas.getContext('2d');
   const prontas = new Map();
-  for (const el of slide.elementos) if (el.tipo === 'imagem') prontas.set(el.src, await imagemDe(el.src));
+  for (const el of slide.elementos) if (el.tipo === 'imagem' && el.src) prontas.set(el.src, await imagemDe(el.src));
   ctx.setTransform(escala, 0, 0, escala, 0, 0);
-  ctx.fillStyle = MARCA.fundo;
+  ctx.fillStyle = cor(slide.fundo || 'fundo');
   ctx.fillRect(0, 0, LARGURA, ALTURA);
   ctx.textBaseline = 'alphabetic';
   for (const el of slide.elementos) {
     if (el.tipo === 'texto') {
-      const total = el.runs.reduce((s, r) => s + medir(r.t, el.tam, r.b), 0);
+      const total = el.runs.reduce((s, r) => s + medir(r.t, el.tam, r.b, r.f || el.f), 0);
       const x = el.alinhar === 'c' ? el.x + (el.w - total) / 2 : el.alinhar === 'r' ? el.x + el.w - total : el.x;
-      desenharRuns(ctx, el.runs, x, el.y + el.tam * ASCENDENTE, el.tam);
+      const meio = (linhaDe(el) - fonteDe(el.f).linha * el.tam) / 2;
+      desenharRuns(ctx, el.runs, x, el.y + meio + el.tam * fonteDe(el.f).asc, el.tam, el.f);
     } else if (el.tipo === 'paragrafos') {
-      let y = el.y;
-      el.paragrafos.forEach((p, i) => {
-        if (i) y += el.tam * ALTURA_LINHA;
-        for (const linha of quebrar(p, el.w, el.tam, medir)) {
-          desenharRuns(ctx, linha, el.x, y + el.tam * ASCENDENTE, el.tam);
-          y += el.tam * ALTURA_LINHA;
-        }
-      });
+      const meio = (linhaDe(el) - fonteDe(el.f).linha * el.tam) / 2;
+      for (const l of linhasDosParagrafos(el)) desenharRuns(ctx, l.runs, el.x, l.y + meio + el.tam * fonteDe(el.f).asc, el.tam, el.f);
+    } else if (el.tipo === 'retangulo') {
+      ctx.fillStyle = cor(el.cor);
+      ctx.fillRect(el.x, el.y, el.w, el.h);
     } else if (el.tipo === 'imagem') {
       const img = prontas.get(el.src);
       ctx.save();
-      caminhoArredondado(ctx, el.x, el.y, el.w, el.h, el.raio);
+      caminhoArredondado(ctx, el.x, el.y, el.w, el.h, el.raio || 0);
       ctx.clip();
       if (img) {
-        // Cobre a área (a imagem já vem recortada na proporção certa; aqui só garante).
-        const s = Math.max(el.w / img.naturalWidth, el.h / img.naturalHeight);
+        const s = el.ajuste === 'conter' ? Math.min(el.w / img.naturalWidth, el.h / img.naturalHeight) : Math.max(el.w / img.naturalWidth, el.h / img.naturalHeight);
         const w = img.naturalWidth * s;
         const h = img.naturalHeight * s;
         ctx.drawImage(img, el.x + (el.w - w) / 2, el.y + (el.h - h) / 2, w, h);
       } else {
-        ctx.fillStyle = MARCA.texto;
+        ctx.fillStyle = cor(el.vazia || 'texto');
         ctx.fillRect(el.x, el.y, el.w, el.h);
       }
       ctx.restore();
@@ -133,9 +157,12 @@ export async function canvasDoSlide(slide, largura = 1920, canvas = document.cre
   return canvas;
 }
 
-export async function pdfDoRelatorio(rel) {
-  const slides = await slidesDoRelatorio(rel);
+export function pdfDeSlides(slides) {
   return pdfDeCanvases(slides.length, async (i) => ({ canvas: await canvasDoSlide(slides[i], 1920), largura: LARGURA * 0.8, altura: ALTURA * 0.8 }));
+}
+
+export async function pdfDoRelatorio(rel) {
+  return pdfDeSlides(await slidesDoRelatorio(rel));
 }
 
 // ---------------------------------------------------------------------------
@@ -147,41 +174,84 @@ const emu = (pt) => Math.round(pt * EMU);
 const xml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   // Caracteres de controle quebram o XML do PowerPoint.
   .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
-const hex = (nome) => cor(nome).replace('#', '').toUpperCase();
+const hex = (c) => cor(c).replace('#', '').toUpperCase();
 const NS = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
 const CABECALHO = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
-function run(r, tam) {
+function run(r, tam, fPadrao) {
   if (!r.t) return '';
-  return `<a:r><a:rPr lang="pt-BR" sz="${Math.round(tam * 100)}"${r.b ? ' b="1"' : ' b="0"'} dirty="0"><a:solidFill><a:srgbClr val="${hex(r.cor)}"/></a:solidFill><a:latin typeface="${MARCA.fonte}"/><a:cs typeface="${MARCA.fonte}"/></a:rPr><a:t>${xml(r.t)}</a:t></a:r>`;
+  const nome = fonteDe(r.f || fPadrao).nome;
+  return `<a:r><a:rPr lang="pt-BR" sz="${Math.round(tam * 100)}"${r.b ? ' b="1"' : ' b="0"'} dirty="0"><a:solidFill><a:srgbClr val="${hex(r.cor)}"/></a:solidFill><a:latin typeface="${nome}"/><a:cs typeface="${nome}"/></a:rPr><a:t>${xml(r.t)}</a:t></a:r>`;
 }
 
 const ALINHAR = { l: 'l', c: 'ctr', r: 'r' };
+const espacamento = (el) => (el.entrelinha ? `<a:lnSpc><a:spcPts val="${Math.round(el.entrelinha * el.tam * 100)}"/></a:lnSpc>` : '');
 
 function caixaDeTexto(id, el) {
-  const altura = el.tipo === 'paragrafos' ? el.h : el.tam * ALTURA_LINHA;
+  const altura = el.tipo === 'paragrafos' ? el.h : linhaDe(el);
+  const vazio = (sz) => `<a:p><a:pPr>${espacamento(el)}</a:pPr><a:endParaRPr lang="pt-BR" sz="${sz}"/></a:p>`;
   const corpo = el.tipo === 'paragrafos'
-    ? el.paragrafos.map((p, i) => `${i ? `<a:p><a:endParaRPr lang="pt-BR" sz="${Math.round(el.tam * 100)}"/></a:p>` : ''}<a:p><a:pPr algn="l"/>${p.map((r) => run(r, el.tam)).join('')}</a:p>`).join('')
-    : `<a:p><a:pPr algn="${ALINHAR[el.alinhar] || 'l'}"/>${el.runs.map((r) => run(r, el.tam)).join('')}</a:p>`;
+    ? el.paragrafos.map((p, i) => `${i ? vazio(Math.round(el.tam * 100)) : ''}<a:p><a:pPr algn="l">${espacamento(el)}</a:pPr>${p.map((r) => run(r, el.tam, el.f)).join('')}</a:p>`).join('')
+    : `<a:p><a:pPr algn="${ALINHAR[el.alinhar] || 'l'}">${espacamento(el)}</a:pPr>${el.runs.map((r) => run(r, el.tam, el.f)).join('')}</a:p>`;
   return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Texto ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>`
     + `<p:spPr><a:xfrm><a:off x="${emu(el.x)}" y="${emu(el.y)}"/><a:ext cx="${emu(el.w)}" cy="${emu(altura)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>`
-    + `<p:txBody><a:bodyPr wrap="${el.tipo === 'paragrafos' ? 'square' : 'none'}" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" rtlCol="0"><a:noAutofit/></a:bodyPr><a:lstStyle/>${corpo}</p:txBody></p:sp>`;
+    + `<p:txBody><a:bodyPr wrap="${el.tipo === 'paragrafos' || el.quebrar ? 'square' : 'none'}" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" rtlCol="0"><a:noAutofit/></a:bodyPr><a:lstStyle/>${corpo}</p:txBody></p:sp>`;
 }
 
-function figura(id, el, rId) {
-  const adj = Math.round((el.raio / Math.min(el.w, el.h)) * 100000);
+function retangulo(id, el) {
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Forma ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>`
+    + `<p:spPr><a:xfrm><a:off x="${emu(el.x)}" y="${emu(el.y)}"/><a:ext cx="${emu(el.w)}" cy="${emu(el.h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${hex(el.cor)}"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`;
+}
+
+// A imagem vai recortada (srcRect) para cobrir a área, como no canvas.
+function figura(id, el, rId, dims) {
+  const geo = el.raio
+    ? `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${Math.round((el.raio / Math.min(el.w, el.h)) * 100000)}"/></a:avLst></a:prstGeom>`
+    : '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>';
+  let corte = '';
+  let { x, y, w, h } = el;
+  if (dims?.w && dims?.h) {
+    const aImg = dims.w / dims.h;
+    const aCaixa = el.w / el.h;
+    if (el.ajuste === 'conter') {
+      if (aImg > aCaixa) { h = el.w / aImg; y = el.y + (el.h - h) / 2; } else { w = el.h * aImg; x = el.x + (el.w - w) / 2; }
+    } else if (Math.abs(aImg - aCaixa) > 0.001) {
+      if (aImg > aCaixa) { const c = Math.round(((1 - aCaixa / aImg) / 2) * 100000); corte = `<a:srcRect l="${c}" r="${c}"/>`; } else { const c = Math.round(((1 - aImg / aCaixa) / 2) * 100000); corte = `<a:srcRect t="${c}" b="${c}"/>`; }
+    }
+  }
   return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Imagem ${id}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>`
-    + `<p:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>`
-    + `<p:spPr><a:xfrm><a:off x="${emu(el.x)}" y="${emu(el.y)}"/><a:ext cx="${emu(el.w)}" cy="${emu(el.h)}"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${adj}"/></a:avLst></a:prstGeom></p:spPr></p:pic>`;
+    + `<p:blipFill><a:blip r:embed="${rId}"/>${corte}<a:stretch><a:fillRect/></a:stretch></p:blipFill>`
+    + `<p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(w)}" cy="${emu(h)}"/></a:xfrm>${geo}</p:spPr></p:pic>`;
 }
 
-function bytesDoDataUrl(src) {
-  const m = /^data:(image\/(png|jpe?g));base64,(.*)$/.exec(src || '');
-  if (!m) return null;
-  const bin = atob(m[3]);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-  return { bytes, ext: m[2] === 'png' ? 'png' : 'jpeg' };
+// Bytes da imagem (data URL ou endereço do app), com a extensão e o tamanho em px.
+async function bytesDe(src) {
+  let bytes;
+  let tipo;
+  const m = /^data:(image\/[\w+.-]+);base64,(.*)$/.exec(src || '');
+  if (m) {
+    tipo = m[1];
+    const bin = atob(m[2]);
+    bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  } else if (src) {
+    const r = await fetch(src);
+    if (!r.ok) return null;
+    tipo = r.headers.get('content-type') || '';
+    bytes = new Uint8Array(await r.arrayBuffer());
+  } else return null;
+  const img = await imagemDe(src);
+  if (!/png|jpe?g/i.test(tipo) && img) {
+    // Outro formato (webp, gif): vira JPEG para o PowerPoint abrir.
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.9));
+    bytes = new Uint8Array(await blob.arrayBuffer());
+    tipo = 'image/jpeg';
+  }
+  return { bytes, ext: /png/i.test(tipo) ? 'png' : 'jpeg', w: img?.naturalWidth, h: img?.naturalHeight };
 }
 
 const base = {};
@@ -195,30 +265,43 @@ async function parteDoModelo(nome) {
 }
 
 export async function pptxDoRelatorio(rel) {
-  const slides = await slidesDoRelatorio(rel);
+  return pptxDeSlides(await slidesDoRelatorio(rel), { titulo: `Relatório de métricas · ${rel.nome}` });
+}
+
+export async function pptxDeSlides(slides, { titulo = 'Apresentação' } = {}) {
   const [master, layout, tema, textoPadrao] = await Promise.all(['master.xml', 'layout.xml', 'theme.xml', 'texto-padrao.xml'].map(parteDoModelo));
   const arquivos = [];
   const add = (nome, conteudo) => arquivos.push({ nome, dados: typeof conteudo === 'string' ? new TextEncoder().encode(conteudo) : conteudo });
   const midias = [];
 
-  slides.forEach((slide, i) => {
+  const midiaPorSrc = new Map();
+  for (let i = 0; i < slides.length; i += 1) {
+    const slide = slides[i];
     const rels = [`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`];
     let id = 2;
-    const formas = slide.elementos.map((el) => {
+    const formas = [];
+    for (const el of slide.elementos) {
       if (el.tipo === 'imagem') {
-        const b = bytesDoDataUrl(el.src);
-        if (!b) return '';
-        const nome = `imagem${midias.length + 1}.${b.ext}`;
-        midias.push({ nome, bytes: b.bytes });
+        if (!el.src) continue;
+        if (!midiaPorSrc.has(el.src)) {
+          const b = await bytesDe(el.src);
+          if (b) {
+            const nome = `imagem${midias.length + 1}.${b.ext}`;
+            midias.push({ nome, bytes: b.bytes });
+            midiaPorSrc.set(el.src, { nome, w: b.w, h: b.h });
+          } else midiaPorSrc.set(el.src, null);
+        }
+        const m = midiaPorSrc.get(el.src);
+        if (!m) continue;
         const rId = `rId${rels.length + 1}`;
-        rels.push(`<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${nome}"/>`);
-        return figura(id++, el, rId);
-      }
-      return caixaDeTexto(id++, el);
-    }).join('');
-    add(`ppt/slides/slide${i + 1}.xml`, `${CABECALHO}<p:sld ${NS}><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${hex('fundo')}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${formas}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`);
+        rels.push(`<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${m.nome}"/>`);
+        formas.push(figura(id++, el, rId, m));
+      } else if (el.tipo === 'retangulo') formas.push(retangulo(id++, el));
+      else formas.push(caixaDeTexto(id++, el));
+    }
+    add(`ppt/slides/slide${i + 1}.xml`, `${CABECALHO}<p:sld ${NS}><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${hex(slide.fundo || 'fundo')}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${formas.join('')}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`);
     add(`ppt/slides/_rels/slide${i + 1}.xml.rels`, `${CABECALHO}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>`);
-  });
+  }
   midias.forEach((m) => add(`ppt/media/${m.nome}`, m.bytes));
 
   const n = slides.length;
@@ -243,7 +326,7 @@ export async function pptxDoRelatorio(rel) {
     + '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>'
     + '</Relationships>');
   const agora = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
-  add('docProps/core.xml', `${CABECALHO}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xml(`Relatório de métricas · ${rel.nome}`)}</dc:title><dc:creator>Confluir</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${agora}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${agora}</dcterms:modified></cp:coreProperties>`);
+  add('docProps/core.xml', `${CABECALHO}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xml(titulo)}</dc:title><dc:creator>Confluir</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${agora}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${agora}</dcterms:modified></cp:coreProperties>`);
   add('docProps/app.xml', `${CABECALHO}<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Bússola</Application><Slides>${n}</Slides></Properties>`);
   add('ppt/presentation.xml', `${CABECALHO}<p:presentation ${NS} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>`
     + `<p:sldIdLst>${slides.map((_, i) => `<p:sldId id="${256 + i}" r:id="rId${10 + i}"/>`).join('')}</p:sldIdLst>`

@@ -12,7 +12,7 @@ import {
   METRICAS, PROPORCAO_IMAGEM, relatorioDaRota, lerParametro, parametroDe, chaveDoRelatorio, chaveDoNome, lerNumero,
   comparar, textoComparacao, anteriorDe, formatar, mesCurto, MES_VALIDO, normalizar,
 } from './dados-relatorio.js';
-import { slidesDoRelatorio, canvasDoSlide, baixarPptx, baixarPdf, carregarFontes } from './relatorio-arquivos.js';
+import { slidesDoRelatorio, canvasDoSlide, baixarPptx, baixarPdf, carregarFontes } from './slides-arquivos.js';
 
 let app;
 const avisar = (t) => app?.avisoCurto(t);

@@ -31,6 +31,8 @@ import { renderConteudo, renderAprovar, renderClientes, renderCriar } from './vi
 import { montarTrabalho } from './eventos-trabalho.js';
 import { renderRelatorio } from './views-relatorio.js';
 import { montarRelatorio, desmontarRelatorio } from './eventos-relatorio.js';
+import { renderPautas } from './views-pauta.js';
+import { montarPauta, desmontarPauta } from './eventos-pauta.js';
 import { montarCantinho, desmontarCantinho } from './eventos-cantinho.js';
 import { renderBusca } from './views-busca.js';
 import { montarBusca, dadosDaBusca } from './eventos-busca.js';
@@ -81,6 +83,7 @@ const VIEWS = {
   clientes: renderClientes,
   criar: renderCriar,
   relatorio: renderRelatorio,
+  pautas: renderPautas,
   buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
 };
 
@@ -109,6 +112,7 @@ const CICLO = {
   clientes: { montar: montarTrabalho, desmontar: () => {} },
   criar: { montar: montarTrabalho, desmontar: () => {} },
   relatorio: { montar: montarRelatorio, desmontar: desmontarRelatorio },
+  pautas: { montar: montarPauta, desmontar: desmontarPauta },
 };
 let telaMontada = null;
 
@@ -247,7 +251,7 @@ const TELAS_DA_TABELA = {
   conexoes: ['configuracoes', 'faculdade', 'inicio', 'conteudo', 'aprovar', 'clientes', 'criar'],
   conteudos: ['conteudo', 'aprovar', 'clientes', 'inicio'],
   maos: [], // o Com as mãos cuida da própria tela (a folha não pode ser refeita no meio do traço)
-  clientes_trabalho: ['clientes', 'criar', 'conteudo', 'aprovar'],
+  clientes_trabalho: ['clientes', 'criar', 'conteudo', 'aprovar', 'pautas', 'relatorio'],
   rascunhos: ['criar'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],

@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v89';
+const VERSAO = 'hub-v90';
 
 const ARQUIVOS = [
   './',
@@ -181,10 +181,20 @@ const ARQUIVOS = [
   './css/trabalho.css',
   './css/maos.css',
   './css/relatorio.css',
+  './css/pauta.css',
+  './js/dados-pauta.js',
+  './js/views-pauta.js',
+  './js/eventos-pauta.js',
+  './js/vendor/fontes/raleway-400.woff2',
+  './js/vendor/fontes/raleway-700.woff2',
+  './js/vendor/fontes/lato-400.woff2',
+  './js/vendor/fontes/lato-700.woff2',
+  './modelos/pauta/logo-confluir.png',
+  './modelos/pauta/final.jpg',
   './js/dados-relatorio.js',
   './js/views-relatorio.js',
   './js/eventos-relatorio.js',
-  './js/relatorio-arquivos.js',
+  './js/slides-arquivos.js',
   './js/vendor/fontes/open-sans-400.woff2',
   './js/vendor/fontes/open-sans-700.woff2',
   './modelos/relatorio/master.xml',

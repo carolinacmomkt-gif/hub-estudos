@@ -173,7 +173,7 @@ export function quebrar(runs, largura, tam, medir) {
   let usado = 0;
   for (const p of palavras) {
     const espaco = /^\s+$/.test(p.t);
-    const w = medir(p.t, tam, p.b);
+    const w = medir(p.t, tam, p.b, p.f);
     if (!espaco && usado + w > largura && linha.some((x) => !/^\s+$/.test(x.t))) {
       while (linha.length && /^\s+$/.test(linha[linha.length - 1].t)) linha.pop();
       linhas.push(linha);

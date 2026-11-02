@@ -9,7 +9,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 - **YouTube** (planejamento do canal).
 - **Cadernos** com escrita à mão.
 - **Calendário**.
-- **Trabalho** (o Pauta dentro da Bússola, 01/11/2026): Conteúdo, Aprovar, Clientes, Criar e Relatórios.
+- **Trabalho** (o Pauta dentro da Bússola, 01/11/2026): Conteúdo, Aprovar, Clientes, Criar, Pautas e Relatórios.
 - **Vida** (fase 2, ver ROTEIRO.md): Hoje, tarefas e projetos, hábitos e rotinas, finanças (com gamificação e recompensas), diário, casa, consultoria (carteira de clientes e produto), metas e lazer.
 
 ## Regras gerais
@@ -35,7 +35,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens, `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros, `trabalho` (ação `ia`), que escreve peças no método da Essence com a memória de cada cliente, e ação `relatorio-consideracoes`), e `relatorio-ler-background`, que lê os prints do Instagram para o relatório de métricas) |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens, `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros, `trabalho` (ação `ia`), que escreve peças no método da Essence com a memória de cada cliente, e ação `relatorio-consideracoes`), `relatorio-ler-background`, que lê os prints do Instagram para o relatório de métricas, e `pauta-legenda-background`, que escreve a legenda da pauta olhando as artes) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -74,7 +74,7 @@ A base é a identidade da Central de Conteúdo.
 7. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
 9. **Calendário**: visão de mês, semana e lista, com eventos da faculdade e eventos próprios.
 10. **Pergunte à Bússola** (`#buscar`, lupa no topo de todas as telas): busca no aparelho em tudo (`js/dados-busca.js`) e "Perguntar", que manda à IA só o resumo da pergunta (`contextoDaPergunta`) e mostra a resposta com links para os itens.
-11. **Trabalho** (grupo próprio no menu; detalhes em "Trabalho (o Pauta dentro da Bússola)"): Conteúdo, Aprovar, Clientes, Criar e Relatórios.
+11. **Trabalho** (grupo próprio no menu; detalhes em "Trabalho (o Pauta dentro da Bússola)"): Conteúdo, Aprovar, Clientes, Criar, Pautas e Relatórios.
 
 ## Cadernos (requisito importante)
 
@@ -243,7 +243,16 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - Dados: `config` "relatorio:<cliente>:<AAAA-MM>" `{ nome, mes, numeros { visitas, toques, alcance, seguidores, interacoes }, variacao, imagens [3 data URLs JPEG 600 px], consideracoes [{ titulo, texto }], slides { id: bool }, destaques [{ tema, print, x, y, w, h }], observacoes }`. Os prints ficam só na memória do aparelho enquanto a tela está aberta.
 - **IA só quando ela pede**: "Ler os números com a IA" manda os prints (JPEG até 1600 px, até 12) para o Storage e chama `relatorio-ler-background` (linha em `importacoes` com `tipo = 'relatorio'`, migração 014; o app acompanha a linha e apaga depois, a função apaga os prints). A IA devolve os números que achou (nunca estima: o que não achou fica vazio), a porcentagem "vs. período anterior" do print e até 3 conteúdos em destaque com a caixa da miniatura, que viram as capas (recorte na proporção do slide) nos espaços vazios. Ela confere tudo antes de baixar. "Escrever com a IA" (`trabalho`, ação `relatorio-consideracoes`) escreve um texto por tópico só com os números conferidos, as comparações, os temas dos destaques e as observações dela (sem travessão, sem jargão).
 - Comparação: com o relatório salvo do mês anterior da mesma cliente; sem ele, com a porcentagem que o print mostra.
-- Arquivos no aparelho (`js/relatorio-arquivos.js`): o mesmo desenho (`montarSlides`, em pontos de 1200 × 675) vira canvas para a prévia e para o PDF (`pdfDeCanvases` de `exportar-caderno.js`) e XML para o PPTX (ZIP sem compressão; mestre, layout e tema do modelo dela em `modelos/relatorio/`). Fonte Open Sans em `js/vendor/fontes/` (licença OFL) para o canvas; no PPTX vai o nome da fonte (o Google Slides tem; no PowerPoint sem a fonte instalada, ele troca por uma parecida). Os textos diminuem para caber (números grandes, considerações longas).
+- Arquivos no aparelho (`js/slides-arquivos.js`): o mesmo desenho (`montarSlides`, em pontos de 1200 × 675) vira canvas para a prévia e para o PDF (`pdfDeCanvases` de `exportar-caderno.js`) e XML para o PPTX (ZIP sem compressão; mestre, layout e tema do modelo dela em `modelos/relatorio/`). Fonte Open Sans em `js/vendor/fontes/` (licença OFL) para o canvas; no PPTX vai o nome da fonte (o Google Slides tem; no PowerPoint sem a fonte instalada, ele troca por uma parecida). Os textos diminuem para caber (números grandes, considerações longas).
+
+## Gerador de pauta (Trabalho → Pautas)
+
+- Decisão da Carol (02/11/2026): as artes prontas do Trello + a legenda, no modelo da Confluir (o PDF "DRA. KARYNE MAGALHÃES OUTUBRO"), igual para todas as clientes: só mudam o nome, o mês e os posts. Capa (fundo `#E9EDEE`, faixa branca no alto, barrinha verde `#1A9988` e laranja `#EB5600`, "Conteúdo" + nome em Raleway Bold, mês em Lato, logo da Confluir), uma página por peça ("Post - título" / "Reel - título", barrinha, "Legenda:" em negrito abrindo o texto em Raleway, artes na metade direita: uma imagem em pé ou a grade das lâminas sem espaço entre elas) e a página final igual à do modelo. Logo e página final tirados do próprio PDF (`modelos/pauta/`); Raleway e Lato em `js/vendor/fontes/` (OFL). Medidas em `js/dados-pauta.js` (do modelo 720 × 405 para 1200 × 675).
+- Telas (`#pautas` e `#pautas/<cliente>:<AAAA-MM>`; `js/views-pauta.js`, `eventos-pauta.js`, `css/pauta.css`, mais a base de `css/relatorio.css`): "Nova pauta" (cliente e mês, padrão o próximo a partir do dia 15); atalho "Pauta de <mês>" na ficha da cliente. Passo 1: os cartões da cliente lidos **na hora** no Trello (`trabalho` ação `pauta-cartoes`, só leitura): quadro da designer e de vídeos pela etiqueta dela e o quadro dela, **em todas as listas abertas, inclusive as de mês** (é onde o design arquiva as artes prontas); filtro "De <mês>" (lista com o nome do mês ou data no mês) ou "Todos". Passo 2: as peças marcadas, na ordem da data (sem data no fim), com ↑ ↓, tipo (Post, Carrossel, Reel, Stories, Vídeo), título (sem o nome da cliente na frente), as artes (toque liga/desliga e numera a ordem; "+" põe uma imagem do aparelho) e a legenda: **Da descrição** (o que vem depois de "Legenda:" na descrição do cartão) ou **Escrever** (à mão ou com a IA). "Escrever as N legendas que faltam com a IA" faz todas (duas por vez). Prévia ao lado e Baixar PPTX / PDF.
+- Artes: `trabalho` ação `pauta-anexo` (só leitura) baixa o anexo com o cabeçalho OAuth do Trello (imagem grande vem pela prévia de até 1600 px do próprio Trello; limite de 4,5 MB por resposta); vídeo vira a capa por um quadro perto de 1 s (no aparelho). As artes ficam só na memória do aparelho (vêm do Trello de novo ao reabrir); as imagens do aparelho ficam na pauta (JPEG de 1080 px).
+- Legenda com a IA (`pauta-legenda-background`, linha em `importacoes` com `tipo = 'pauta'`, migração 015): até 6 artes (JPEG 1000 px, apagadas depois), a descrição do cartão, a ficha e a memória da cliente; voz da cliente, primeira frase forte, parágrafos curtos, convite no fim, sem travessão, sem hashtag, normas dos conselhos na saúde. Só quando ela pede.
+- Dados: `config` "pauta:<cliente>:<AAAA-MM>" `{ nome, mes, pecas: [{ card, titulo, tipo, anexos [ids na ordem], legenda, modo descricao|ia|manual, descricao, url, lista, data, locais [{ id, src }] }] }`. Nada é escrito no Trello.
+- O motor de slides é o mesmo do relatório (`js/slides-arquivos.js`: fontes por elemento, retângulos, imagens por endereço com recorte `srcRect` no PPTX).
 
 ## Caixa de demandas (Trello, Notion e mensagens)
 
@@ -326,7 +335,7 @@ Tabelas:
 - `demandas` (migração 010): Caixa de demandas
 - `conteudos`, `clientes_trabalho` e `rascunhos` (migração 012): grupo Trabalho
 - `maos` (migração 013): Com as mãos (colorir, desenhos, escrita, caligrafia, crochê, ideias)
-- `importacoes` ganhou o tipo `relatorio` (migração 014): leitura dos prints do relatório de métricas
+- `importacoes` ganhou o tipo `relatorio` (migração 014): leitura dos prints do relatório de métricas, e o tipo `pauta` (migração 015): legenda da pauta pela IA
 - `livro_paginas` (migração 011): tinta da caneta por cima das páginas dos livros em PDF; a 011 também cria `artigos.dados`
 - áreas de vida (migração 009): `projetos`, `tarefas`, `habitos`, `habito_registros`, `diario`, `saude`, `clientes`, `consultoria`, `financas`, `casa`, `metas`, `lazer`, cada uma com um campo `dados` (jsonb) para os detalhes
 

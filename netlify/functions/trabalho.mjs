@@ -11,6 +11,8 @@
 //        { acao: 'calendarios-buscar' }               → calendários que a conexão enxerga (para acrescentar)
 //        { acao: 'calendarios-salvar', desligados, extras }
 //        { acao: 'ia', pedido: 'criar' | 'gancho' | 'arte', cliente, formato, objetivo, tema, notas, texto }
+//        { acao: 'pauta-cartoes', cliente }           → cartões da cliente com os anexos (só leitura)
+//        { acao: 'pauta-anexo', cartao, anexo }       → a arte em base64 (só leitura)
 //        { acao: 'relatorio-consideracoes', nome, mes, metricas: [{ rotulo, valor, comparacao }], temas, topicos, observacoes }
 
 import { resposta, lerCorpo, texto } from '../lib/http.mjs';
@@ -19,7 +21,7 @@ import { cifrar } from '../lib/cripto.mjs';
 import { ErroIa } from '../lib/ia-comum.mjs';
 import {
   ErroOrigem, contaNotionTrabalho, trelloEscreve, tokenDe, partesDaSincronizacao, sincronizarParte, mudarPeca, comentarPeca,
-  lerTextoDaPeca, criarPeca, pedirIa, calendariosDe, buscarCalendarios, salvarCalendarios,
+  lerTextoDaPeca, criarPeca, pedirIa, calendariosDe, buscarCalendarios, salvarCalendarios, cartoesDaPauta, anexoDaPauta,
 } from '../lib/trabalho.mjs';
 import { fontes } from '../lib/trabalho-fontes.mjs';
 import { escreverConsideracoes } from '../lib/ia-relatorio.mjs';
@@ -104,6 +106,11 @@ export default async (req) => {
           acao: e.pedido, clienteChave: texto(e.cliente, 120) || null, formato: texto(e.formato, 60), objetivo: texto(e.objetivo, 60),
           tema: texto(e.tema, 300), notas: texto(e.notas, 1000), texto: texto(e.texto, 12000),
         }));
+      case 'pauta-cartoes':
+        if (!texto(e.cliente, 120)) return resposta(200, { ok: false, erro: 'Escolha a cliente.' });
+        return resposta(200, await cartoesDaPauta(usuaria.id, texto(e.cliente, 120)));
+      case 'pauta-anexo':
+        return resposta(200, await anexoDaPauta(usuaria.id, String(e.cartao || ''), String(e.anexo || '')));
       case 'relatorio-consideracoes': {
         const lista = (v, n) => (Array.isArray(v) ? v.slice(0, n) : []);
         const topicos = lista(e.topicos, 8).map((t) => texto(t, 60)).filter(Boolean);

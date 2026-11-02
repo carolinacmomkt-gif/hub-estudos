@@ -709,3 +709,111 @@ ${PEDIDOS_IA[acao]}`;
 
 const saudeDo = (cliente) => Boolean(cliente && clienteDeSaude(cliente.nome, cliente.dados?.nicho));
 export { casaDoCliente };
+
+// ---------------------------------------------------------------------------
+// Gerador de pauta (só leitura): os cartões da cliente com os anexos, em todas as listas abertas
+// (inclusive as de mês, que são onde o design arquiva as artes prontas), e o download de uma arte.
+// ---------------------------------------------------------------------------
+
+const ID_TRELLO = /^[0-9a-f]{24}$/i;
+const MAX_ANEXO = 4.5 * 1024 * 1024; // a resposta da função tem limite de 6 MB (base64 aumenta 1/3)
+
+export async function cartoesDaPauta(userId, clienteChave) {
+  const conexao = await banco.lerConexao(userId, 'trello');
+  if (!conexao) throw new ErroOrigem('Conecte o Trello primeiro (Configurações → Demandas).');
+  const token = await tokenDe(userId, 'trello');
+  const cfg = conexao.detalhe?.config || {};
+  const quadros = conexao.detalhe?.quadros || [];
+  const clientes = await clientesGuardados(userId);
+  const ehVideo = (nome) => /v[ií]deos?\b/i.test(String(nome || ''));
+  const nomeQ = (q) => quadros.find((x) => x.id === q?.id)?.nome || q?.nome || '';
+  const videos = cfg.videos?.id ? cfg.videos : (cfg.clientes || []).find((c) => ehVideo(nomeQ(c))) || null;
+  const doCliente = (cfg.clientes || []).filter((c) => !ehVideo(nomeQ(c)) && c.id !== videos?.id && c.id !== cfg.designers?.id)
+    .map((c) => {
+      const nome = nomeDoQuadro(nomeQ(c));
+      const existente = acharCliente(nome, clientes);
+      return { id: c.id, nome: existente?.nome || nome, chave: existente?.chave || slug(nome), etiqueta: c.etiqueta };
+    });
+  const dono = doCliente.find((d) => d.chave === clienteChave);
+  const cliente = clientes.find((c) => c.chave === clienteChave && !c.excluido_em);
+  const nomeCliente = dono?.nome || cliente?.nome || clienteChave;
+  const campos = '&filter=open&fields=name,desc,due,idList,url,dateLastActivity,labels,idAttachmentCover,pos&attachments=true&attachment_fields=id,name,mimeType,bytes,date,isUpload,url,pos';
+  const ler = async (id) => {
+    const [listas, cartoes] = await Promise.all([
+      trello(token, 'GET', `boards/${id}/lists`, null, '&filter=open&fields=name,pos'),
+      trello(token, 'GET', `boards/${id}/cards`, null, campos),
+    ]);
+    return { listas, cartoes };
+  };
+  const saida = [];
+  const juntar = (tipo, quadro, { listas, cartoes }, filtro) => {
+    for (const c of cartoes) {
+      if (filtro && !filtro(c)) continue;
+      const lista = listas.find((l) => l.id === c.idList);
+      const anexos = (c.attachments || []).filter((a) => a.isUpload !== false)
+        .map((a) => ({ id: a.id, nome: a.name, tipo: a.mimeType || '', bytes: a.bytes || 0, pos: a.pos || 0, capa: a.id === c.idAttachmentCover }))
+        .filter((a) => /^image\/|^video\//.test(a.tipo) || /\.(png|jpe?g|webp|gif|mp4|mov)$/i.test(a.nome || ''))
+        .sort((a, b) => a.pos - b.pos);
+      saida.push({
+        id: c.id, titulo: c.name || 'Sem título', descricao: c.desc || '', data: c.due ? c.due.slice(0, 10) : null,
+        lista: lista?.name || '', posLista: lista?.pos || 0, pos: c.pos || 0, quadro, tipoQuadro: tipo, url: c.url, editado_em: c.dateLastActivity,
+        etiquetas: (c.labels || []).map((l) => l.name), formato: formatoDasEtiquetas((c.labels || []).map((l) => l.name)) || (tipo === 'videos' ? 'Vídeo' : null),
+        anexos,
+      });
+    }
+  };
+  const daCliente = (c, tipo) => (c.labels || []).some((l) => (dono?.etiqueta && tipo === 'posts' && normalizar(dono.etiqueta) === normalizar(l.name)) || etiquetaDoCliente(l.name, nomeCliente));
+  for (const [tipo, q] of [['posts', cfg.designers], ['videos', videos]]) {
+    if (!q?.id) continue;
+    juntar(tipo, nomeQ(q) || (tipo === 'videos' ? 'Vídeos' : 'Designers'), await ler(q.id), (c) => daCliente(c, tipo));
+  }
+  if (dono) juntar('cliente', nomeQ(dono) || dono.nome, await ler(dono.id));
+  return { ok: true, cliente: nomeCliente, cartoes: saida };
+}
+
+const hostDoTrello = (url) => {
+  try {
+    const h = new URL(url).hostname;
+    return /(^|\.)trello\.com$/.test(h) || /(^|\.)trellocdn\.com$/.test(h) || /^trello-attachments\.s3\.amazonaws\.com$/.test(h) || h === new URL(baseTrello()).hostname;
+  } catch { return false; }
+};
+
+export async function anexoDaPauta(userId, cartao, anexo) {
+  if (!ID_TRELLO.test(cartao || '') || !ID_TRELLO.test(anexo || '')) throw new ErroOrigem('Anexo inválido.');
+  const token = await tokenDe(userId, 'trello');
+  const a = await trello(token, 'GET', `cards/${cartao}/attachments/${anexo}`, null, '&fields=id,name,mimeType,bytes,url,previews');
+  const ehImagem = /^image\//.test(a.mimeType || '') || /\.(png|jpe?g|webp|gif)$/i.test(a.name || '');
+  // Imagem grande: usa a prévia de até 1600 px que o próprio Trello gera (leve e nítida para o slide).
+  const previa = ehImagem && (a.bytes || 0) > 1.5 * 1024 * 1024
+    ? (a.previews || []).filter((p) => p.width <= 1600 && p.url).sort((x, y) => y.width - x.width)[0]
+    : null;
+  const endereco = previa?.url || a.url;
+  if (!endereco || !hostDoTrello(endereco)) throw new ErroOrigem('Não achei o arquivo desse anexo no Trello.');
+  if (!previa && (a.bytes || 0) > MAX_ANEXO) {
+    throw new ErroOrigem(ehImagem ? 'Essa arte é grande demais para baixar por aqui. Anexe uma versão menor no cartão.' : 'O vídeo é grande demais para baixar por aqui. Escolha a capa do reel.');
+  }
+  let r;
+  try {
+    r = await fetch(endereco, { headers: { Authorization: `OAuth oauth_consumer_key="${chaveTrello()}", oauth_token="${token}"` }, signal: AbortSignal.timeout(15000), redirect: 'follow' });
+  } catch {
+    throw new ErroOrigem('Não consegui baixar a arte do Trello agora. Tente de novo.');
+  }
+  if (r.status === 401 || r.status === 403) throw new ErroOrigem('O Trello recusou o download. Conecte o Trello de novo em Configurações → Demandas.', { reconectar: true });
+  if (!r.ok) throw new ErroOrigem(`O Trello respondeu ${r.status} ao baixar a arte.`);
+  const bytes = Buffer.from(await r.arrayBuffer());
+  if (bytes.length > MAX_ANEXO) throw new ErroOrigem('O arquivo é grande demais para baixar por aqui. Escolha outra imagem.');
+  const tipo = (r.headers.get('content-type') || a.mimeType || '').split(';')[0] || 'application/octet-stream';
+  if (!/^image\/|^video\//.test(tipo)) throw new ErroOrigem('Esse anexo não é imagem nem vídeo.');
+  return { ok: true, tipo, nome: a.name || '', base64: bytes.toString('base64') };
+}
+
+// Ficha e memória da cliente para a IA (legenda da pauta).
+export async function contextoDoCliente(userId, chave) {
+  const cliente = chave ? (await clientesGuardados(userId)).find((c) => c.chave === chave && !c.excluido_em) : null;
+  return {
+    nome: cliente?.nome || '',
+    ficha: String(cliente?.dados?.ficha || '').slice(0, 12000),
+    memoria: (cliente?.dados?.memoria || []).map((m) => m.texto).filter(Boolean).slice(0, 30),
+    saude: Boolean(cliente && clienteDeSaude(cliente.nome, cliente.dados?.nicho)),
+  };
+}
