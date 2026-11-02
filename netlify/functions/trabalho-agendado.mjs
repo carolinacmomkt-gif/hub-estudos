@@ -13,7 +13,7 @@ export default async () => {
   for (const { user_id: userId, servico } of credenciais) {
     if (servico !== 'notion_trabalho') continue;
     const conexao = await banco.lerConexao(userId, 'notion_trabalho');
-    const partes = partesDaSincronizacao();
+    const partes = await partesDaSincronizacao(userId);
     let i = Number(conexao?.detalhe?.proximaParte) || 0;
     while (Date.now() - inicio < ORCAMENTO_MS) {
       const parte = partes[i % partes.length];

@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v85';
+const VERSAO = 'hub-v86';
 
 const ARQUIVOS = [
   './',
@@ -183,6 +183,7 @@ const ARQUIVOS = [
   './js/dados-maos.js',
   './js/views-maos.js',
   './js/eventos-maos.js',
+  './js/maos-modelos.js',
   './js/dados-fechar.js',
   './js/views-fechar.js',
   './js/views-financas.js',
@@ -236,7 +237,26 @@ self.addEventListener('fetch', (evento) => {
     return;
   }
 
-  // Demais arquivos: responde do cache na hora e atualiza em segundo plano.
+  // Estilos e scripts do app: primeiro a rede (com até 3 s), senão a cópia guardada. Assim a tela nunca
+  // mistura um arquivo novo com um antigo (ex.: telas novas com as cores da versão anterior).
+  if (/\.(css|js|mjs)$/.test(url.pathname) && !url.pathname.includes('/vendor/')) {
+    evento.respondWith((async () => {
+      const cache = await caches.open(VERSAO);
+      const daRede = fetch(request, { cache: 'no-cache' }).then((resposta) => {
+        if (resposta.ok) cache.put(request, resposta.clone());
+        return resposta;
+      });
+      const espera = new Promise((resolver) => { setTimeout(resolver, 3000, null); });
+      try {
+        const primeiro = await Promise.race([daRede, espera]);
+        if (primeiro) return primeiro;
+      } catch { /* sem internet: usa a cópia */ }
+      return (await cache.match(request)) || (await caches.match(request)) || daRede.catch(() => Response.error());
+    })());
+    return;
+  }
+
+  // Demais arquivos (imagens, ícones, vendor): responde do cache na hora e atualiza em segundo plano.
   evento.respondWith((async () => {
     const cache = await caches.open(VERSAO);
     const guardado = await cache.match(request);

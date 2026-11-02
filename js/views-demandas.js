@@ -232,7 +232,7 @@ function formConfigTrello(c) {
   const temConfig = Boolean(config.designers?.id || config.clientes?.length);
   // Quadro de produção de vídeos da Confluir (opcional): o mesmo caminho, filtrado pelos seus clientes.
   const videos = config.videos?.id ? quadros.find((q) => q.id === config.videos.id) || null
-    : temConfig ? null : quadros.find((q) => q.id !== designers?.id && /v[ií]deo/i.test(q.nome)) || null;
+    : quadros.find((q) => q.id !== designers?.id && /v[ií]deos?\b/i.test(q.nome)) || null;
   const linhas = quadros.filter((q) => q.id !== designers?.id && q.id !== videos?.id).map((q) => {
     const salvo = salvos.get(q.id);
     const sugerida = sugerirEtiqueta(designers?.etiquetas, q.nome);

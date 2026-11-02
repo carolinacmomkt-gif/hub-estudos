@@ -21,10 +21,19 @@ const corDe = (estado, chave) => {
   return Number(c?.dados?.cor) || corDoCliente(chave);
 };
 const ponto = (estado, p) => `<span class="tb-cli"><i class="tb-cor tb-cor-${corDe(estado, p.cliente)}" aria-hidden="true"></i>${esc(p.cliente_nome || p.cliente || '')}</span>`;
+// Status curto: sem o que vem entre parênteses ("VÍDEO LIBERADO (PRAZO MÍNIMO…)" vira "Vídeo liberado").
+export function statusCurto(status) {
+  const t = String(status || '').replace(/\s*[([].*$/, '').replace(/\s+-\s+.*$/, '').trim();
+  if (!t) return '';
+  const frase = t === t.toUpperCase() ? t.toLowerCase() : t;
+  return frase.charAt(0).toUpperCase() + frase.slice(1);
+}
 const seloGrupo = (p) => {
   const g = grupoDoStatus(p.status);
-  return `<span class="selo tb-g-${g}">${esc(p.status || nomeDoGrupo(g))}</span>`;
+  const curto = statusCurto(p.status) || nomeDoGrupo(g);
+  return `<span class="selo tb-selo tb-g-${g}"${p.status && p.status !== curto ? ` title="${esc(p.status)}"` : ''}>${esc(curto)}</span>`;
 };
+const linhaDeRisco = (texto) => `<span class="tb-risco"><i aria-hidden="true"></i>${esc(texto)}</span>`;
 const codigo = (p) => (p.formato ? `<span class="tb-cod">${esc(p.formato)}</span>` : '');
 
 // Filtro (fica no aparelho): visão (todos, essence, confluir, minha) e clientes (null = pelo
@@ -85,6 +94,7 @@ function chipsCasa(estado) {
           <fieldset class="tb-filtro-casa"><legend>${esc(c.nome)}</legend>
             ${grupos[c.id].map((cl) => `<label class="campo-marcar"><input type="checkbox" data-acao-mudar="tb-filtro-cliente" value="${esc(cl.chave)}"${marcado(cl.chave) ? ' checked' : ''}><i class="tb-cor tb-cor-${corDe(estado, cl.chave)}" aria-hidden="true"></i>${esc(cl.nome)}</label>`).join('')}
           </fieldset>`).join('')}
+        <div class="tb-filtro-pronto"><button class="botao botao-primario botao-pequeno" type="button" data-acao="tb-filtro-fechar">Pronto</button></div>
       </div>
     </details>
   </div>`;
@@ -144,7 +154,8 @@ function cartaoPeca(estado, p, hoje) {
   return `<a class="tb-peca${r ? ' risco' : ''}" href="#conteudo/${esc(p.id)}">
     ${ponto(estado, p)}
     <b>${esc(p.titulo)}</b>
-    <span class="tb-peca-pe">${codigo(p)}${r ? `<span class="selo tb-g-risco">${esc(r.texto.toLowerCase())}</span>` : seloGrupo(p)}</span>
+    <span class="tb-peca-pe">${seloGrupo(p)}${codigo(p)}</span>
+    ${r ? linhaDeRisco(r.texto.replace(/ e ainda está com /, ' · com ')) : ''}
   </a>`;
 }
 
@@ -372,7 +383,7 @@ function fichaDoCliente(estado, v, pecas, hoje) {
     <section class="card"><h2 class="tb-rot">Radar</h2>
       ${[...v.riscos.map((r) => `<p>${esc(r.peca.titulo)}: ${esc(r.texto.toLowerCase())}.</p>`), ...alertas.map((a) => `<p>${esc(a.titulo)}. <small class="texto-suave">${esc(a.texto)}</small></p>`)].join('') || '<p class="texto-suave">Nada pedindo atenção.</p>'}</section>
     <section class="card"><h2 class="tb-rot">Próximas peças</h2>
-      ${v.proximas.length ? `<ul class="lista-simples">${v.proximas.map((p) => `<li class="tb-linha"><a href="#conteudo/${esc(p.id)}"><span class="tb-quando">${esc(quando(p.data, hoje))}</span><span class="tb-linha-texto"><b>${esc(p.titulo)}</b></span>${seloGrupo(p)}</a></li>`).join('')}</ul>` : '<p class="texto-suave">Nada marcado pela frente.</p>'}</section>
+      ${v.proximas.length ? `<ul class="lista-simples tb-proximas">${v.proximas.map((p) => `<li class="tb-linha"><a href="#conteudo/${esc(p.id)}"><span class="tb-quando">${esc(quando(p.data, hoje))}</span><span class="tb-linha-texto"><b>${esc(p.titulo)}</b><small>${esc(statusCurto(p.status) || 'sem status')}${p.formato ? ` · ${esc(p.formato)}` : ''}</small></span></a></li>`).join('')}</ul>` : '<p class="texto-suave">Nada marcado pela frente.</p>'}</section>
     <section class="card"><h2 class="tb-rot">Memória de feedback · entra na IA</h2>
       ${memoria.length || feedbacks.length ? `<ul class="lista-simples tb-memoria">${memoria.map((m) => `<li><span>${esc(m.texto)}<small>${esc(m.origem || 'anotado')} · ${esc(new Date(m.em).toLocaleDateString('pt-BR'))}</small></span><button class="botao-icone botao-icone-p" type="button" data-acao="tb-memoria-tirar" data-cliente="${esc(v.cliente.chave)}" data-id="${esc(m.id)}" aria-label="Tirar da memória" title="Tirar">×</button></li>`).join('')}${feedbacks.map((p) => `<li><span>${esc(p.dados.feedback)}<small>feedback no Notion · ${esc(p.titulo)}</small></span></li>`).join('')}</ul>` : '<p class="texto-suave">Nada guardado ainda. Os ajustes que o cliente pede entram aqui e a IA segue nos próximos pedidos.</p>'}
       <form class="formulario tb-memoria-form" data-form="tb-memoria" data-cliente="${esc(v.cliente.chave)}" novalidate>
@@ -445,6 +456,48 @@ export function listaAlertas(alertas) {
 // Configurações → Trabalho
 // ---------------------------------------------------------------------------
 
+const fmtQuando = (iso) => new Date(iso).toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+function textoDiag(d) {
+  if (!d) return 'ainda não copiado';
+  if (d.erro) return `não copiou: ${d.erro}`;
+  return `${d.itens} ${d.itens === 1 ? 'peça' : 'peças'} · ${fmtQuando(d.em)}`;
+}
+
+// Calendários do Notion que o Trabalho lê: os do Pauta (dá para desligar) e os que ela acrescentar.
+function secaoCalendarios(estado) {
+  const sit = estado.trabSituacao;
+  if (!sit?.calendariosLista) {
+    return `<h3 class="ava-subtitulo">Calendários</h3>
+      <div class="acoes"><button class="botao botao-secundario" type="button" data-acao="tb-cal-ver">Ver e escolher os calendários</button></div>`;
+  }
+  const desligados = new Set(sit.desligados || []);
+  const busca = estado.trabCalBusca;
+  const clientes = clientesAtivos(estado);
+  return `
+      <h3 class="ava-subtitulo tb-cals-titulo">Calendários <button class="card-link" type="button" data-acao="tb-cal-ver">Atualizar</button></h3>
+      <p class="campo-ajuda">Desligue o que não quer ver e acrescente calendários novos. Se um não copiar, ligue a conexão a ele no Notion (••• → Conexões).</p>
+      <ul class="lista-simples tb-cals">${sit.calendariosLista.map((c) => `
+        <li class="tb-cal${c.diag?.erro ? ' com-erro' : ''}">
+          <label class="campo-marcar"><input type="checkbox" data-acao-mudar="tb-cal-ligar" value="${esc(c.banco)}"${c.ligado === false || desligados.has(c.banco) ? '' : ' checked'}${c.doPauta ? '' : ' disabled'}><span><b>${esc(c.nome)}</b><small>${esc(c.cliente ? `cliente: ${c.cliente} · ` : '')}${esc(c.ligado === false ? 'desligado' : textoDiag(c.diag))}</small></span></label>
+          ${c.doPauta ? '' : `<button class="botao-icone botao-icone-p" type="button" data-acao="tb-cal-tirar" data-banco="${esc(c.banco)}" aria-label="Tirar ${esc(c.nome)}" title="Tirar">×</button>`}
+        </li>`).join('')}
+      </ul>
+      <div class="acoes"><button class="botao botao-secundario" type="button" data-acao="tb-cal-buscar">${busca ? 'Procurar de novo' : 'Acrescentar um calendário'}</button></div>
+      ${busca ? (busca.length ? `<ul class="lista-simples tb-cals tb-cals-novos">${busca.filter((c) => !c.ja).map((c) => `
+        <li class="tb-cal">
+          <span class="tb-cal-nome"><b>${esc(c.nome)}</b></span>
+          <select aria-label="Cliente de ${esc(c.nome)}" data-tb-cal-cliente="${esc(c.banco)}"><option value="">Vários clientes (pelo campo Cliente)</option>${(() => { const sugerida = clienteDoTitulo(c.nome, clientes); return clientes.map((cl) => `<option value="${esc(cl.nome)}"${cl === sugerida ? ' selected' : ''}>${esc(cl.nome)}</option>`).join(''); })()}</select>
+          <button class="botao botao-primario botao-pequeno" type="button" data-acao="tb-cal-add" data-banco="${esc(c.banco)}" data-nome="${esc(c.nome)}">Acrescentar</button>
+        </li>`).join('') || '<li class="texto-suave">Todos os calendários que a conexão enxerga já estão na lista.</li>'}</ul>`
+    : '<p class="campo-ajuda">A conexão não enxerga nenhum calendário. No Notion, abra a página do calendário → ••• → Conexões → escolha a conexão do trabalho.</p>') : ''}`;
+}
+
+// O calendário "Carol Pessoa | Conteúdo" já vem com a cliente "Carol Pessoa" (o nome mais longo que aparece).
+function clienteDoTitulo(nomeCal, clientes) {
+  const n = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return clientes.filter((cl) => cl.nome.length > 4 && n(nomeCal).includes(n(cl.nome))).sort((a, b) => b.nome.length - a.nome.length)[0] || null;
+}
+
 // Quais clientes são seus: o "Só os meus" do filtro, o Hoje e os avisos seguem esta lista.
 function listaMeusClientes(estado) {
   const grupos = clientesPorCasa(estado);
@@ -478,6 +531,7 @@ export function cardTrabalhoConfig(estado) {
         <div class="acoes"><button class="botao botao-primario" type="submit">Conectar</button></div>
         <p class="campo-ajuda" data-erro hidden></p>
       </form>`}
+      ${ligado ? secaoCalendarios(estado) : ''}
       ${listaMeusClientes(estado)}
       <h3 class="ava-subtitulo">Trello</h3>
       ${conexaoDe(estado, 'trello') ? (escreve === false ? '<p class="ava-alerta" role="alert">O Trello está conectado só para ler. Para mover cartões pelo Aprovar, conecte de novo em Configurações → Demandas (a nova autorização pede ler e escrever).</p>'

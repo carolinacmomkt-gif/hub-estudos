@@ -75,7 +75,7 @@ const GRUPO_DO_STATUS = {
   'copy em desenvolvimento': 'fazer', 'video pendente': 'fazer', 'capa de reels pendente': 'fazer', 'legenda pendente': 'fazer', 'cliente enviar material': 'fazer',
   'fazer design': 'producao', 'editar video': 'producao', ajuste: 'producao', 'ajuste realizado': 'producao',
   'aprovacao interna': 'aprovacao', 'cliente aprovar': 'aprovacao', 'copy aprovada': 'aprovacao',
-  aprovado: 'pronto', agendado: 'pronto', postado: 'postado',
+  aprovado: 'pronto', agendado: 'pronto', agendados: 'pronto', postado: 'postado', postados: 'postado',
   demandas: 'fazer', 'a fazer': 'fazer', planejamento: 'fazer', liberado: 'producao', anotado: 'producao', 'em andamento': 'producao',
   'em producao': 'producao', alteracao: 'producao', revisao: 'producao', aprovacao: 'aprovacao', 'em aprovacao': 'aprovacao',
   'posts para aprovacao': 'aprovacao', aprovados: 'pronto', finalizados: 'postado', concluido: 'postado', concluidos: 'postado',
@@ -325,6 +325,8 @@ export function riscos(pecas, hoje) {
   return pecas.flatMap((p) => {
     const dono = p.origem === 'notion' ? ({ voce: 'voce', equipe: 'equipe' }[etapaDaPeca(p)] || comQuem(p.status)) : comQuem(p.status);
     if (!p.data || p.data < desde || p.data > ate || dono === 'pronto' || dono === 'feito' || p.dados?.producao) return [];
+    // Quadro do cliente (Confluir): aprovado ou agendado já está pronto, não é risco.
+    if (p.origem === 'trello' && ['pronto', 'postado'].includes(grupoDoStatus(p.status))) return [];
     return [{ peca: p, dono, texto: p.data < hoje ? `Era para ${quando(p.data, hoje)} e ${frase[dono]}` : `Publica ${quando(p.data, hoje)} e ${frase[dono]}` }];
   }).sort((a, b) => a.peca.data.localeCompare(b.peca.data));
 }

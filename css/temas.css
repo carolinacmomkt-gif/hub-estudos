@@ -158,6 +158,7 @@
   --vidro-sombra: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 10px 30px rgba(43, 30, 22, 0.14);
 
   --papel: #FFFFFF;
+  --maos-filtro-traco: none;
   --papel-linha: rgba(43, 30, 22, 0.13);
   --papel-margem: rgba(192, 57, 43, 0.35);
   --papel-texto: rgba(43, 30, 22, 0.45);
@@ -203,6 +204,7 @@
      dos livros). O papel e o traço do desenho seguem o tema, como o papel dos cadernos. */
   --maos-vazio: var(--papel);
   --maos-linha: var(--tinta-tinta);
+  --maos-filtro-traco: invert(0.9); /* traço preto dos seus modelos, clarinho no papel escuro */
   --pinta-1: #F4EADF;
   --pinta-2: #E8D3BF;
   --pinta-3: #D9BC9C;

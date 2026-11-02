@@ -7,6 +7,7 @@ import {
   FOLHAS_ESCREVER, MODELOS_CALIGRAFIA, modeloCaligrafia, TOTAL_TINTAS, NOMES_TINTAS, projetoDe, linkSeguro, IDEIAS_PADRAO, vivosMaos,
   lerParametroMaos,
 } from './dados-maos.js';
+import { meusModelos, meuModelo } from './maos-modelos.js';
 
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' });
 const quandoFoi = (m) => fmtDia.format(new Date(m.atualizado_em || m.criado_em || Date.now()));
@@ -17,6 +18,7 @@ export function telaMaos(estado, topo, parametro, hoje) {
   if (!tipo) return hub(estado, topo);
   if (tipo === 'croche') return id ? telaProjeto(estado, topo, id) : listaCroche(estado, topo);
   if (tipo === 'ideia') return telaIdeias(estado, topo);
+  if (tipo === 'modelo') return telaModeloNovo(estado, topo, lerParametroMaos(parametro).modelo || 'colorir');
   if (id) {
     const linha = vivosMaos(estado).find((m) => m.id === id);
     if (!linha) return `${topo('Com as mãos', { voltar: true, voltarPara: rota(tipo) })}<section class="ct-card"><p class="texto-suave">Esse trabalho não está mais aqui.</p></section>`;
@@ -34,6 +36,7 @@ export function telaMaos(estado, topo, parametro, hoje) {
 // ---------------------------------------------------------------------------
 
 export function miniatura(m) {
+  if (m.tipo === 'colorir' && String(m.modelo).startsWith('meu:')) return m.dados?.miniatura ? `<img src="${esc(m.dados.miniatura)}" alt="">` : '<span class="maos-mini-emoji" aria-hidden="true">🎨</span>';
   if (m.tipo === 'colorir') return svgColorir(m.modelo, m.dados?.cores, { classe: 'maos-mini-svg', rotulo: m.titulo || '' });
   if (m.tipo === 'croche') return m.dados?.foto ? `<img src="${esc(m.dados.foto)}" alt="">` : '<span class="maos-mini-emoji" aria-hidden="true">🧶</span>';
   return m.dados?.miniatura ? `<img src="${esc(m.dados.miniatura)}" alt="">` : `<span class="maos-mini-emoji" aria-hidden="true">${tipoMaos(m.tipo)?.emoji || '✏️'}</span>`;
@@ -75,6 +78,48 @@ function continuar(estado, tipo) {
 }
 
 // ---------------------------------------------------------------------------
+// Meus modelos (desenhos dela: foto, imagem, PDF ou um desenho feito na folha)
+// ---------------------------------------------------------------------------
+
+function secaoMeusModelos(estado, tipo) {
+  const lista = meusModelos(estado);
+  const acao = tipo === 'colorir' ? 'colorir com o balde' : 'cobrir com a caneta';
+  return `<section class="ct-card maos-secao">
+    <div class="ct-card-topo"><p class="ct-rotulo">Meus modelos</p><a class="botao botao-secundario botao-pequeno" href="${rota('modelo', 'novo', tipo)}">+ Adicionar modelo</a></div>
+    ${lista.length ? `<div class="maos-modelos">${lista.map((m) => `
+      <div class="maos-modelo maos-meu">
+        <button class="maos-meu-abrir" type="button" data-acao="maos-novo" data-tipo="${tipo}" data-modelo="meu:${esc(m.id)}" data-titulo="${esc(m.nome)}" aria-label="${esc(`${m.nome}: ${acao}`)}">
+          <span class="maos-mini-arte"><img class="maos-meu-img" src="${esc(m.imagem)}" alt=""></span><span>${esc(m.nome)}</span>
+        </button>
+        <span class="maos-meu-acoes">
+          <button class="botao-icone botao-icone-p" type="button" data-acao="maos-modelo-renomear" data-id="${esc(m.id)}" aria-label="Renomear ${esc(m.nome)}" title="Renomear">✎</button>
+          <button class="botao-icone botao-icone-p" type="button" data-acao="maos-modelo-excluir" data-id="${esc(m.id)}" aria-label="Excluir ${esc(m.nome)}" title="Excluir">×</button>
+        </span>
+      </div>`).join('')}</div>`
+    : `<p class="texto-suave">Uma foto de um livro de colorir, uma imagem, um PDF ou um desenho seu. Ele vira modelo para ${acao}.</p>`}
+  </section>`;
+}
+
+function telaModeloNovo(estado, topo, para) {
+  const voltarPara = rota(para === 'desenhar' ? 'desenhar' : 'colorir');
+  return `
+    ${topo('Adicionar modelo', { voltar: true, voltarPara, sub: 'Escolha a imagem. Depois limpe o fundo até ficarem só os traços.' })}
+    <div class="maos-importar">
+      <section class="ct-card">
+        <form class="formulario ct-form" data-form="maos-modelo" data-para="${esc(para)}" novalidate>
+          <label class="campo"><span class="campo-rotulo">Imagem, foto ou PDF</span><input name="arquivo" type="file" accept="image/*,application/pdf" data-acao-mudar="maos-importar-arquivo"></label>
+          <label class="campo"><span class="campo-rotulo">Limpar o fundo</span><input name="limpar" type="range" min="0" max="100" value="50" data-acao-mudar="maos-importar-limpar"><small class="campo-ajuda">Mais para a direita: só os traços mais escuros ficam.</small></label>
+          <div class="acoes"><button class="botao botao-secundario" type="button" data-acao="maos-importar-girar">Girar ↻</button></div>
+          <label class="campo"><span class="campo-rotulo">Nome</span><input name="nome" type="text" maxlength="60" placeholder="Ex.: Borboleta do livro"></label>
+          <div class="acoes"><button class="botao botao-primario" type="submit">Guardar modelo</button><a class="botao botao-secundario" href="${voltarPara}">Cancelar</a></div>
+          <p class="campo-ajuda" data-erro hidden></p>
+        </form>
+      </section>
+      <section class="ct-card maos-importar-previa"><p class="ct-rotulo">Como vai ficar</p><canvas data-maos-previa aria-label="Prévia do modelo"></canvas><p class="texto-suave" data-maos-previa-vazia>Escolha uma imagem para ver a prévia.</p></section>
+    </div>`;
+}
+
+// ---------------------------------------------------------------------------
 // Colorir
 // ---------------------------------------------------------------------------
 
@@ -83,6 +128,7 @@ function escolherColorir(estado, topo) {
   return `
     ${topo('Colorir', { voltar: true, voltarPara: rota(), sub: 'Escolha um desenho. Toque na cor e depois nas partes do desenho.' })}
     ${continuar(estado, 'colorir')}
+    ${secaoMeusModelos(estado, 'colorir')}
     ${grupos.map((g) => `
       <section class="ct-card maos-secao"><p class="ct-rotulo">${esc(g)}</p>
         <div class="maos-modelos">${MODELOS_COLORIR.filter((m) => m.grupo === g).map((m) => `
@@ -101,6 +147,7 @@ export function paletaDeTintas(estado, { borracha = true } = {}) {
 }
 
 function telaPintar(estado, topo, linha) {
+  if (String(linha.modelo).startsWith('meu:')) return telaBalde(estado, topo, linha);
   const m = modeloColorir(linha.modelo);
   const pintadas = Object.keys(linha.dados?.cores || {}).length;
   return `
@@ -108,6 +155,23 @@ function telaPintar(estado, topo, linha) {
     <div class="maos-pintar">
       <div class="maos-pintar-arte" data-maos-pintar="${esc(linha.id)}">${svgColorir(linha.modelo, linha.dados?.cores)}</div>
       <aside class="ct-card maos-pintar-cores"><p class="ct-rotulo">Cores</p>${paletaDeTintas(estado)}<p class="ct-dica-pequena"><span data-maos-contagem>${pintadas} ${pintadas === 1 ? 'parte pintada' : 'partes pintadas'}</span> · "⌫" tira a cor.</p></aside>
+    </div>`;
+}
+
+const VEDAR = [[0, 'Nada'], [1, 'Pouco'], [2, 'Médio'], [3, 'Muito']];
+function telaBalde(estado, topo, linha) {
+  const m = meuModelo(String(linha.modelo).slice(4), estado);
+  const toques = (linha.dados?.toques || []).length;
+  const vedar = Number(linha.dados?.vedar ?? 1);
+  if (!m) return `${topo(linha.titulo || 'Colorir', { voltar: true, voltarPara: rota('colorir') })}<section class="ct-card"><p class="texto-suave">O modelo deste desenho foi excluído.</p></section>`;
+  return `
+    ${topo(linha.titulo || m.nome, { voltar: true, voltarPara: rota('colorir'), sub: 'Toque numa cor e depois dentro de uma área fechada.', acoes: `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-desfazer-toque" data-id="${esc(linha.id)}"${toques ? '' : ' disabled'}>Desfazer</button><button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-excluir" data-id="${esc(linha.id)}">Excluir</button>` })}
+    <div class="maos-pintar">
+      <div class="maos-pintar-arte maos-balde"><canvas data-maos-balde="${esc(linha.id)}" aria-label="${esc(m.nome)}: toque para pintar"></canvas></div>
+      <aside class="ct-card maos-pintar-cores"><p class="ct-rotulo">Cores</p>${paletaDeTintas(estado)}
+        <p class="ct-rotulo maos-rotulo-vedar">Fechar falhinhas nas linhas</p>
+        <div class="maos-vedar" role="radiogroup" aria-label="Fechar falhinhas">${VEDAR.map(([n, nome]) => `<button class="ct-chip" type="button" role="radio" aria-checked="${vedar === n}" aria-pressed="${vedar === n}" data-acao="maos-vedar" data-id="${esc(linha.id)}" data-valor="${n}">${nome}</button>`).join('')}</div>
+        <p class="ct-dica-pequena">Se a tinta vazar para a área do lado, aumente. "⌫" tira a cor.</p></aside>
     </div>`;
 }
 
@@ -125,6 +189,7 @@ function escolherDesenhar(estado, topo, hoje) {
         <button class="botao botao-primario" type="button" data-acao="maos-novo" data-tipo="desenhar" data-modelo="ideia" data-titulo="${esc(ideia)}">Desenhar</button></div>
       <div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-novo" data-tipo="desenhar" data-modelo="livre" data-titulo="Desenho livre">Folha em branco</button></div>
     </section>
+    ${secaoMeusModelos(estado, 'desenhar')}
     <section class="ct-card maos-secao"><p class="ct-rotulo">Passo a passo</p>
       <div class="maos-modelos">${PASSO_A_PASSO.map((p) => `
         <button class="maos-modelo" type="button" data-acao="maos-novo" data-tipo="desenhar" data-modelo="passo:${esc(p.id)}" data-titulo="${esc(p.nome)}">
@@ -188,9 +253,9 @@ function telaFolha(estado, topo, linha) {
   const passo = passoAPasso(alvo);
   const n = Math.min(Number(linha.dados?.passo) || 0, (passo?.passos.length || 1) - 1);
   const voltarPara = rota(linha.tipo);
-  const sub = linha.tipo === 'caligrafia' ? 'Cubra as letras clarinhas.' : tipoModelo === 'risco' ? 'Passe a caneta por cima do risco.' : tipoModelo === 'passo' ? `Passo ${n + 1} de ${passo.passos.length}` : quandoFoi(linha);
+  const sub = linha.tipo === 'caligrafia' ? 'Cubra as letras clarinhas.' : tipoModelo === 'risco' || tipoModelo === 'meu' ? 'Passe a caneta por cima do risco.' : tipoModelo === 'passo' ? `Passo ${n + 1} de ${passo.passos.length}` : quandoFoi(linha);
   return `
-    ${topo(linha.titulo || tipoMaos(linha.tipo)?.nome || '', { voltar: true, voltarPara, sub, acoes: `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-excluir" data-id="${esc(linha.id)}">Excluir</button>` })}
+    ${topo(linha.titulo || tipoMaos(linha.tipo)?.nome || '', { voltar: true, voltarPara, sub, acoes: `${linha.tipo === 'desenhar' ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-virar-modelo" data-id="${esc(linha.id)}">Guardar como modelo</button>` : ''}<button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-excluir" data-id="${esc(linha.id)}">Excluir</button>` })}
     ${barraDaCaneta(estado)}
     <div class="maos-folha-area${passo ? ' com-passo' : ''}">
       ${passo ? `<aside class="ct-card maos-passo">

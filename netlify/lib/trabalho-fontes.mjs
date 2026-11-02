@@ -24,3 +24,12 @@ export function fontes() {
   if (process.env.HUB_TESTE_LOCAL === '1' && process.env.TRABALHO_FONTES) return JSON.parse(process.env.TRABALHO_FONTES);
   return { calendarios: CALENDARIOS, bases: BASES_DE_CLIENTES };
 }
+
+// Os calendários que o Trabalho lê: os do Pauta (menos os que ela desligou) e os que ela acrescentou em
+// Configurações → Trabalho (conexão "notion_trabalho": detalhe.calendariosDesligados e calendariosExtras).
+export function calendariosDaConexao(detalhe = {}) {
+  const desligados = new Set(detalhe.calendariosDesligados || []);
+  const base = fontes().calendarios.filter((c) => !desligados.has(c.banco)).map((c) => ({ ...c, doPauta: true }));
+  const extras = (detalhe.calendariosExtras || []).filter((c) => c?.banco && !base.some((b) => b.banco === c.banco) && !desligados.has(c.banco));
+  return [...base, ...extras.map((c) => ({ nome: c.nome, banco: c.banco, cliente: c.cliente || null, clientePadrao: c.cliente || 'Carol', doPauta: false }))];
+}

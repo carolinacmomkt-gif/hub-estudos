@@ -8,6 +8,8 @@
 //        { acao: 'comentar', id, texto }
 //        { acao: 'texto', id }                       → lê o texto da peça no Notion
 //        { acao: 'criar', calendario, titulo, data, formato, texto, cliente }
+//        { acao: 'calendarios-buscar' }               → calendários que a conexão enxerga (para acrescentar)
+//        { acao: 'calendarios-salvar', desligados, extras }
 //        { acao: 'ia', pedido: 'criar' | 'gancho' | 'arte', cliente, formato, objetivo, tema, notas, texto }
 
 import { resposta, lerCorpo, texto } from '../lib/http.mjs';
@@ -16,7 +18,7 @@ import { cifrar } from '../lib/cripto.mjs';
 import { ErroIa } from '../lib/ia-comum.mjs';
 import {
   ErroOrigem, contaNotionTrabalho, trelloEscreve, tokenDe, partesDaSincronizacao, sincronizarParte, mudarPeca, comentarPeca,
-  lerTextoDaPeca, criarPeca, pedirIa,
+  lerTextoDaPeca, criarPeca, pedirIa, calendariosDe, buscarCalendarios, salvarCalendarios,
 } from '../lib/trabalho.mjs';
 import { fontes } from '../lib/trabalho-fontes.mjs';
 
@@ -47,10 +49,24 @@ export default async (req) => {
         const trello = await banco.lerConexao(usuaria.id, 'trello');
         let escreve = false;
         if (trello) escreve = await trelloEscreve(await tokenDe(usuaria.id, 'trello')).catch(() => false);
-        return resposta(200, { ok: true, trello: Boolean(trello), trelloEscreve: escreve, calendarios: fontes().calendarios.map((c) => c.nome) });
+        const conexao = await banco.lerConexao(usuaria.id, 'notion_trabalho');
+        const lista = await calendariosDe(usuaria.id);
+        const diagnostico = conexao?.detalhe?.diagnostico || {};
+        return resposta(200, {
+          ok: true, trello: Boolean(trello), trelloEscreve: escreve, calendarios: lista.map((c) => c.nome),
+          calendariosLista: [
+            ...lista.map((c) => ({ banco: c.banco, nome: c.nome, cliente: c.cliente, doPauta: c.doPauta, ligado: true, diag: diagnostico[c.banco] || null })),
+            ...fontes().calendarios.filter((c) => !lista.some((l) => l.banco === c.banco)).map((c) => ({ banco: c.banco, nome: c.nome, cliente: c.cliente, doPauta: true, ligado: false, diag: null })),
+          ],
+          desligados: conexao?.detalhe?.calendariosDesligados || [],
+        });
       }
       case 'partes':
-        return resposta(200, { ok: true, partes: partesDaSincronizacao() });
+        return resposta(200, { ok: true, partes: await partesDaSincronizacao(usuaria.id) });
+      case 'calendarios-buscar':
+        return resposta(200, { ok: true, calendarios: await buscarCalendarios(usuaria.id) });
+      case 'calendarios-salvar':
+        return resposta(200, await salvarCalendarios(usuaria.id, { desligados: Array.isArray(e.desligados) ? e.desligados : [], extras: Array.isArray(e.extras) ? e.extras : [] }));
       case 'sincronizar': {
         const r = await sincronizarParte(usuaria.id, String(e.parte || ''));
         if (e.parte === 'trello' || e.ultima) await banco.salvarConexao(usuaria.id, 'notion_trabalho', { ultima_sincronizacao: new Date().toISOString() }).catch(() => {});

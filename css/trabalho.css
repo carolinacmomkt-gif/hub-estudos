@@ -33,6 +33,14 @@ button.selo { border: 0; font: inherit; font-size: 0.78rem; font-weight: 600; cu
 .tb-peca.risco { border-color: var(--tb-alerta); }
 .tb-peca-pe { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .tb-peca-pe .selo { font-size: 0.7rem; }
+/* Selos sempre curtos: uma linha, cortada com "…" (o nome inteiro fica no title). */
+.tb-selo { display: -webkit-inline-box; max-width: 100%; overflow: hidden; border-radius: 6px; line-height: 1.25; padding-block: 3px; white-space: normal; overflow-wrap: anywhere; vertical-align: middle; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.tb-peca .tb-cli { color: var(--cor-texto-suave); font-size: 0.74rem; }
+/* Risco: uma linha pequena com um ponto, no lugar da pílula grande. */
+.tb-risco { display: flex; align-items: baseline; gap: 6px; color: var(--tb-alerta); font-size: 0.74rem; font-weight: 600; line-height: 1.3; }
+.tb-risco i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; transform: translateY(-1px); }
+.tb-proximas .tb-linha + .tb-linha { border-top: 1px solid var(--cor-linha); }
+.tb-proximas .tb-linha > a { padding: 6px 0; }
 
 .tb-radar { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
 .tb-alerta { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--cor-texto); text-decoration: none; }
@@ -66,8 +74,15 @@ div.segmentado.tb-abas-aprovar { display: none; }
 .tb-filtro > summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .tb-filtro > summary::-webkit-details-marker { display: none; }
 .tb-filtro > summary svg { width: 16px; height: 16px; }
-.tb-filtro-caixa { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: min(340px, calc(100vw - 32px)); max-height: min(60vh, 460px); overflow: auto; padding: 12px;
-  border: 1px solid var(--cor-borda); border-radius: var(--raio-lg); background: var(--cor-card); box-shadow: var(--sombra-card); }
+.tb-filtro-caixa { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; width: min(340px, calc(100vw - 32px)); max-height: min(60vh, 460px); overflow: auto; padding: 12px;
+  border: 1px solid var(--cor-borda); border-radius: var(--raio-lg); background: var(--cor-superficie-elevada); box-shadow: var(--sombra-card), 0 18px 40px var(--cor-veu); }
+.tb-filtro-pronto { display: flex; justify-content: flex-end; margin-top: 10px; }
+/* No celular, o filtro vira uma folha de baixo (com o mesmo fundo sólido). */
+@media (max-width: 700px) {
+  .tb-filtro[open]::before { content: ''; position: fixed; inset: 0; z-index: 59; background: var(--cor-veu); }
+  .tb-filtro-caixa { position: fixed; top: auto; right: 0; bottom: 0; left: 0; width: auto; max-height: 75dvh; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: var(--raio-folha) var(--raio-folha) 0 0; }
+}
 .tb-filtro-atalhos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .tb-filtro-casa { margin: 8px 0 0; padding: 0; border: 0; }
 .tb-filtro-casa legend { margin-bottom: 4px; color: var(--cor-texto-fraco); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -171,3 +186,13 @@ textarea.tb-criar-texto { min-height: 340px; font-size: 1rem; line-height: 1.6; 
 }
 
 .tb-meus { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 0 16px; }
+.tb-cals { margin: 0 0 8px; }
+.tb-cal { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 0; border-top: 1px solid var(--cor-linha); }
+.tb-cal .campo-marcar { flex: 1 1 auto; min-width: 0; align-items: flex-start; }
+.tb-cal .campo-marcar span, .tb-cal-nome { display: grid; min-width: 0; }
+.tb-cal small { color: var(--cor-texto-fraco); font-size: 0.8rem; }
+.tb-cal.com-erro small { color: var(--tb-alerta); }
+.tb-cals-novos .tb-cal { flex-wrap: wrap; }
+.tb-cals-novos .tb-cal-nome { flex: 1 1 160px; }
+.tb-cals-novos select { flex: 1 1 200px; min-height: 44px; }
+.tb-cals-titulo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

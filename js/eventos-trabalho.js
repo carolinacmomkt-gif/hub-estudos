@@ -16,6 +16,28 @@ let app;
 const pedir = (corpo) => chamar('trabalho', corpo);
 const peca = (id) => (obterEstado().conteudos || []).find((p) => p.id === id && !p.excluido_em);
 
+async function carregarSituacao() {
+  const s = await pedir({ acao: 'situacao' });
+  if (s.ok) { atualizarEstado({ trabSituacao: s, trabCalendarios: s.calendarios }); app.renderizar(); } else avisar(s.erro || 'Não deu para ler agora.');
+}
+
+// Liga, desliga, acrescenta ou tira calendários (os do Pauta e os que ela acrescentou).
+async function salvarCalendarios(mudanca, aviso) {
+  const sit = obterEstado().trabSituacao || {};
+  const corpo = {
+    acao: 'calendarios-salvar',
+    desligados: mudanca.desligados || sit.desligados || [],
+    extras: mudanca.extras || (sit.calendariosLista || []).filter((c) => !c.doPauta).map((c) => ({ banco: c.banco, nome: c.nome, cliente: c.cliente })),
+  };
+  const r = await pedir(corpo);
+  if (!r.ok) return avisar(r.erro || 'Não deu para salvar.');
+  avisar(aviso);
+  atualizarEstado({ trabCalBusca: null });
+  await carregarSituacao();
+  if (/Sincronizando/.test(aviso)) sincronizarTrabalho({ silencioso: true }).then(carregarSituacao);
+  return null;
+}
+
 // O filtro fica no aparelho (visão e clientes marcados).
 function mudarFiltro(campos) {
   const f = { ...filtroTrabalho(obterEstado()), ...campos };
@@ -252,6 +274,14 @@ export function mudancaTrabalho(alvo) {
     mudarFiltro({ clientes: [...lista] });
     return true;
   }
+  if (acao === 'tb-cal-ligar') {
+    const sit = obterEstado().trabSituacao || {};
+    const desligados = new Set(sit.desligados || []);
+    if (alvo.checked === !desligados.has(alvo.value)) return true; // input e change do mesmo toque
+    if (alvo.checked) desligados.delete(alvo.value); else desligados.add(alvo.value);
+    salvarCalendarios({ desligados: [...desligados] }, alvo.checked ? 'Calendário ligado. Sincronizando…' : 'Calendário desligado.');
+    return true;
+  }
   if (acao === 'tb-meu-cliente') {
     marcarMeu(alvo.value, alvo.checked).then(() => app.renderizar());
     return true;
@@ -318,6 +348,36 @@ export function cliqueTrabalho(alvo) {
     }
     case 'tb-visao-casa':
       mudarFiltro({ visao: valor || 'todos' });
+      return true;
+    case 'tb-cal-ver':
+      carregarSituacao();
+      return true;
+    case 'tb-cal-buscar':
+      alvo.disabled = true;
+      pedir({ acao: 'calendarios-buscar' }).then((r) => {
+        alvo.disabled = false;
+        if (!r.ok) return avisar(r.erro || 'Não deu para procurar agora.');
+        atualizarEstado({ trabCalBusca: r.calendarios });
+        app.renderizar();
+        return null;
+      });
+      return true;
+    case 'tb-cal-add': {
+      const sit = estado.trabSituacao || {};
+      const cliente = document.querySelector(`[data-tb-cal-cliente="${CSS.escape(alvo.dataset.banco)}"]`)?.value || null;
+      const extras = [...(sit.calendariosLista || []).filter((c) => !c.doPauta).map((c) => ({ banco: c.banco, nome: c.nome, cliente: c.cliente })), { banco: alvo.dataset.banco, nome: alvo.dataset.nome, cliente }];
+      salvarCalendarios({ extras }, `"${alvo.dataset.nome}" entrou. Sincronizando…`);
+      return true;
+    }
+    case 'tb-cal-tirar': {
+      const sit = estado.trabSituacao || {};
+      const extras = (sit.calendariosLista || []).filter((c) => !c.doPauta && c.banco !== alvo.dataset.banco).map((c) => ({ banco: c.banco, nome: c.nome, cliente: c.cliente }));
+      salvarCalendarios({ extras }, 'Calendário tirado da lista.');
+      return true;
+    }
+    case 'tb-filtro-fechar':
+      atualizarEstado({ trabFiltroAberto: false });
+      alvo.closest('details')?.removeAttribute('open');
       return true;
     case 'tb-filtro-atalho':
       atualizarEstado({ trabFiltroAberto: true });

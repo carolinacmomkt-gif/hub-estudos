@@ -4,10 +4,15 @@
 
 import { obterEstado, atualizarEstado } from './estado.js';
 import { gravar } from './gravacao.js';
-import { confirmar } from './confirmar.js';
+import { confirmar, perguntarTexto } from './confirmar.js';
 import { EditorDeTinta, novaPaginaVazia } from './editor-tinta.js';
 import { dimensoes } from './folhas.js';
 import { vivosMaos, lerParametroMaos, svgFundoDaFolha, projetoDe } from './dados-maos.js';
+import { listar, salvar } from './persistencia.js';
+import {
+  meuModelo, lerFonte, cinzaDe, limiarAutomatico, mascaraDe, pngDaMascara, mascaraDoDesenho, tracosNaCor,
+  fundoParaCobrir, criarPintura, miniaturaDoCanvas,
+} from './maos-modelos.js';
 
 let app;
 const avisar = (t) => app?.avisoCurto?.(t);
@@ -118,6 +123,7 @@ function fundoDaFolha(linha) {
   const [tipoModelo, alvo] = String(linha.modelo || '').split(':');
   if (linha.tipo === 'caligrafia') return { tipo: 'caligrafia', modelo: linha.modelo };
   if (tipoModelo === 'risco') return { tipo: 'risco', modelo: alvo };
+  if (tipoModelo === 'meu') return { tipo: 'meu', modelo: alvo };
   if (tipoModelo === 'passo') return linha.dados?.semGuia ? { tipo: 'folha', modelo: 'branco' } : { tipo: 'passo', modelo: alvo, passo: Number(linha.dados?.passo) || 0 };
   return { tipo: 'folha', modelo: linha.tipo === 'escrever' ? (linha.modelo || 'pautada-media') : 'branco' };
 }
@@ -134,6 +140,11 @@ function coresDaFolha() {
 
 function carregarFundo(editor, linha) {
   const fundo = fundoDaFolha(linha);
+  if (fundo.tipo === 'meu') {
+    const m = meuModelo(fundo.modelo);
+    if (m) fundoParaCobrir(m, editor.dim).then((img) => { if (img && folha?.editor === editor) editor.definirImagemDeFundo(img); });
+    return;
+  }
   const svg = svgFundoDaFolha({ ...fundo, largura: editor.dim.largura, altura: editor.dim.altura, cores: coresDaFolha() });
   const img = new Image();
   img.onload = () => { if (folha?.editor === editor) editor.definirImagemDeFundo(img); };
@@ -200,9 +211,89 @@ async function manterTelaAcesa(querer) {
   } catch { trava = null; }
 }
 
+// Se o aparelho ainda está com o arquivo de cores antigo (sem as tintas), avisa e oferece atualizar.
+function conferirTintas() {
+  if (getComputedStyle(document.documentElement).getPropertyValue('--pinta-1').trim()) return;
+  const topo = document.querySelector('.ct-topo');
+  if (!topo || document.querySelector('[data-maos-atualizar]')) return;
+  topo.insertAdjacentHTML('afterend', '<div class="ct-faixa" data-maos-atualizar><div><strong>Falta atualizar as cores do app</strong><small>Este aparelho ainda está com a versão anterior das cores.</small></div><button class="botao botao-primario" type="button" data-acao="maos-atualizar">Atualizar</button></div>');
+}
+
 let relogioCrono = null;
+// ---------------------------------------------------------------------------
+// Colorir um modelo seu (balde)
+// ---------------------------------------------------------------------------
+
+let pintura = null; // { id, obra }
+async function montarBalde(id) {
+  const canvas = document.querySelector(`[data-maos-balde="${CSS.escape(id)}"]`);
+  const linha = linhaDe(id);
+  const m = linha && meuModelo(String(linha.modelo).slice(4));
+  if (!canvas || !m) return;
+  const obra = await criarPintura(canvas, m, linha.dados?.toques || [], Number(linha.dados?.vedar ?? 1));
+  pintura = obra ? { id, obra, canvas } : null;
+  canvas.addEventListener('click', (e) => {
+    if (!pintura || pintura.canvas !== canvas) return;
+    const r = canvas.getBoundingClientRect();
+    const x = Math.round(((e.clientX - r.left) / r.width) * canvas.width);
+    const y = Math.round(((e.clientY - r.top) / r.height) * canvas.height);
+    const n = Number(obterEstado().maosTinta ?? 6);
+    if (!pintura.obra.tocar(x, y, n)) return;
+    const dados = mudarDados(id, (d) => { d.toques = [...(d.toques || []), [x, y, n]].slice(-400); });
+    const desfazer = document.querySelector('[data-acao="maos-desfazer-toque"]');
+    if (desfazer) desfazer.disabled = !dados?.toques?.length;
+    clearTimeout(pintura.tempoMini);
+    pintura.tempoMini = setTimeout(() => mudarDados(id, (d) => { d.miniatura = miniaturaDoCanvas(canvas); }), 1500);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Adicionar modelo (imagem, foto ou PDF)
+// ---------------------------------------------------------------------------
+
+const importacao = { fonte: null, giro: 0, cinza: null, limpar: 50, mascara: null };
+
+async function desenharPrevia() {
+  const canvas = document.querySelector('[data-maos-previa]');
+  if (!canvas || !importacao.fonte) return;
+  if (!importacao.cinza) importacao.cinza = cinzaDe(importacao.fonte, importacao.giro);
+  const auto = limiarAutomatico(importacao.cinza.cinza);
+  const limiar = Math.max(10, Math.min(250, Math.round(auto + (50 - importacao.limpar) * 1.6)));
+  importacao.mascara = mascaraDe(importacao.cinza, limiar);
+  const img = new Image();
+  img.src = pngDaMascara(importacao.mascara);
+  await img.decode().catch(() => {});
+  const estilo = getComputedStyle(document.documentElement);
+  canvas.width = img.width; canvas.height = img.height;
+  const x = canvas.getContext('2d');
+  x.fillStyle = estilo.getPropertyValue('--maos-vazio').trim();
+  x.fillRect(0, 0, canvas.width, canvas.height);
+  x.drawImage(tracosNaCor(img, estilo.getPropertyValue('--maos-linha').trim()), 0, 0);
+  canvas.hidden = false;
+  const vazia = document.querySelector('[data-maos-previa-vazia]');
+  if (vazia) vazia.hidden = true;
+}
+
+async function guardarModelo(nome, mascara) {
+  const id = crypto.randomUUID();
+  const valor = { nome: nome.slice(0, 60) || 'Meu modelo', imagem: pngDaMascara(mascara), largura: mascara.largura, altura: mascara.altura };
+  await salvar('config', { chave: `maos_modelo:${id}`, valor });
+  atualizarEstado({ config: await listar('config') });
+  return id;
+}
+
+async function mudarModelo(id, fn) {
+  const atual = (await listar('config', { incluirExcluidos: true })).find((c) => c.chave === `maos_modelo:${id}`);
+  if (!atual) return;
+  await salvar('config', fn({ ...atual }));
+  atualizarEstado({ config: await listar('config') });
+}
+
 export function montarMaos(parametro) {
+  conferirTintas();
   const { tipo, id } = lerParametroMaos(parametro);
+  if (tipo === 'colorir' && id && String(linhaDe(id)?.modelo || '').startsWith('meu:')) montarBalde(id); else pintura = null;
+  if (tipo === 'modelo') desenharPrevia(); else Object.assign(importacao, { fonte: null, giro: 0, cinza: null, limpar: 50, mascara: null });
   if (id && ['desenhar', 'escrever', 'caligrafia'].includes(tipo)) montarFolha(id); else soltarFolha();
   manterTelaAcesa(Boolean(id) || tipo === 'colorir');
   clearInterval(relogioCrono);
@@ -319,6 +410,49 @@ export function cliqueMaos(alvo) {
       });
       return true;
     }
+    case 'maos-desfazer-toque': {
+      const dados = mudarDados(id, (d) => { d.toques = (d.toques || []).slice(0, -1); });
+      if (pintura?.id === id) { pintura.obra.refazer(dados?.toques || []); mudarDados(id, (d) => { d.miniatura = miniaturaDoCanvas(pintura.canvas); }); }
+      alvo.disabled = !dados?.toques?.length;
+      return true;
+    }
+    case 'maos-vedar':
+      mudarDados(id, (d) => { d.vedar = Number(valor); }, { ja: true });
+      app.renderizar();
+      return true;
+    case 'maos-importar-girar':
+      importacao.giro = (importacao.giro + 1) % 4;
+      importacao.cinza = null;
+      desenharPrevia();
+      return true;
+    case 'maos-modelo-renomear': {
+      perguntarTexto('Novo nome do modelo', { padrao: meuModelo(id)?.nome || '', maximo: 60 }).then((nome) => {
+        if (!nome?.trim()) return;
+        mudarModelo(id, (c) => ({ ...c, valor: { ...c.valor, nome: nome.trim().slice(0, 60) } })).then(() => app.renderizar());
+      });
+      return true;
+    }
+    case 'maos-modelo-excluir': {
+      const m = meuModelo(id);
+      confirmar(`Excluir o modelo "${m?.nome || ''}"? Os desenhos já feitos com ele continuam na galeria, mas não dá para pintar de novo.`, { botao: 'Excluir', perigo: true }).then((ok) => {
+        if (ok) mudarModelo(id, (c) => ({ ...c, excluido_em: new Date().toISOString() })).then(() => app.renderizar());
+      });
+      return true;
+    }
+    case 'maos-virar-modelo': {
+      if (!folha?.editor) return true;
+      const mascara = mascaraDoDesenho(folha.editor.cTinta);
+      if (!mascara) { avisar('Desenhe alguma coisa primeiro.'); return true; }
+      perguntarTexto('Nome do modelo', { padrao: linhaDe(id)?.titulo || 'Meu desenho', maximo: 60 }).then(async (nome) => {
+        if (nome === null || nome === undefined) return;
+        await guardarModelo(String(nome).trim() || 'Meu desenho', mascara);
+        avisar('Virou modelo. Está em Colorir e em Desenhar → Meus modelos.');
+      });
+      return true;
+    }
+    case 'maos-atualizar':
+      navigator.serviceWorker?.getRegistration().then((r) => r?.update()).finally(() => location.reload());
+      return true;
     case 'maos-ideia-pronta':
       criar('ideia', null, valor).then(() => app.renderizar());
       return true;
@@ -370,8 +504,22 @@ export function mudancaMaos(alvo, tipo) {
   const acao = alvo.dataset?.acaoMudar;
   if (!acao?.startsWith('maos-')) return false;
   if (tipo === 'input' && (alvo.type === 'checkbox' || alvo.type === 'file')) return true; // só o "change" conta
+  if (tipo === 'change' && alvo.type === 'range') return true; // o "input" já desenhou
   const id = alvo.dataset.id;
   switch (acao) {
+    case 'maos-importar-arquivo': {
+      const arquivo = alvo.files?.[0];
+      if (!arquivo) return true;
+      const nome = alvo.form?.elements.nome;
+      if (nome && !nome.value) nome.value = arquivo.name.replace(/\.[^.]+$/, '').slice(0, 60);
+      lerFonte(arquivo).then((fonte) => { Object.assign(importacao, { fonte, giro: 0, cinza: null }); return desenharPrevia(); })
+        .catch(() => avisar('Não deu para ler esse arquivo. Tente uma imagem JPG, PNG ou um PDF.'));
+      return true;
+    }
+    case 'maos-importar-limpar':
+      importacao.limpar = Number(alvo.value);
+      desenharPrevia();
+      return true;
     case 'maos-dedo':
       atualizarEstado({ maosDedo: alvo.checked });
       gravarLocal('hub.maos.dedo', alvo.checked);
@@ -407,6 +555,18 @@ export function enviarMaos(form) {
   const c = form.elements;
   const erro = (t) => { const el = form.querySelector('[data-erro]'); if (el) { el.textContent = t; el.hidden = !t; } };
   switch (tipo) {
+    case 'maos-modelo': {
+      if (!importacao.mascara) { erro('Escolha uma imagem primeiro.'); return true; }
+      const pontos = importacao.mascara.m.reduce((t, v) => t + v, 0);
+      if (pontos < 50) { erro('Ficou sem traço nenhum. Mexa no "Limpar o fundo" para a esquerda.'); return true; }
+      const para = form.dataset.para === 'desenhar' ? 'desenhar' : 'colorir';
+      guardarModelo(c.nome.value.trim() || 'Meu modelo', importacao.mascara).then(() => {
+        avisar('Modelo guardado.');
+        Object.assign(importacao, { fonte: null, cinza: null, mascara: null });
+        location.hash = rota(para);
+      });
+      return true;
+    }
     case 'maos-croche-novo': {
       const titulo = c.titulo.value.trim();
       if (!titulo) { erro('Dê um nome ao projeto.'); return true; }

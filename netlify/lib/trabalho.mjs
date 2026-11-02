@@ -10,7 +10,7 @@ import { banco } from './supabase.mjs';
 import { decifrar } from './cripto.mjs';
 import { ErroOrigem, chaveTrello } from './demandas.mjs';
 import { pedirJson, objeto, texto as tipoTexto, ErroIa } from './ia-comum.mjs';
-import { fontes } from './trabalho-fontes.mjs';
+import { fontes, calendariosDaConexao } from './trabalho-fontes.mjs';
 import {
   normalizar, slug, nomeDoCliente, nomeDoQuadro, semAcessos, acharCliente, etiquetaDoCliente, listaAtiva, formatoDasEtiquetas,
   destinoDaAprovacao, destinoDoAjuste, casaDoCliente, corDoCliente, ehMinha, clienteDeSaude,
@@ -31,7 +31,7 @@ export function rotaNotionPermitida(metodo, caminho) {
   const c = caminho.split('?')[0];
   if (metodo === 'GET') return true;
   if (metodo === 'PATCH') return /^\/pages\/[\w-]+$/.test(c) || /^\/blocks\/[\w-]+\/children$/.test(c);
-  if (metodo === 'POST') return c === '/pages' || c === '/comments' || /^\/data_sources\/[\w-]+\/query$/.test(c);
+  if (metodo === 'POST') return c === '/pages' || c === '/comments' || c === '/search' || /^\/data_sources\/[\w-]+\/query$/.test(c);
   return false;
 }
 
@@ -226,9 +226,57 @@ export async function tokenDe(userId, servico) {
 // Sincronizar (em partes: clientes, um calendário por vez, Trello)
 // ---------------------------------------------------------------------------
 
-export function partesDaSincronizacao() {
-  const { calendarios } = fontes();
-  return ['clientes', ...calendarios.map((_, i) => `cal:${i}`), 'trello'];
+export async function calendariosDe(userId) {
+  const conexao = await banco.lerConexao(userId, 'notion_trabalho');
+  return calendariosDaConexao(conexao?.detalhe || {});
+}
+
+export async function partesDaSincronizacao(userId) {
+  const calendarios = await calendariosDe(userId);
+  return ['clientes', ...calendarios.map((c) => `cal:${c.banco}`), 'trello'];
+}
+
+// O que aconteceu na última cópia de cada calendário (aparece em Configurações → Trabalho).
+async function anotarCalendario(userId, bancoId, resultado) {
+  const conexao = await banco.lerConexao(userId, 'notion_trabalho');
+  const detalhe = conexao?.detalhe || {};
+  await banco.salvarConexao(userId, 'notion_trabalho', { detalhe: { ...detalhe, diagnostico: { ...(detalhe.diagnostico || {}), [bancoId]: { em: agoraIso(), ...resultado } } } }).catch(() => {});
+}
+
+// Calendários (fontes de dados) que a conexão do trabalho enxerga, para ela acrescentar.
+export async function buscarCalendarios(userId) {
+  const token = await tokenDe(userId, 'notion_trabalho');
+  const ja = new Set((await calendariosDe(userId)).map((c) => c.banco));
+  const bases = new Set(fontes().bases.map((b) => b.banco));
+  const achados = new Map();
+  let cursor;
+  let voltas = 0;
+  do {
+    const r = await notion(token, 'POST', '/search', { filter: { property: 'object', value: 'data_source' }, page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) });
+    for (const f of r.results || []) {
+      const bancoId = f.parent?.database_id || f.database_parent?.database_id || f.id;
+      if (!bancoId || bases.has(bancoId) || achados.has(bancoId)) continue;
+      achados.set(bancoId, { banco: bancoId, nome: rico(f.title).trim() || 'Sem nome', ja: ja.has(bancoId) });
+    }
+    cursor = r.has_more ? r.next_cursor : undefined;
+    voltas += 1;
+  } while (cursor && voltas < 5);
+  return [...achados.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+const ID_NOTION = /^[\w-]{6,64}$/; // id de banco do Notion (letras, números e hífen)
+export async function salvarCalendarios(userId, { desligados = [], extras = [] }) {
+  const conexao = await banco.lerConexao(userId, 'notion_trabalho');
+  if (!conexao) throw new ErroOrigem('Conecte o Notion do trabalho primeiro.');
+  const limpo = (t, n) => String(t || '').replace(/[<>]/g, '').trim().slice(0, n);
+  const detalhe = {
+    ...(conexao.detalhe || {}),
+    calendariosDesligados: [...new Set((desligados || []).map(String).filter((x) => ID_NOTION.test(x)))].slice(0, 40),
+    calendariosExtras: (extras || []).filter((c) => ID_NOTION.test(String(c?.banco || ''))).slice(0, 30)
+      .map((c) => ({ banco: String(c.banco), nome: limpo(c.nome, 120) || 'Calendário', cliente: limpo(c.cliente, 120) || null })),
+  };
+  await banco.salvarConexao(userId, 'notion_trabalho', { detalhe });
+  return { ok: true, calendarios: calendariosDaConexao(detalhe) };
 }
 
 const agoraIso = () => new Date().toISOString();
@@ -292,6 +340,11 @@ export async function sincronizarClientes(userId, { orcamentoMs = 7000 } = {}) {
     }
   }
   await gravarClientes(userId, novos, antigos);
+  // Calendário desligado em Configurações: as peças dele saem do app (no Notion nada muda).
+  const nomes = new Set((await calendariosDe(userId)).map((c) => c.nome));
+  for (const p of await pecasGuardadas(userId, 'origem=eq.notion&excluido_em=is.null')) {
+    if (!nomes.has(p.fonte)) await banco.atualizarPorId('conteudos', userId, p.id, { excluido_em: agoraIso() });
+  }
   return { ok: !erros.length || novos.length > 0, itens: novos.length, erros };
 }
 
@@ -325,9 +378,22 @@ async function tirarAusentes(userId, guardadas, presentes) {
   }
 }
 
-export async function sincronizarCalendario(userId, indice) {
-  const cal = fontes().calendarios[indice];
+export async function sincronizarCalendario(userId, chave) {
+  const lista = await calendariosDe(userId);
+  const cal = lista.find((c) => c.banco === chave) || (/^\d+$/.test(String(chave)) ? lista[Number(chave)] : null);
   if (!cal) throw new ErroOrigem('Calendário desconhecido.');
+  try {
+    const r = await copiarCalendario(userId, cal);
+    await anotarCalendario(userId, cal.banco, { itens: r.itens });
+    return r;
+  } catch (e) {
+    const erro = /object_not_found|404|Could not find/i.test(e.message) ? 'A conexão do Notion não está ligada a este calendário (••• → Conexões).' : e.message;
+    await anotarCalendario(userId, cal.banco, { erro });
+    throw new ErroOrigem(`${cal.nome}: ${erro}`);
+  }
+}
+
+async function copiarCalendario(userId, cal) {
   const token = await tokenDe(userId, 'notion_trabalho');
   const clientes = await clientesGuardados(userId);
   const porNotion = new Map(clientes.filter((c) => c.notion_id).map((c) => [c.notion_id, c]));
@@ -337,7 +403,10 @@ export async function sincronizarCalendario(userId, indice) {
   const porOrigem = new Map(guardadas.map((p) => [p.origem_id, p]));
   const clientesNovos = [];
   const resolver = (nome) => {
-    const achado = acharCliente(nome, clientes) || clientesNovos.find((c) => c.nome === nome);
+    // "Carol" e "Portal da Carol" são a marca dela: nunca casam com "Carol Pessoa" pelo primeiro nome.
+    const achado = ehMinha(nome)
+      ? (clientes.find((c) => ehMinha(c.nome) && normalizar(c.nome) === normalizar(nome)) || clientes.find((c) => ehMinha(c.nome)) || clientesNovos.find((c) => c.nome === nome))
+      : (acharCliente(nome, clientes.filter((c) => !ehMinha(c.nome))) || clientesNovos.find((c) => c.nome === nome));
     if (achado) return achado;
     const novo = { chave: slug(nome), nome, casa: ehMinha(nome) ? 'minha' : 'essence', dados: {} };
     clientesNovos.push(novo);
@@ -366,9 +435,22 @@ export async function sincronizarTrello(userId) {
   const conexao = await banco.lerConexao(userId, 'trello');
   if (!conexao) return { ok: true, itens: 0, aviso: 'Trello não conectado.' };
   const token = await tokenDe(userId, 'trello');
-  const cfg = conexao.detalhe?.config || {};
+  const cfgSalva = conexao.detalhe?.config || {};
   const quadros = conexao.detalhe?.quadros || [];
   const clientes = await clientesGuardados(userId);
+  // Quadro com "vídeo" no nome é sempre de produção (mesmo se ficou marcado como cliente na
+  // configuração antiga): ele não vira um cliente "Vídeos Confluir".
+  const ehVideo = (nome) => /v[ií]deos?\b/i.test(String(nome || ''));
+  const videoComoCliente = (cfgSalva.clientes || []).find((c) => ehVideo(c.nome || quadros.find((q) => q.id === c.id)?.nome));
+  const cfg = {
+    ...cfgSalva,
+    videos: cfgSalva.videos?.id ? cfgSalva.videos : videoComoCliente ? { id: videoComoCliente.id, nome: videoComoCliente.nome } : null,
+    clientes: (cfgSalva.clientes || []).filter((c) => !ehVideo(c.nome || quadros.find((q) => q.id === c.id)?.nome) && c.id !== cfgSalva.videos?.id && c.id !== cfgSalva.designers?.id),
+  };
+  for (const prod of [cfg.videos, cfg.designers]) {
+    const falso = prod && clientes.find((c) => !c.excluido_em && c.chave === slug(nomeDoQuadro(prod.nome || quadros.find((q) => q.id === prod.id)?.nome || '')));
+    if (falso) await banco.atualizarPorId('clientes_trabalho', userId, falso.id, { excluido_em: agoraIso() });
+  }
   const donos = (cfg.clientes || []).map((c) => {
     const nome = nomeDoQuadro(c.nome);
     const existente = acharCliente(nome, clientes);
@@ -429,8 +511,8 @@ export async function sincronizarTrello(userId) {
 export async function sincronizarParte(userId, parte) {
   if (parte === 'clientes') return sincronizarClientes(userId);
   if (parte === 'trello') return sincronizarTrello(userId);
-  const m = /^cal:(\d+)$/.exec(String(parte || ''));
-  if (m) return sincronizarCalendario(userId, Number(m[1]));
+  const m = /^cal:(.+)$/.exec(String(parte || ''));
+  if (m) return sincronizarCalendario(userId, m[1]);
   throw new ErroOrigem('Parte desconhecida.');
 }
 
@@ -525,7 +607,7 @@ const temOpcao = (c, nome) => opcoesDe(c).includes(nome);
 
 // Cria a peça no calendário do cliente (preenche só os campos que existem naquele calendário).
 export async function criarPeca(userId, { calendario, titulo, data, formato, texto, status, clienteChave }) {
-  const cal = fontes().calendarios.find((c) => c.nome === calendario);
+  const cal = (await calendariosDe(userId)).find((c) => c.nome === calendario);
   if (!cal) throw new ErroOrigem('Escolha um calendário do Notion.');
   const token = await tokenDe(userId, 'notion_trabalho');
   const { fonte, propriedades } = await esquemaDoBanco(token, cal.banco);

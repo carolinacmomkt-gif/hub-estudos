@@ -36,6 +36,7 @@ Depois de criar ou mudar uma variável, faça um novo deploy ("Trigger deploy").
 - Configurações → Demandas → Trello: toque em "Conectar" de novo, para a autorização passar a deixar mover cartões e comentar (nada é apagado no Trello).
 - Configurações → Demandas: confira o quadro de vídeos da Confluir e as listas de aprovação dele.
 - Configurações → Trabalho → Seus clientes: desmarque quem não é seu.
+- Configurações → Trabalho → Calendários: veja o resultado de cada um. Para a Carol Pessoa (ou outro calendário fora dos 8 do Pauta): no Notion, ligue a conexão do trabalho à página do calendário (••• → Conexões) e depois toque em "Acrescentar um calendário".
 - Deixe o Pauta da Vercel no ar até conferir que Conteúdo, Aprovar, Clientes e Criar mostram o mesmo que ele.
 - A memória de feedback, as fichas e os rascunhos do Pauta (no Neon) não vêm sozinhos: as fichas voltam do Notion na primeira sincronização; a memória você pode reescrever em Clientes → Memória.
 
