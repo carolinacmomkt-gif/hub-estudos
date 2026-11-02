@@ -102,6 +102,24 @@
 .maos-sugestoes { display: flex; flex-wrap: wrap; gap: 8px; }
 .maos-desejos-link { margin-bottom: 14px; }
 
+/* Camadas da pintura: preenchimento embaixo, pintura à mão no meio, contornos por cima */
+.maos-zoom { overflow: hidden; border-radius: var(--raio-lg); }
+.maos-camadas { position: relative; transform-origin: 0 0; }
+.maos-camadas > svg, .maos-camadas > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.maos-camadas > .maos-svg { position: relative; }
+.maos-camada-mao { pointer-events: none; touch-action: none; }
+.maos-camadas[data-modo="mao"] .maos-camada-mao { pointer-events: auto; cursor: crosshair; }
+.maos-contornos, .maos-camada-tracos { pointer-events: none; }
+.maos-contornos path { fill: none; stroke: var(--maos-linha); stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+div.segmentado.maos-modo { display: flex; width: 100%; margin-bottom: 14px; }
+div.segmentado.maos-modo button { flex: 1 1 0; min-width: 0; padding-inline: 8px; white-space: nowrap; }
+.maos-ferramentas-mao[hidden] { display: none; }
+.maos-ferramentas-mao { display: grid; gap: 8px; margin-top: 14px; }
+.maos-ferramentas-mao .ct-rotulo { margin: 4px 0 0; }
+.maos-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.maos-chips .ct-chip[aria-pressed="true"], .maos-vedar .ct-chip[aria-pressed="true"] { border-color: var(--ct-cheio-borda); background: var(--ct-cheio); }
+.maos-ferramentas-mao .campo-marcar { min-height: 44px; color: var(--ct-suave); font-size: 0.88rem; }
+
 /* Meus modelos */
 .maos-meu { position: relative; padding: 0; }
 .maos-meu-abrir { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 8px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
@@ -109,9 +127,8 @@
 .maos-meu-img { width: 92%; height: 92%; object-fit: contain; filter: var(--maos-filtro-traco); }
 .maos-meu-acoes { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
 .maos-meu-acoes .botao-icone { background: var(--ct-opaco); }
-.maos-pintar-arte.maos-balde { display: grid; place-items: center; aspect-ratio: auto; width: auto; max-width: 100%; overflow: visible; background: none; box-shadow: none; }
-/* O canvas fica no tamanho da imagem (sem sobra), para o toque cair no ponto certo. */
-.maos-balde canvas { display: block; max-width: 100%; max-height: calc(100dvh - 220px); width: auto; height: auto; border-radius: var(--raio-lg); box-shadow: var(--ct-sombra); cursor: pointer; touch-action: manipulation; }
+.maos-pintar-arte.maos-balde { aspect-ratio: var(--razao, 1); width: min(100%, calc((100dvh - 220px) * var(--razao, 1))); }
+.maos-balde canvas { cursor: pointer; touch-action: manipulation; }
 .maos-rotulo-vedar { margin-top: 16px; }
 .maos-vedar { display: flex; flex-wrap: wrap; gap: 6px; }
 .maos-vedar .ct-chip[aria-pressed="true"] { border-color: var(--ct-cheio-borda); background: var(--ct-cheio); }

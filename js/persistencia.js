@@ -249,7 +249,21 @@ async function enviarFila() {
 
 async function enviarTabela(tabela, ids) {
   {
-    const registros = (await Promise.all([...ids.keys()].map((id) => obter(tabela, id)))).filter(Boolean);
+    let registros = (await Promise.all([...ids.keys()].map((id) => obter(tabela, id)))).filter(Boolean);
+    // Config: duas linhas com a mesma chave (ids diferentes, criadas ao mesmo tempo) não podem ir no
+    // mesmo envio (o Supabase recusa "cannot affect row a second time"). Fica a mais nova; as outras saem.
+    const repetidas = [];
+    if (CHAVE_DE_CONFLITO[tabela] === 'user_id,chave') {
+      const porChave = new Map();
+      for (const r of registros) {
+        const outra = porChave.get(r.chave);
+        if (!outra) { porChave.set(r.chave, r); continue; }
+        const nova = String(r.atualizado_em || '') >= String(outra.atualizado_em || '') ? r : outra;
+        repetidas.push(nova === r ? outra : r);
+        porChave.set(r.chave, nova);
+      }
+      registros = [...porChave.values()];
+    }
     // user_id é preenchido pelo banco (auth.uid()); atualizado_em também.
     const corpo = registros.map(({ user_id: _u, atualizado_em: _a, ...resto }) => resto);
 
@@ -284,6 +298,16 @@ async function enviarTabela(tabela, ids) {
     await transacao([tabela, 'fila'], 'readwrite', async (tx) => {
       const loja = tx.objectStore('fila');
       const atuais = await comoPromessa(loja.getAll());
+      // Config repetida: as cópias perdedoras (e outras linhas locais da mesma chave) saem do aparelho.
+      if (CHAVE_DE_CONFLITO[tabela] === 'user_id,chave') {
+        const vencedoras = new Map(devolvidos.map((l) => [l.chave, l.id]));
+        const locais = await comoPromessa(tx.objectStore(tabela).getAll());
+        const sobrando = new Set([...repetidas.map((r) => r.id), ...locais.filter((l) => vencedoras.has(l.chave) && vencedoras.get(l.chave) !== l.id).map((l) => l.id)]);
+        for (const id of sobrando) {
+          tx.objectStore(tabela).delete(id);
+          for (const f of atuais) if (f.tabela === tabela && f.id === id) loja.delete(f.seq);
+        }
+      }
       for (const linha of devolvidos) {
         const ultimoSeq = ids.get(linha.id);
         const mudouDepois = atuais.some((f) => f.tabela === tabela && f.id === linha.id && f.seq > ultimoSeq);

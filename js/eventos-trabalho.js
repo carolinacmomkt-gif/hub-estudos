@@ -47,7 +47,12 @@ function mudarFiltro(campos) {
 }
 
 // Quais clientes são seus (Configurações → Trabalho): config "trabalho" { naoMeus }.
-async function marcarMeu(chave, meu) {
+let filaMeus = Promise.resolve();
+function marcarMeu(chave, meu) {
+  filaMeus = filaMeus.then(() => gravarMeu(chave, meu)).catch(() => {});
+  return filaMeus;
+}
+async function gravarMeu(chave, meu) {
   const atual = (await listar('config', { incluirExcluidos: true })).find((c) => c.chave === 'trabalho');
   const valor = { ...(atual?.valor || {}) };
   const fora = new Set(valor.naoMeus || []);
@@ -261,8 +266,10 @@ function atualizarRevisor(r) {
 }
 
 let esperaRevisor = null;
-export function mudancaTrabalho(alvo) {
+export function mudancaTrabalho(alvo, tipo) {
   const acao = alvo.dataset?.acaoMudar;
+  // Caixinhas: só o "change" grava (o "input" do mesmo toque gravaria de novo, ao mesmo tempo).
+  if (tipo === 'input' && alvo.type === 'checkbox' && /^tb-/.test(acao || '')) return true;
   if (acao === 'tb-filtro-cliente') {
     const estado = obterEstado();
     const f = filtroTrabalho(estado);

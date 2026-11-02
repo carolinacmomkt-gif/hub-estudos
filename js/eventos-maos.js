@@ -7,22 +7,25 @@ import { gravar } from './gravacao.js';
 import { confirmar, perguntarTexto } from './confirmar.js';
 import { EditorDeTinta, novaPaginaVazia } from './editor-tinta.js';
 import { dimensoes } from './folhas.js';
-import { vivosMaos, lerParametroMaos, svgFundoDaFolha, projetoDe } from './dados-maos.js';
+import { vivosMaos, lerParametroMaos, svgFundoDaFolha, projetoDe, svgColorir } from './dados-maos.js';
 import { listar, salvar } from './persistencia.js';
+import { atuais, dadosDe } from './maos-memoria.js';
 import {
   meuModelo, lerFonte, cinzaDe, limiarAutomatico, mascaraDe, pngDaMascara, mascaraDoDesenho, tracosNaCor,
-  fundoParaCobrir, criarPintura, miniaturaDoCanvas,
+  fundoParaCobrir, criarPintura, miniaturaDoCanvas, areaDoPonto,
 } from './maos-modelos.js';
+import { criarCamadaMao, mapaDoSvg, mascarasDoSvg, mascarasDoModelo } from './maos-pintar.js';
 
 let app;
 const avisar = (t) => app?.avisoCurto?.(t);
-const linhaDe = (id) => vivosMaos(obterEstado()).find((m) => m.id === id) || null;
+const linhaDe = (id) => { const l = vivosMaos(obterEstado()).find((m) => m.id === id); return l ? { ...l, dados: dadosDe(l) } : null; };
 const rota = (...partes) => `#cantinho/${['maos', ...partes].filter(Boolean).join(':')}`;
 const lerLocal = (chave, padrao) => { try { const v = localStorage.getItem(chave); return v === null ? padrao : JSON.parse(v); } catch { return padrao; } };
 const gravarLocal = (chave, valor) => { try { localStorage.setItem(chave, JSON.stringify(valor)); } catch { /* sem armazenamento: vale até fechar */ } };
 
 export function ligarMaos(funcoes) {
   app = funcoes;
+  atualizarEstado({ maosModo: lerLocal('hub.maos.modo', 'preencher'), maosPincel: lerLocal('hub.maos.pincel', {}), maosNaoSai: lerLocal('hub.maos.naoSai', true) });
   atualizarEstado({ maosDedo: lerLocal('hub.maos.dedo', !document.body.dataset.aparelho || document.body.dataset.aparelho !== 'tablet'), maosCaneta: lerLocal('hub.maos.caneta', {}), maosCrono: lerLocal('hub.maos.crono', null) });
   // Pintar: o toque numa parte do desenho (não é um botão, é um <path data-r>).
   document.addEventListener('click', (e) => {
@@ -36,7 +39,6 @@ export function ligarMaos(funcoes) {
 // ---------------------------------------------------------------------------
 
 const pendentes = new Map(); // id → dados ainda não gravados
-const atuais = new Map(); // id → a versão mais nova (vale mais que a que volta da gravação)
 let tempoGravar = null;
 const porNaMemoria = (id, dados) => atualizarEstado({ maos: (obterEstado().maos || []).map((m) => (m.id === id ? { ...m, dados } : m)) });
 function mudarDados(id, fn, { ja = false } = {}) {
@@ -85,6 +87,7 @@ function pintar(id, area) {
     if (tinta) cores[r] = tinta; else delete cores[r];
     d.cores = cores;
     d.historico = [...(d.historico || []), [r, antes]].slice(-80);
+    d.acoes = [...(d.acoes || []), 'c'].slice(-800);
   });
   if (!dados) return;
   area.style.fill = tinta ? `var(--pinta-${tinta})` : 'var(--maos-vazio)';
@@ -230,8 +233,9 @@ async function montarBalde(id) {
   const linha = linhaDe(id);
   const m = linha && meuModelo(String(linha.modelo).slice(4));
   if (!canvas || !m) return;
-  const obra = await criarPintura(canvas, m, linha.dados?.toques || [], Number(linha.dados?.vedar ?? 1));
+  const obra = await criarPintura(canvas, m, linha.dados?.toques || [], Number(linha.dados?.vedar ?? 1), document.querySelector('[data-maos-tracos]'));
   pintura = obra ? { id, obra, canvas } : null;
+  if (obra) montarMao(id, { l: obra.largura, a: obra.altura, ...mascarasDoModelo(obra.barreira, areaDoPonto) });
   canvas.addEventListener('click', (e) => {
     if (!pintura || pintura.canvas !== canvas) return;
     const r = canvas.getBoundingClientRect();
@@ -239,12 +243,144 @@ async function montarBalde(id) {
     const y = Math.round(((e.clientY - r.top) / r.height) * canvas.height);
     const n = Number(obterEstado().maosTinta ?? 6);
     if (!pintura.obra.tocar(x, y, n)) return;
-    const dados = mudarDados(id, (d) => { d.toques = [...(d.toques || []), [x, y, n]].slice(-400); });
+    const dados = mudarDados(id, (d) => { d.toques = [...(d.toques || []), [x, y, n]].slice(-400); d.acoes = [...(d.acoes || []), 't'].slice(-800); });
+    refazerPilha.delete(id);
     const desfazer = document.querySelector('[data-acao="maos-desfazer-toque"]');
     if (desfazer) desfazer.disabled = !dados?.toques?.length;
     clearTimeout(pintura.tempoMini);
     pintura.tempoMini = setTimeout(() => mudarDados(id, (d) => { d.miniatura = miniaturaDoCanvas(canvas); }), 1500);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Pintar à mão (camada do meio) e desfazer/refazer juntos com o preencher
+// ---------------------------------------------------------------------------
+
+let mao = null; // { id, camada }
+const refazerPilha = new Map(); // id → [{ tipo, item }] (só nesta sessão)
+const mapas = new Map(); // modelo → Promise<mapa das partes>
+
+function montarMao(id, { l, a, area, mascara }) {
+  const canvas = document.querySelector(`[data-maos-mao="${CSS.escape(id)}"]`);
+  if (!canvas) return;
+  const e = () => obterEstado();
+  const camada = criarCamadaMao({
+    canvas, l, a, palco: document.querySelector('[data-maos-palco]'),
+    tracos: linhaDe(id)?.dados?.mao || [],
+    area, mascara,
+    ativo: () => e().maosModo === 'mao',
+    dedo: () => Boolean(e().maosDedo),
+    pincel: () => (Number(e().maosTinta ?? 6) === 0 ? 'borracha' : e().maosPincel?.f || 'lapis'),
+    tamanho: () => Number(e().maosPincel?.t) || 18,
+    tinta: () => Number(e().maosTinta ?? 6) || 16,
+    naoSai: () => e().maosNaoSai !== false,
+    aoTerminar: (t) => {
+      mudarDados(id, (d) => { d.mao = [...(d.mao || []), t].slice(-500); d.acoes = [...(d.acoes || []), 'm'].slice(-800); });
+      refazerPilha.delete(id);
+      agendarMiniatura(id);
+    },
+  });
+  mao = { id, camada };
+}
+
+async function montarMaoSvg(id) {
+  const linha = linhaDe(id);
+  if (!linha) return;
+  if (!mapas.has(linha.modelo)) mapas.set(linha.modelo, mapaDoSvg(svgColorir(linha.modelo, {}), 1000, 1000));
+  const mapa = await mapas.get(linha.modelo);
+  if (!document.querySelector(`[data-maos-mao="${CSS.escape(id)}"]`)) return;
+  montarMao(id, { l: 1000, a: 1000, ...mascarasDoSvg(mapa) });
+}
+
+// Miniatura com tudo junto (preenchimento, pintura à mão e contornos), para a galeria.
+let tempoMiniatura = null;
+function agendarMiniatura(id) {
+  clearTimeout(tempoMiniatura);
+  tempoMiniatura = setTimeout(async () => {
+    const palco = document.querySelector('[data-maos-palco]');
+    if (!palco || !palco.offsetWidth) return;
+    const c = document.createElement('canvas');
+    c.width = 480; c.height = Math.round(480 * (palco.offsetHeight / palco.offsetWidth));
+    const x = c.getContext('2d');
+    const estilo = getComputedStyle(document.documentElement);
+    const cor = (v) => estilo.getPropertyValue(v).trim();
+    for (const el of palco.children) {
+      if (el.tagName === 'CANVAS') { if (el.width) x.drawImage(el, 0, 0, c.width, c.height); continue; }
+      if (el.tagName.toLowerCase() !== 'svg') continue;
+      // O SVG solto não lê as variáveis do tema: as cores entram por escrito só dentro da miniatura.
+      const svg = el.cloneNode(true);
+      svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      svg.setAttribute('width', c.width); svg.setAttribute('height', c.height);
+      const soLinha = svg.classList.contains('maos-contornos');
+      svg.querySelectorAll('path').forEach((p) => {
+        const preenchido = !soLinha && !p.classList.contains('maos-so-linha');
+        const fill = preenchido ? (p.style.fill || 'var(--maos-vazio)').replace(/var\((--[\w-]+)\)/, (_, v) => cor(v)) : 'none';
+        p.setAttribute('style', `fill: ${fill}; stroke: ${cor('--maos-linha')}; stroke-width: 1.4`);
+      });
+      const img = new Image();
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(svg))}`;
+      await img.decode().catch(() => {});
+      if (img.width) x.drawImage(img, 0, 0, c.width, c.height);
+    }
+    mudarDados(id, (d) => { d.miniatura = c.toDataURL('image/jpeg', 0.75); });
+  }, 1500);
+}
+
+function desfazerPintura(id) {
+  const linha = linhaDe(id);
+  if (!linha) return;
+  const d0 = linha.dados || {};
+  let tipo = [...(d0.acoes || [])].pop();
+  if (!tipo) tipo = d0.mao?.length ? 'm' : d0.toques?.length ? 't' : d0.historico?.length ? 'c' : null;
+  if (!tipo) return;
+  let item = null;
+  mudarDados(id, (d) => {
+    d.acoes = (d.acoes || []).slice(0, -1);
+    if (tipo === 'm') { item = d.mao?.[d.mao.length - 1]; d.mao = (d.mao || []).slice(0, -1); }
+    if (tipo === 't') { item = d.toques?.[d.toques.length - 1]; d.toques = (d.toques || []).slice(0, -1); }
+    if (tipo === 'c') {
+      const hist = [...(d.historico || [])];
+      const volta = hist.pop();
+      if (!volta) return;
+      item = [volta[0], (d.cores || {})[volta[0]] || 0, volta[1]];
+      const cores = { ...(d.cores || {}) };
+      if (volta[1]) cores[volta[0]] = volta[1]; else delete cores[volta[0]];
+      d.cores = cores; d.historico = hist;
+    }
+  });
+  if (!item) return;
+  refazerPilha.set(id, [...(refazerPilha.get(id) || []), { tipo, item }]);
+  redesenharDepois(id, tipo, item, false);
+}
+
+function refazerPintura(id) {
+  const pilha = refazerPilha.get(id) || [];
+  const ultimo = pilha.pop();
+  if (!ultimo) return;
+  const { tipo, item } = ultimo;
+  mudarDados(id, (d) => {
+    d.acoes = [...(d.acoes || []), tipo];
+    if (tipo === 'm') d.mao = [...(d.mao || []), item];
+    if (tipo === 't') d.toques = [...(d.toques || []), item];
+    if (tipo === 'c') {
+      const cores = { ...(d.cores || {}) };
+      if (item[1]) cores[item[0]] = item[1]; else delete cores[item[0]];
+      d.cores = cores; d.historico = [...(d.historico || []), [item[0], item[2]]];
+    }
+  });
+  redesenharDepois(id, tipo, item, true);
+}
+
+function redesenharDepois(id, tipo, item, refazendo) {
+  const dados = linhaDe(id)?.dados || {};
+  if (tipo === 'm' && mao?.id === id) mao.camada.redesenhar(dados.mao || []);
+  if (tipo === 't' && pintura?.id === id) pintura.obra.refazer(dados.toques || []);
+  if (tipo === 'c') {
+    const el = document.querySelector(`[data-maos-pintar] path[data-r="${CSS.escape(item[0])}"]`);
+    const corDaParte = refazendo ? item[1] : item[2];
+    if (el) el.style.fill = corDaParte ? `var(--pinta-${corDaParte})` : 'var(--maos-vazio)';
+  }
+  agendarMiniatura(id);
 }
 
 // ---------------------------------------------------------------------------
@@ -292,7 +428,9 @@ async function mudarModelo(id, fn) {
 export function montarMaos(parametro) {
   conferirTintas();
   const { tipo, id } = lerParametroMaos(parametro);
-  if (tipo === 'colorir' && id && String(linhaDe(id)?.modelo || '').startsWith('meu:')) montarBalde(id); else pintura = null;
+  mao = null;
+  if (tipo === 'colorir' && id && String(linhaDe(id)?.modelo || '').startsWith('meu:')) montarBalde(id);
+  else { pintura = null; if (tipo === 'colorir' && id) montarMaoSvg(id); }
   if (tipo === 'modelo') desenharPrevia(); else Object.assign(importacao, { fonte: null, giro: 0, cinza: null, limpar: 50, mascara: null });
   if (id && ['desenhar', 'escrever', 'caligrafia'].includes(tipo)) montarFolha(id); else soltarFolha();
   manterTelaAcesa(Boolean(id) || tipo === 'colorir');
@@ -410,6 +548,33 @@ export function cliqueMaos(alvo) {
       });
       return true;
     }
+    case 'maos-desfazer-pintura':
+      desfazerPintura(id);
+      return true;
+    case 'maos-refazer-pintura':
+      refazerPintura(id);
+      return true;
+    case 'maos-modo': {
+      atualizarEstado({ maosModo: valor });
+      gravarLocal('hub.maos.modo', valor);
+      marcarEscolha('[data-acao="maos-modo"]', valor);
+      const palco = document.querySelector('[data-maos-palco]');
+      if (palco) palco.dataset.modo = valor;
+      document.querySelectorAll('.maos-ferramentas-mao').forEach((el) => { el.hidden = valor !== 'mao'; });
+      const sub = document.querySelector('.ct-topo .ct-sub');
+      if (sub) sub.textContent = valor === 'mao' ? 'Pinte com o lápis, o giz ou o pincel. A pinça dá zoom.' : 'Toque numa cor e depois nas partes do desenho.';
+      if (valor !== 'mao') mao?.camada.zerarZoom();
+      return true;
+    }
+    case 'maos-pincel':
+    case 'maos-espessura': {
+      const campo = acao === 'maos-pincel' ? 'f' : 't';
+      const pincel = { ...(estado.maosPincel || {}), [campo]: campo === 'f' ? valor : Number(valor) };
+      atualizarEstado({ maosPincel: pincel });
+      gravarLocal('hub.maos.pincel', pincel);
+      marcarEscolha(`[data-acao="${acao}"]`, valor);
+      return true;
+    }
     case 'maos-desfazer-toque': {
       const dados = mudarDados(id, (d) => { d.toques = (d.toques || []).slice(0, -1); });
       if (pintura?.id === id) { pintura.obra.refazer(dados?.toques || []); mudarDados(id, (d) => { d.miniatura = miniaturaDoCanvas(pintura.canvas); }); }
@@ -519,6 +684,10 @@ export function mudancaMaos(alvo, tipo) {
     case 'maos-importar-limpar':
       importacao.limpar = Number(alvo.value);
       desenharPrevia();
+      return true;
+    case 'maos-nao-sai':
+      atualizarEstado({ maosNaoSai: alvo.checked });
+      gravarLocal('hub.maos.naoSai', alvo.checked);
       return true;
     case 'maos-dedo':
       atualizarEstado({ maosDedo: alvo.checked });

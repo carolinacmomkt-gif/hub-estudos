@@ -5,10 +5,13 @@ import { esc } from './utilidades.js';
 import {
   TIPOS_MAOS, tipoMaos, MODELOS_COLORIR, modeloColorir, svgColorir, RISCOS, PASSO_A_PASSO, passoAPasso, svgPassoAPasso, ideiaDoDia,
   FOLHAS_ESCREVER, MODELOS_CALIGRAFIA, modeloCaligrafia, TOTAL_TINTAS, NOMES_TINTAS, projetoDe, linkSeguro, IDEIAS_PADRAO, vivosMaos,
-  lerParametroMaos,
+  lerParametroMaos, svgContornos,
 } from './dados-maos.js';
 import { meusModelos, meuModelo } from './maos-modelos.js';
+import { PINCEIS, ESPESSURAS } from './maos-pintar.js';
+import { dadosDe } from './maos-memoria.js';
 
+const comAtuais = (lista) => lista.map((m) => ({ ...m, dados: dadosDe(m) }));
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' });
 const quandoFoi = (m) => fmtDia.format(new Date(m.atualizado_em || m.criado_em || Date.now()));
 const rota = (...partes) => `#cantinho/${['maos', ...partes].filter(Boolean).join(':')}`;
@@ -20,7 +23,7 @@ export function telaMaos(estado, topo, parametro, hoje) {
   if (tipo === 'ideia') return telaIdeias(estado, topo);
   if (tipo === 'modelo') return telaModeloNovo(estado, topo, lerParametroMaos(parametro).modelo || 'colorir');
   if (id) {
-    const linha = vivosMaos(estado).find((m) => m.id === id);
+    const linha = comAtuais(vivosMaos(estado)).find((m) => m.id === id);
     if (!linha) return `${topo('Com as mãos', { voltar: true, voltarPara: rota(tipo) })}<section class="ct-card"><p class="texto-suave">Esse trabalho não está mais aqui.</p></section>`;
     return linha.tipo === 'colorir' ? telaPintar(estado, topo, linha) : telaFolha(estado, topo, linha);
   }
@@ -37,6 +40,7 @@ export function telaMaos(estado, topo, parametro, hoje) {
 
 export function miniatura(m) {
   if (m.tipo === 'colorir' && String(m.modelo).startsWith('meu:')) return m.dados?.miniatura ? `<img src="${esc(m.dados.miniatura)}" alt="">` : '<span class="maos-mini-emoji" aria-hidden="true">🎨</span>';
+  if (m.tipo === 'colorir' && m.dados?.mao?.length && m.dados?.miniatura) return `<img src="${esc(m.dados.miniatura)}" alt="">`;
   if (m.tipo === 'colorir') return svgColorir(m.modelo, m.dados?.cores, { classe: 'maos-mini-svg', rotulo: m.titulo || '' });
   if (m.tipo === 'croche') return m.dados?.foto ? `<img src="${esc(m.dados.foto)}" alt="">` : '<span class="maos-mini-emoji" aria-hidden="true">🧶</span>';
   return m.dados?.miniatura ? `<img src="${esc(m.dados.miniatura)}" alt="">` : `<span class="maos-mini-emoji" aria-hidden="true">${tipoMaos(m.tipo)?.emoji || '✏️'}</span>`;
@@ -146,29 +150,53 @@ export function paletaDeTintas(estado, { borracha = true } = {}) {
   </div>`;
 }
 
+// Preencher (toque na parte ou balde) ou pintar à mão (lápis, giz, pincel, marca-texto, borracha).
+function ferramentasDaPintura(estado, depoisDasCores = '') {
+  const modo = estado.maosModo === 'mao' ? 'mao' : 'preencher';
+  const p = estado.maosPincel || {};
+  const f = p.f || 'lapis';
+  const t = Number(p.t) || 18;
+  return `
+    <div class="segmentado maos-seg maos-modo" role="radiogroup" aria-label="Jeito de colorir">
+      <button type="button" role="radio" aria-checked="${modo === 'preencher'}" aria-pressed="${modo === 'preencher'}" data-acao="maos-modo" data-valor="preencher">Preencher</button>
+      <button type="button" role="radio" aria-checked="${modo === 'mao'}" aria-pressed="${modo === 'mao'}" data-acao="maos-modo" data-valor="mao">Pintar à mão</button>
+    </div>
+    <p class="ct-rotulo">Cores</p>${paletaDeTintas(estado)}
+    ${depoisDasCores}
+    <div class="maos-ferramentas-mao" ${modo === 'mao' ? '' : 'hidden'}>
+      <p class="ct-rotulo">Pincel</p>
+      <div class="maos-chips" role="radiogroup" aria-label="Pincel">${PINCEIS.map((x) => `<button class="ct-chip" type="button" role="radio" aria-checked="${f === x.id}" aria-pressed="${f === x.id}" data-acao="maos-pincel" data-valor="${x.id}">${esc(x.nome)}</button>`).join('')}</div>
+      <p class="ct-rotulo">Espessura</p>
+      <div class="maos-chips" role="radiogroup" aria-label="Espessura">${ESPESSURAS.map(([n, nome]) => `<button class="ct-chip" type="button" role="radio" aria-checked="${t === n}" aria-pressed="${t === n}" data-acao="maos-espessura" data-valor="${n}">${nome}</button>`).join('')}</div>
+      <label class="campo-marcar"><input type="checkbox" data-acao-mudar="maos-nao-sai"${estado.maosNaoSai === false ? '' : ' checked'}> Não sai da linha</label>
+      <label class="campo-marcar"><input type="checkbox" data-acao-mudar="maos-dedo"${estado.maosDedo ? ' checked' : ''}> Dedo pinta (desligado: só a caneta; o dedo dá zoom)</label>
+    </div>`;
+}
+
+const botoesDesfazer = (linha) => `<button class="botao-icone" type="button" data-acao="maos-desfazer-pintura" data-id="${esc(linha.id)}" aria-label="Desfazer" title="Desfazer">↶</button><button class="botao-icone" type="button" data-acao="maos-refazer-pintura" data-id="${esc(linha.id)}" aria-label="Refazer" title="Refazer">↷</button><button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-excluir" data-id="${esc(linha.id)}">Excluir</button>`;
+
 function telaPintar(estado, topo, linha) {
   if (String(linha.modelo).startsWith('meu:')) return telaBalde(estado, topo, linha);
   const m = modeloColorir(linha.modelo);
   const pintadas = Object.keys(linha.dados?.cores || {}).length;
   return `
-    ${topo(linha.titulo || m?.nome || 'Colorir', { voltar: true, voltarPara: rota('colorir'), sub: 'Toque numa cor e depois nas partes do desenho.', acoes: `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-desfazer-cor" data-id="${esc(linha.id)}"${linha.dados?.historico?.length ? '' : ' disabled'}>Desfazer</button><button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-excluir" data-id="${esc(linha.id)}">Excluir</button>` })}
+    ${topo(linha.titulo || m?.nome || 'Colorir', { voltar: true, voltarPara: rota('colorir'), sub: estado.maosModo === 'mao' ? 'Pinte com o lápis, o giz ou o pincel. A pinça dá zoom.' : 'Toque numa cor e depois nas partes do desenho.', acoes: botoesDesfazer(linha) })}
     <div class="maos-pintar">
-      <div class="maos-pintar-arte" data-maos-pintar="${esc(linha.id)}">${svgColorir(linha.modelo, linha.dados?.cores)}</div>
-      <aside class="ct-card maos-pintar-cores"><p class="ct-rotulo">Cores</p>${paletaDeTintas(estado)}<p class="ct-dica-pequena"><span data-maos-contagem>${pintadas} ${pintadas === 1 ? 'parte pintada' : 'partes pintadas'}</span> · "⌫" tira a cor.</p></aside>
+      <div class="maos-zoom"><div class="maos-pintar-arte maos-camadas" data-maos-palco data-modo="${estado.maosModo === 'mao' ? 'mao' : 'preencher'}" data-maos-pintar="${esc(linha.id)}">${svgColorir(linha.modelo, linha.dados?.cores)}<canvas class="maos-camada-mao" data-maos-mao="${esc(linha.id)}" aria-label="Pintar à mão"></canvas>${svgContornos(linha.modelo)}</div></div>
+      <aside class="ct-card maos-pintar-cores">${ferramentasDaPintura(estado, `<p class="ct-dica-pequena"><span data-maos-contagem>${pintadas} ${pintadas === 1 ? 'parte pintada' : 'partes pintadas'}</span> · "⌫" tira a cor.</p>`)}</aside>
     </div>`;
 }
 
 const VEDAR = [[0, 'Nada'], [1, 'Pouco'], [2, 'Médio'], [3, 'Muito']];
 function telaBalde(estado, topo, linha) {
   const m = meuModelo(String(linha.modelo).slice(4), estado);
-  const toques = (linha.dados?.toques || []).length;
   const vedar = Number(linha.dados?.vedar ?? 1);
   if (!m) return `${topo(linha.titulo || 'Colorir', { voltar: true, voltarPara: rota('colorir') })}<section class="ct-card"><p class="texto-suave">O modelo deste desenho foi excluído.</p></section>`;
   return `
-    ${topo(linha.titulo || m.nome, { voltar: true, voltarPara: rota('colorir'), sub: 'Toque numa cor e depois dentro de uma área fechada.', acoes: `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-desfazer-toque" data-id="${esc(linha.id)}"${toques ? '' : ' disabled'}>Desfazer</button><button class="botao botao-secundario botao-pequeno" type="button" data-acao="maos-excluir" data-id="${esc(linha.id)}">Excluir</button>` })}
+    ${topo(linha.titulo || m.nome, { voltar: true, voltarPara: rota('colorir'), sub: estado.maosModo === 'mao' ? 'Pinte com o lápis, o giz ou o pincel. A pinça dá zoom.' : 'Toque numa cor e depois dentro de uma área fechada.', acoes: botoesDesfazer(linha) })}
     <div class="maos-pintar">
-      <div class="maos-pintar-arte maos-balde"><canvas data-maos-balde="${esc(linha.id)}" aria-label="${esc(m.nome)}: toque para pintar"></canvas></div>
-      <aside class="ct-card maos-pintar-cores"><p class="ct-rotulo">Cores</p>${paletaDeTintas(estado)}
+      <div class="maos-zoom"><div class="maos-pintar-arte maos-camadas maos-balde" data-maos-palco data-modo="${estado.maosModo === 'mao' ? 'mao' : 'preencher'}" style="--razao: ${Number(m.largura) && Number(m.altura) ? (Number(m.largura) / Number(m.altura)).toFixed(4) : 1}"><canvas data-maos-balde="${esc(linha.id)}" aria-label="${esc(m.nome)}: toque para pintar"></canvas><canvas class="maos-camada-mao" data-maos-mao="${esc(linha.id)}" aria-label="Pintar à mão"></canvas><canvas class="maos-camada-tracos" data-maos-tracos aria-hidden="true"></canvas></div></div>
+      <aside class="ct-card maos-pintar-cores">${ferramentasDaPintura(estado)}
         <p class="ct-rotulo maos-rotulo-vedar">Fechar falhinhas nas linhas</p>
         <div class="maos-vedar" role="radiogroup" aria-label="Fechar falhinhas">${VEDAR.map(([n, nome]) => `<button class="ct-chip" type="button" role="radio" aria-checked="${vedar === n}" aria-pressed="${vedar === n}" data-acao="maos-vedar" data-id="${esc(linha.id)}" data-valor="${n}">${nome}</button>`).join('')}</div>
         <p class="ct-dica-pequena">Se a tinta vazar para a área do lado, aumente. "⌫" tira a cor.</p></aside>
@@ -307,7 +335,7 @@ function contador(id, campo, valor, rotulo) {
 }
 
 function telaProjeto(estado, topo, id) {
-  const linha = vivosMaos(estado, 'croche').find((m) => m.id === id);
+  const linha = comAtuais(vivosMaos(estado, 'croche')).find((m) => m.id === id);
   if (!linha) return `${topo('Crochê', { voltar: true, voltarPara: rota('croche') })}<section class="ct-card"><p class="texto-suave">Esse projeto não está mais aqui.</p></section>`;
   const p = projetoDe(linha);
   const receita = linkSeguro(p.receita);

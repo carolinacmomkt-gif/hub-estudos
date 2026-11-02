@@ -154,7 +154,7 @@ export async function fundoParaCobrir(modelo, dim) {
 // ---------------------------------------------------------------------------
 
 // Barreiras: traço da imagem, engrossado "vedar" px para a tinta não vazar por falhinhas.
-function barreiras(img, vedar = 1) {
+export function barreiras(img, vedar = 1) {
   const c = canvasDe(img.width, img.height);
   const x = c.getContext('2d', { willReadFrequently: true });
   x.drawImage(img, 0, 0);
@@ -200,6 +200,30 @@ function balde(b, cores, x, y, rgba) {
   return pintados;
 }
 
+// A área fechada que contém (x, y): máscara (1 = dentro), para a pintura à mão não sair da linha.
+export function areaDoPonto(b, x, y) {
+  const { m, l, a } = b;
+  x = Math.round(x); y = Math.round(y);
+  if (x < 0 || y < 0 || x >= l || y >= a || m[y * l + x]) return null;
+  const visto = new Uint8Array(l * a);
+  const pilha = [[x, y]];
+  while (pilha.length) {
+    const [px, py] = pilha.pop();
+    let xi = px;
+    while (xi >= 0 && !m[py * l + xi] && !visto[py * l + xi]) xi -= 1;
+    xi += 1;
+    let acima = false; let abaixo = false;
+    while (xi < l && !m[py * l + xi] && !visto[py * l + xi]) {
+      const i = py * l + xi;
+      visto[i] = 1;
+      if (py > 0) { const livre = !m[i - l] && !visto[i - l]; if (livre && !acima) { pilha.push([xi, py - 1]); acima = true; } else if (!livre) acima = false; }
+      if (py < a - 1) { const livre = !m[i + l] && !visto[i + l]; if (livre && !abaixo) { pilha.push([xi, py + 1]); abaixo = true; } else if (!livre) abaixo = false; }
+      xi += 1;
+    }
+  }
+  return visto;
+}
+
 function rgbaDe(cor) {
   const c = canvasDe(1, 1);
   const x = c.getContext('2d', { willReadFrequently: true });
@@ -210,7 +234,7 @@ function rgbaDe(cor) {
 
 // Pintura de um modelo seu: papel, as áreas dos toques (em ordem) e os traços por cima. Cada toque
 // novo pinta só a área tocada (sem refazer tudo); desfazer refaz a partir dos toques guardados.
-export async function criarPintura(canvas, modelo, toques = [], vedar = 1) {
+export async function criarPintura(canvas, modelo, toques = [], vedar = 1, camadaTracos = null) {
   const img = await imagemDoModelo(modelo);
   if (!img) return null;
   canvas.width = img.width; canvas.height = img.height;
@@ -221,7 +245,9 @@ export async function criarPintura(canvas, modelo, toques = [], vedar = 1) {
   const tintas = new Map();
   const rgba = (n) => { if (!tintas.has(n)) tintas.set(n, n ? rgbaDe(cssVar(`--pinta-${n}`)) : papel); return tintas.get(n); };
   let cores;
-  const desenhar = () => { x.putImageData(cores, 0, 0); x.drawImage(tracos, 0, 0); };
+  // Com a camada de traços separada (pintura à mão no meio), os traços vão para ela, por cima de tudo.
+  if (camadaTracos) { camadaTracos.width = img.width; camadaTracos.height = img.height; camadaTracos.getContext('2d').drawImage(tracos, 0, 0); }
+  const desenhar = () => { x.putImageData(cores, 0, 0); if (!camadaTracos) x.drawImage(tracos, 0, 0); };
   const refazer = (lista) => {
     cores = x.createImageData(img.width, img.height);
     for (let i = 0; i < cores.data.length; i += 4) cores.data.set(papel, i);
@@ -232,6 +258,7 @@ export async function criarPintura(canvas, modelo, toques = [], vedar = 1) {
   return {
     largura: img.width,
     altura: img.height,
+    barreira: b,
     // Pinta a área de (tx, ty); devolve false se tocou num traço (fora de área).
     tocar(tx, ty, n) { const ok = balde(b, cores, tx, ty, rgba(n)) > 0; if (ok) desenhar(); return ok; },
     refazer,

@@ -211,6 +211,13 @@ export function svgColorir(id, cores = {}, { classe = 'maos-svg', rotulo = '' } 
   </svg>`;
 }
 
+// Só os contornos (por cima da pintura à mão; não recebe toque).
+export function svgContornos(id) {
+  const m = modeloColorir(id);
+  if (!m) return '';
+  return `<svg class="maos-contornos" viewBox="0 0 400 400" aria-hidden="true" preserveAspectRatio="xMidYMid meet">${m.areas.map((a) => `<path d="${a.d}"${a.regra ? ` fill-rule="${a.regra}"` : ''}/>`).join('')}${m.linhas.map((d) => `<path d="${d}"/>`).join('')}</svg>`;
+}
+
 // ---------------------------------------------------------------------------
 // Desenhar: riscos para cobrir, passo a passo e ideia do dia
 // ---------------------------------------------------------------------------

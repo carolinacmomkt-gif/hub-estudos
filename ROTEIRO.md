@@ -86,4 +86,6 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 - [x] **Com as mãos** ✓ (02/11/2026): colorir, desenhar, escrever, caligrafia, crochê e ideias, na Mesinha e no Meu cantinho; papel no padrão do app.
 - [x] **Correções** ✓ (02/11/2026): cores do Com as mãos (service worker), filtro opaco e folha no celular, quadro de vídeos na configuração antiga, cards com status curto, Próximas peças, calendários escolhidos por ela (Carol Pessoa) com diagnóstico.
 - [x] **Meus modelos** ✓ (02/11/2026): foto, imagem, PDF ou desenho da folha viram modelo para colorir com balde ou para cobrir.
+- [x] **Pintar à mão** ✓ (02/11/2026): lápis, giz, pincel, marca-texto e borracha por cima dos desenhos de colorir, com "não sai da linha".
+- [x] **Sincronização travada por config repetida** ✓ (02/11/2026).
 - [ ] Ainda do Pauta, para depois: blocos por cliente no Organizar minhas demandas, intenções da semana, importar a memória de feedback e os rascunhos do Neon, editor de páginas do Notion.
