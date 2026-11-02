@@ -191,6 +191,7 @@ function montarFolha(id) {
   }
   soltarFolha();
   const editor = new EditorDeTinta(lugar, { aoMudar: () => { if (!folha) return; folha.sujo = true; clearTimeout(folha.tempo); folha.tempo = setTimeout(() => guardarFolha(), 1200); } });
+  editor.prefixoFixo = '--tinta-'; // o fundo é o papel do tema com a guia: as cores são as de sempre
   aplicarCaneta(editor);
   const pagina = linha.dados?.pagina?.camadas ? linha.dados.pagina : novaPaginaVazia(modeloDaFolha(linha));
   pagina.modelo = modeloDaFolha(linha);

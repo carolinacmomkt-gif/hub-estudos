@@ -681,8 +681,10 @@ export class EditorDeTinta {
     pintarTraco(ctx, traco, caminho, this.prefixoTinta());
   }
 
+  // Fundo de PDF ou de modelo importado é papel claro: usa as tintas de impressão. Quem usa o fundo só
+  // como guia no papel do tema (Com as mãos) fixa a paleta em "prefixoFixo".
   prefixoTinta() {
-    return this.imagemFundo ? '--impressao-tinta-' : '--tinta-';
+    return this.prefixoFixo || (this.imagemFundo ? '--impressao-tinta-' : '--tinta-');
   }
 
   desenharItem(ctx, item) {
