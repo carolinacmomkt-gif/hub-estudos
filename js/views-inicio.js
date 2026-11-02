@@ -24,6 +24,8 @@ import { cardSubstackInicio } from './views-substack.js';
 import { cardFocoInicio } from './views-foco.js';
 import { cardContinuar } from './continuar.js';
 import { cardResumoInicio } from './views-resumo.js';
+import { cardComecePorAqui } from './views-trabalho.js';
+import { comecePorAqui, teseDoDia, pecasAtivas } from './dados-trabalho.js';
 import { dadosReaisDoInicio, avisosRecentes, disciplinasComFaltasEmRisco, textoFaltas, urgenciaFaltas, listaQuantoPrecisa, URGENCIA_NOTA } from './dados-faculdade.js';
 import {
   esc, saudacao, dataLonga, diaEHora, contagemRegressiva, urgencia,
@@ -378,6 +380,7 @@ export function renderInicio(estado) {
     proximo: () => cardProximoPasso(escolherProximoPasso(dados, agora)),
     continuar: () => (estado.usandoExemplo ? '' : cardContinuar(estado, agora)),
     meudia: () => (estado.usandoExemplo ? '' : cardMeuDia(estado, agora)),
+    trabalho: () => cardTrabalhoHoje(estado, agora),
     demandas: () => (estado.usandoExemplo ? '' : cardDemandas(estado, agora)),
     agenda: () => (estado.usandoExemplo ? '' : cardAgendaHoje(estado, agora)),
     humor: () => cardHumor(estado, agora),
@@ -441,4 +444,13 @@ export function renderInicio(estado) {
     ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
     ${editando ? painelPersonalizar(blocos, proprios) : `<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar</button>${estado.usandoExemplo ? '' : botaoDiaLeve(false)}</div>`}
     <div class="painel${editando ? ' painel-editando' : ''}">${html}</div>`;
+}
+
+// Comece por aqui (trabalho): até 3 coisas da agência e a tese do dia, só em dia de semana.
+function cardTrabalhoHoje(estado, agora) {
+  if (estado.usandoExemplo || !pecasAtivas(estado).length) return '';
+  const d = new Date(agora);
+  if (d.getDay() === 0 || d.getDay() === 6) return '';
+  const hoje = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return cardComecePorAqui(estado, comecePorAqui(estado, hoje), teseDoDia(hoje));
 }

@@ -9,6 +9,7 @@ Rode só as que ainda não rodou (o app avisa em Configurações → Sincroniza�
 - `supabase/migracoes/002-faculdade.sql` … `009-vida.sql` (as da fase 1 e das áreas de vida)
 - `supabase/migracoes/010-demandas.sql` (Caixa de demandas)
 - `supabase/migracoes/011-livros.sql` (livros na Biblioteca e a caneta por cima do PDF)
+- `supabase/migracoes/012-trabalho.sql` (grupo Trabalho: o Pauta dentro da Bússola)
 
 ## 2. Netlify → Site configuration → Environment variables
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
@@ -26,6 +27,14 @@ Depois de criar ou mudar uma variável, faça um novo deploy ("Trigger deploy").
 - Notion: cole o segredo da conexão interna e escolha as bases.
 - Avisos: ative e escolha os horários (no iPhone, só com o app na Tela de Início).
 - Horas protegidas, meta de leitura, vidro e tema do seu jeito.
+
+## 3a. Trabalho (o Pauta dentro da Bússola)
+- **Gere um segredo novo do Notion** (o que foi colado no chat em 01/11 precisa ser trocado): notion.so/profile/integrations → a conexão do trabalho → "Refresh"/gerar de novo. Marque as permissões de ler, atualizar, inserir conteúdo e comentários.
+- Ligue a conexão a cada um dos 8 calendários e às 2 bases de clientes (na página de cada um: ••• → Conexões → a sua conexão).
+- No app: Configurações → Trabalho → cole o segredo novo → Conectar. Ele fica criptografado e nunca volta para a tela.
+- Configurações → Demandas → Trello: toque em "Conectar" de novo, para a autorização passar a deixar mover cartões e comentar (nada é apagado no Trello).
+- Deixe o Pauta da Vercel no ar até conferir que Conteúdo, Aprovar, Clientes e Criar mostram o mesmo que ele.
+- A memória de feedback, as fichas e os rascunhos do Pauta (no Neon) não vêm sozinhos: as fichas voltam do Notion na primeira sincronização; a memória você pode reescrever em Clientes → Memória.
 
 ## 3b. Meu cantinho (nada a configurar, só usar)
 - Em Dormir, escolha a hora de acordar e toque numa hora de deitar: o aviso "hora de desligar" chega 30 min antes (precisa dos avisos ligados).

@@ -378,7 +378,7 @@ create table if not exists public.config (
 create table if not exists public.conexoes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  servico text not null check (servico in ('ava', 'lyceum', 'trello', 'notion')),
+  servico text not null check (servico in ('ava', 'lyceum', 'trello', 'notion', 'notion_trabalho')),
   status text not null default 'desconectado' check (status in ('conectado', 'desconectado', 'erro', 'reconectar')),
   conectado_em timestamptz,
   ultima_sincronizacao timestamptz,
@@ -542,7 +542,7 @@ revoke all on public.avisos_enviados from anon, authenticated;
 -- Segredos criptografados (AES-256-GCM, chave TOKEN_CRYPTO_KEY só na Netlify).
 create table if not exists public.credenciais (
   user_id uuid not null references auth.users (id) on delete cascade,
-  servico text not null check (servico in ('ava', 'lyceum', 'trello', 'notion')),
+  servico text not null check (servico in ('ava', 'lyceum', 'trello', 'notion', 'notion_trabalho')),
   dados_cifrados text not null,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
@@ -793,6 +793,76 @@ create trigger tocar_atualizado_em before insert or update on public.credenciais
 alter table public.credenciais enable row level security;
 -- Sem nenhuma política: anon e authenticated não leem nem escrevem.
 revoke all on public.credenciais from anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Grupo Trabalho (migração 012): conteúdos, clientes da agência e rascunhos
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.conteudos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  origem text not null check (origem in ('notion', 'trello')),
+  origem_id text not null,       -- id da página do Notion ou do cartão do Trello
+  fonte text,                    -- nome do calendário ou "Trello: <quadro>"
+  cliente text,                  -- chave do cliente (clientes_trabalho.chave)
+  cliente_nome text,
+  titulo text not null,
+  data date,                     -- data de postagem
+  entrega date,                  -- entrega interna (no quadro da designer, o prazo do design)
+  status text,                   -- "Liberação" no Notion, a lista no Trello
+  formato text,
+  url text,
+  editado_em timestamptz,
+  texto text,
+  dados jsonb not null default '{}'::jsonb, -- pilar, objetivo, serie, feedback, link_arte, opcoes, listas, etiquetas, producao, fluxo, mudanca
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create unique index if not exists conteudos_origem_uk on public.conteudos (user_id, origem, origem_id);
+
+create table if not exists public.clientes_trabalho (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  chave text not null,           -- "dra-anisse"
+  nome text not null,
+  casa text check (casa in ('essence', 'confluir', 'minha')),
+  notion_id text,
+  url text,
+  dados jsonb not null default '{}'::jsonb, -- status, nicho, instagram, servicos, ficha, memoria [{ id, texto, em, origem }], cor
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+create unique index if not exists clientes_trabalho_chave_uk on public.clientes_trabalho (user_id, chave);
+
+create table if not exists public.rascunhos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  cliente text,
+  formato text,
+  objetivo text,
+  tema text,
+  texto text,
+  conteudo_id uuid,              -- a peça criada no calendário a partir deste rascunho
+  dados jsonb not null default '{}'::jsonb,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  excluido_em timestamptz
+);
+
+do $$
+declare t text;
+begin
+  foreach t in array array['conteudos', 'clientes_trabalho', 'rascunhos'] loop
+    execute format('drop trigger if exists tocar_atualizado_em on public.%I', t);
+    execute format('create trigger tocar_atualizado_em before insert or update on public.%I for each row execute function public.tocar_atualizado_em()', t);
+    execute format('create index if not exists %I on public.%I (user_id, atualizado_em)', t || '_sinc_idx', t);
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists "dona" on public.%I', t);
+    execute format('create policy "dona" on public.%I for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())', t);
+  end loop;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Storage: PDFs, imagens e páginas de caderno (pasta = id da usuária)

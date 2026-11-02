@@ -38,6 +38,11 @@
 
   --cor-sucesso: #A9D3A3;
   --cor-sucesso-fundo: rgba(169, 211, 163, 0.16);
+  /* Grupo Trabalho: uma cor por cliente (bolinhas e chips) e os tons de status */
+  --cliente-1: #C9A27E; --cliente-2: #A9BDE0; --cliente-3: #A9D3A3; --cliente-4: #D8A7B1; --cliente-5: #E8D3BF; --cliente-6: #B9A3D6;
+  --tb-alerta: #E4B4A6; --tb-alerta-fundo: rgba(228, 180, 166, 0.16);
+  --tb-espera: #E8B77A; --tb-espera-fundo: rgba(232, 183, 122, 0.15);
+  --tb-producao: #A9BDE0; --tb-producao-fundo: rgba(169, 189, 224, 0.15);
 
   /* Urgência dos prazos: atrasado (vermelho), menos de 48h (laranja), semana (bege) */
   --urg-atrasado: #EC7C66;
@@ -118,6 +123,10 @@
 
   --cor-sucesso: #3B7537;
   --cor-sucesso-fundo: #DDEBD9;
+  --cliente-1: #9A6B43; --cliente-2: #4D6EA8; --cliente-3: #3B7537; --cliente-4: #A4566A; --cliente-5: #8A6A4C; --cliente-6: #6F5596;
+  --tb-alerta: #9E3E28; --tb-alerta-fundo: #F6E1DA;
+  --tb-espera: #8A5A12; --tb-espera-fundo: #F6E8D2;
+  --tb-producao: #3D5D96; --tb-producao-fundo: #E1E8F4;
 
   --urg-atrasado: #C0392B;
   --urg-atrasado-fundo: #F9DED8;

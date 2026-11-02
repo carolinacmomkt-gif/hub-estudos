@@ -9,6 +9,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 - **YouTube** (planejamento do canal).
 - **Cadernos** com escrita à mão.
 - **Calendário**.
+- **Trabalho** (o Pauta dentro da Bússola, 01/11/2026): Conteúdo, Aprovar, Clientes e Criar.
 - **Vida** (fase 2, ver ROTEIRO.md): Hoje, tarefas e projetos, hábitos e rotinas, finanças (com gamificação e recompensas), diário, casa, consultoria (carteira de clientes e produto), metas e lazer.
 
 ## Regras gerais
@@ -34,7 +35,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens, e `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros) |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens, `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros, e `trabalho` (ação `ia`), que escreve peças no método da Essence com a memória de cada cliente) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -73,6 +74,7 @@ A base é a identidade da Central de Conteúdo.
 7. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
 9. **Calendário**: visão de mês, semana e lista, com eventos da faculdade e eventos próprios.
 10. **Pergunte à Bússola** (`#buscar`, lupa no topo de todas as telas): busca no aparelho em tudo (`js/dados-busca.js`) e "Perguntar", que manda à IA só o resumo da pergunta (`contextoDaPergunta`) e mostra a resposta com links para os itens.
+11. **Trabalho** (grupo próprio no menu; detalhes em "Trabalho (o Pauta dentro da Bússola)"): Conteúdo, Aprovar, Clientes e Criar.
 
 ## Cadernos (requisito importante)
 
@@ -212,10 +214,21 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - **Regra**: o app nunca tenta contornar o reCAPTCHA. Se o login exigir captcha, a conexão usa a sessão que a própria Carol abre no portal.
 - Tudo do Lyceum é **somente leitura**: o app nunca mexe em matrícula, financeiro, serviços ou contratos.
 
+## Trabalho (o Pauta dentro da Bússola)
+
+- Decisão da Carol (01/11/2026): o Pauta (Next.js + Neon na Vercel) vem para a Bússola, no padrão dela, num grupo **Trabalho** do menu. O Pauta fica no ar até ela conferir.
+- **Telas** (`js/views-trabalho.js`, `eventos-trabalho.js`, `dados-trabalho.js`, `css/trabalho.css`): **Conteúdo** (`#conteudo`, semana ou lista, filtros por casa Essence / Confluir / Minha marca e por cliente, cores `--cliente-1..6`, card "O que mudou sem você" com Dar baixa, radar de buracos; `#conteudo/<id>` é a ficha da peça: status e data, texto lido do Notion, comentar com "Guardar na memória", Focar, Abrir no Criar), **Aprovar** (`#aprovar`: Com o design (prazo 5 dias, cobrança pronta) → Com você (mensagem pronta, Mandei) → Com o cliente (Ajuste / Aprovou, "cobrar?" depois de 2 dias) → Agendar (Agendei); arrastar pela alça ou botões; no celular, abas), **Clientes** (`#clientes`, `#clientes/<chave>`: saúde, números, próximas, memória de feedback, ficha do Notion sem a seção de acessos) e **Criar** (`#criar`: cliente, formato, objetivo, tema, texto com revisor ao vivo (`revisar`, regras de saúde para clientes da área), IA "Gerar", "Melhorar o gancho", "Preparar o pedido da arte", modelos por formato, rascunhos e "Criar no Notion").
+- **Dados** (migração 012): `conteudos` (cópia das peças do Notion e do Trello, `unique (user_id, origem, origem_id)`; o app grava só `dados.fluxo` (`enviadoEm`, `aprovadoEm`, `agendadoEm`, `rodadas`) e `dados.mudanca.visto`), `clientes_trabalho` (`chave`, `casa` essence|confluir|minha, `dados.memoria[]`, `dados.ficha`, `dados.cor`) e `rascunhos`. Credencial e conexão próprias: `notion_trabalho` (segredo criptografado, separado do Notion só leitura da Caixa de demandas).
+- **Fontes**: os 8 calendários e as 2 bases de clientes do Pauta ficam em `netlify/lib/trabalho-fontes.mjs`. Notion API `2025-09-03` (databases → data_sources). Trello: o quadro dos designers e os quadros dos clientes escolhidos em Configurações → Demandas (no quadro dos designers o cliente vem pela etiqueta e a data é o prazo do design).
+- **Funções**: `trabalho` (conectar, desconectar, situacao, partes, sincronizar por parte `clientes` | `cal:<n>` | `trello`, mudar, comentar, texto, criar, ia) e `trabalho-agendado` (de hora em hora, 7h–20h em Brasília, em partes, retomando de `detalhe.proximaParte`). O app sincroniza sozinho ao abrir uma tela do Trabalho se faz mais de 1h.
+- **Escrita com trava** (exceção à regra de só leitura, decidida pela Carol em 01/11/2026): no Notion só muda status, data, comentários e cria páginas nos calendários da lista (`rotaNotionPermitida`; nunca mexe na estrutura das bases nem apaga); no Trello só muda lista, data, descrição e comenta (nada é apagado). O Trello precisa da autorização `scope=read,write` (reconectar em Demandas).
+- **Junções**: "Comece por aqui" + tese do dia no Hoje (dias úteis, bloco `trabalho` do Personalizar), "Focar nesta peça" leva a peça para o Foco, avisos das 7h (comece por aqui e o que mudou), 12h (artes para mandar e agendar) e 17h (o que ainda está com ela), só em dia útil (`avisosDoTrabalho` em `avisos-vida.mjs`, liga/desliga em Configurações → Avisos).
+- Fora por enquanto: blocos por cliente no Organizar, intenções da semana, importar memória e rascunhos do Neon, editor de páginas do Notion.
+
 ## Caixa de demandas (Trello, Notion e mensagens)
 
 - Decisão da Carol (28/10/2026): juntar as demandas do Trello, do Notion e das mensagens do WhatsApp numa caixa no Hoje; nada vira tarefa sem o OK dela. Gmail fica de fora.
-- **Só leitura**: o app nunca cria, muda ou apaga nada no Trello nem no Notion.
+- **Só leitura**: a Caixa de demandas nunca cria, muda ou apaga nada no Trello nem no Notion (a exceção, com trava, é o grupo Trabalho).
 - **Trello**: autorização oficial (`trello.com/1/authorize`, `scope=read`, `expiration=never`) com a chave do app em `TRELLO_API_KEY` (pública) e o token da Carol guardado criptografado em `credenciais`. Entram os cartões em que ela é membro, abertos, sem "concluído" e fora de listas como "Feito"/"Concluído".
 - **Notion**: conexão interna criada pela Carol (segredo colado uma vez, criptografado); ela escolhe até 8 bases. Entram as páginas editadas nos últimos 30 dias sem status de concluída.
 - **WhatsApp**: não há API para conversas pessoais e os jeitos não oficiais arriscam o número, então **nunca** use bibliotecas não oficiais. Caminho: Web Share Target (Compartilhar → Bússola, só no Android) ou "Colar mensagem" (iPhone).
@@ -290,6 +303,7 @@ Tabelas:
 - `videos` (YouTube)
 - `config` (tema, horários de aviso, token do AVA criptografado)
 - `demandas` (migração 010): Caixa de demandas
+- `conteudos`, `clientes_trabalho` e `rascunhos` (migração 012): grupo Trabalho
 - `livro_paginas` (migração 011): tinta da caneta por cima das páginas dos livros em PDF; a 011 também cria `artigos.dados`
 - áreas de vida (migração 009): `projetos`, `tarefas`, `habitos`, `habito_registros`, `diario`, `saude`, `clientes`, `consultoria`, `financas`, `casa`, `metas`, `lazer`, cada uma com um campo `dados` (jsonb) para os detalhes
 

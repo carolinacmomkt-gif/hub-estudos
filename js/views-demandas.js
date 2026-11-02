@@ -191,11 +191,12 @@ function situacao(c) {
     </div>`;
 }
 
-// Página de autorização do Trello (só leitura). Com retorno, volta para a Bússola com "#token=...";
+// Página de autorização do Trello. Com retorno, volta para a Bússola com "#token=...";
 // sem retorno, o Trello mostra o token na tela para copiar (jeito que funciona em qualquer aparelho).
 export function linkDoTrello(chave, retorno) {
   if (!chave) return null;
-  const p = new URLSearchParams({ expiration: 'never', scope: 'read', response_type: 'token', name: 'Bússola', key: chave });
+  // Ler e escrever: o grupo Trabalho move os cartões no Aprovar (a Caixa de demandas continua só lendo).
+  const p = new URLSearchParams({ expiration: 'never', scope: 'read,write', response_type: 'token', name: 'Bússola', key: chave });
   if (retorno) p.set('return_url', retorno);
   return `https://trello.com/1/authorize?${p}`;
 }

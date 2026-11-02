@@ -27,6 +27,8 @@ import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
 import { renderRetrospectiva } from './views-retrospectiva.js';
 import { renderCantinho } from './views-cantinho.js';
+import { renderConteudo, renderAprovar, renderClientes, renderCriar } from './views-trabalho.js';
+import { montarTrabalho } from './eventos-trabalho.js';
 import { montarCantinho, desmontarCantinho } from './eventos-cantinho.js';
 import { renderBusca } from './views-busca.js';
 import { montarBusca, dadosDaBusca } from './eventos-busca.js';
@@ -72,6 +74,10 @@ const VIEWS = {
   resumo: renderResumo,
   retrospectiva: renderRetrospectiva,
   cantinho: renderCantinho,
+  conteudo: renderConteudo,
+  aprovar: renderAprovar,
+  clientes: renderClientes,
+  criar: renderCriar,
   buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
 };
 
@@ -95,6 +101,10 @@ const CICLO = {
   },
   livro: { montar: (id) => id && montarLeitor(id), desmontar: desmontarLeitor },
   cantinho: { montar: montarCantinho, desmontar: desmontarCantinho },
+  conteudo: { montar: montarTrabalho, desmontar: () => {} },
+  aprovar: { montar: montarTrabalho, desmontar: () => {} },
+  clientes: { montar: montarTrabalho, desmontar: () => {} },
+  criar: { montar: montarTrabalho, desmontar: () => {} },
 };
 let telaMontada = null;
 
@@ -210,6 +220,9 @@ const TABELAS_NA_MEMORIA = {
   habito_registros: 'habitoRegistros',
   metas: 'metas',
   lazer: 'lazer',
+  conteudos: 'conteudos',
+  clientes_trabalho: 'clientesTrabalho',
+  rascunhos: 'rascunhos',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -226,7 +239,10 @@ async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
 const TELAS_DA_TABELA = {
   caixa_entrada: ['inicio'],
   demandas: ['inicio'],
-  conexoes: ['configuracoes', 'faculdade', 'inicio'],
+  conexoes: ['configuracoes', 'faculdade', 'inicio', 'conteudo', 'aprovar', 'clientes', 'criar'],
+  conteudos: ['conteudo', 'aprovar', 'clientes', 'inicio'],
+  clientes_trabalho: ['clientes', 'criar', 'conteudo', 'aprovar'],
+  rascunhos: ['criar'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],

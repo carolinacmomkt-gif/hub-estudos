@@ -8,6 +8,7 @@ import { situacaoDasContas, cartoes, fatura, mesDe, somarMeses } from '../../js/
 import { noFuso } from './avisos.mjs';
 import { valeNoDia } from '../../js/dados-cuidar.js';
 import { somarDias } from '../../js/dados-tarefas.js';
+import { comecePorAqui, quadroDeAprovar, pecasAtivas, oQueMudou } from '../../js/dados-trabalho.js';
 
 // Igual a VIDA_PADRAO em js/avisos.js.
 export const VIDA_PADRAO = {
@@ -15,6 +16,7 @@ export const VIDA_PADRAO = {
   contas: { ativo: true, hora: '09:00' },
   habitos: { ativo: true, hora: '20:00' },
   blocos: { ativo: true },
+  trabalho: { ativo: true },
   silencio: { ativo: true, de: '22:00', ate: '07:00' },
 };
 
@@ -32,6 +34,7 @@ export function configVida(valor) {
     contas: item('contas'),
     habitos: item('habitos'),
     blocos: { ativo: v.blocos?.ativo ?? VIDA_PADRAO.blocos.ativo },
+    trabalho: { ativo: v.trabalho?.ativo ?? VIDA_PADRAO.trabalho.ativo },
     silencio: {
       ativo: v.silencio?.ativo ?? VIDA_PADRAO.silencio.ativo,
       de: horaOk(v.silencio?.de, VIDA_PADRAO.silencio.de),
@@ -198,6 +201,38 @@ export function avisosDaVida({ dados, config, fuso = 'America/Sao_Paulo', agora 
       saida.push({ chave: `bloco:${hoje}:${b.inicio}`, titulo: `Agora: ${b.titulo}`, texto: `Até ${b.fim}.${b.motivo ? ` ${b.motivo}` : ''}`, tag: `bloco-${hoje}`, url: '/#inicio' });
     }
   }
-  const ORDEM = ['manha', 'contas', 'habitos', 'bloco'];
+  saida.push(...avisosDoTrabalho(dados, cfg, hoje, agoraMin, enviados));
+  const ORDEM = ['manha', 'trabalho-manha', 'contas', 'trabalho-meio', 'trabalho-tarde', 'habitos', 'bloco'];
   return saida.sort((a, b) => ORDEM.indexOf(a.chave.split(':')[0]) - ORDEM.indexOf(b.chave.split(':')[0]));
+}
+
+// Grupo Trabalho (os avisos do Pauta): 7h "comece por aqui", 12h artes para mandar e agendar,
+// 17h o que ainda está com ela. Só em dia útil e só quando há peças copiadas do Notion/Trello.
+const JANELAS_TRABALHO = { 'trabalho-manha': [7 * 60, 11 * 60], 'trabalho-meio': [12 * 60, 14 * 60], 'trabalho-tarde': [17 * 60, 19 * 60] };
+export function avisosDoTrabalho(dados, cfg, hoje, agoraMin, enviados) {
+  const dia = new Date(`${hoje}T12:00:00Z`).getUTCDay();
+  if (!cfg.trabalho?.ativo || dia === 0 || dia === 6) return [];
+  const estado = { conteudos: dados.conteudos || [], clientesTrabalho: dados.clientesTrabalho || [] };
+  const pecas = pecasAtivas(estado);
+  if (!pecas.length) return [];
+  const momento = Object.keys(JANELAS_TRABALHO).find((k) => agoraMin >= JANELAS_TRABALHO[k][0] && agoraMin < JANELAS_TRABALHO[k][1]);
+  if (!momento || enviados.has(`${momento}:${hoje}`)) return [];
+  const chave = `${momento}:${hoje}`;
+  const tag = `${momento}-${hoje}`;
+  const q = quadroDeAprovar(pecas);
+  if (momento === 'trabalho-manha') {
+    const itens = comecePorAqui(estado, hoje, 3);
+    const mudou = oQueMudou(pecas).length;
+    if (!itens.length && !mudou) return [];
+    const texto = [itens.map((i, n) => `${n + 1}. ${i.titulo}`).join(' · '), mudou ? `${plural(mudou, 'peça mudou', 'peças mudaram')} sem você.` : ''].filter(Boolean).join(' ');
+    return [{ chave, titulo: 'Trabalho: comece por aqui', texto, tag, url: '/#aprovar' }];
+  }
+  const mandar = q.voce.length;
+  const agendar = q.agendar.length;
+  if (momento === 'trabalho-meio') {
+    const partes = [mandar && `${plural(mandar, 'arte', 'artes')} para mandar ao cliente`, agendar && `${agendar} para agendar`].filter(Boolean);
+    return partes.length ? [{ chave, titulo: 'Meio do dia', texto: `${partes.join(' · ')}.`, tag, url: '/#aprovar' }] : [];
+  }
+  if (!mandar && !agendar) return [];
+  return [{ chave, titulo: 'Perto de fechar', texto: `Ainda ${mandar + agendar === 1 ? 'tem 1 arte' : `tem ${mandar + agendar} artes`} com você. O que ficar aberto passa para amanhã. Sem culpa.`, tag, url: '/#aprovar' }];
 }

@@ -9,6 +9,7 @@ import { cardAvisos, cardPlanoPrefs } from './views-avisos.js';
 import { cardConfigDemandas } from './views-demandas.js';
 import { cardWidgets } from './views-widgets.js';
 import { cardProtegidos } from './views-protegidos.js';
+import { cardTrabalhoConfig } from './views-trabalho.js';
 import { cardConfigLeitura } from './views-leitura.js';
 import { chaveDoTrello } from './nuvem.js';
 
@@ -228,6 +229,7 @@ export function renderConfiguracoes(estado) {
         resumo: (d) => `<span>${esc([d.curso, d.turno, d.serie].filter(Boolean).join(' · ') || 'Portal do aluno')}</span>`,
       })}
       ${cardConfigDemandas(estado, chaveDoTrello())}
+      ${cardTrabalhoConfig(estado)}
       ${cardWidgets(estado)}
     </div>`;
 }

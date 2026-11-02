@@ -9,6 +9,7 @@ import { listar, salvar } from './persistencia.js';
 
 export const GRUPOS_PADRAO = [
   { id: 'dia', nome: 'Meu dia' },
+  { id: 'trabalho', nome: 'Trabalho' },
   { id: 'faculdade', nome: 'Faculdade' },
   { id: 'estudos', nome: 'Estudos' },
   { id: 'criacao', nome: 'Criação' },
@@ -41,7 +42,11 @@ export function organizacaoDoMenu(estado = obterEstado()) {
     if (!g) {
       const padrao = GRUPOS_PADRAO.find((x) => x.id === r.grupo) || { id: r.grupo || 'outros', nome: 'Outros' };
       g = { ...padrao, aberto: true, itens: [] };
-      grupos.push(g);
+      // Grupo novo (de uma atualização) entra no lugar dele na ordem padrão, não no fim.
+      const ordem = GRUPOS_PADRAO.findIndex((x) => x.id === g.id);
+      const depois = ordem < 0 ? -1 : grupos.findIndex((x) => GRUPOS_PADRAO.findIndex((y) => y.id === x.id) > ordem);
+      if (depois < 0) grupos.push(g);
+      else grupos.splice(depois, 0, g);
     }
     g.itens.push(r.id);
   }

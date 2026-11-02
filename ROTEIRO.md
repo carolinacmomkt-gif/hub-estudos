@@ -81,4 +81,5 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 ## Depois do fechamento (01/11/2026)
 
 - [x] **Questões fora do app** ✓: a faculdade está acabando; tela, gerador, simulados, revisão espaçada e atalhos saíram. As tabelas ficam no Supabase.
-- [ ] **Pauta dentro do Bússola (grupo Trabalho)**: Conteúdo, Aprovar, Clientes e Criar, no padrão do Bússola, juntando o resto do Pauta com Hoje, Organizar, Foco e Caixa de demandas. Prévia aprovada pela Carol em 01/11/2026.
+- [x] **Pauta dentro do Bússola (grupo Trabalho)** ✓ (02/11/2026): Conteúdo (semana, lista, ficha da peça, "O que mudou sem você", radar de buracos), Aprovar (design → você → cliente → agendar, com arrastar), Clientes (casas, saúde, memória de feedback, ficha do Notion), Criar (IA com o método e a memória, revisor ao vivo, modelos, rascunhos, criar no calendário do Notion). Junções: "Comece por aqui" + tese do dia no Hoje (dias úteis), "Focar nesta peça" no Foco e os avisos das 7h, 12h e 17h.
+- [ ] Ainda do Pauta, para depois: blocos por cliente no Organizar minhas demandas, intenções da semana, importar a memória de feedback e os rascunhos do Neon, editor de páginas do Notion.
