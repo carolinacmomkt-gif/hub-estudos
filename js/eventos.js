@@ -40,6 +40,7 @@ import { ligarCuidar, cliqueCuidar, enviarCuidar } from './eventos-cuidar.js';
 import { ligarTrabalho, cliqueTrabalho, enviarTrabalho, mudancaTrabalho } from './eventos-trabalho.js';
 import { ligarRelatorio, cliqueRelatorio, enviarRelatorio, mudancaRelatorio } from './eventos-relatorio.js';
 import { ligarPauta, cliquePauta, enviarPauta, mudancaPauta } from './eventos-pauta.js';
+import { mudancaDatas } from './eventos-datas.js';
 import { ligarMaos, cliqueMaos, enviarMaos, mudancaMaos } from './eventos-maos.js';
 import { ligarDemandas, cliqueDemandas, enviarDemandas, mudancaDemandas } from './eventos-demandas.js';
 import { ligarOrganizar, cliqueOrganizar, enviarOrganizar, mudancaOrganizar } from './eventos-organizar.js';
@@ -51,7 +52,7 @@ import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './ev
 import { confirmar } from './confirmar.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaRelatorio(alvo, tipo) || mudancaPauta(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaRelatorio(alvo, tipo) || mudancaPauta(alvo, tipo) || mudancaDatas(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 

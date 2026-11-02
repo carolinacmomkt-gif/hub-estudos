@@ -11,6 +11,9 @@ import {
 import { nuvemConfigurada, sessaoAtual } from './nuvem.js';
 import { cursoGuardado } from './importar-calendario.js';
 import { cardPlano } from './views-plano.js';
+import { datasVisiveis, prefsDatas, clientesDaData, ehGeral, AREAS } from './datas-especiais.js';
+import { pessoasDe, textoAniversario } from './dados-pessoas.js';
+import { clientesAtivos } from './dados-trabalho.js';
 
 export const TIPOS_EVENTO = [
   { id: 'prova', nome: 'Prova' },
@@ -23,8 +26,10 @@ export const TIPOS_EVENTO = [
   { id: 'youtube', nome: 'YouTube' },
   { id: 'substack', nome: 'Substack' },
 ];
-const NOME_TIPO = Object.fromEntries(TIPOS_EVENTO.map((t) => [t.id, t.nome]));
-const NOME_ORIGEM = { ava: 'AVA', ics: 'AVA', lyceum: 'Lyceum', academico: 'Calendário acadêmico', manual: 'Seu evento', youtube: 'YouTube', substack: 'Substack' };
+// Tipos das datas especiais (calculadas no app; não aparecem no formulário).
+const TIPOS_ESPECIAIS = { comemorativa: 'Data comemorativa', aniversario: 'Aniversário', facultativo: 'Ponto facultativo' };
+const NOME_TIPO = { ...Object.fromEntries(TIPOS_EVENTO.map((t) => [t.id, t.nome])), ...TIPOS_ESPECIAIS };
+const NOME_ORIGEM = { especial: '', ava: 'AVA', ics: 'AVA', lyceum: 'Lyceum', academico: 'Calendário acadêmico', manual: 'Seu evento', youtube: 'YouTube', substack: 'Substack' };
 const VISOES = [
   { id: 'mes', nome: 'Mês' },
   { id: 'semana', nome: 'Semana' },
@@ -88,7 +93,7 @@ function itemEvento(estado, evento, dia, agora, resumido = false) {
     .filter(Boolean).join(' · ');
   return `
     <li>
-      <button class="cal-evento tipo-${esc(evento.tipo)}" type="button" data-acao="cal-abrir" data-id="${esc(evento.id)}">
+      <button class="cal-evento tipo-${esc(evento.tipo)}" type="button" data-acao="${evento.origem === 'especial' ? 'cal-especial' : 'cal-abrir'}" data-id="${esc(evento.id)}">
         <span class="cal-evento-marca" aria-hidden="true"></span>
         <span class="cal-evento-texto">
           <span class="cal-evento-titulo">${esc(evento.titulo)}</span>
@@ -220,12 +225,12 @@ export function renderCalendario(estado) {
     history.replaceState(null, '', '#calendario');
   }
   const agora = Date.now();
-  const eventos = eventosDoCalendario(estado);
+  const eventos = [...eventosDoCalendario(estado), ...eventosEspeciais(estado, cal.foco)];
   const corpo = { mes: visaoMes, semana: visaoSemana, lista: visaoLista }[cal.visao](estado, cal, eventos, agora);
   const temAcademico = eventos.some((e) => e.origem === 'academico');
 
   return `
-    ${cabecalho('Calendário', 'Prazos do AVA, calendário acadêmico e os seus eventos')}
+    ${cabecalho('Calendário', 'Prazos, feriados, datas das clientes e os seus eventos')}
     <div class="acoes cal-acoes">
       <button class="botao botao-primario" type="button" data-acao="cal-novo">Novo evento</button>
       <a class="botao botao-secundario" href="#calendario/importar">${temAcademico ? 'Atualizar calendário acadêmico' : 'Importar calendário acadêmico'}</a>
@@ -233,6 +238,76 @@ export function renderCalendario(estado) {
     ${cardPlano(estado, { agora })}
     ${barra(cal)}
     <div class="pilha pilha-larga">${corpo}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Datas especiais: feriados, datas da saúde, campanhas e aniversários das Pessoas
+// ---------------------------------------------------------------------------
+
+const clientesComAreas = (estado) => clientesAtivos(estado).filter((c) => c.casa !== 'minha');
+
+// Eventos de mentira (só para mostrar) de um ano antes a um ano depois do dia em foco.
+export function eventosEspeciais(estado, foco = chaveDia(new Date())) {
+  const prefs = prefsDatas(estado.config);
+  const ano = Number(String(foco).slice(0, 4));
+  const de = `${ano - 1}-01-01`;
+  const ate = `${ano + 1}-12-31`;
+  const clientes = clientesComAreas(estado);
+  const saida = datasVisiveis(de, ate, prefs, clientes).map((d) => ({
+    id: `esp:${d.data}:${d.id}`,
+    titulo: d.titulo,
+    inicio: instanteDoDia(d.data),
+    dia_inteiro: true,
+    tipo: d.grupo === 'feriados' ? (d.tipo === 'facultativo' ? 'facultativo' : 'feriado') : 'comemorativa',
+    origem: 'especial',
+    especial: d,
+  }));
+  if (prefs.aniversarios) {
+    for (const p of pessoasDe(estado.config)) {
+      const a = p.aniversario;
+      if (!a) continue;
+      for (let y = ano - 1; y <= ano + 1; y += 1) {
+        const data = `${y}-${String(a.mes).padStart(2, '0')}-${String(Math.min(a.dia, new Date(y, a.mes, 0).getDate())).padStart(2, '0')}`;
+        const idade = a.ano ? y - a.ano : null;
+        saida.push({
+          id: `esp:aniv:${p.id}:${y}`, titulo: `Aniversário de ${p.nome}${idade && idade > 0 ? ` (${idade})` : ''}`, inicio: instanteDoDia(data), dia_inteiro: true,
+          tipo: 'aniversario', origem: 'especial', especial: { grupo: 'aniversarios', data, pessoa: p, idade },
+        });
+      }
+    }
+  }
+  return saida;
+}
+const instanteDoDia = (chave) => dataDaChave(chave).toISOString();
+
+export function detalheEspecial(estado, id) {
+  const e = eventosEspeciais(estado, String(id).match(/(\d{4})-\d{2}-\d{2}/)?.[0] || undefined).find((x) => x.id === id)
+    || eventosEspeciais(estado).find((x) => x.id === id);
+  if (!e) return '<p class="texto-suave">Essa data não está mais no calendário.</p>';
+  const d = e.especial;
+  const quando = maiuscula(fmtDiaLongo.format(dataDaChave(d.data)));
+  if (d.grupo === 'aniversarios') {
+    return `<div class="cal-detalhe">
+      <p class="cal-detalhe-titulo">${esc(e.titulo)}</p>
+      <p class="texto-suave">${esc(quando)} · ${esc(textoAniversario(d.pessoa.aniversario))}</p>
+      ${d.pessoa.gosta ? `<p>Gosta de ${esc(d.pessoa.gosta)}</p>` : ''}
+      ${d.pessoa.presentes ? `<p>Ideias de presente: ${esc(d.pessoa.presentes)}</p>` : ''}
+      <p class="campo-ajuda">Vem de Pessoas, no Meu cantinho. O aviso chega na véspera e no dia, de manhã.</p>
+      <div class="acoes"><a class="botao botao-secundario" href="#cantinho/pessoas">Abrir Pessoas</a><button class="botao botao-secundario" type="button" data-acao="cal-fechar">Fechar</button></div>
+    </div>`;
+  }
+  const clientes = clientesDaData(d, clientesComAreas(estado));
+  const areas = (d.areas || []).filter((a) => a !== 'todas').map((a) => AREAS[a]).filter(Boolean);
+  return `<div class="cal-detalhe">
+    <p class="cal-detalhe-titulo">${esc(e.titulo)}</p>
+    <p class="texto-suave">${esc(quando)} · ${esc(d.detalhe || '')}</p>
+    ${d.grupo !== 'feriados' ? `
+      ${clientes.length ? `<p class="campo-rotulo">Serve para</p><ul class="cal-especial-clientes">${clientes.map((c) => `<li>${esc(c.nome)}</li>`).join('')}</ul>` : `<p class="texto-suave">${ehGeral(d) ? 'Data geral da saúde: serve para qualquer cliente da área.' : 'Nenhuma cliente sua desta área por enquanto.'}</p>`}
+      ${areas.length ? `<p class="cal-especial-areas">Áreas: ${esc(areas.join(', '))}</p>` : ''}
+      ${d.conferir ? `<p class="campo-ajuda">Confira antes de postar: ${esc(d.conferir)}</p>` : ''}` : ''}
+    <p class="campo-ajuda">Data calculada pela Bússola. Mostrar ou esconder em Configurações → Calendário.</p>
+    <div class="acoes"><button class="botao botao-secundario" type="button" data-acao="cal-fechar">Fechar</button></div>
+  </div>`;
 }
 
 // ---------------------------------------------------------------------------

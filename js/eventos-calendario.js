@@ -2,7 +2,7 @@
 
 import { obterEstado } from './estado.js';
 import { salvar, excluir, obter } from './persistencia.js';
-import { renderFolhaEvento, situacaoCalendario } from './views-calendario.js';
+import { renderFolhaEvento, situacaoCalendario, detalheEspecial } from './views-calendario.js';
 import { chaveDia, chaveValida, instanteLocal, moverFoco } from './dados-calendario.js';
 import { confirmar } from './confirmar.js';
 import {
@@ -72,6 +72,13 @@ export function cliqueCalendario(alvo) {
     case 'cal-abrir':
       abrirFolhaEvento({ id: alvo.dataset.id });
       return true;
+    case 'cal-especial': {
+      document.getElementById('folha-evento-titulo').textContent = 'Data especial';
+      document.getElementById('folha-evento-conteudo').innerHTML = detalheEspecial(obterEstado(), alvo.dataset.id);
+      folha().dataset.id = '';
+      folha().showModal();
+      return true;
+    }
     case 'cal-fechar':
       folha().close();
       return true;

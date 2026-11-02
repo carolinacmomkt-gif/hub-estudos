@@ -121,6 +121,13 @@ button.atalho-criar:hover {
 .tipo-aula { --tipo-cor: var(--tipo-aula); }
 .tipo-feriado { --tipo-cor: var(--tipo-feriado); }
 .tipo-pessoal { --tipo-cor: var(--tipo-pessoal); }
+.tipo-comemorativa { --tipo-cor: var(--tipo-comemorativa); }
+.tipo-aniversario { --tipo-cor: var(--tipo-aniversario); }
+.tipo-facultativo { --tipo-cor: var(--tipo-feriado); }
+.cal-evento.tipo-facultativo .cal-evento-marca { opacity: .55; }
+.cal-especial-clientes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.cal-especial-clientes li { padding: 4px 10px; border-radius: 999px; background: var(--cor-destaque-suave); font-size: .875rem; }
+.cal-especial-areas { color: var(--cor-texto-suave); font-size: .875rem; }
 
 /* Mês */
 .cal-mes {
@@ -583,3 +590,8 @@ button.atalho-criar:hover {
 .plano + .cal-barra {
   margin-top: 16px;
 }
+.datas-lista { max-height: 360px; overflow-y: auto; }
+.datas-lista li { display: grid; gap: 2px; grid-template-columns: auto 1fr; column-gap: 10px; align-items: baseline; padding: 6px 0; }
+.datas-lista li small { grid-column: 2; color: var(--cor-texto-suave); }
+.tb-datas { margin-top: 16px; }
+.tb-datas .datas-lista { max-height: none; }

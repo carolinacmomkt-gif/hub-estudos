@@ -9,6 +9,7 @@ import { noFuso } from './avisos.mjs';
 import { valeNoDia } from '../../js/dados-cuidar.js';
 import { somarDias } from '../../js/dados-tarefas.js';
 import { comecePorAqui, quadroDeAprovar, pecasAtivas, oQueMudou } from '../../js/dados-trabalho.js';
+import { datasVisiveis, clientesDaData, PREFS_PADRAO } from '../../js/datas-especiais.js';
 
 // Igual a VIDA_PADRAO em js/avisos.js.
 export const VIDA_PADRAO = {
@@ -137,6 +138,7 @@ export function avisosDaVida({ dados, config, fuso = 'America/Sao_Paulo', agora 
         tag: `aniversario-${p.id}-${hoje}`, url: '/#cantinho/pessoas',
       });
     }
+    saida.push(...avisosDeDatas(dados, hoje, amanha, enviados));
   }
   // O resumo da manhã só vale até 4h depois do horário (um "bom dia" à noite não ajuda).
   const LIMITE = { manha: 4 * 60, contas: 24 * 60, habitos: 24 * 60 };
@@ -237,4 +239,39 @@ export function avisosDoTrabalho(dados, cfg, hoje, agoraMin, enviados) {
   const abertas = mandar + agendar + copy;
   if (!abertas) return [];
   return [{ chave, titulo: 'Perto de fechar', texto: `Ainda ${abertas === 1 ? 'tem 1 peça' : `tem ${abertas} peças`} com você. O que ficar aberto passa para amanhã. Sem culpa.`, tag, url: '/#aprovar' }];
+}
+
+// Datas especiais (Calendário): as datas das clientes N dias antes (para produzir o post) e no dia,
+// e o feriado na véspera. Junto com o horário da manhã.
+export function avisosDeDatas(dados, hoje, amanha, enviados) {
+  const prefs = { ...PREFS_PADRAO, ...(dados.datasEspeciais || {}) };
+  if (!prefs.avisar) return [];
+  const clientes = (dados.clientesTrabalho || []).filter((c) => !c.excluido_em && c.casa !== 'minha');
+  const antes = somarDias(hoje, Number(prefs.antecedencia) || 15);
+  const saida = [];
+  const dasClientes = datasVisiveis(hoje, antes, { ...prefs, feriados: false, soDasClientes: true }, clientes);
+  for (const [quando, rotulo] of [[antes, `Daqui a ${Number(prefs.antecedencia) || 15} dias`], [hoje, 'Hoje']]) {
+    const lista = dasClientes.filter((d) => d.data === quando);
+    if (!lista.length) continue;
+    const chave = `datas:${quando}:${hoje}`;
+    if (enviados.has(chave)) continue;
+    const nomes = (d) => clientesDaData(d, clientes).map((c) => c.nome).join(', ');
+    saida.push({
+      chave,
+      titulo: lista.length === 1 ? `${rotulo}: ${lista[0].titulo}` : `${rotulo}: ${lista.length} datas das clientes`,
+      texto: lista.slice(0, 3).map((d) => (lista.length === 1 ? `Para ${nomes(d)}.` : `${d.titulo} (${nomes(d)})`)).join(' · '),
+      tag: `datas-${quando}`,
+      url: `/#calendario/${quando}`,
+    });
+  }
+  if (prefs.feriados) {
+    const feriados = datasVisiveis(amanha, amanha, { ...prefs, profissoes: false, saude: false, campanhas: false, soDasClientes: false }, clientes)
+      .filter((d) => d.grupo === 'feriados');
+    const chave = `feriado:${amanha}:${hoje}`;
+    if (feriados.length && !enviados.has(chave)) {
+      const f = feriados.find((x) => x.tipo === 'feriado') || feriados[0];
+      saida.push({ chave, titulo: `Amanhã: ${f.titulo}`, texto: f.detalhe, tag: `feriado-${amanha}`, url: `/#calendario/${amanha}` });
+    }
+  }
+  return saida;
 }

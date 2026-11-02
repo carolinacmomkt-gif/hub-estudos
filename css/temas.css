@@ -184,6 +184,8 @@
   --tipo-revisao: var(--capa-3);
   --tipo-youtube: var(--capa-4);
   --tipo-substack: var(--urg-urgente);
+  --tipo-comemorativa: var(--tinta-vermelho);
+  --tipo-aniversario: var(--capa-5);
 
   /* Sessão de foco: cartões do relógio flip e o fundo preto da noite (iguais nos dois temas) */
   --flip-cartao: #2B2019;

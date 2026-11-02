@@ -6,6 +6,7 @@ import { icone } from './icones.js';
 import { esc } from './utilidades.js';
 import { parametroDe, mesPadrao, nomeDoMes } from './dados-relatorio.js';
 import { parametroDaPauta, mesDaPautaPadrao } from './dados-pauta.js';
+import { cardDatasConteudo } from './views-datas.js';
 import { dataLocal } from './views-dia.js';
 import {
   clientesAtivos, clientePelaChave, CASAS, casaDoCliente, corDoCliente, GRUPOS, grupoDoStatus, nomeDoGrupo, quando, diaMes,
@@ -148,7 +149,8 @@ export function renderConteudo(estado) {
     ${chipsCasa(estado)}
     ${cardMudou(estado, pecas)}
     ${visao === 'semana' ? semana(estado, pecas, inicio, hoje) : lista(estado, pecas, hoje)}
-    ${cardRadar(estado, pecas, hoje)}`;
+    ${cardRadar(estado, pecas, hoje)}
+    ${cardDatasConteudo(estado, hoje)}`;
 }
 
 function cartaoPeca(estado, p, hoje) {

@@ -6,6 +6,7 @@ import { OPCOES_TEMA, lerPreferenciaTema } from './tema.js';
 import { OPCOES_TEXTO, lerTamanhoTexto, OPCOES_VIDRO, lerVidro } from './preferencias.js';
 import { esc, haQuantoTempo } from './utilidades.js';
 import { cardAvisos, cardPlanoPrefs } from './views-avisos.js';
+import { cardDatasConfig } from './views-datas.js';
 import { cardConfigDemandas } from './views-demandas.js';
 import { cardWidgets } from './views-widgets.js';
 import { cardProtegidos } from './views-protegidos.js';
@@ -211,6 +212,7 @@ export function renderConfiguracoes(estado) {
       ${cardSincronizacao(estado)}
       ${cardAparencia()}
       ${cardAvisos(estado)}
+      ${cardDatasConfig(estado)}
       ${cardPlanoPrefs(estado)}
       ${cardProtegidos(estado)}
       ${cardConfigLeitura(estado)}

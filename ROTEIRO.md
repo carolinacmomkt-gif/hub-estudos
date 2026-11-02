@@ -90,5 +90,5 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 - [x] **Sincronização travada por config repetida** ✓ (02/11/2026).
 - [x] **Relatório de métricas** ✓ (02/11/2026): Trabalho → Relatórios, no modelo da Confluir para todos os clientes. Prints → a IA lê os números → ela confere → capas recortadas do print → considerações com a IA → PPTX e PDF.
 - [x] **Gerador de pauta** ✓ (02/11/2026): Trabalho → Pautas. Cartões da cliente lidos na hora no Trello (inclusive as listas de mês), artes baixadas dos anexos, legenda da descrição ou com a IA olhando as artes, PPTX e PDF no modelo da Confluir.
-- [ ] **Datas no Calendário** (em andamento): datas da saúde por área com as clientes, feriados com nome (nacionais, Goiás e Anápolis) e aniversários das Pessoas.
+- [x] **Datas no Calendário** ✓ (02/11/2026): datas da saúde e das profissões por área com as clientes, campanhas do mês, feriados com nome (nacionais, Goiás e Anápolis, os móveis calculados) e aniversários das Pessoas, com avisos.
 - [ ] Ainda do Pauta, para depois: blocos por cliente no Organizar minhas demandas, intenções da semana, importar a memória de feedback e os rascunhos do Neon, editor de páginas do Notion.
