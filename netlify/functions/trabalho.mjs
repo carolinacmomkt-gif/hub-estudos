@@ -11,6 +11,7 @@
 //        { acao: 'calendarios-buscar' }               → calendários que a conexão enxerga (para acrescentar)
 //        { acao: 'calendarios-salvar', desligados, extras }
 //        { acao: 'ia', pedido: 'criar' | 'gancho' | 'arte', cliente, formato, objetivo, tema, notas, texto }
+//        { acao: 'relatorio-consideracoes', nome, mes, metricas: [{ rotulo, valor, comparacao }], temas, topicos, observacoes }
 
 import { resposta, lerCorpo, texto } from '../lib/http.mjs';
 import { exigirLogin, banco } from '../lib/supabase.mjs';
@@ -21,6 +22,7 @@ import {
   lerTextoDaPeca, criarPeca, pedirIa, calendariosDe, buscarCalendarios, salvarCalendarios,
 } from '../lib/trabalho.mjs';
 import { fontes } from '../lib/trabalho-fontes.mjs';
+import { escreverConsideracoes } from '../lib/ia-relatorio.mjs';
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const DIA = /^\d{4}-\d{2}-\d{2}$/;
@@ -102,6 +104,20 @@ export default async (req) => {
           acao: e.pedido, clienteChave: texto(e.cliente, 120) || null, formato: texto(e.formato, 60), objetivo: texto(e.objetivo, 60),
           tema: texto(e.tema, 300), notas: texto(e.notas, 1000), texto: texto(e.texto, 12000),
         }));
+      case 'relatorio-consideracoes': {
+        const lista = (v, n) => (Array.isArray(v) ? v.slice(0, n) : []);
+        const topicos = lista(e.topicos, 8).map((t) => texto(t, 60)).filter(Boolean);
+        if (!topicos.length) return resposta(200, { ok: false, erro: 'Escreva pelo menos o nome de um tópico.' });
+        const consideracoes = await escreverConsideracoes({
+          nome: texto(e.nome, 120),
+          mes: texto(e.mes, 40),
+          metricas: lista(e.metricas, 10).map((m) => ({ rotulo: texto(m?.rotulo, 60), valor: texto(m?.valor, 30), comparacao: texto(m?.comparacao, 80) })).filter((m) => m.rotulo && m.valor),
+          temas: lista(e.temas, 6).map((t) => texto(t, 160)).filter(Boolean),
+          topicos,
+          observacoes: texto(e.observacoes, 1500),
+        });
+        return resposta(200, { ok: true, consideracoes });
+      }
       default:
         return resposta(400, { ok: false, erro: 'Pedido desconhecido.' });
     }

@@ -29,6 +29,8 @@ import { renderRetrospectiva } from './views-retrospectiva.js';
 import { renderCantinho } from './views-cantinho.js';
 import { renderConteudo, renderAprovar, renderClientes, renderCriar } from './views-trabalho.js';
 import { montarTrabalho } from './eventos-trabalho.js';
+import { renderRelatorio } from './views-relatorio.js';
+import { montarRelatorio, desmontarRelatorio } from './eventos-relatorio.js';
 import { montarCantinho, desmontarCantinho } from './eventos-cantinho.js';
 import { renderBusca } from './views-busca.js';
 import { montarBusca, dadosDaBusca } from './eventos-busca.js';
@@ -78,6 +80,7 @@ const VIEWS = {
   aprovar: renderAprovar,
   clientes: renderClientes,
   criar: renderCriar,
+  relatorio: renderRelatorio,
   buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
 };
 
@@ -105,6 +108,7 @@ const CICLO = {
   aprovar: { montar: montarTrabalho, desmontar: () => {} },
   clientes: { montar: montarTrabalho, desmontar: () => {} },
   criar: { montar: montarTrabalho, desmontar: () => {} },
+  relatorio: { montar: montarRelatorio, desmontar: desmontarRelatorio },
 };
 let telaMontada = null;
 

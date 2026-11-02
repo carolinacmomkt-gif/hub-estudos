@@ -4,6 +4,7 @@
 import { cabecalho } from './componentes.js';
 import { icone } from './icones.js';
 import { esc } from './utilidades.js';
+import { parametroDe, mesPadrao, nomeDoMes } from './dados-relatorio.js';
 import { dataLocal } from './views-dia.js';
 import {
   clientesAtivos, clientePelaChave, CASAS, casaDoCliente, corDoCliente, GRUPOS, grupoDoStatus, nomeDoGrupo, quando, diaMes,
@@ -361,6 +362,7 @@ export function renderClientes(estado) {
       ${aberta ? '' : chipsCasa(estado)}
       ${aberta ? `<a class="botao botao-secundario botao-pequeno tb-voltar-lista" href="#clientes">← Clientes</a>` : ''}
       ${aberta && aberta.cliente.url ? `<a class="botao botao-secundario botao-pequeno" href="${esc(aberta.cliente.url)}" target="_blank" rel="noopener">Abrir no ${String(aberta.cliente.url).includes('trello') ? 'Trello' : 'Notion'}</a>` : ''}
+      ${aberta ? `<a class="botao botao-secundario botao-pequeno" href="#relatorio/${esc(parametroDe(aberta.cliente.chave, mesPadrao()))}">Relatório de ${esc(nomeDoMes(mesPadrao()).toLowerCase())}</a>` : ''}
       ${aberta ? `<button class="botao botao-primario botao-pequeno" type="button" data-acao="tb-criar-para" data-valor="${esc(aberta.cliente.chave)}">Criar para ${esc(aberta.cliente.nome.split(' ')[0] === 'Dra.' || aberta.cliente.nome.split(' ')[0] === 'Dr.' ? 'ela' : aberta.cliente.nome.split(' ')[0])}</button>` : barraSync(estado)}
     </div>
     <div class="tb-clientes${aberta ? ' com-ficha' : ''}">

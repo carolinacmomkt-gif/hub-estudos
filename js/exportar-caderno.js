@@ -50,6 +50,16 @@ const texto = new TextEncoder();
 const pontos = (mmValor) => (mmValor * 72) / 25.4;
 
 export async function pdfDasPaginas(lista, aoAndar = () => {}) {
+  return pdfDeCanvases(lista.length, async (i) => {
+    const { pagina, dim } = lista[i];
+    const canvas = await desenharPagina(pagina, dim);
+    const mmPorUnidade = 1 / (dim.mm || 1000 / 210);
+    return { canvas, largura: pontos(dim.largura * mmPorUnidade), altura: pontos(dim.altura * mmPorUnidade) };
+  }, aoAndar);
+}
+
+// obter(i) → { canvas, largura, altura } (largura e altura da página em pontos).
+export async function pdfDeCanvases(total, obter, aoAndar = () => {}) {
   const partes = [];
   const posicoes = [];
   let tamanho = 0;
@@ -70,18 +80,15 @@ export async function pdfDasPaginas(lista, aoAndar = () => {}) {
   };
 
   escrever('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
-  const total = lista.length;
-  const idsPaginas = lista.map((_, i) => 3 + i * 3);
+  const idsPaginas = Array.from({ length: total }, (_, i) => 3 + i * 3);
   objeto(1, '<< /Type /Catalog /Pages 2 0 R >>');
   objeto(2, `<< /Type /Pages /Kids [${idsPaginas.map((n) => `${n} 0 R`).join(' ')}] /Count ${total} >>`);
   for (let i = 0; i < total; i += 1) {
     aoAndar(i + 1, total);
-    const { pagina, dim } = lista[i];
-    const canvas = await desenharPagina(pagina, dim);
+    const { canvas, largura, altura } = await obter(i);
     const jpeg = new Uint8Array(await (await comoBlob(canvas, 'image/jpeg', 0.88)).arrayBuffer());
-    const mmPorUnidade = 1 / (dim.mm || 1000 / 210);
-    const w = pontos(dim.largura * mmPorUnidade).toFixed(2);
-    const h = pontos(dim.altura * mmPorUnidade).toFixed(2);
+    const w = largura.toFixed(2);
+    const h = altura.toFixed(2);
     const [nPag, nConteudo, nImagem] = [idsPaginas[i], idsPaginas[i] + 1, idsPaginas[i] + 2];
     objeto(nPag, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im${i} ${nImagem} 0 R >> >> /Contents ${nConteudo} 0 R >>`);
     const desenho = texto.encode(`q ${w} 0 0 ${h} 0 0 cm /Im${i} Do Q`);

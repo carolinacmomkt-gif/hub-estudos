@@ -11,6 +11,7 @@ Rode só as que ainda não rodou (o app avisa em Configurações → Sincroniza�
 - `supabase/migracoes/011-livros.sql` (livros na Biblioteca e a caneta por cima do PDF)
 - `supabase/migracoes/012-trabalho.sql` (grupo Trabalho: o Pauta dentro da Bússola)
 - `supabase/migracoes/013-maos.sql` (Com as mãos, no Meu cantinho; já liga o RLS e não apaga nada)
+- `supabase/migracoes/014-relatorio.sql` (Relatórios do Trabalho: deixa a IA ler os prints; só acrescenta um tipo, não apaga nada)
 
 ## 2. Netlify → Site configuration → Environment variables
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`

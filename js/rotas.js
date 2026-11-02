@@ -13,6 +13,7 @@ export const ROTAS = [
   { id: 'aprovar', titulo: 'Aprovar', curto: 'Aprovar', icone: 'aprovar', grupo: 'trabalho' },
   { id: 'clientes', titulo: 'Clientes', curto: 'Clientes', icone: 'clientes', grupo: 'trabalho' },
   { id: 'criar', titulo: 'Criar', curto: 'Criar', icone: 'criar', grupo: 'trabalho' },
+  { id: 'relatorio', titulo: 'Relatórios', curto: 'Relatórios', icone: 'relatorio', grupo: 'trabalho' },
   { id: 'faculdade', titulo: 'Faculdade', curto: 'Faculdade', icone: 'faculdade', fixaCelular: true, grupo: 'faculdade' },
   { id: 'cadernos', titulo: 'Cadernos', curto: 'Cadernos', icone: 'cadernos', grupo: 'faculdade' },
   { id: 'estudos', titulo: 'Estudos gerais', curto: 'Estudos', icone: 'estudos', grupo: 'estudos' },

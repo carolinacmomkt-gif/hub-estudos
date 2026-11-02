@@ -9,7 +9,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 - **YouTube** (planejamento do canal).
 - **Cadernos** com escrita à mão.
 - **Calendário**.
-- **Trabalho** (o Pauta dentro da Bússola, 01/11/2026): Conteúdo, Aprovar, Clientes e Criar.
+- **Trabalho** (o Pauta dentro da Bússola, 01/11/2026): Conteúdo, Aprovar, Clientes, Criar e Relatórios.
 - **Vida** (fase 2, ver ROTEIRO.md): Hoje, tarefas e projetos, hábitos e rotinas, finanças (com gamificação e recompensas), diário, casa, consultoria (carteira de clientes e produto), metas e lazer.
 
 ## Regras gerais
@@ -35,7 +35,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens, `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros, e `trabalho` (ação `ia`), que escreve peças no método da Essence com a memória de cada cliente) |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens, `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros, `trabalho` (ação `ia`), que escreve peças no método da Essence com a memória de cada cliente, e ação `relatorio-consideracoes`), e `relatorio-ler-background`, que lê os prints do Instagram para o relatório de métricas) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -74,7 +74,7 @@ A base é a identidade da Central de Conteúdo.
 7. **Cadernos**: estantes e cadernos de escrita à mão (detalhes abaixo).
 9. **Calendário**: visão de mês, semana e lista, com eventos da faculdade e eventos próprios.
 10. **Pergunte à Bússola** (`#buscar`, lupa no topo de todas as telas): busca no aparelho em tudo (`js/dados-busca.js`) e "Perguntar", que manda à IA só o resumo da pergunta (`contextoDaPergunta`) e mostra a resposta com links para os itens.
-11. **Trabalho** (grupo próprio no menu; detalhes em "Trabalho (o Pauta dentro da Bússola)"): Conteúdo, Aprovar, Clientes e Criar.
+11. **Trabalho** (grupo próprio no menu; detalhes em "Trabalho (o Pauta dentro da Bússola)"): Conteúdo, Aprovar, Clientes, Criar e Relatórios.
 
 ## Cadernos (requisito importante)
 
@@ -236,6 +236,15 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - **Service worker**: estilos e scripts vêm primeiro da rede (até 3 s, senão a cópia guardada), para a tela nunca misturar arquivo novo com antigo (foi o que tirou as cores do Com as mãos no aparelho). Se as tintas não existirem no tema carregado, o Com as mãos mostra "Falta atualizar as cores do app".
 - **Papel** (Carol, 02/11/2026): o papel dos cadernos e do Com as mãos segue o app, grafite `#242424` no escuro e branco no claro (`--papel`); nada de folha marrom.
 
+## Relatório de métricas (Trabalho → Relatórios)
+
+- Decisão da Carol (02/11/2026): o mesmo modelo para todos os clientes, o da Confluir (o PPTX "Relatório de métricas · Dra. Karyne Magalhães"). Fundo verde-oliva `#4E5C2B`, títulos laranja `#E06919`, números e textos `#D9D9D9`, Open Sans (`MARCA` em `js/dados-relatorio.js`; são cores do documento, não do app). Slides: capa, Atividade do perfil (visitas ao perfil + toques em links externos em laranja), Alcance (contas alcançadas), Seguidores ("Foram +N novas contas."), Engajamento (interações com o conteúdo), Conteúdo relevante (até 3 capas com cantos arredondados) e Considerações (tópicos em negrito + texto). Mês e ano no alto à direita, nome da cliente embaixo à direita. Números no padrão brasileiro (1.194).
+- Telas (`#relatorio` e `#relatorio/<cliente>:<AAAA-MM>`; `js/views-relatorio.js`, `eventos-relatorio.js`, `css/relatorio.css`): lista por mês e "Novo relatório" (cliente do Trabalho ou nome digitado, mês, padrão o mês passado); a ficha da cliente em Clientes tem o atalho "Relatório de <mês>". Editor em 4 passos: prints, números do mês (com a comparação), conteúdo relevante e considerações, com a prévia ao lado (embaixo no celular) e os botões Baixar PPTX / Baixar PDF.
+- Dados: `config` "relatorio:<cliente>:<AAAA-MM>" `{ nome, mes, numeros { visitas, toques, alcance, seguidores, interacoes }, variacao, imagens [3 data URLs JPEG 600 px], consideracoes [{ titulo, texto }], slides { id: bool }, destaques [{ tema, print, x, y, w, h }], observacoes }`. Os prints ficam só na memória do aparelho enquanto a tela está aberta.
+- **IA só quando ela pede**: "Ler os números com a IA" manda os prints (JPEG até 1600 px, até 12) para o Storage e chama `relatorio-ler-background` (linha em `importacoes` com `tipo = 'relatorio'`, migração 014; o app acompanha a linha e apaga depois, a função apaga os prints). A IA devolve os números que achou (nunca estima: o que não achou fica vazio), a porcentagem "vs. período anterior" do print e até 3 conteúdos em destaque com a caixa da miniatura, que viram as capas (recorte na proporção do slide) nos espaços vazios. Ela confere tudo antes de baixar. "Escrever com a IA" (`trabalho`, ação `relatorio-consideracoes`) escreve um texto por tópico só com os números conferidos, as comparações, os temas dos destaques e as observações dela (sem travessão, sem jargão).
+- Comparação: com o relatório salvo do mês anterior da mesma cliente; sem ele, com a porcentagem que o print mostra.
+- Arquivos no aparelho (`js/relatorio-arquivos.js`): o mesmo desenho (`montarSlides`, em pontos de 1200 × 675) vira canvas para a prévia e para o PDF (`pdfDeCanvases` de `exportar-caderno.js`) e XML para o PPTX (ZIP sem compressão; mestre, layout e tema do modelo dela em `modelos/relatorio/`). Fonte Open Sans em `js/vendor/fontes/` (licença OFL) para o canvas; no PPTX vai o nome da fonte (o Google Slides tem; no PowerPoint sem a fonte instalada, ele troca por uma parecida). Os textos diminuem para caber (números grandes, considerações longas).
+
 ## Caixa de demandas (Trello, Notion e mensagens)
 
 - Decisão da Carol (28/10/2026): juntar as demandas do Trello, do Notion e das mensagens do WhatsApp numa caixa no Hoje; nada vira tarefa sem o OK dela. Gmail fica de fora.
@@ -317,6 +326,7 @@ Tabelas:
 - `demandas` (migração 010): Caixa de demandas
 - `conteudos`, `clientes_trabalho` e `rascunhos` (migração 012): grupo Trabalho
 - `maos` (migração 013): Com as mãos (colorir, desenhos, escrita, caligrafia, crochê, ideias)
+- `importacoes` ganhou o tipo `relatorio` (migração 014): leitura dos prints do relatório de métricas
 - `livro_paginas` (migração 011): tinta da caneta por cima das páginas dos livros em PDF; a 011 também cria `artigos.dados`
 - áreas de vida (migração 009): `projetos`, `tarefas`, `habitos`, `habito_registros`, `diario`, `saude`, `clientes`, `consultoria`, `financas`, `casa`, `metas`, `lazer`, cada uma com um campo `dados` (jsonb) para os detalhes
 

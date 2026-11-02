@@ -88,4 +88,6 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 - [x] **Meus modelos** ✓ (02/11/2026): foto, imagem, PDF ou desenho da folha viram modelo para colorir com balde ou para cobrir.
 - [x] **Pintar à mão** ✓ (02/11/2026): lápis, giz, pincel, marca-texto e borracha por cima dos desenhos de colorir, com "não sai da linha".
 - [x] **Sincronização travada por config repetida** ✓ (02/11/2026).
+- [x] **Relatório de métricas** ✓ (02/11/2026): Trabalho → Relatórios, no modelo da Confluir para todos os clientes. Prints → a IA lê os números → ela confere → capas recortadas do print → considerações com a IA → PPTX e PDF.
+- [ ] **Gerador de pauta** (próximo): artes prontas do Trello + legenda no modelo da Confluir (falta o logo, onde ficam as artes e onde fica a legenda).
 - [ ] Ainda do Pauta, para depois: blocos por cliente no Organizar minhas demandas, intenções da semana, importar a memória de feedback e os rascunhos do Neon, editor de páginas do Notion.
