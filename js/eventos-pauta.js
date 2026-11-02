@@ -15,6 +15,7 @@ import {
 } from './dados-pauta.js';
 import { prepararMedidas, medir, canvasDoSlide, pptxDeSlides, pdfDeSlides, carregarFontes } from './slides-arquivos.js';
 import { baixar } from './exportar-caderno.js';
+import { importarPostsExtras } from './pauta-importar.js';
 
 let app;
 const avisar = (t) => app?.avisoCurto(t);
@@ -390,7 +391,7 @@ export function cliquePauta(alvo) {
       buscarCartoes();
       return true;
     case 'pauta-filtro':
-      atualizarEstado({ pautaFiltro: valor === 'todos' ? 'todos' : 'mes' });
+      atualizarEstado({ pautaFiltro: ['aprovacao', 'mes', 'todos'].includes(valor) ? valor : 'aprovacao' });
       app.renderizar();
       return true;
     case 'pauta-anexo':
@@ -425,6 +426,14 @@ export function cliquePauta(alvo) {
         });
       }, { redesenhar: true });
       return true;
+    case 'pauta-marcar-todas': {
+      const marcados = new Set([...document.querySelectorAll('input[data-acao-mudar="pauta-marcar"]')].filter((i) => !i.checked).map((i) => i.value));
+      const cartoes = (obterEstado().pautaCartoes?.cartoes || []).filter((c) => marcados.has(c.id));
+      if (!cartoes.length) return true;
+      mudar((p) => { for (const c of cartoes) if (!p.pecas.some((x) => x.card === c.id)) p.pecas = inserirPorData(p.pecas, pecaDoCartao(c, p.nome)); }, { redesenhar: true });
+      baixarArtesDaPauta();
+      return true;
+    }
     case 'pauta-ia':
       escreverLegenda(card);
       return true;
@@ -480,6 +489,23 @@ export function mudancaPauta(alvo, tipo) {
         return novo;
       });
     });
+    return true;
+  }
+  if (acao === 'pauta-extra') {
+    if (tipo !== 'change') return true;
+    const arquivos = [...(alvo.files || [])];
+    alvo.value = '';
+    if (!arquivos.length) return true;
+    atualizarEstado({ pautaImportando: 'Lendo os arquivos…' });
+    app.renderizar();
+    importarPostsExtras(arquivos).then(({ pecas, avisos }) => {
+      atualizarEstado({ pautaImportando: '' });
+      if (pecas.length) {
+        for (const x of pecas) for (const l of x.locais) mudarArte(`${x.card}:${l.id}`, { src: l.src, largura: l.largura, altura: l.altura });
+        mudar((p) => { p.pecas = [...p.pecas, ...pecas]; }, { redesenhar: true });
+      } else app.renderizar();
+      avisar([pecas.length ? `${pecas.length} ${pecas.length === 1 ? 'post extra entrou' : 'posts extras entraram'} no fim da pauta. Confira o título e a legenda.` : 'Nenhum post encontrado nesses arquivos.', ...avisos].join(' '));
+    }).catch(() => { atualizarEstado({ pautaImportando: '' }); app.renderizar(); avisar('Não deu para ler esses arquivos.'); });
     return true;
   }
   if (acao === 'pauta-arquivo') {

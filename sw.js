@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v91';
+const VERSAO = 'hub-v92';
 
 const ARQUIVOS = [
   './',
@@ -188,6 +188,7 @@ const ARQUIVOS = [
   './js/dados-pauta.js',
   './js/views-pauta.js',
   './js/eventos-pauta.js',
+  './js/pauta-importar.js',
   './js/vendor/fontes/raleway-400.woff2',
   './js/vendor/fontes/raleway-700.woff2',
   './js/vendor/fontes/lato-400.woff2',

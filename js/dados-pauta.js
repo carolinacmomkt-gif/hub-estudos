@@ -49,7 +49,8 @@ export function normalizarPauta(valor, cliente, mes) {
       url: p.url || '',
       lista: String(p.lista || ''),
       data: p.data || null,
-      locais: Array.isArray(p.locais) ? p.locais.filter((l) => l && l.id && typeof l.src === 'string').slice(0, 10) : [],
+      extra: Boolean(p.extra),
+      locais: Array.isArray(p.locais) ? p.locais.filter((l) => l && l.id && typeof l.src === 'string').slice(0, 20) : [],
     })),
   };
 }
@@ -91,6 +92,18 @@ export function cartaoDoMes(c, mes) {
   return Boolean(c.data && c.data.slice(0, 7) === mes);
 }
 
+// A lista de aprovação: APROVAÇÃO (designer e vídeos) e POSTS PARA APROVAÇÃO (quadro da cliente).
+// "APROVADO(S)" não conta: lá a arte já voltou aprovada.
+export const listaEmAprovacao = (nome) => /aprovac/.test(sem(nome)) && !/aprovad/.test(sem(nome));
+
+// Ordem das lâminas: pelo número no nome do arquivo (1, 2, 3…); sem número, pela ordem do Trello.
+const numeroDoNome = (nome) => { const m = /(\d+)(?!.*\d)/.exec(String(nome || '').replace(/\.[a-z0-9]+$/i, '')); return m ? Number(m[1]) : null; };
+export function ordenarLaminas(anexos) {
+  const lista = [...anexos];
+  if (lista.length > 1 && lista.every((a) => numeroDoNome(a.nome) !== null)) return lista.sort((a, b) => numeroDoNome(a.nome) - numeroDoNome(b.nome) || (a.pos || 0) - (b.pos || 0));
+  return lista.sort((a, b) => (a.pos || 0) - (b.pos || 0));
+}
+
 export const ehImagem = (a) => /^image\//.test(a.tipo || '') || /\.(png|jpe?g|webp|gif)$/i.test(a.nome || '');
 export const ehVideo = (a) => /^video\//.test(a.tipo || '') || /\.(mp4|mov|m4v)$/i.test(a.nome || '');
 
@@ -126,7 +139,7 @@ export function legendaDaDescricao(descricao) {
 
 // Os anexos que entram por padrão: as imagens (no reel, a capa se houver); sem imagem, o vídeo.
 export function anexosPadrao(c, tipo) {
-  const imagens = (c.anexos || []).filter(ehImagem);
+  const imagens = ordenarLaminas((c.anexos || []).filter(ehImagem));
   if (tipo === 'Reel') {
     const capa = imagens.find((a) => a.capa) || imagens[0];
     if (capa) return [capa.id];
@@ -173,28 +186,54 @@ function caber(medir, runs, tam, largura, f, minimo) {
 }
 
 // Grade das artes na metade direita (sem espaço entre elas, como no modelo).
+// As artes na metade direita em fileiras justificadas (como a pauta da Carol): cada fileira ocupa a
+// largura toda, as lâminas de uma fileira têm a mesma altura e nada é cortado; com sobra de linhas,
+// as de cima levam menos lâminas (ficam maiores). O bloco fica centrado na área.
+const aspectoDe = (a) => (a.largura && a.altura ? a.largura / a.altura : 4 / 5);
+
+function fileiras(n, k, maisEmCima) {
+  const base = Math.floor(n / k);
+  const sobra = n % k;
+  return Array.from({ length: k }, (_, i) => base + (maisEmCima ? (i < sobra ? 1 : 0) : (i >= k - sobra ? 1 : 0)));
+}
+
 export function gradeDasArtes(artes, area) {
   const n = artes.length;
   if (!n) return [];
-  const aspecto = artes[0].largura && artes[0].altura ? artes[0].largura / artes[0].altura : 4 / 5;
-  if (n === 1) {
-    let h = area.h;
-    let w = h * aspecto;
-    if (w > area.w) { w = area.w; h = w / aspecto; }
-    return [{ ...artes[0], x: area.x + (area.w - w) / 2, y: area.y + (area.h - h) / 2, w, h }];
+  let melhor = null;
+  // Toda fileira com pelo menos 2 lâminas (nada de uma lâmina gigante sozinha em cima).
+  for (let k = 1; k <= Math.max(1, Math.min(Math.floor(n / 2), 4)); k += 1) {
+    for (const maisEmCima of [false, true]) {
+      const contas = fileiras(n, k, maisEmCima);
+      let i = 0;
+      const linhas = contas.map((c) => {
+        const grupo = artes.slice(i, i + c);
+        i += c;
+        return { grupo, h: area.w / grupo.reduce((t, a) => t + aspectoDe(a), 0) };
+      });
+      const altura = linhas.reduce((t, l) => t + l.h, 0);
+      const escala = Math.min(1, area.h / altura);
+      // Área coberta pelas artes; ocupar a largura toda (como na pauta dela) vale 10% a mais.
+      const ocupa = escala * escala * altura * area.w * (escala >= 0.999 ? 1.1 : 1);
+      if (!melhor || ocupa > melhor.ocupa + 0.5) melhor = { linhas, altura, escala, ocupa };
+    }
   }
-  let colunas = 1;
-  for (colunas = 1; colunas <= n; colunas += 1) {
-    const linhas = Math.ceil(n / colunas);
-    if (linhas * (area.w / colunas / aspecto) <= area.h + 0.5) break;
+  const { linhas, altura, escala } = melhor;
+  const largura = area.w * escala;
+  const x0 = area.x + (area.w - largura) / 2;
+  let y = area.y + (area.h - altura * escala) / 2;
+  const saida = [];
+  for (const l of linhas) {
+    const h = l.h * escala;
+    let x = x0;
+    for (const a of l.grupo) {
+      const w = aspectoDe(a) * h;
+      saida.push({ ...a, x, y, w, h });
+      x += w;
+    }
+    y += h;
   }
-  colunas = Math.min(colunas, n);
-  const w = area.w / colunas;
-  let h = w / aspecto;
-  const linhas = Math.ceil(n / colunas);
-  if (linhas * h > area.h) h = area.h / linhas;
-  const y0 = area.y + (area.h - linhas * h) / 2;
-  return artes.map((a, i) => ({ ...a, x: area.x + (i % colunas) * w, y: y0 + Math.floor(i / colunas) * h, w, h }));
+  return saida;
 }
 
 const AREA_ARTE = { x: 282.9 * K, y: 0, w: (720 - 282.9) * K, h: 675 };

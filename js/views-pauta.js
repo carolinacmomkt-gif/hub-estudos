@@ -6,7 +6,7 @@ import { esc } from './utilidades.js';
 import { clientesAtivos, clientePelaChave } from './dados-trabalho.js';
 import { mesCurto, nomeDoMes } from './dados-relatorio.js';
 import {
-  TIPOS, pautasSalvas, pautaDaRota, lerParametroPauta, parametroDaPauta, mesDaPautaPadrao, cartaoDoMes, ehImagem, ehVideo,
+  TIPOS, pautasSalvas, pautaDaRota, lerParametroPauta, parametroDaPauta, mesDaPautaPadrao, cartaoDoMes, ehImagem, ehVideo, listaEmAprovacao, ordenarLaminas,
 } from './dados-pauta.js';
 
 export function renderPautas(estado) {
@@ -59,8 +59,9 @@ function editor(estado, p) {
   const busca = estado.pautaCartoes?.chave === pauta.chave ? estado.pautaCartoes : null;
   const cartoes = busca?.cartoes || [];
   const naPauta = new Set(pauta.pecas.map((x) => x.card));
-  const soDoMes = estado.pautaFiltro !== 'todos';
-  const visiveis = cartoes.filter((c) => !soDoMes || cartaoDoMes(c, pauta.mes) || naPauta.has(c.id))
+  const filtro = ['aprovacao', 'mes', 'todos'].includes(estado.pautaFiltro) ? estado.pautaFiltro : 'aprovacao';
+  const passa = (c) => filtro === 'todos' || naPauta.has(c.id) || (filtro === 'mes' ? cartaoDoMes(c, pauta.mes) : listaEmAprovacao(c.lista));
+  const visiveis = cartoes.filter(passa)
     .sort((a, b) => (a.data || '9999').localeCompare(b.data || '9999') || a.titulo.localeCompare(b.titulo, 'pt-BR'));
   const artes = estado.pautaArtes || {};
   const ocupado = estado.pautaOcupado || '';
@@ -82,14 +83,14 @@ function editor(estado, p) {
             <input type="text" maxlength="80" value="${esc(pauta.nome)}" data-acao-mudar="pauta-nome"></label>
           <div class="pauta-busca-topo">
             <div class="segmentado" role="group" aria-label="Quais cartões">
-              <button type="button" class="segmentado-opcao${soDoMes ? ' ativo' : ''}" data-acao="pauta-filtro" data-valor="mes" aria-pressed="${soDoMes}">De ${esc(nomeDoMes(pauta.mes).toLowerCase())}</button>
-              <button type="button" class="segmentado-opcao${soDoMes ? '' : ' ativo'}" data-acao="pauta-filtro" data-valor="todos" aria-pressed="${!soDoMes}">Todos</button>
+              ${[['aprovacao', 'Em aprovação'], ['mes', `De ${nomeDoMes(pauta.mes).toLowerCase()}`], ['todos', 'Todos']].map(([id, nome]) => `<button type="button" class="segmentado-opcao${filtro === id ? ' ativo' : ''}" data-acao="pauta-filtro" data-valor="${id}" aria-pressed="${filtro === id}">${esc(nome)}</button>`).join('')}
             </div>
             <button class="botao botao-secundario botao-pequeno" type="button" data-acao="pauta-buscar"${busca?.carregando ? ' disabled' : ''}>${busca?.carregando ? 'Buscando…' : 'Buscar de novo'}</button>
           </div>
           ${busca?.erro ? `<p class="campo-ajuda rel-erro">${esc(busca.erro)}</p>` : ''}
           ${busca?.carregando && !cartoes.length ? '<p class="texto-suave">Lendo os quadros do Trello…</p>' : ''}
-          ${busca && !busca.carregando && !visiveis.length && !busca.erro ? `<p class="texto-suave">${soDoMes ? `Nenhum cartão de ${esc(nomeDoMes(pauta.mes).toLowerCase())} (pela lista do mês ou pela data). Veja em "Todos".` : 'Nenhum cartão com a etiqueta dessa cliente.'}</p>` : ''}
+          ${busca && !busca.carregando && !visiveis.length && !busca.erro ? `<p class="texto-suave">${{ aprovacao: 'Nada nas listas de aprovação dessa cliente agora. Veja o mês ou "Todos".', mes: `Nenhum cartão de ${esc(nomeDoMes(pauta.mes).toLowerCase())} (pela lista do mês ou pela data). Veja em "Todos".`, todos: 'Nenhum cartão com a etiqueta dessa cliente.' }[filtro]}</p>` : ''}
+          ${visiveis.some((c) => !naPauta.has(c.id)) ? `<div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="pauta-marcar-todas">Marcar todas (${visiveis.filter((c) => !naPauta.has(c.id)).length})</button></div>` : ''}
           <ul class="pauta-cartoes">
             ${visiveis.map((c) => {
               const imgs = c.anexos.filter(ehImagem).length;
@@ -106,7 +107,12 @@ function editor(estado, p) {
 
         <section class="card rel-passo">
           <h2 class="card-titulo"><span class="rel-num">2</span>Na pauta · ${pauta.pecas.length}</h2>
-          ${pauta.pecas.length ? `<div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="pauta-ia-todas"${faltam ? '' : ' disabled'}>Escrever as ${faltam || ''} legendas que faltam com a IA</button></div>` : '<p class="texto-suave">Marque as peças acima. Elas entram na ordem da data, e você muda a ordem aqui.</p>'}
+          ${pauta.pecas.length ? '' : '<p class="texto-suave">Marque as peças acima. Elas entram na ordem da data, e você muda a ordem aqui.</p>'}
+          <div class="acoes">
+            <label class="botao botao-secundario botao-pequeno rel-arquivo">+ Post extra (imagens, PDF ou PPTX)<input type="file" accept="image/*,.pdf,application/pdf,.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" multiple data-acao-mudar="pauta-extra"></label>
+            ${pauta.pecas.length ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="pauta-ia-todas"${faltam ? '' : ' disabled'}>Escrever as ${faltam || ''} legendas que faltam com a IA</button>` : ''}
+          </div>
+          ${estado.pautaImportando ? `<p class="campo-ajuda" aria-live="polite">${esc(estado.pautaImportando)}</p>` : ''}
           <ol class="pauta-pecas">
             ${pauta.pecas.map((x, i) => peca(x, i, pauta.pecas.length, cartoes.find((c) => c.id === x.card), artes, leg[x.card])).join('')}
           </ol>
@@ -121,12 +127,12 @@ function editor(estado, p) {
 }
 
 function peca(x, i, total, cartao, artes, legenda) {
-  const anexos = [...(cartao?.anexos || []), ...(x.locais || []).map((l) => ({ id: l.id, nome: 'Imagem do aparelho', tipo: 'image/jpeg' }))];
+  const anexos = [...ordenarLaminas(cartao?.anexos || []), ...(x.locais || []).map((l) => ({ id: l.id, nome: 'Imagem do aparelho', tipo: 'image/jpeg' }))];
   const escolhidos = new Set(x.anexos);
   const status = legenda?.status === 'lendo' || legenda?.status === 'enviando' ? 'A IA está escrevendo a legenda…' : legenda?.status === 'erro' ? legenda.erro : '';
   return `<li class="pauta-peca" data-card="${esc(x.card)}">
     <div class="pauta-peca-topo">
-      <span class="rel-num">${i + 1}</span>
+      <span class="rel-num">${i + 1}</span>${x.extra ? '<span class="selo">Extra</span>' : ''}
       <select aria-label="Tipo da peça ${i + 1}" data-acao-mudar="pauta-campo" data-campo="tipo" data-card="${esc(x.card)}">${TIPOS.map((t) => `<option${t === x.tipo ? ' selected' : ''}>${t}</option>`).join('')}</select>
       <input class="pauta-titulo" type="text" maxlength="120" value="${esc(x.titulo)}" aria-label="Título da peça ${i + 1}" data-acao-mudar="pauta-campo" data-campo="titulo" data-card="${esc(x.card)}">
       <div class="pauta-ordem">
@@ -135,7 +141,7 @@ function peca(x, i, total, cartao, artes, legenda) {
         <button class="botao-icone" type="button" data-acao="pauta-tirar" data-card="${esc(x.card)}" aria-label="Tirar da pauta" title="Tirar da pauta">×</button>
       </div>
     </div>
-    ${cartao || x.locais?.length ? `<div class="pauta-artes" role="group" aria-label="Artes da peça ${i + 1}">
+    ${cartao || x.extra || x.locais?.length ? `<div class="pauta-artes" role="group" aria-label="Artes da peça ${i + 1}">
       ${anexos.length ? anexos.map((a) => {
         const arte = artes[`${x.card}:${a.id}`];
         const ligado = escolhidos.has(a.id);
