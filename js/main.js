@@ -33,6 +33,7 @@ import { renderRelatorio } from './views-relatorio.js';
 import { montarRelatorio, desmontarRelatorio } from './eventos-relatorio.js';
 import { renderPautas } from './views-pauta.js';
 import { renderPortfolio, renderRevisao, renderEntrada } from './views-portfolio.js';
+import { renderProjetos } from './views-projetos.js';
 import { montarPauta, desmontarPauta } from './eventos-pauta.js';
 import { montarCantinho, desmontarCantinho } from './eventos-cantinho.js';
 import { renderBusca } from './views-busca.js';
@@ -86,6 +87,7 @@ const VIEWS = {
   relatorio: renderRelatorio,
   pautas: renderPautas,
   portfolio: renderPortfolio,
+  projetos: renderProjetos,
   revisao: renderRevisao,
   entrada: renderEntrada,
   buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
@@ -261,14 +263,14 @@ const TELAS_DA_TABELA = {
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
   diario: ['inicio'],
-  tarefas: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao'],
-  projetos: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao'],
+  tarefas: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao', 'projetos'],
+  projetos: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao', 'projetos'],
   financas: ['financas', 'inicio', 'metas'],
   habitos: ['habitos', 'inicio', 'metas'],
   habito_registros: ['habitos', 'inicio', 'metas'],
-  metas: ['metas', 'inicio', 'portfolio'],
+  metas: ['metas', 'inicio', 'portfolio', 'projetos'],
   lazer: ['metas', 'inicio'],
-  eventos: ['inicio', 'faculdade', 'calendario'],
+  eventos: ['inicio', 'faculdade', 'calendario', 'projetos'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
   config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'metas'],
   videos: ['youtube', 'inicio'],

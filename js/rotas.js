@@ -12,7 +12,8 @@ export const ROTAS = [
   { id: 'buscar', titulo: 'Pergunte à Bússola', curto: 'Buscar', icone: 'buscar', grupo: 'dia' },
   // Planejar: planejar e revisar
   { id: 'tarefas', titulo: 'Tarefas e projetos', curto: 'Tarefas', icone: 'tarefas', fixaCelular: true, grupo: 'planejar' },
-  { id: 'portfolio', titulo: 'Painel de projetos', curto: 'Projetos', icone: 'painel', grupo: 'planejar' },
+  { id: 'projetos', titulo: 'Projetos', curto: 'Projetos', icone: 'projetos', grupo: 'planejar' },
+  { id: 'portfolio', titulo: 'Painel de projetos', curto: 'Painel', icone: 'painel', grupo: 'planejar' },
   { id: 'revisao', titulo: 'Revisão da semana', curto: 'Revisão', icone: 'revisao', grupo: 'planejar' },
   { id: 'metas', titulo: 'Metas e lazer', curto: 'Metas', icone: 'metas', grupo: 'planejar' },
   { id: 'habitos', titulo: 'Hábitos e rotinas', curto: 'Hábitos', icone: 'habitos', grupo: 'planejar' },

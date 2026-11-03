@@ -12,6 +12,7 @@ import { clientesAtivos } from './dados-trabalho.js';
 import { cardCaixaEntrada } from './views-criar.js';
 import { cardDemandas } from './views-demandas.js';
 import { textoDia } from './views-tarefas.js';
+import { temPainel } from './dados-projetos.js';
 
 const vivos = (l) => (l || []).filter((x) => !x.excluido_em);
 const fmtCurto = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' });
@@ -53,7 +54,8 @@ export function renderPortfolio(estado) {
 
 function cartaoProjeto(x, hoje) {
   const p = x.projeto;
-  return `<li><a class="card pf-cartao cor-${esc(p.cor || 1)}" href="#tarefas/projeto-${esc(p.id)}">
+  const destino = temPainel(p) ? `#projetos/${esc(p.id)}` : `#tarefas/projeto-${esc(p.id)}`;
+  return `<li><a class="card pf-cartao cor-${esc(p.cor || 1)}" href="${destino}">
     <span class="pf-cartao-topo"><b>${esc(p.titulo)}</b>${farol(x.farol)}</span>
     ${barraProgresso(x.progresso.fracao, `Progresso de ${p.titulo}`)}
     <span class="pf-linha">${x.progresso.total ? `${x.progresso.prontas} de ${x.progresso.total} tarefas` : 'Sem tarefas'}${p.prazo ? ` · prazo ${esc(textoDia(p.prazo, hoje))}` : ''}</span>

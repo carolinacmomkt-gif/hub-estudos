@@ -1,0 +1,168 @@
+/*
+  Celular mais limpo (decisão da Carol, 03/11/2026), seguindo os guias da Apple e do Material 3:
+  margem de 16 e ritmo de 8; título grande com subtítulo mais discreto; três níveis de botão
+  (principal preenchido, secundário em tom, ícone sem caixa); abas e chips em tom; cards só com a
+  linha suave e a sombra (contraste combinado em 27/10: texto ~13:1, campos 3:1); nomes inteiros na
+  barra de baixo. Carregado depois do vidro.css e só vale até 700 px: tablet e computador não mudam.
+*/
+@media (max-width: 700px) {
+  /* Respiro */
+  body[data-menu] .conteudo,
+  .conteudo {
+    padding-top: 14px;
+  }
+
+  .painel {
+    gap: 12px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .card-topo {
+    margin-bottom: 10px;
+  }
+
+  .card-titulo {
+    font-size: 1rem;
+  }
+
+  /* Título grande e subtítulo numa hierarquia só */
+  .cabecalho {
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .cabecalho h1 {
+    font-size: 1.75rem;
+    letter-spacing: -0.025em;
+  }
+
+  .cabecalho-sub {
+    margin-top: 4px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--cor-texto-fraco);
+  }
+
+  /* Lupa redonda e menor */
+  .cabecalho-acoes {
+    padding: 2px;
+    border-radius: 999px;
+  }
+
+  .cabecalho-busca {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+  }
+
+  /* Botões: o secundário vira tom, não linha */
+  .botao {
+    padding: 0 16px;
+    font-size: 0.94rem;
+  }
+
+  .botao-secundario {
+    border-color: transparent;
+    background: var(--cor-superficie-2);
+  }
+
+  .card .botao-secundario,
+  .folha .botao-secundario {
+    background: var(--cor-superficie-elevada);
+  }
+
+  .acoes-topo .botao {
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 0.88rem;
+  }
+
+  /* Ícones (×, setas) sem caixa */
+  .botao-icone,
+  .botao-icone-p {
+    border-color: transparent;
+    background: transparent;
+    color: var(--cor-texto-suave);
+  }
+
+  .botao-icone:active,
+  .botao-icone-p:active {
+    background: var(--cor-superficie-2);
+  }
+
+  /* Abas e chips em tom; o escolhido fica preenchido */
+  .segmentado {
+    border-color: transparent;
+    background: var(--cor-superficie-2);
+  }
+
+  .segmentado button,
+  .segmentado > a {
+    min-width: 0;
+    font-size: 0.92rem;
+  }
+
+  .chip-filtro {
+    border-color: transparent;
+    background: var(--cor-superficie-2);
+    font-size: 0.86rem;
+  }
+
+  .chip-filtro[aria-pressed="true"] {
+    border-color: transparent;
+    background: var(--cor-preenchido);
+    color: var(--cor-sobre-preenchido);
+  }
+
+  /* Peça em atraso: a linha "Era para ontem" já avisa, sem borda colorida */
+  .tb-peca.risco {
+    border-color: var(--cor-linha);
+  }
+
+  /* Continuar de onde parou: pílula pequena embaixo do texto, não uma barra por item */
+  .continuar-item {
+    padding-top: 12px;
+  }
+
+  .continuar-item .botao {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 14px;
+    background: var(--cor-superficie-elevada);
+    color: var(--cor-texto);
+    font-size: 0.88rem;
+  }
+
+  /* Barra de baixo: nomes inteiros */
+  .nav-inferior .nav-link {
+    font-size: 0.68rem;
+    letter-spacing: -0.01em;
+  }
+
+  .nav-inferior .nav-nome {
+    text-overflow: clip;
+  }
+}
+
+/* No claro o tom é um véu do texto: aparece igual sobre o fundo cinza e sobre o card branco */
+@media (max-width: 700px) {
+  :root[data-tema="claro"] .botao-secundario,
+  :root[data-tema="claro"] .card .botao-secundario,
+  :root[data-tema="claro"] .folha .botao-secundario,
+  :root[data-tema="claro"] .continuar-item .botao,
+  :root[data-tema="claro"] .segmentado,
+  :root[data-tema="claro"] .chip-filtro:not([aria-pressed="true"]) {
+    background: color-mix(in srgb, var(--cor-texto) 7%, transparent);
+  }
+}
+
+/* No toque o tom precisa dos 44 px também (a regra de padroes.css continua valendo) */
+@media (max-width: 700px) and (pointer: coarse) {
+  .acoes-topo .botao,
+  .continuar-item .botao {
+    min-height: var(--toque);
+  }
+}

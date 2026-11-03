@@ -180,6 +180,7 @@ function telaProjeto(estado, id, op) {
     <div class="acoes cal-acoes">
       <a class="botao botao-secundario botao-pequeno" href="#tarefas/projetos">‹ Projetos</a>
       <button class="botao botao-secundario botao-pequeno" type="button" data-acao="projeto-editar" data-id="${esc(p.id)}">Editar projeto</button>
+      <a class="botao botao-secundario botao-pequeno" href="${p.dados?.modelo?.tipo ? `#projetos/${esc(p.id)}">Abrir o painel` : `#projetos/novo:${esc(p.id)}">Dar um painel`}</a>
     </div>
     <div class="tarefa-visao">
     <section class="card projeto-topo cor-${esc(p.cor || 1)}">

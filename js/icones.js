@@ -29,6 +29,7 @@ const CAMINHOS = {
   aprovar: 'M4 5h5v14H4z M10.5 5h5v9h-5z M17 5h3v6h-3z',
   clientes: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21v-1a6 6 0 0 1 12 0v1 M16 3.5a4 4 0 0 1 0 7 M22 21v-1a6 6 0 0 0-4-5.6',
   painel: 'M4 4h16v16H4z M4 9h16 M9 9v11',
+  projetos: 'M12 3l9 5-9 5-9-5 9-5z M3 13l9 5 9-5 M3 17l9 5 9-5',
   revisao: 'M4 12a8 8 0 1 0 2.3-5.7 M4 4v4h4 M12 8v4l3 2',
   entrada: 'M4 13h4l2 3h4l2-3h4 M4 13l2-8h12l2 8v6H4z',
   sino: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0',

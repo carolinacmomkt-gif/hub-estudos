@@ -619,7 +619,9 @@ html[data-vidro="nao"] :is(.ct-faixa, .ct-chip.sel, .ct-som.on, .ct-ciclo.sel) {
 
 /* ---- celular ---- */
 @media (max-width: 700px) {
-  .ct-topo { margin-bottom: 18px; }
+  .ct-topo { flex-wrap: wrap; margin-bottom: 18px; }
+  .ct-topo-texto { flex-basis: 100%; order: 2; }
+  .ct-topo-acoes { order: 1; margin-left: 0; padding-top: 0; }
   .ct-mesinha { padding-top: 124px; }
   .ct-mesinha > .ct-lua { top: 28px; right: 20px; font-size: 68px; }
   .ct-pausas-topo { flex-direction: column; align-items: stretch; gap: 12px; }

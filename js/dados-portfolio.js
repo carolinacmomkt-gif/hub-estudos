@@ -3,6 +3,7 @@
 // Sem DOM, para dar para testar sozinho.
 
 import { AREAS_TAREFA, progressoDoProjeto, somarDias, iso } from './dados-tarefas.js';
+import { ritmoDoProjeto } from './dados-projetos.js';
 
 const vivos = (l) => (l || []).filter((x) => !x.excluido_em);
 const DIA = 864e5;
@@ -30,6 +31,9 @@ export function statusDoProjeto(p, tarefas, hoje = iso(new Date())) {
   const vencidas = abertas.filter((t) => (t.prazo || t.data) && (t.prazo || t.data) < hoje);
   if (p.prazo && p.prazo < hoje) return { ...base, farol: 'atrasado', motivo: `O prazo passou há ${dias(p.prazo, hoje)} ${dias(p.prazo, hoje) === 1 ? 'dia' : 'dias'}` };
   if (vencidas.length) return { ...base, farol: 'atrasado', motivo: `${vencidas.length} ${vencidas.length === 1 ? 'tarefa vencida' : 'tarefas vencidas'}` };
+  // Projeto com painel: o número principal abaixo do ritmo (ex.: vendas no carrinho aberto) é risco.
+  const ritmo = ritmoDoProjeto(p, hoje);
+  if (ritmo?.abaixo && !ritmo.encerrada) return { ...base, farol: 'risco', motivo: ritmo.texto };
   if (p.prazo && dias(hoje, p.prazo) <= 7 && pr.fracao < 0.7) return { ...base, farol: 'risco', motivo: `Prazo em ${dias(hoje, p.prazo)} dias e ${Math.round(pr.fracao * 100)}% feito` };
   const ultima = [p.atualizado_em, ...doProjeto.map((t) => t.feita_em || t.atualizado_em)].filter(Boolean).sort().pop();
   if (abertas.length && ultima && dias(String(ultima).slice(0, 10), hoje) >= 14) return { ...base, farol: 'risco', motivo: `Parado há ${dias(String(ultima).slice(0, 10), hoje)} dias` };

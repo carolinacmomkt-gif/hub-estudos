@@ -441,3 +441,91 @@ dialog.folha .botao {
     animation: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Mais vidro (prévia aprovada pela Carol, 03/11/2026)
+   - uma luz suave no fundo, para o vidro ter o que desfocar;
+   - no tablet e no computador, o topo da tela fica preso ao rolar, em vidro, e as abas e os
+     filtros ganham vidro leve (no celular eles são em tom, ver celular.css);
+   - os cards de destaque (Prioridades, alertas e datas do Trabalho) ganham um vidro
+     levemente colorido. Cards comuns, listas e campos continuam opacos.
+   --------------------------------------------------------------------------- */
+body {
+  background:
+    radial-gradient(900px 500px at 85% -10%, color-mix(in srgb, var(--cor-destaque) 14%, transparent), transparent 70%),
+    radial-gradient(700px 500px at 10% 110%, color-mix(in srgb, var(--tinta-verde) 8%, transparent), transparent 70%),
+    var(--cor-fundo);
+  background-attachment: fixed;
+}
+
+@media (min-width: 701px) {
+  /* O que rola até um ponto da tela (foco, atalhos) para abaixo do topo preso, não embaixo dele */
+  html { scroll-padding-top: 120px; }
+
+  /* Arrumando o Hoje, o topo fica no lugar: arrastar um card até o alto não pode cair embaixo dele */
+  .conteudo:has(.personalizar) .cabecalho { position: static; }
+
+  .cabecalho {
+    position: sticky;
+    top: 8px;
+    z-index: 20;
+    margin: -4px -16px 20px;
+    padding: 12px 16px;
+    border: 1px solid var(--vidro-borda);
+    border-radius: var(--raio-lg);
+    background: var(--vidro);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: var(--vidro-sombra);
+  }
+
+  .segmentado,
+  .chip-filtro:not([aria-pressed="true"]) {
+    border-color: var(--vidro-borda);
+    background: var(--vidro);
+    -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    backdrop-filter: blur(14px) saturate(1.3);
+  }
+}
+
+[data-bloco="prioridades"] .card,
+.tb-alerta,
+.tb-datas {
+  border: 1px solid var(--vidro-borda);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cor-destaque) 16%, var(--vidro)), var(--vidro));
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow: var(--vidro-sombra), inset 0 0 0 1px color-mix(in srgb, var(--cor-destaque) 12%, transparent);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  body { background: var(--cor-fundo); }
+  .cabecalho,
+  .segmentado,
+  .chip-filtro,
+  [data-bloco="prioridades"] .card,
+  .tb-alerta,
+  .tb-datas {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .cabecalho { background: var(--cor-fundo); }
+  [data-bloco="prioridades"] .card,
+  .tb-alerta,
+  .tb-datas { background: var(--cor-superficie); }
+}
+
+html[data-vidro="nao"] body { background: var(--cor-fundo); }
+html[data-vidro="nao"] .cabecalho,
+html[data-vidro="nao"] .segmentado,
+html[data-vidro="nao"] .chip-filtro,
+html[data-vidro="nao"] [data-bloco="prioridades"] .card,
+html[data-vidro="nao"] .tb-alerta,
+html[data-vidro="nao"] .tb-datas {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-vidro="nao"] .cabecalho { background: var(--cor-fundo); }
+html[data-vidro="nao"] [data-bloco="prioridades"] .card,
+html[data-vidro="nao"] .tb-alerta,
+html[data-vidro="nao"] .tb-datas { background: var(--cor-superficie); }
