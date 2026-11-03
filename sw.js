@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v103';
+const VERSAO = 'hub-v104';
 
 const ARQUIVOS = [
   './',
@@ -234,11 +234,11 @@ const ARQUIVOS = [
   './js/eventos-financas.js',
   './js/views-inicio.js',
   './js/views-configuracoes.js',
-  './icones/icone-v3.svg',
-  './icones/icone-192-v3.png',
-  './icones/icone-512-v3.png',
-  './icones/icone-maskable-512-v3.png',
-  './icones/apple-touch-icon-v3.png',
+  './icones/icone-v4.svg',
+  './icones/icone-192-v4.png',
+  './icones/icone-512-v4.png',
+  './icones/icone-maskable-512-v4.png',
+  './icones/apple-touch-icon-v4.png',
 ];
 
 self.addEventListener('install', (evento) => {
@@ -329,8 +329,8 @@ self.addEventListener('push', (evento) => {
   evento.waitUntil(self.registration.showNotification(aviso.titulo || 'Bússola', {
     body: aviso.texto || '',
     tag: aviso.tag,
-    icon: './icones/icone-192-v3.png',
-    badge: './icones/icone-192-v3.png',
+    icon: './icones/icone-192-v4.png',
+    badge: './icones/icone-192-v4.png',
     data: { url: aviso.url || './' },
   }));
 });

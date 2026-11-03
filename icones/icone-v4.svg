@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Ícone da Bússola (03/11/2026, escolha da Carol): a estrela da marca em vidro líquido, estilo iOS 26, sobre o degradê caramelo → cacau -->
+  <defs>
+    <radialGradient id="m1" cx="0.2" cy="0.1" r="0.9"><stop offset="0" stop-color="#F2C9A0"/><stop offset="1" stop-color="#F2C9A0" stop-opacity="0"/></radialGradient>
+    <radialGradient id="m2" cx="0.95" cy="0.95" r="0.9"><stop offset="0" stop-color="#8E5B3E"/><stop offset="1" stop-color="#8E5B3E" stop-opacity="0"/></radialGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D9A57B"/><stop offset="1" stop-color="#3A2A22"/></linearGradient>
+    <linearGradient id="vidro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.75"/><stop offset="0.55" stop-color="#fff" stop-opacity="0.28"/><stop offset="1" stop-color="#fff" stop-opacity="0.12"/></linearGradient>
+    <linearGradient id="borda" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.15"/><stop offset="1" stop-color="#fff" stop-opacity="0.6"/></linearGradient>
+    <filter id="s" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#2A160C" flood-opacity="0.45"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="url(#base)"/>
+  <rect width="512" height="512" rx="118" fill="url(#m1)"/>
+  <rect width="512" height="512" rx="118" fill="url(#m2)"/>
+  <g filter="url(#s)">
+    <path d="M256 86C268 196 316 244 426 256C316 268 268 316 256 426C244 316 196 268 86 256C196 244 244 196 256 86Z" fill="url(#vidro)" stroke="url(#borda)" stroke-width="5"/>
+  </g>
+  <path d="M256 120C264 200 300 236 352 248C300 240 266 206 256 120Z" fill="#fff" opacity="0.55"/>
+</svg>
