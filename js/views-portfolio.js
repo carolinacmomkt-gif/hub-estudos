@@ -158,9 +158,9 @@ export function renderEntrada(estado) {
   return `
     ${cabecalho('Entrada', `${capturas + novas ? `${capturas + novas} para decidir` : 'Tudo decidido'} · cada item vira tarefa, projeto, ideia ou sai`)}
     <div class="acoes cal-acoes"><a class="botao botao-secundario botao-pequeno" href="#revisao">Revisão da semana</a></div>
-    <div class="pilha">
-      ${cardCaixaEntrada(estado.caixa || [])}
-      ${estado.usandoExemplo ? '' : cardDemandas(estado)}
+    <div class="pf-entrada">
+      ${estado.usandoExemplo ? '' : `<div class="pf-entrada-demandas">${cardDemandas(estado)}</div>`}
+      <div class="pf-entrada-caixa">${cardCaixaEntrada(estado.caixa || [])}</div>
     </div>`;
 }
 

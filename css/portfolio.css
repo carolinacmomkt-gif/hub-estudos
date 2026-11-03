@@ -64,3 +64,11 @@ body[data-menu="icones"] .nav-modo { display: none; }
 .nav-modo-folha { margin: 0 0 12px; }
 .chip-modo { display: inline-flex; align-items: center; gap: 4px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--cor-destaque-suave); font-size: .875rem; min-height: 36px; }
 
+
+/* Entrada (Carol, 03/11/2026): as Demandas ocupam 2/3 e a Caixa de entrada 1/3 em tela larga,
+   alinhadas com o topo; no tablet em pé e no celular, uma embaixo da outra. */
+.pf-entrada { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (min-width: 1000px) {
+  .pf-entrada { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+}
+@media (max-width: 700px) { .pf-entrada { gap: 12px; } }

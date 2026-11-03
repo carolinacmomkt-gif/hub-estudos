@@ -534,6 +534,6 @@ export function renderImportar(estado) {
   return `
     <a class="voltar" href="#calendario">‹ Calendário</a>
     ${cabecalho('Calendário acadêmico', 'Importar do PDF ou do texto, com a ajuda da IA')}
-    <div class="pilha">${corpo}</div>
+    <div class="pilha pilha-larga">${corpo}</div>
     <p class="campo-ajuda cal-rodape">O PDF é usado só para esta leitura e é apagado logo depois.</p>`;
 }
