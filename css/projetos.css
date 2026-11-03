@@ -75,11 +75,21 @@
 .pj-outros-lista li:first-child { border-top: 0; }
 
 /* Tipos e métodos (Novo projeto e lista vazia) */
+.pj-vazio > p { max-width: 68ch; }
+
+/* 6 tipos: 3 colunas no computador, 2 no tablet em pé, 1 no celular (linhas sempre cheias) */
 .pj-tipos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   margin-top: 14px;
+}
+
+.pj-tipos > li { display: flex; }
+.pj-tipos .pj-tipo { height: 100%; }
+
+@media (max-width: 1000px) {
+  .pj-tipos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .pj-tipo,
