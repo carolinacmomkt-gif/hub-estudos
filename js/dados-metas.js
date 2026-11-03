@@ -65,6 +65,13 @@ export function progressoDaMeta(m, dados, hoje = iso(new Date())) {
     const pr = progressoDoProjeto(p, dados.tarefas);
     return pronto(pr.prontas, pr.total || 1, `${pr.prontas} de ${pr.total} tarefas`);
   }
+  if (lig.tipo === 'projetos') {
+    const lista = (lig.ids || []).map((id) => vivos(dados.projetos).find((x) => x.id === id)).filter(Boolean);
+    if (!lista.length) return null;
+    const media = lista.reduce((s, p) => s + progressoDoProjeto(p, dados.tarefas).fracao, 0) / lista.length;
+    const prontos = lista.filter((p) => p.status === 'concluido' || progressoDoProjeto(p, dados.tarefas).fracao >= 1).length;
+    return { atual: Math.round(media * 100), alvo: 100, fracao: media, texto: `${prontos} de ${lista.length} projetos prontos · ${Math.round(media * 100)}%` };
+  }
   if (lig.tipo === 'lazer') {
     const feitos = vivos(dados.lazer).filter((l) => l.status === 'feito' && (!lig.lazerTipo || l.tipo === lig.lazerTipo) && String(l.data || l.atualizado_em || '').slice(0, 10) >= inicio).length;
     return pronto(feitos, Number(m.alvo) || 12, null);

@@ -15,6 +15,7 @@ export const CARDS_DO_APP = [
   { id: 'humor', nome: 'Como estou hoje', tamanho: '1/3' },
   { id: 'recompensas', nome: 'Nível e recompensas', tamanho: '1/3' },
   { id: 'tarefas', nome: 'Tarefas de hoje', tamanho: '2/3' },
+  { id: 'prioridades', nome: 'Prioridades da semana', tamanho: '1/3' },
   { id: 'habitos', nome: 'Hábitos de hoje', tamanho: '1/3' },
   { id: 'sonho', nome: 'Frase do dia', tamanho: '1/3' },
   { id: 'sonhofoto', nome: 'Sonho do dia (foto)', tamanho: '1/3', oculto: true },

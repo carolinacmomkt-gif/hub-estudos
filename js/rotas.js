@@ -8,9 +8,12 @@ export const ROTAS = [
   { id: 'inicio', titulo: 'Hoje', curto: 'Hoje', icone: 'inicio', fixaCelular: true, grupo: 'dia' },
   { id: 'calendario', titulo: 'Calendário', curto: 'Agenda', icone: 'calendario', fixaCelular: true, grupo: 'dia' },
   { id: 'foco', titulo: 'Sessão de foco', curto: 'Foco', icone: 'foco', grupo: 'dia' },
+  { id: 'entrada', titulo: 'Entrada', curto: 'Entrada', icone: 'entrada', grupo: 'dia' },
   { id: 'buscar', titulo: 'Pergunte à Bússola', curto: 'Buscar', icone: 'buscar', grupo: 'dia' },
   // Planejar: planejar e revisar
   { id: 'tarefas', titulo: 'Tarefas e projetos', curto: 'Tarefas', icone: 'tarefas', fixaCelular: true, grupo: 'planejar' },
+  { id: 'portfolio', titulo: 'Painel de projetos', curto: 'Projetos', icone: 'painel', grupo: 'planejar' },
+  { id: 'revisao', titulo: 'Revisão da semana', curto: 'Revisão', icone: 'revisao', grupo: 'planejar' },
   { id: 'metas', titulo: 'Metas e lazer', curto: 'Metas', icone: 'metas', grupo: 'planejar' },
   { id: 'habitos', titulo: 'Hábitos e rotinas', curto: 'Hábitos', icone: 'habitos', grupo: 'planejar' },
   { id: 'resumo', titulo: 'Resumo da semana', curto: 'Semana', icone: 'calendario', grupo: 'planejar' },

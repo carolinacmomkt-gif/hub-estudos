@@ -8,6 +8,8 @@ import {
   tarefasDeHoje, proximosDias, algumDia, depois, feitas, progressoDoProjeto,
 } from './dados-tarefas.js';
 
+import { quadroHtml } from './views-portfolio.js';
+
 export const ABAS_TAREFAS = [
   { id: 'hoje', nome: 'Hoje' },
   { id: 'proximos', nome: 'Próximos' },
@@ -15,6 +17,7 @@ export const ABAS_TAREFAS = [
   { id: 'feitas', nome: 'Feitas' },
   { id: 'projetos', nome: 'Projetos' },
 ];
+// (O Painel de projetos, com o farol, fica em #portfolio, no grupo Planejar.)
 export const STATUS_PROJETO = [
   { id: 'ativo', nome: 'Em andamento' },
   { id: 'pausado', nome: 'Pausado' },
@@ -160,6 +163,11 @@ function visaoProjetos(estado, tarefas) {
     ${prontos.length ? `<details class="card"><summary>Concluídos (${prontos.length})</summary><ul class="projetos">${prontos.map((p) => cartaoProjeto(p, tarefas)).join('')}</ul></details>` : ''}`;
 }
 
+// Lista ou quadro (a fazer → fazendo → feito), lembrado no aparelho.
+export function visaoProjeto() {
+  try { return localStorage.getItem('hub.projeto.visao') === 'quadro' ? 'quadro' : 'lista'; } catch { return 'lista'; }
+}
+
 function telaProjeto(estado, id, op) {
   const p = vivos(estado.projetos).find((x) => x.id === id);
   if (!p) return `${cabecalho('Projeto')}<section class="card"><p class="texto-suave">Esse projeto não existe mais.</p><a class="botao botao-secundario" href="#tarefas/projetos">Ver os projetos</a></section>`;
@@ -180,8 +188,10 @@ function telaProjeto(estado, id, op) {
       ${p.notas ? `<p class="proprio-texto">${esc(p.notas)}</p>` : ''}
     </section>
     ${campoRapido({ projetoId: p.id, placeholder: 'Nova tarefa deste projeto' })}
+    <div class="segmentado" role="group" aria-label="Como ver as tarefas">${[['lista', 'Lista'], ['quadro', 'Quadro']].map(([v, n]) => `<button type="button" class="segmentado-opcao${visaoProjeto() === v ? ' ativo' : ''}" data-acao="projeto-visao" data-valor="${v}" aria-pressed="${visaoProjeto() === v}">${n}</button>`).join('')}</div>
+    ${visaoProjeto() === 'quadro' ? quadroHtml(p.id, estado.tarefas, op.hoje) : `
     <section class="card">${abertas.length ? lista(abertas, { ...op, semProjeto: true }) : vazio(pr.total ? 'Todas as tarefas prontas. 🎉' : 'Sem tarefas ainda.')}</section>
-    ${prontas.length ? `<details class="card"><summary>Prontas (${prontas.length})</summary>${lista(prontas, { ...op, semProjeto: true })}</details>` : ''}
+    ${prontas.length ? `<details class="card"><summary>Prontas (${prontas.length})</summary>${lista(prontas, { ...op, semProjeto: true })}</details>` : ''}`}
     </div>`;
 }
 
@@ -246,6 +256,8 @@ export function formTarefa(t = {}, projetos = []) {
         <label class="campo"><span class="campo-rotulo">Projeto</span>
           <select name="projeto_id">${opcao('', t.projeto_id, 'Nenhum')}${vivos(projetos).filter((p) => p.status !== 'concluido' || p.id === t.projeto_id).map((p) => opcao(p.id, t.projeto_id, p.titulo)).join('')}</select></label>
       </div>
+      <label class="campo"><span class="campo-rotulo">Quanto tempo (para a capacidade da semana)</span>
+        <select name="minutos">${opcao('', t.dados?.minutos || '', 'Não sei (conta 30 min)')}${[15, 30, 45, 60, 90, 120, 180, 240, 360].map((m) => opcao(m, t.dados?.minutos || '', m < 60 ? `${m} min` : `${m / 60}h`.replace('.5h', 'h30'))).join('')}</select></label>
       <label class="campo"><span class="campo-rotulo">Repetir</span>
         <select name="rep" data-acao-mudar="tarefa-rep">
           ${opcao('', rec.tipo, 'Não repete')}${opcao('diaria', rec.tipo, 'Todo dia')}${opcao('uteis', rec.tipo, 'Dias úteis')}${opcao('semanal', rec.tipo, 'Toda semana')}${opcao('mensal', rec.tipo, 'Todo mês')}
@@ -285,6 +297,7 @@ export function lerFormTarefa(form) {
       titulo, data, hora: f.get('hora') || null, prioridade: Number(f.get('prioridade')) || 0,
       area: f.get('area') || 'pessoal', projeto_id: f.get('projeto_id') || null, recorrencia, notas: String(f.get('notas') || '').trim() || null,
     },
+    minutos: Number(f.get('minutos')) || null,
   };
 }
 

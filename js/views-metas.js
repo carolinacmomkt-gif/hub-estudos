@@ -232,6 +232,7 @@ export function formMeta(m = {}, estado) {
           ${cx.length ? opcao('caixinha', lig.tipo, 'Pelo dinheiro de uma caixinha') : ''}
           ${hab.length ? opcao('habito', lig.tipo, 'Pelos dias de um hábito') : ''}
           ${proj.length ? opcao('projeto', lig.tipo, 'Pelas tarefas de um projeto') : ''}
+          ${proj.length > 1 ? opcao('projetos', lig.tipo, 'Pelos projetos que movem a meta (vários)') : ''}
           ${opcao('lazer', lig.tipo, 'Pelo que eu fizer no Lazer (ex.: livros lidos)')}
           ${opcao('marcos', lig.tipo, 'Por etapas que eu marco')}
           ${opcao('manual', lig.tipo, 'Por um número que eu atualizo')}
@@ -239,6 +240,10 @@ export function formMeta(m = {}, estado) {
       <label class="campo" data-lig="caixinha"${lig.tipo === 'caixinha' ? '' : ' hidden'}><span class="campo-rotulo">Caixinha</span><select name="caixinha">${cx.map((c) => opcao(c.id, lig.id, c.descricao)).join('')}</select></label>
       <label class="campo" data-lig="habito"${lig.tipo === 'habito' ? '' : ' hidden'}><span class="campo-rotulo">Hábito</span><select name="habito">${hab.map((h) => opcao(h.id, lig.id, `${h.icone || ''} ${h.nome}`)).join('')}</select></label>
       <label class="campo" data-lig="projeto"${lig.tipo === 'projeto' ? '' : ' hidden'}><span class="campo-rotulo">Projeto</span><select name="projeto">${proj.map((p) => opcao(p.id, lig.id, p.titulo)).join('')}</select></label>
+      <fieldset class="campo" data-lig="projetos"${lig.tipo === 'projetos' ? '' : ' hidden'}><legend class="campo-rotulo">Projetos que movem esta meta</legend>
+        <div class="grupo-marcar">${proj.map((p) => `<label class="campo-marcar"><input type="checkbox" name="projetos" value="${esc(p.id)}"${(lig.ids || []).includes(p.id) ? ' checked' : ''}><span>${esc(p.titulo)}</span></label>`).join('')}</div>
+        <p class="campo-ajuda">O progresso da meta é a média do progresso dos projetos. Eles mostram a meta no Painel de projetos.</p>
+      </fieldset>
       <label class="campo" data-lig="lazer"${lig.tipo === 'lazer' ? '' : ' hidden'}><span class="campo-rotulo">Contar o quê</span><select name="lazerTipo">${opcao('', lig.lazerTipo, 'Tudo do lazer')}${TIPOS_LAZER.map((t) => opcao(t.id, lig.lazerTipo, `${t.emoji} ${t.nome}`)).join('')}</select></label>
       <div class="cal-form-linha" data-lig="alvo"${['habito', 'lazer', 'manual'].includes(lig.tipo) ? '' : ' hidden'}>
         <label class="campo"><span class="campo-rotulo">Quanto quer alcançar</span><input name="alvo" type="number" min="1" step="any" value="${esc(m.alvo || '')}"></label>

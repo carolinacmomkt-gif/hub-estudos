@@ -267,6 +267,10 @@ function enviarMeta(form) {
     if (!ligacao.id) return erro(form, 'Escolha com o que ligar.');
   }
   if (tipo === 'lazer') ligacao.lazerTipo = f.get('lazerTipo') || '';
+  if (tipo === 'projetos') {
+    ligacao.ids = f.getAll('projetos').map(String);
+    if (!ligacao.ids.length) return erro(form, 'Marque pelo menos um projeto.');
+  }
   const alvoNum = Number(f.get('alvo'));
   if (tipo === 'manual' && !(alvoNum > 0)) return erro(form, 'Diga quanto quer alcançar.');
   const antigos = atual?.dados?.marcos || [];

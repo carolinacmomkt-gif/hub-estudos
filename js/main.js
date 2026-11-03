@@ -32,6 +32,7 @@ import { montarTrabalho } from './eventos-trabalho.js';
 import { renderRelatorio } from './views-relatorio.js';
 import { montarRelatorio, desmontarRelatorio } from './eventos-relatorio.js';
 import { renderPautas } from './views-pauta.js';
+import { renderPortfolio, renderRevisao, renderEntrada } from './views-portfolio.js';
 import { montarPauta, desmontarPauta } from './eventos-pauta.js';
 import { montarCantinho, desmontarCantinho } from './eventos-cantinho.js';
 import { renderBusca } from './views-busca.js';
@@ -84,6 +85,9 @@ const VIEWS = {
   criar: renderCriar,
   relatorio: renderRelatorio,
   pautas: renderPautas,
+  portfolio: renderPortfolio,
+  revisao: renderRevisao,
+  entrada: renderEntrada,
   buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
 };
 
@@ -246,8 +250,8 @@ async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
 
 // Telas que mostram cada tabela (para redesenhar quando os dados mudam).
 const TELAS_DA_TABELA = {
-  caixa_entrada: ['inicio'],
-  demandas: ['inicio'],
+  caixa_entrada: ['inicio', 'entrada', 'revisao'],
+  demandas: ['inicio', 'entrada', 'revisao'],
   conexoes: ['configuracoes', 'faculdade', 'inicio', 'conteudo', 'aprovar', 'clientes', 'criar'],
   conteudos: ['conteudo', 'aprovar', 'clientes', 'inicio'],
   maos: [], // o Com as mãos cuida da própria tela (a folha não pode ser refeita no meio do traço)
@@ -257,12 +261,12 @@ const TELAS_DA_TABELA = {
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
   diario: ['inicio'],
-  tarefas: ['tarefas', 'inicio', 'metas'],
-  projetos: ['tarefas', 'inicio', 'metas'],
+  tarefas: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao'],
+  projetos: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao'],
   financas: ['financas', 'inicio', 'metas'],
   habitos: ['habitos', 'inicio', 'metas'],
   habito_registros: ['habitos', 'inicio', 'metas'],
-  metas: ['metas', 'inicio'],
+  metas: ['metas', 'inicio', 'portfolio'],
   lazer: ['metas', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],

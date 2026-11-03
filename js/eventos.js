@@ -41,6 +41,7 @@ import { ligarTrabalho, cliqueTrabalho, enviarTrabalho, mudancaTrabalho } from '
 import { ligarRelatorio, cliqueRelatorio, enviarRelatorio, mudancaRelatorio } from './eventos-relatorio.js';
 import { ligarPauta, cliquePauta, enviarPauta, mudancaPauta } from './eventos-pauta.js';
 import { mudancaDatas } from './eventos-datas.js';
+import { ligarPortfolio, cliquePortfolio, mudancaPortfolio } from './eventos-portfolio.js';
 import { ligarMaos, cliqueMaos, enviarMaos, mudancaMaos } from './eventos-maos.js';
 import { ligarDemandas, cliqueDemandas, enviarDemandas, mudancaDemandas } from './eventos-demandas.js';
 import { ligarOrganizar, cliqueOrganizar, enviarOrganizar, mudancaOrganizar } from './eventos-organizar.js';
@@ -52,7 +53,7 @@ import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './ev
 import { confirmar } from './confirmar.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaRelatorio(alvo, tipo) || mudancaPauta(alvo, tipo) || mudancaDatas(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaRelatorio(alvo, tipo) || mudancaPauta(alvo, tipo) || mudancaDatas(alvo, tipo) || mudancaPortfolio(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -406,7 +407,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarMaos, ligarTrabalho, ligarRelatorio, ligarPauta, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarMaos, ligarTrabalho, ligarRelatorio, ligarPauta, ligarPortfolio, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   ligarFolhas();
   ligarConfirmar(); // os diálogos do navegador viram folhas do app
   const folhaMais = document.getElementById('folha-mais');
@@ -517,7 +518,7 @@ export function ligarEventos(funcoesDoApp) {
           return;
         }
         if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo)
-          || cliqueFoco(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueMaos(alvo) || cliqueTrabalho(alvo) || cliqueRelatorio(alvo) || cliquePauta(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
+          || cliqueFoco(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueMaos(alvo) || cliqueTrabalho(alvo) || cliqueRelatorio(alvo) || cliquePauta(alvo) || cliquePortfolio(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.

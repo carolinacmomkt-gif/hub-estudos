@@ -1,0 +1,64 @@
+/* Gestão de projetos: Painel de projetos (#portfolio), quadro do projeto, Revisão da semana (#revisao). */
+.farol { display: inline-flex; align-items: center; gap: 6px; font-size: .8125rem; color: var(--cor-texto-suave); white-space: nowrap; }
+.farol i { width: 10px; height: 10px; border-radius: 50%; background: var(--farol-cor, var(--cor-texto-suave)); flex: none; }
+.farol-atrasado { --farol-cor: var(--urg-atrasado); }
+.farol-risco { --farol-cor: var(--urg-urgente); }
+.farol-prazo { --farol-cor: var(--cor-sucesso); }
+.farol-pausado, .farol-concluido { --farol-cor: var(--cor-texto-suave); }
+
+.pf-topo { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-bottom: 16px; }
+@media (min-width: 900px) { .pf-topo { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } }
+.pf-contagem { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pf-contagem li { display: grid; gap: 2px; padding: 10px; border-radius: var(--raio); background: var(--cor-superficie-elevada); border-top: 3px solid var(--farol-cor); }
+.pf-contagem b { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.pf-contagem span { font-size: .8125rem; color: var(--cor-texto-suave); }
+.pf-area { margin-top: 20px; }
+.pf-area-titulo { font-size: 1rem; margin: 0 0 10px; display: flex; gap: 8px; align-items: baseline; }
+.pf-area-titulo small { color: var(--cor-texto-suave); font-weight: 400; }
+.pf-projetos { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.pf-cartao { display: grid; gap: 8px; color: inherit; text-decoration: none; min-height: 44px; }
+.pf-cartao:focus-visible { outline: 2px solid var(--cor-foco); outline-offset: 2px; }
+.pf-cartao-topo { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.pf-cartao-topo b { overflow-wrap: anywhere; }
+.pf-linha { font-size: .875rem; }
+.pf-motivo { color: var(--cor-texto-suave); }
+.pf-meta { color: var(--cor-texto-suave); font-style: italic; }
+
+.pf-cap-num { margin: 4px 0 8px; }
+.pf-cap-num b { font-size: 1.25rem; }
+.pf-cap-barra { height: 10px; border-radius: 5px; background: var(--cor-trilho); overflow: hidden; }
+.pf-cap-barra span { display: block; height: 100%; background: var(--cor-sucesso); border-radius: 5px; }
+.cap-cheia .pf-cap-barra span { background: var(--urg-urgente); }
+.cap-acima .pf-cap-barra span { background: var(--urg-atrasado); }
+.pf-cap-areas { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.pf-cap-areas li { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; }
+.pf-cap-areas small { grid-column: 1 / -1; color: var(--cor-texto-suave); }
+
+.pf-quadro { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); margin-top: 12px; }
+@media (min-width: 800px) { .pf-quadro { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.pf-col-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pf-tarefa { display: grid; gap: 6px; padding: 10px; border-radius: var(--raio); background: var(--cor-superficie-elevada); }
+.pf-tarefa-titulo { text-align: left; background: none; border: 0; color: inherit; font: inherit; font-weight: 600; padding: 0; min-height: 32px; cursor: pointer; }
+.pf-tarefa small { color: var(--cor-texto-suave); }
+.pf-tarefa-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.pf-col-feito .pf-tarefa-titulo { text-decoration: line-through; color: var(--cor-texto-suave); }
+
+.rv { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 1000px) { .rv { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); } }
+.rv-lado { display: grid; gap: 16px; }
+.rv-lista { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.rv-passo { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: var(--raio); background: var(--cor-superficie-elevada); }
+.rv-passo.feito .rv-texto b { text-decoration: line-through; color: var(--cor-texto-suave); }
+.rv-check { display: grid; place-items: center; min-width: 44px; min-height: 44px; cursor: pointer; }
+.rv-check input { width: 22px; height: 22px; accent-color: var(--cor-destaque); }
+.rv-texto { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.rv-texto small { color: var(--cor-texto-suave); }
+.rv-selo-alerta { background: var(--urg-urgente); color: var(--cor-fundo); }
+.rv-prio-lista { margin: 8px 0; padding-left: 22px; display: grid; gap: 6px; }
+.rv-prio-lista li { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rv-prio-lista .feita { text-decoration: line-through; color: var(--cor-texto-suave); }
+.rv-opcoes { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; max-height: 320px; overflow-y: auto; }
+.rv-opcoes .botao { width: 100%; justify-content: flex-start; text-align: left; }
+.rv-escolher summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.rv-texto > .selo { justify-self: start; min-width: 24px; text-align: center; }
+.pf-topo { align-items: start; }

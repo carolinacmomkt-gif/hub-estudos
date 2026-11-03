@@ -1,5 +1,6 @@
 // Tela Hoje: saudação, "Próximo passo" e cards de resumo.
 
+import { cardPrioridadesHoje } from './views-portfolio.js';
 import { cardAgendaHoje, cardHumor, resumoDoDia } from './hoje.js';
 import { cardTarefasHoje, cardProjetosHoje } from './views-tarefas.js';
 import { cardFinancasHoje, cardContasHoje } from './views-financas.js';
@@ -386,6 +387,7 @@ export function renderInicio(estado) {
     humor: () => cardHumor(estado, agora),
     recompensas: () => cardRecompensasHoje(estado),
     tarefas: () => cardTarefasHoje(estado),
+    prioridades: () => (estado.usandoExemplo ? '' : cardPrioridadesHoje(estado)),
     habitos: () => cardHabitosHoje(estado),
     sonho: () => cardFraseHoje(),
     sonhofoto: () => cardSonhoHoje(estado),
