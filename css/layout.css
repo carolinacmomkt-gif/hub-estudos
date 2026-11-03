@@ -21,6 +21,14 @@
   padding: 32px clamp(16px, 4vw, 48px) 56px;
 }
 
+/* Monitor grande (Carol, 03/11/2026, opção 3): o conteúdo cresce até 1.540 px (≈1.440 de cards), ainda centralizado,
+   para não sobrar um vão grande entre o menu e o conteúdo. Os textos continuam em ~68 letras por linha. */
+@media (min-width: 1600px) {
+  .conteudo {
+    max-width: 1540px;
+  }
+}
+
 /* Barra lateral */
 .nav-lateral {
   position: sticky;
