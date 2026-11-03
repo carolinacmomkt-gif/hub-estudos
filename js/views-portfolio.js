@@ -5,7 +5,7 @@ import { cabecalho, barraProgresso } from './componentes.js';
 import { esc } from './utilidades.js';
 import { AREAS_TAREFA, iso } from './dados-tarefas.js';
 import {
-  FAROL, portfolio, quadroDoProjeto, capacidadeDaSemana, horas, PASSOS_REVISAO, revisaoDaSemana, numerosDaRevisao,
+  FAROL, portfolio, quadroDoProjeto, PASSOS_REVISAO, revisaoDaSemana, numerosDaRevisao,
 } from './dados-portfolio.js';
 import { datasVisiveis, prefsDatas } from './datas-especiais.js';
 import { clientesAtivos } from './dados-trabalho.js';
@@ -26,7 +26,6 @@ const farol = (id) => `<span class="farol farol-${id}"><i aria-hidden="true"></i
 export function renderPortfolio(estado) {
   const hoje = iso(new Date());
   const pf = portfolio(estado, hoje);
-  const cap = capacidadeDaSemana(estado, hoje);
   const c = pf.contagem;
   const sub = pf.ativos.length
     ? [`${pf.ativos.length} ${pf.ativos.length === 1 ? 'projeto ativo' : 'projetos ativos'}`, c.atrasado && `${c.atrasado} atrasado${c.atrasado > 1 ? 's' : ''}`, c.risco && `${c.risco} em risco`].filter(Boolean).join(' · ')
@@ -43,7 +42,6 @@ export function renderPortfolio(estado) {
         <p class="tb-rot">Farol</p>
         <ul class="pf-contagem">${['atrasado', 'risco', 'prazo', 'pausado'].map((k) => `<li class="farol-${k}"><b>${c[k]}</b><span>${esc(FAROL[k].nome)}</span></li>`).join('')}</ul>
       </section>
-      ${cardCapacidade(cap)}
     </div>
     ${pf.areas.length ? pf.areas.map((a) => `
       <section class="pf-area" aria-label="${esc(a.nome)}">
@@ -63,19 +61,6 @@ function cartaoProjeto(x, hoje) {
     ${x.proxima ? `<span class="pf-linha"><span class="texto-suave">Próximo passo:</span> ${esc(x.proxima.titulo)}${x.proxima.data || x.proxima.prazo ? ` · ${esc(textoDia(x.proxima.prazo || x.proxima.data, hoje))}` : ''}</span>` : ''}
     ${x.metas.length ? `<span class="pf-linha pf-meta">Move a meta: ${esc(x.metas.map((m) => m.titulo).join(', '))}</span>` : ''}
   </a></li>`;
-}
-
-export function cardCapacidade(cap) {
-  const fracao = cap.disponivel ? Math.min(1, cap.prometido / cap.disponivel) : 1;
-  const texto = { cabe: 'A semana cabe.', cheia: 'A semana está cheia: cuidado com o que entra.', acima: `Passou ${horas(cap.prometido - cap.disponivel)} do que cabe: adie ou negocie prazos.`, folga: 'Hoje não é dia de trabalho; o resto da semana começa do zero.' }[cap.estado];
-  return `<section class="card pf-capacidade cap-${cap.estado}" aria-label="Capacidade da semana">
-    <p class="tb-rot">Capacidade da semana</p>
-    <p class="pf-cap-num"><b>${esc(horas(cap.prometido))}</b> prometidas de <b>${esc(horas(cap.disponivel))}</b> que faltam</p>
-    <div class="pf-cap-barra" role="img" aria-label="${Math.round(fracao * 100)}% da semana ocupada"><span style="width:${Math.round(fracao * 100)}%"></span></div>
-    <p class="campo-ajuda">${esc(texto)}${cap.atrasadas ? ` ${cap.atrasadas} ${cap.atrasadas === 1 ? 'tarefa atrasada entra na conta' : 'tarefas atrasadas entram na conta'}.` : ''}</p>
-    ${cap.porArea.length ? `<ul class="pf-cap-areas">${cap.porArea.map((a) => `<li><span>${esc(a.nome)}</span><b>${esc(horas(a.minutos))}</b><small>${a.tarefas} ${a.tarefas === 1 ? 'tarefa' : 'tarefas'}</small></li>`).join('')}</ul>` : ''}
-    <p class="campo-ajuda">Cada tarefa conta 30 min se você não disser o tempo (campo "Quanto tempo" na tarefa). As horas por dia e os dias de trabalho ficam em Configurações → Conexões → Demandas.</p>
-  </section>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +104,6 @@ export function renderRevisao(estado) {
   const capturas = (estado.caixa || []).filter((i) => !i.processado_em && !i.excluido_em).length;
   const novas = (estado.demandas || []).filter((d) => !d.excluido_em && d.status === 'nova').length;
   const n = numerosDaRevisao(estado, { demandasNovas: novas, capturas, datas30: datas.length }, hoje);
-  const cap = capacidadeDaSemana(estado, hoje);
   const feitos = PASSOS_REVISAO.filter((p) => r.passos?.[p.id]).length;
   const abertas = vivos(estado.tarefas).filter((t) => !t.feita_em && !t.recorrencia?.tipo)
     .sort((a, b) => (b.prioridade || 0) - (a.prioridade || 0) || (a.prazo || a.data || '9999').localeCompare(b.prazo || b.data || '9999'));
@@ -141,8 +125,7 @@ export function renderRevisao(estado) {
         <div class="acoes"><button class="botao botao-primario" type="button" data-acao="revisao-concluir"${feitos < PASSOS_REVISAO.length ? '' : ''}>${r.feita_em ? 'Revisão feita ✓' : 'Concluir a revisão'}</button></div>
       </section>
       <div class="rv-lado">
-        ${cardCapacidade(cap)}
-        <section class="card rv-prioridades" aria-label="3 prioridades da semana">
+          <section class="card rv-prioridades" aria-label="3 prioridades da semana">
           <p class="tb-rot">3 prioridades da semana</p>
           ${prioridades.length ? `<ol class="rv-prio-lista">${prioridades.map((t) => `<li><span${t.feita_em ? ' class="feita"' : ''}>${esc(t.titulo)}</span><button class="botao-icone" type="button" data-acao="revisao-prioridade" data-id="${esc(t.id)}" aria-label="Tirar das prioridades: ${esc(t.titulo)}" title="Tirar">×</button></li>`).join('')}</ol>` : '<p class="texto-suave">Escolha até 3 tarefas abaixo.</p>'}
           ${prioridades.length < 3 ? `<details class="rv-escolher" open><summary>Escolher entre as tarefas abertas</summary>

@@ -256,8 +256,6 @@ export function formTarefa(t = {}, projetos = []) {
         <label class="campo"><span class="campo-rotulo">Projeto</span>
           <select name="projeto_id">${opcao('', t.projeto_id, 'Nenhum')}${vivos(projetos).filter((p) => p.status !== 'concluido' || p.id === t.projeto_id).map((p) => opcao(p.id, t.projeto_id, p.titulo)).join('')}</select></label>
       </div>
-      <label class="campo"><span class="campo-rotulo">Quanto tempo (para a capacidade da semana)</span>
-        <select name="minutos">${opcao('', t.dados?.minutos || '', 'Não sei (conta 30 min)')}${[15, 30, 45, 60, 90, 120, 180, 240, 360].map((m) => opcao(m, t.dados?.minutos || '', m < 60 ? `${m} min` : `${m / 60}h`.replace('.5h', 'h30'))).join('')}</select></label>
       <label class="campo"><span class="campo-rotulo">Repetir</span>
         <select name="rep" data-acao-mudar="tarefa-rep">
           ${opcao('', rec.tipo, 'Não repete')}${opcao('diaria', rec.tipo, 'Todo dia')}${opcao('uteis', rec.tipo, 'Dias úteis')}${opcao('semanal', rec.tipo, 'Toda semana')}${opcao('mensal', rec.tipo, 'Todo mês')}
@@ -297,7 +295,6 @@ export function lerFormTarefa(form) {
       titulo, data, hora: f.get('hora') || null, prioridade: Number(f.get('prioridade')) || 0,
       area: f.get('area') || 'pessoal', projeto_id: f.get('projeto_id') || null, recorrencia, notas: String(f.get('notas') || '').trim() || null,
     },
-    minutos: Number(f.get('minutos')) || null,
   };
 }
 

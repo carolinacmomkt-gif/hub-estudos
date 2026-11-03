@@ -24,15 +24,6 @@
 .pf-motivo { color: var(--cor-texto-suave); }
 .pf-meta { color: var(--cor-texto-suave); font-style: italic; }
 
-.pf-cap-num { margin: 4px 0 8px; }
-.pf-cap-num b { font-size: 1.25rem; }
-.pf-cap-barra { height: 10px; border-radius: 5px; background: var(--cor-trilho); overflow: hidden; }
-.pf-cap-barra span { display: block; height: 100%; background: var(--cor-sucesso); border-radius: 5px; }
-.cap-cheia .pf-cap-barra span { background: var(--urg-urgente); }
-.cap-acima .pf-cap-barra span { background: var(--urg-atrasado); }
-.pf-cap-areas { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
-.pf-cap-areas li { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; }
-.pf-cap-areas small { grid-column: 1 / -1; color: var(--cor-texto-suave); }
 
 .pf-quadro { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); margin-top: 12px; }
 @media (min-width: 800px) { .pf-quadro { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -73,23 +64,3 @@ body[data-menu="icones"] .nav-modo { display: none; }
 .nav-modo-folha { margin: 0 0 12px; }
 .chip-modo { display: inline-flex; align-items: center; gap: 4px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--cor-destaque-suave); font-size: .875rem; min-height: 36px; }
 
-/* Consultoria (#consultoria) */
-.cons-numeros { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-.cons-numeros li { display: grid; gap: 2px; }
-.cons-numeros small, .cons-numeros span { color: var(--cor-texto-suave); font-size: .8125rem; }
-.cons-numeros b { font-size: 1.375rem; font-variant-numeric: tabular-nums; }
-.cons-secao { margin-top: 20px; min-width: 0; }
-.cons-funil { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-.cons-etapa { display: grid; gap: 8px; align-content: start; }
-.cons-item { display: grid; gap: 4px; padding: 10px; border-radius: var(--raio); background: var(--cor-superficie-elevada); }
-.cons-item small { color: var(--cor-texto-suave); }
-.cons-duas { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 1000px) { .cons-duas { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
-.cons-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.cons-cliente { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; text-align: left; color: inherit; font: inherit; cursor: pointer; border: 1px solid var(--cor-linha); min-height: 44px; }
-.cons-cliente small { grid-column: 1 / -1; color: var(--cor-texto-suave); }
-.cons-cliente:focus-visible { outline: 2px solid var(--cor-foco); outline-offset: 2px; }
-.cons-entrega { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.cons-entrega > span:first-child { display: grid; gap: 2px; min-width: 0; }
-.cons-entrega small { color: var(--cor-texto-suave); }
-.cons-entrega.atrasada { border-left: 4px solid var(--urg-atrasado); }

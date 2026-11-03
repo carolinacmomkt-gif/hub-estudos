@@ -262,10 +262,6 @@ export function eventosEspeciais(estado, foco = chaveDia(new Date())) {
     origem: 'especial',
     especial: d,
   }));
-  // Entregas e encontros da Consultoria ainda por fazer.
-  for (const i of (estado.consultoria || []).filter((x) => !x.excluido_em && x.tipo !== 'proposta' && !x.dados?.feito && x.data)) {
-    saida.push({ id: `esp:${i.data}:cons:${i.id}`, titulo: `Consultoria: ${i.titulo}`, inicio: i.dados?.hora ? new Date(`${i.data}T${i.dados.hora}:00`).toISOString() : instanteDoDia(i.data), dia_inteiro: !i.dados?.hora, tipo: 'pessoal', origem: 'especial', especial: { grupo: 'consultoria', data: i.data, item: i } });
-  }
   if (prefs.aniversarios) {
     for (const p of pessoasDe(estado.config)) {
       const a = p.aniversario;
@@ -290,10 +286,6 @@ export function detalheEspecial(estado, id) {
   if (!e) return '<p class="texto-suave">Essa data não está mais no calendário.</p>';
   const d = e.especial;
   const quando = maiuscula(fmtDiaLongo.format(dataDaChave(d.data)));
-  if (d.grupo === 'consultoria') {
-    return `<div class="cal-detalhe"><p class="cal-detalhe-titulo">${esc(e.titulo)}</p><p class="texto-suave">${esc(quando)}${d.item.dados?.hora ? ` · ${esc(d.item.dados.hora)}` : ''}</p>${d.item.texto ? `<p>${esc(d.item.texto)}</p>` : ''}
-      <div class="acoes"><a class="botao botao-secundario" href="#consultoria">Abrir a Consultoria</a><button class="botao botao-secundario" type="button" data-acao="cal-fechar">Fechar</button></div></div>`;
-  }
   if (d.grupo === 'aniversarios') {
     return `<div class="cal-detalhe">
       <p class="cal-detalhe-titulo">${esc(e.titulo)}</p>

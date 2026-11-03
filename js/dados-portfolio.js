@@ -1,9 +1,8 @@
 // Gestão de projetos (decisão da Carol, 03/11/2026): painel de projetos (portfólio por área, com farol),
-// quadro das tarefas (a fazer → fazendo → feito), capacidade da semana e a revisão semanal guiada.
+// quadro das tarefas (a fazer → fazendo → feito) e a revisão semanal guiada.
 // Sem DOM, para dar para testar sozinho.
 
 import { AREAS_TAREFA, progressoDoProjeto, somarDias, iso } from './dados-tarefas.js';
-import { prefsOrganizar } from './dados-organizar.js';
 
 const vivos = (l) => (l || []).filter((x) => !x.excluido_em);
 const DIA = 864e5;
@@ -80,33 +79,7 @@ export function quadroDoProjeto(projetoId, tarefas, hoje = iso(new Date())) {
   }));
 }
 
-// ---------------------------------------------------------------------------
-// Capacidade da semana: horas disponíveis × horas prometidas por área
-// ---------------------------------------------------------------------------
-
-export const MINUTOS_PADRAO = 30;
 export const segundaDe = (data) => { const d = new Date(`${data}T12:00:00Z`); return somarDias(data, -((d.getUTCDay() + 6) % 7)); };
-
-export function capacidadeDaSemana(estado, hoje = iso(new Date())) {
-  const inicio = segundaDe(hoje);
-  const fim = somarDias(inicio, 6);
-  const valorOrg = (estado.config || []).find((c) => c.chave === 'organizar' && !c.excluido_em)?.valor || {};
-  const prefs = prefsOrganizar(valorOrg.prefs);
-  // Disponível: dias de trabalho que ainda faltam (hoje incluído) × horas por dia.
-  let disponivel = 0;
-  for (let d = hoje; d <= fim; d = somarDias(d, 1)) if (prefs.dias.includes(new Date(`${d}T12:00:00Z`).getUTCDay())) disponivel += prefs.horasPorDia * 60;
-  const abertas = vivos(estado.tarefas).filter((t) => !t.feita_em && !t.recorrencia?.tipo && (t.data || t.prazo) && (t.data || t.prazo) <= fim);
-  const porArea = AREAS_TAREFA.map((a) => {
-    const lista = abertas.filter((t) => (t.area || 'pessoal') === a.id);
-    return { ...a, tarefas: lista.length, minutos: lista.reduce((s, t) => s + (Number(t.dados?.minutos) || MINUTOS_PADRAO), 0) };
-  }).filter((a) => a.tarefas);
-  const prometido = porArea.reduce((s, a) => s + a.minutos, 0);
-  const atrasadas = abertas.filter((t) => (t.data || t.prazo) < hoje).length;
-  const estado_ = !disponivel ? 'folga' : prometido > disponivel ? 'acima' : prometido > disponivel * 0.85 ? 'cheia' : 'cabe';
-  return { inicio, fim, disponivel, prometido, porArea, atrasadas, estado: estado_, prefs };
-}
-
-export const horas = (min) => { const h = Math.floor(min / 60); const m = Math.round(min % 60); return h && m ? `${h}h${String(m).padStart(2, '0')}` : h ? `${h}h` : `${m} min`; };
 
 // ---------------------------------------------------------------------------
 // Revisão semanal guiada (config "revisao_semanal" { [segunda]: { passos, prioridades, feita_em } })
@@ -117,7 +90,6 @@ export const PASSOS_REVISAO = [
   { id: 'atrasadas', nome: 'Resolver as atrasadas', ajuda: 'Fazer, mudar o dia ou largar o que passou do prazo.', rota: '#tarefas/hoje' },
   { id: 'projetos', nome: 'Olhar os projetos em risco', ajuda: 'Cada projeto ativo precisa de um próximo passo com dia.', rota: '#portfolio' },
   { id: 'datas', nome: 'Ver as datas das clientes (30 dias)', ajuda: 'Dias das profissões, campanhas e feriados que pedem post.', rota: '#calendario' },
-  { id: 'capacidade', nome: 'Conferir se a semana cabe', ajuda: 'Horas prometidas × horas que você tem.', rota: '#revisao' },
   { id: 'prioridades', nome: 'Escolher as 3 prioridades da semana', ajuda: 'O que, se ficar pronto, faz a semana valer.', rota: '#revisao' },
 ];
 

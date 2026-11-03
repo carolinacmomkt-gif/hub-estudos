@@ -195,7 +195,7 @@ export function enviarTarefas(form) {
     return true;
   }
   if (tipo === 'tarefa') {
-    const { dados, erro, minutos } = lerFormTarefa(form);
+    const { dados, erro } = lerFormTarefa(form);
     const caixa = form.querySelector('[data-erro]');
     if (erro) {
       caixa.textContent = erro;
@@ -207,7 +207,7 @@ export function enviarTarefas(form) {
     const base = atual || { dados: {} };
     // Mudar a repetição de uma tarefa já feita: ela volta a ficar aberta.
     if (atual?.feita_em && dados.recorrencia) dados.feita_em = null;
-    salvarTarefa({ ...base, ...dados, dados: { ...(base.dados || {}), minutos } }).then(() => {
+    salvarTarefa({ ...base, ...dados }).then(() => {
       fecharFolha();
       app.renderizar();
       if (!id) app.avisoCurto('Tarefa adicionada.');

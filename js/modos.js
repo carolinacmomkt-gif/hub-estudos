@@ -4,7 +4,7 @@
 
 export const MODOS = [
   { id: 'tudo', nome: 'Tudo', grupos: null },
-  { id: 'trabalho', nome: 'Trabalho', grupos: ['dia', 'planejar', 'trabalho', 'consultoria'] },
+  { id: 'trabalho', nome: 'Trabalho', grupos: ['dia', 'planejar', 'trabalho'] },
   { id: 'estudo', nome: 'Estudo', grupos: ['dia', 'planejar', 'estudos', 'criacao'] },
   { id: 'descanso', nome: 'Descanso', grupos: ['dia', 'vida'] },
 ];
