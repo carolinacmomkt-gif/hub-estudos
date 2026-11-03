@@ -360,5 +360,7 @@ function painelDisciplina(estado, id) {
 }
 
 export function renderFaculdade(estado) {
-  return estado.parametro ? painelDisciplina(estado, estado.parametro) : painelGeral(estado);
+  const arq = (estado.config || []).find((c) => c.chave === 'faculdade_arquivo' && !c.excluido_em)?.valor?.arquivada;
+  const faixa = arq ? `<div class="card cfg-atencao" role="status"><b>A Faculdade está no arquivo.</b><span class="texto-suave">Tudo continua aqui para consulta; ela só não aparece no dia a dia.</span><div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="faculdade-desarquivar">Tirar do arquivo</button></div></div>` : '';
+  return faixa + (estado.parametro ? painelDisciplina(estado, estado.parametro) : painelGeral(estado));
 }

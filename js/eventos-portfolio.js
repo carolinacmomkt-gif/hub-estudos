@@ -6,6 +6,9 @@ import { listar, salvar } from './persistencia.js';
 import { gravar } from './gravacao.js';
 import { aoConcluir, aoDesfazer, iso } from './dados-tarefas.js';
 import { segundaDe } from './dados-portfolio.js';
+import { definirModo, nomeDoModo } from './modos.js';
+import { confirmar } from './confirmar.js';
+import { montarNavegacao } from './views-navegacao.js';
 
 let app;
 export function ligarPortfolio(funcoes) { app = funcoes; }
@@ -62,6 +65,16 @@ export function cliquePortfolio(alvo) {
         r.prioridades = [...lista];
       });
       return true;
+    case 'faculdade-arquivar':
+      confirmar('Arquivar a Faculdade? Notas, cadernos e materiais ficam guardados em Estudos, mas a Faculdade sai do menu, do Hoje, dos avisos e da sincronização automática. Dá para tirar do arquivo quando quiser.', { botao: 'Arquivar' })
+        .then((ok) => ok && arquivarFaculdade(true));
+      return true;
+    case 'faculdade-desarquivar':
+      arquivarFaculdade(false);
+      return true;
+    case 'modo-tudo':
+      trocarModo('tudo');
+      return true;
     case 'revisao-concluir':
       mudarRevisao((r) => { r.feita_em = r.feita_em || new Date().toISOString(); });
       app.avisoCurto('Revisão da semana feita. Boa semana!');
@@ -71,7 +84,27 @@ export function cliquePortfolio(alvo) {
   }
 }
 
+async function arquivarFaculdade(arquivada) {
+  const linha = (await listar('config', { incluirExcluidos: true })).find((c) => c.chave === 'faculdade_arquivo');
+  await salvar('config', { ...(linha || {}), excluido_em: null, chave: 'faculdade_arquivo', valor: { arquivada, em: new Date().toISOString() } });
+  atualizarEstado({ config: await listar('config') });
+  montarNavegacao();
+  app.renderizar();
+  app.avisoCurto(arquivada ? 'Faculdade no arquivo. Ela continua em Estudos → Faculdade (pelo endereço) e em Configurações.' : 'A Faculdade voltou para o menu e o Hoje.');
+}
+
+function trocarModo(id) {
+  definirModo(id);
+  montarNavegacao();
+  app.renderizar();
+  app.avisoCurto(id === 'tudo' ? 'Mostrando tudo de novo.' : `Modo ${nomeDoModo(id)}: o menu e o Hoje mostram só esse contexto.`);
+}
+
 export function mudancaPortfolio(alvo, tipo) {
+  if (alvo.dataset?.acaoMudar === 'modo-foco') {
+    if (tipo === 'change') trocarModo(alvo.value);
+    return true;
+  }
   if (alvo.dataset?.acaoMudar !== 'revisao-passo') return false;
   if (tipo !== 'change') return true;
   mudarRevisao((r) => { r.passos = { ...(r.passos || {}), [alvo.value]: alvo.checked }; });

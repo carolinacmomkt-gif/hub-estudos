@@ -245,6 +245,19 @@ function cardMenuConfig() {
     </section>`;
 }
 
+function cardArquivoFaculdade(estado) {
+  const arq = (estado.config || []).find((c) => c.chave === 'faculdade_arquivo' && !c.excluido_em)?.valor;
+  return `
+    <section class="card" aria-labelledby="config-faculdade-arquivo">
+      <h2 class="card-titulo" id="config-faculdade-arquivo">Faculdade</h2>
+      ${arq?.arquivada
+        ? `<p class="texto-suave">No arquivo desde ${esc(dataCurta.format(new Date(arq.em)))}. Notas, cadernos e materiais continuam guardados em Estudos; ela não aparece no menu nem no Hoje, não avisa prazos e o AVA e o Lyceum não sincronizam sozinhos.</p>
+           <div class="acoes"><a class="botao botao-secundario" href="#faculdade">Abrir a Faculdade</a><button class="botao botao-secundario" type="button" data-acao="faculdade-desarquivar">Tirar do arquivo</button></div>`
+        : `<p class="texto-suave">Quando o curso acabar, arquive a Faculdade: tudo fica guardado, mas sai do menu, do Hoje, dos avisos e da sincronização automática. Dá para voltar quando quiser.</p>
+           <div class="acoes"><button class="botao botao-secundario" type="button" data-acao="faculdade-arquivar">Arquivar a Faculdade</button></div>`}
+    </section>`;
+}
+
 function conteudoDaSecao(estado, id) {
   switch (id) {
     case 'geral': return `${cardConta(estado)}${cardAparencia()}${cardMenuConfig()}`;
@@ -252,7 +265,7 @@ function conteudoDaSecao(estado, id) {
     case 'rotina': return `${cardProtegidos(estado)}${cardConfigLeitura(estado)}${cardPlanoPrefs(estado)}`;
     case 'calendario': return cardDatasConfig(estado);
     case 'trabalho': return cardTrabalhoConfig(estado);
-    case 'conexoes': return `${cardServico(estado, {
+    case 'conexoes': return `${cardArquivoFaculdade(estado)}${cardServico(estado, {
       servico: 'ava',
       titulo: 'AVA (Moodle)',
       rotuloSenha: 'Senha do AVA',

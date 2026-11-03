@@ -1,5 +1,6 @@
 // Tela Hoje: saudação, "Próximo passo" e cards de resumo.
 
+import { cardNoModo, modoAtual, nomeDoModo, faculdadeArquivada, CARDS_DA_FACULDADE } from './modos.js';
 import { cardPrioridadesHoje } from './views-portfolio.js';
 import { cardAgendaHoje, cardHumor, resumoDoDia } from './hoje.js';
 import { cardTarefasHoje, cardProjetosHoje } from './views-tarefas.js';
@@ -427,7 +428,9 @@ export function renderInicio(estado) {
       </div>`;
   }
 
-  const visiveis = blocos.filter((b) => b.visivel);
+  // Modo de foco e Faculdade no arquivo: o Hoje mostra só o contexto (no Personalizar aparece tudo).
+  const arquivada = faculdadeArquivada(estado.config);
+  const visiveis = blocos.filter((b) => b.visivel && (editando || (cardNoModo(b.id) && !(arquivada && CARDS_DA_FACULDADE.includes(b.id)))));
   const html = visiveis.map((bloco, i) => {
     let conteudo = proprios[bloco.id] ? renderProprio(bloco.id, proprios[bloco.id], agora) : doApp[bloco.id]();
     if (!conteudo && !editando) return '';
@@ -444,7 +447,7 @@ export function renderInicio(estado) {
 
   return `
     ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
-    ${editando ? painelPersonalizar(blocos, proprios) : `<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar</button>${estado.usandoExemplo ? '' : botaoDiaLeve(false)}</div>`}
+    ${editando ? painelPersonalizar(blocos, proprios) : `<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar</button>${estado.usandoExemplo ? '' : botaoDiaLeve(false)}${modoAtual() !== 'tudo' ? `<span class="chip-modo">Modo ${esc(nomeDoModo())} <button class="botao-icone botao-icone-p" type="button" data-acao="modo-tudo" aria-label="Voltar a mostrar tudo" title="Mostrar tudo">×</button></span>` : ''}</div>`}
     <div class="painel${editando ? ' painel-editando' : ''}">${html}</div>`;
 }
 

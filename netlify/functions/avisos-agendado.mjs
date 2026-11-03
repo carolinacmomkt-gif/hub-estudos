@@ -77,7 +77,10 @@ export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.no
   await enviarResumoDaUsuaria(userId, assinaturas, linhaConfig?.valor, agora).catch((erro) => console.error('resumo:', erro?.message));
   await enviarVidaDaUsuaria(userId, assinaturas, linhaConfig?.valor, agora).catch((erro) => console.error('avisos do dia:', erro?.message));
   const janela = `inicio=gte.${new Date(agora - DIA).toISOString()}&inicio=lt.${new Date(agora + 5 * DIA).toISOString()}`;
-  const eventos = await banco.listar('eventos', userId, janela);
+  const [arquivo] = await banco.listar('config', userId, 'chave=eq.faculdade_arquivo').catch(() => []);
+  // Faculdade no arquivo: os prazos do AVA, do Lyceum e do calendário acadêmico não avisam mais.
+  const eventos = (await banco.listar('eventos', userId, janela))
+    .filter((e) => !arquivo?.valor?.arquivada || !['ava', 'ics', 'lyceum', 'academico'].includes(e.origem));
   const enviados = new Set((await banco.listarTodas('avisos_enviados', `user_id=eq.${userId}&enviado_em=gte.${new Date(agora - 10 * DIA).toISOString()}`))
     .map((l) => chaveEnviado(l.evento_id, l.marco, l.data_evento)));
 

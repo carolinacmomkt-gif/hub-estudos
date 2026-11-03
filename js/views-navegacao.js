@@ -4,6 +4,7 @@
 
 import { icone } from './icones.js';
 import { confirmar } from './confirmar.js';
+import { MODOS, modoAtual, grupoNoModo } from './modos.js';
 import { ROTAS, ROTA_CONFIGURACOES } from './rotas.js';
 import { esc } from './utilidades.js';
 import {
@@ -21,8 +22,9 @@ function link(rota, { rotulo = true, curto = false } = {}) {
 
 const lista = (ids) => `<ul class="nav-lista">${ids.map(rotaPeloId).filter(Boolean).map((r) => link(r)).join('')}</ul>`;
 
-function grupos(org) {
+function grupos(org, { todosOsModos = false } = {}) {
   return org.grupos.map((g) => {
+    if (!todosOsModos && !grupoNoModo(g.id)) return '';
     const itens = g.itens.filter((id) => !org.escondidos.has(id));
     if (!itens.length) return '';
     return `
@@ -55,6 +57,8 @@ export function montarNavegacao() {
       <button class="nav-recolher botao-icone" type="button" data-acao="menu-ocultar" aria-label="Esconder o menu" title="Esconder o menu">${icone('fechar')}</button>` : `
       <button class="nav-recolher botao-icone" type="button" data-acao="menu-modo" aria-label="Mostrar só os ícones" title="Mostrar só os ícones (Ctrl + \\)">${icone('recolher')}</button>`}
     </div>
+    <label class="nav-modo" title="Modo de foco: o menu e o Hoje mostram só esse contexto"><span class="nav-nome">Modo</span>
+      <select data-acao-mudar="modo-foco" aria-label="Modo de foco">${MODOS.map((m) => `<option value="${m.id}"${m.id === modoAtual() ? ' selected' : ''}>${m.nome}</option>`).join('')}</select></label>
     ${org.favoritos.length ? `<section class="nav-grupo nav-favoritos"><p class="nav-grupo-titulo nav-grupo-fixo">${icone('estrela')}<span>Favoritos</span></p>${lista(org.favoritos)}</section>` : ''}
     <div class="nav-grupos">${grupos(org)}</div>
     <div class="nav-rodape">
@@ -100,6 +104,8 @@ export function montarNavegacao() {
   // Folha "⋯" (celular): todas as áreas, em grupos, com o nome ao lado do ícone.
   const resto = { ...org, grupos: org.grupos.map((g) => ({ ...g, aberto: true })) };
   document.getElementById('folha-mais-lista').innerHTML = `
+    <label class="nav-modo nav-modo-folha"><span>Modo de foco</span>
+      <select data-acao-mudar="modo-foco" aria-label="Modo de foco">${MODOS.map((m) => `<option value="${m.id}"${m.id === modoAtual() ? ' selected' : ''}>${m.nome}</option>`).join('')}</select></label>
     ${grupos(resto).replaceAll('data-acao="menu-grupo"', 'disabled')}
     <ul class="nav-lista">${link(ROTA_CONFIGURACOES)}
       <li><button class="nav-link" type="button" data-acao="menu-editar">${icone('editar')}<span class="nav-nome">Editar menu</span></button></li></ul>

@@ -29,6 +29,8 @@ export function sincronizarFaculdade({ forcar = false } = {}) {
   if (emAndamento) return emAndamento;
   emAndamento = (async () => {
     if (!navigator.onLine) return situacaoFaculdade();
+    // Faculdade no arquivo: só sincroniza quando ela pedir ("Sincronizar agora").
+    if (!forcar && (await listar('config')).some((c) => c.chave === 'faculdade_arquivo' && !c.excluido_em && c.valor?.arquivada)) return situacaoFaculdade();
     const conexoes = await listar('conexoes');
     const lyceum = conexoes.find((c) => c.servico === 'lyceum');
     const ava = conexoes.find((c) => c.servico === 'ava');

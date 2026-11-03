@@ -12,8 +12,16 @@ export default async () => {
   const sobra = () => ORCAMENTO_MS - (Date.now() - inicio);
   const credenciais = await banco.listarCredenciais();
 
+  // Faculdade no arquivo (config "faculdade_arquivo"): AVA e Lyceum param de sincronizar.
+  const arquivadas = new Set();
+  for (const id of new Set(credenciais.map((c) => c.user_id))) {
+    const [linha] = await banco.listar('config', id, 'chave=eq.faculdade_arquivo').catch(() => []);
+    if (linha?.valor?.arquivada) arquivadas.add(id);
+  }
+
   for (const { user_id: userId, servico } of credenciais) {
     if (sobra() < 5000) break;
+    if (arquivadas.has(userId) && (servico === 'ava' || servico === 'lyceum')) continue;
     if (servico === 'lyceum') {
       await sincronizarLyceumDaUsuaria(userId);
       continue;

@@ -33,6 +33,7 @@ import { renderRelatorio } from './views-relatorio.js';
 import { montarRelatorio, desmontarRelatorio } from './eventos-relatorio.js';
 import { renderPautas } from './views-pauta.js';
 import { renderPortfolio, renderRevisao, renderEntrada } from './views-portfolio.js';
+import { renderConsultoria } from './views-consultoria.js';
 import { montarPauta, desmontarPauta } from './eventos-pauta.js';
 import { montarCantinho, desmontarCantinho } from './eventos-cantinho.js';
 import { renderBusca } from './views-busca.js';
@@ -88,6 +89,7 @@ const VIEWS = {
   portfolio: renderPortfolio,
   revisao: renderRevisao,
   entrada: renderEntrada,
+  consultoria: renderConsultoria,
   buscar: (estado) => renderBusca(estado, dadosDaBusca(estado)),
 };
 
@@ -236,6 +238,8 @@ const TABELAS_NA_MEMORIA = {
   conteudos: 'conteudos',
   clientes_trabalho: 'clientesTrabalho',
   rascunhos: 'rascunhos',
+  clientes: 'clientesConsultoria',
+  consultoria: 'consultoria',
 };
 
 async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
@@ -257,12 +261,14 @@ const TELAS_DA_TABELA = {
   maos: [], // o Com as mãos cuida da própria tela (a folha não pode ser refeita no meio do traço)
   clientes_trabalho: ['clientes', 'criar', 'conteudo', 'aprovar', 'pautas', 'relatorio'],
   rascunhos: ['criar'],
+  clientes: ['consultoria'],
+  consultoria: ['consultoria', 'calendario'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
   diario: ['inicio'],
   tarefas: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao'],
-  projetos: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao'],
+  projetos: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao', 'consultoria'],
   financas: ['financas', 'inicio', 'metas'],
   habitos: ['habitos', 'inicio', 'metas'],
   habito_registros: ['habitos', 'inicio', 'metas'],

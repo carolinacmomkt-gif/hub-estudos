@@ -6,6 +6,7 @@
 import { obterEstado } from './estado.js';
 import { ROTAS } from './rotas.js';
 import { listar, salvar } from './persistencia.js';
+import { faculdadeArquivada } from './modos.js';
 
 // Grupos pelo fluxo (decisão da Carol, 03/11/2026): executar hoje, planejar e revisar, e cada área de
 // ponta a ponta. Grupo sem tela (ex.: Consultoria antes de existir) não aparece.
@@ -53,6 +54,7 @@ export function organizacaoDoMenu(estado = obterEstado()) {
     g.itens.push(r.id);
   }
   const escondidos = new Set((v.escondidos || []).filter(rotaPeloId));
+  if (faculdadeArquivada(estado.config)) escondidos.add('faculdade'); // no arquivo: sai do menu e da barra
   escondidos.delete('inicio'); // o Hoje nunca some
   const favoritos = (v.favoritos || []).filter((id) => rotaPeloId(id) && !escondidos.has(id));
   const padraoCelular = ROTAS.filter((r) => r.fixaCelular).map((r) => r.id);

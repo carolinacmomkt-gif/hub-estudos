@@ -24,6 +24,8 @@ export const ROTAS = [
   { id: 'aprovar', titulo: 'Aprovar', curto: 'Aprovar', icone: 'aprovar', grupo: 'trabalho' },
   { id: 'pautas', titulo: 'Pautas', curto: 'Pautas', icone: 'pauta', grupo: 'trabalho' },
   { id: 'relatorio', titulo: 'Relatórios', curto: 'Relatórios', icone: 'relatorio', grupo: 'trabalho' },
+  // Consultoria (Sensus)
+  { id: 'consultoria', titulo: 'Consultoria', curto: 'Consultoria', icone: 'consultoria', grupo: 'consultoria' },
   // Estudos (a Faculdade entra aqui; está acabando)
   { id: 'biblioteca', titulo: 'Biblioteca', curto: 'Biblioteca', icone: 'biblioteca', grupo: 'estudos' },
   { id: 'estudos', titulo: 'Estudos gerais', curto: 'Estudos', icone: 'estudos', grupo: 'estudos' },
