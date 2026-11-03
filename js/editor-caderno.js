@@ -927,7 +927,9 @@ export async function montarEditorCaderno(id) {
       if (el) el.textContent = `${Math.round(z * 100)}%`;
     },
   });
-  editor.aoLink = (destino) => seguirLink(destino, { paginas, abrirPagina, avisar });
+  // Link e índice trocam de página como os botões ‹ ›: salvam a página atual antes.
+  const irParaPagina = (n) => salvarAgora().then(() => abrirPagina(n));
+  editor.aoLink = (destino) => (destino.tipo === 'pagina' ? seguirLink(destino, { paginas, abrirPagina: irParaPagina, avisar }) : salvarAgora().then(() => seguirLink(destino, { paginas, abrirPagina: irParaPagina, avisar })));
   editor.aoFecharJanela = () => atualizarBarra();
   lembrarAba(caderno);
   document.getElementById('editor-abas').innerHTML = renderAbas(caderno.id);
@@ -1102,7 +1104,7 @@ function aoClicar(evento) {
       return;
     case 'indice':
       alvo.closest('details')?.removeAttribute('open');
-      abrirIndice({ paginas, editor, indice, abrirPagina, aoMudar });
+      abrirIndice({ paginas, editor, indice, abrirPagina: (n) => salvarAgora().then(() => abrirPagina(n)), aoMudar });
       return;
     case 'aba-fechar':
       fecharAba(valor);
