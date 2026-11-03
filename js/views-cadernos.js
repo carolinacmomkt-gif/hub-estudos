@@ -129,8 +129,7 @@ export function renderCadernos(estado) {
   }
   const corpo = { estantes: visaoEstantes, pastas: visaoPastas, favoritos: visaoFavoritos, lixeira: visaoLixeira }[visao](estado, agora);
   return `
-    ${cabecalho('Cadernos', 'Escrita à mão com a S Pen')}
-    <div class="acoes cal-acoes"><button class="botao botao-primario" type="button" data-acao="caderno-novo">Novo caderno</button></div>
+    ${cabecalho('Cadernos', 'Escrita à mão com a S Pen', '<button class="botao botao-primario" type="button" data-acao="caderno-novo">+ Novo caderno</button>')}
     <div class="filtros">
       <label class="campo"><span class="campo-rotulo">Buscar</span>
         <input type="search" id="caderno-busca" data-filtrar-cadernos placeholder="Título, tag, disciplina ou tema" value="${esc(estado.cadBusca || '')}"></label>

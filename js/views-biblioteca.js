@@ -128,8 +128,8 @@ function lista(estado) {
   }
 
   return `
-    ${cabecalho('Biblioteca', 'Livros, artigos, PDFs e textos para ler, destacar e fichar')}
-    <div class="acoes cal-acoes"><a class="botao botao-primario" href="#biblioteca/novo">Adicionar leitura</a>
+    ${cabecalho('Biblioteca', 'Livros, artigos, PDFs e textos para ler, destacar e fichar', '<a class="botao botao-primario" href="#biblioteca/novo">+ Adicionar leitura</a>')}
+    <div class="acoes cal-acoes">
       <button class="botao botao-secundario" type="button" data-acao="bib-fonte" data-valor="livro" data-ir="novo">Adicionar livro</button></div>
     ${estante(estado)}
     <div class="segmentado bib-status-filtro" role="group" aria-label="Filtrar por status">

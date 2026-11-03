@@ -160,6 +160,42 @@ function seletorDoFoco() {
   return partes.length ? `${ativo.tagName.toLowerCase()}${partes.join('')}` : null;
 }
 
+// O que ela já digitou num formulário não pode sumir quando a tela é redesenhada por fora (ex.: a
+// sincronização do AVA chega enquanto ela preenche o Lyceum). Antes de redesenhar, guarda os campos
+// mexidos (valor diferente do que veio na tela) e devolve nos mesmos campos do desenho novo.
+function camposMexidos() {
+  const guardados = [];
+  conteudo.querySelectorAll('form[data-form]').forEach((form) => {
+    // Formulário já enviado: o redesenho é justamente para limpar (ex.: "Nova tarefa" depois de salvar).
+    if ('enviadoPor' in form.dataset) return;
+    const chave = `${form.dataset.form}|${form.dataset.id || ''}`;
+    for (const el of form.elements) {
+      if (!el.name || el.type === 'file' || el.type === 'submit' || el.type === 'button') continue;
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        if (el.checked !== el.defaultChecked) guardados.push({ chave, nome: el.name, valor: el.value, marcado: el.checked });
+      } else if (el.tagName === 'SELECT' ? [...el.options].some((o) => o.selected !== o.defaultSelected) : el.value !== el.defaultValue) {
+        guardados.push({ chave, nome: el.name, valor: el.value });
+      }
+    }
+  });
+  return guardados;
+}
+
+function devolverCampos(guardados) {
+  for (const g of guardados) {
+    const [nomeForm, id] = g.chave.split('|');
+    const form = [...conteudo.querySelectorAll(`form[data-form="${CSS.escape(nomeForm)}"]`)].find((f) => (f.dataset.id || '') === id);
+    if (!form) continue;
+    const campos = [...form.elements].filter((el) => el.name === g.nome);
+    if (g.marcado !== undefined) {
+      const el = campos.find((c) => c.value === g.valor);
+      if (el && el.checked === el.defaultChecked) el.checked = g.marcado;
+    } else if (campos[0] && campos[0].value === (campos[0].tagName === 'SELECT' ? campos[0].value : campos[0].defaultValue)) {
+      campos[0].value = g.valor;
+    }
+  }
+}
+
 export function renderizar({ mudouDeTela = false } = {}) {
   if (!noApp) return;
   const rota = rotaAtual();
@@ -174,7 +210,9 @@ export function renderizar({ mudouDeTela = false } = {}) {
   atualizarEstado({ rota: rota.id, parametro: rota.parametro, sinc: situacaoSincronizacao(), email: emailDaSessao(), faculdade: situacaoFaculdade() });
   const foco = mudouDeTela ? null : seletorDoFoco();
   conteudo.dataset.tela = rota.id;
+  const guardados = mudouDeTela ? [] : camposMexidos();
   conteudo.innerHTML = VIEWS[rota.id](obterEstado());
+  if (guardados.length) devolverCampos(guardados);
   if (foco) conteudo.querySelector(`${foco}:not([disabled])`)?.focus({ preventScroll: true });
   // As buscas filtram na tela (sem redesenhar a cada letra): reaplica depois de redesenhar.
   if (rota.id === 'biblioteca') reaplicarBusca();

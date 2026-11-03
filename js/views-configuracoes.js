@@ -14,6 +14,14 @@ import { cardTrabalhoConfig } from './views-trabalho.js';
 import { cardConfigLeitura } from './views-leitura.js';
 import { chaveDoTrello } from './nuvem.js';
 
+// O resultado de conectar o AVA ou o Lyceum fica 20 s na tela, mesmo que a sincronização que começa
+// logo depois redesenhe as Configurações (antes a mensagem "Conectado" sumia na hora).
+const resultadosRecentes = {};
+export function guardarResultadoConexao(servico, html) {
+  resultadosRecentes[servico] = { html, ate: Date.now() + 20000 };
+}
+const resultadoRecente = (servico) => (resultadosRecentes[servico]?.ate > Date.now() ? resultadosRecentes[servico].html : '');
+
 const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 export function textoSituacao(s) {
@@ -176,7 +184,7 @@ function cardServico(estado, { servico, titulo, rotuloSenha, explicacao, resumo 
     <section class="card" aria-labelledby="config-${servico}">
       <h2 class="card-titulo" id="config-${servico}">${esc(titulo)}</h2>
       ${corpo}
-      <div class="ava-resultado" id="resultado-${servico}" aria-live="polite"></div>
+      <div class="ava-resultado" id="resultado-${servico}" aria-live="polite">${resultadoRecente(servico)}</div>
     </section>`;
 }
 

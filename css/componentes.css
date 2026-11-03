@@ -15,6 +15,15 @@
   letter-spacing: -0.02em;
 }
 
+/* Botão principal da tela, no topo ao lado da lupa (Carol, 03/11/2026) */
+.cabecalho-principal {
+  display: flex;
+  flex: none;
+  align-items: center;
+  align-self: center;
+  gap: 8px;
+}
+
 .cabecalho-sub {
   display: flex;
   flex-wrap: wrap;

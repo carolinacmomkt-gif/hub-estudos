@@ -230,9 +230,8 @@ export function renderCalendario(estado) {
   const temAcademico = eventos.some((e) => e.origem === 'academico');
 
   return `
-    ${cabecalho('Calendário', 'Prazos, feriados, datas das clientes e os seus eventos')}
+    ${cabecalho('Calendário', 'Prazos, feriados, datas das clientes e os seus eventos', '<button class="botao botao-primario" type="button" data-acao="cal-novo">+ Novo evento</button>')}
     <div class="acoes cal-acoes">
-      <button class="botao botao-primario" type="button" data-acao="cal-novo">Novo evento</button>
       <a class="botao botao-secundario" href="#calendario/importar">${temAcademico ? 'Atualizar calendário acadêmico' : 'Importar calendário acadêmico'}</a>
     </div>
     ${cardPlano(estado, { agora })}

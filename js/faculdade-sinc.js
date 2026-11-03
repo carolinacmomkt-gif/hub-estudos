@@ -8,6 +8,9 @@ import { sincronizar as sincronizarDados, listar } from './persistencia.js';
 const UMA_HORA = 60 * 60 * 1000;
 const POR_PARTE = 2; // disciplinas do AVA por chamada (igual a CURSOS_POR_PARTE nas funções)
 let emAndamento = null;
+// Pedido forçado que chegou no meio de outra leitura (ex.: conectou o Lyceum enquanto o AVA ainda lia):
+// roda de novo logo depois, senão o serviço novo só seria lido dali a uma hora.
+let deNovo = false;
 const situacao = { estado: 'ocioso', passo: '', erros: [] };
 
 function avisar(campos) {
@@ -26,7 +29,10 @@ function precisa(conexao, forcar) {
 }
 
 export function sincronizarFaculdade({ forcar = false } = {}) {
-  if (emAndamento) return emAndamento;
+  if (emAndamento) {
+    if (forcar) deNovo = true;
+    return emAndamento;
+  }
   emAndamento = (async () => {
     if (!navigator.onLine) return situacaoFaculdade();
     // Faculdade no arquivo: só sincroniza quando ela pedir ("Sincronizar agora").
@@ -72,6 +78,10 @@ export function sincronizarFaculdade({ forcar = false } = {}) {
     return situacaoFaculdade();
   })().finally(() => {
     emAndamento = null;
+    if (deNovo) {
+      deNovo = false;
+      sincronizarFaculdade({ forcar: true });
+    }
   });
   return emAndamento;
 }

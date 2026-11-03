@@ -50,6 +50,8 @@ export function painelInserir(adesivosProprios) {
             <input type="file" class="visualmente-oculto" accept="image/*" data-ed="inserir-imagem"></label>
           <label class="botao botao-secundario botao-pequeno">Foto da câmera
             <input type="file" class="visualmente-oculto" accept="image/*" capture="environment" data-ed="inserir-imagem"></label>
+          <label class="botao botao-secundario botao-pequeno">Digitalizar documento
+            <input type="file" class="visualmente-oculto" accept="image/*" capture="environment" data-ed="digitalizar"></label>
         </div>
         <p class="campo-rotulo">Adesivos</p>
         <div class="adesivos">${ADESIVOS_SIMPLES.map((a, i) => `<button type="button" class="adesivo-botao${a.length > 2 ? ' adesivo-palavra' : ''}" data-ed="inserir-adesivo" data-valor="${i}" aria-label="Adesivo ${esc(a)}">${esc(a)}</button>`).join('')}</div>
@@ -117,6 +119,17 @@ export function barraDaSelecao({ quantos, cores, temTraco }) {
       ${botao('selecao-adesivo', '', 'Virar adesivo', false)}
       ${botao('selecao-excluir', '', 'Excluir', false)}
       ${botao('selecao-pronto', '', 'Pronto', false)}
+    </div>
+    ${temTraco ? `<div class="ferramenta-grupo" role="group" aria-label="Letra">
+      ${botao('selecao-letra', '', 'Melhorar letra', false)}
+      ${botao('selecao-pauta', '', 'Alinhar à pauta', false)}
+      ${botao('selecao-original', '', 'Voltar ao original', false)}
+      ${botao('selecao-converter', '', 'Converter em texto', false)}
+      ${botao('selecao-ortografia', '', 'Verificar ortografia', false)}
+    </div>` : ''}
+    <div class="ferramenta-grupo" role="group" aria-label="Link">
+      ${botao('selecao-link', '', 'Virar link', false)}
+      ${botao('selecao-tirar-link', '', 'Tirar link', false)}
     </div>
     <span class="campo-ajuda">Arraste para mover; o quadradinho do canto muda o tamanho; a bolinha de cima gira.</span>`;
 }

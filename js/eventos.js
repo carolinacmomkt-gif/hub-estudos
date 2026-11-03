@@ -8,7 +8,7 @@ import {
   salvar, obter, sincronizar, situacaoSincronizacao, exportarBackup, importarBackup, lerBackup, apagarDadosLocais,
 } from './persistencia.js';
 import { conectarAva, conectarLyceum, desconectar, chamar } from './funcoes.js';
-import { renderCarregando, renderResultadoAva, renderResultadoLyceum, folhaRestaurar } from './views-configuracoes.js';
+import { renderCarregando, renderResultadoAva, renderResultadoLyceum, folhaRestaurar, guardarResultadoConexao } from './views-configuracoes.js';
 import { renderFolhaCriar } from './views-criar.js';
 import { esc } from './utilidades.js';
 import { sincronizarFaculdade } from './faculdade-sinc.js';
@@ -153,6 +153,7 @@ async function conectarServico(form, servico) {
     sincronizarFaculdade({ forcar: true }); // primeira leitura das disciplinas, notas e prazos
   }
   const novaSaida = document.getElementById(`resultado-${servico}`);
+  guardarResultadoConexao(servico, renderResultado(resultado));
   novaSaida.innerHTML = renderResultado(resultado);
   novaSaida.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

@@ -37,8 +37,7 @@ function painel(estado) {
       </section>`;
   }
   return `
-    ${cabecalho('Estudos gerais', 'O que você estuda por conta própria')}
-    <div class="acoes cal-acoes"><button class="botao botao-primario" type="button" data-acao="est-nova">Nova trilha ou tema</button></div>
+    ${cabecalho('Estudos gerais', 'O que você estuda por conta própria', '<button class="botao botao-primario" type="button" data-acao="est-nova">+ Nova trilha ou tema</button>')}
     <ol class="numerados est-lista">${areas.map((a, i) => cartaoArea(estado, a, i)).join('')}</ol>`;
 }
 

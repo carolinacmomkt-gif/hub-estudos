@@ -33,9 +33,8 @@ function telaLista(estado) {
   const ativos = comPainel.filter((p) => p.status !== 'concluido').length;
   const sub = ativos ? `${ativos} ${ativos === 1 ? 'projeto com painel' : 'projetos com painel'}` : 'Mentoria, infoproduto, evento, livro… cada um com o painel certo';
   return `
-    ${cabecalho('Projetos', esc(sub))}
+    ${cabecalho('Projetos', esc(sub), '<a class="botao botao-primario" href="#projetos/novo">+ Novo projeto</a>')}
     <div class="acoes cal-acoes">
-      <a class="botao botao-primario botao-pequeno" href="#projetos/novo">+ Novo projeto</a>
       <a class="botao botao-secundario botao-pequeno" href="#portfolio">Painel de projetos</a>
     </div>
     ${comPainel.length ? `<ul class="pj-lista">${comPainel.map((p) => cartaoLista(p, estado, hoje)).join('')}</ul>` : `

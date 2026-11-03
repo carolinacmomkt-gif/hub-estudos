@@ -54,10 +54,9 @@ function painel(estado) {
   const ref = estado.substackReferencia && artigosAtivos(estado).find((a) => a.id === estado.substackReferencia);
   const vazio = !pautasAtivas(estado).length;
   return `
-    ${cabecalho('Substack', 'Das ideias ao texto publicado')}
+    ${cabecalho('Substack', 'Das ideias ao texto publicado', '<button class="botao botao-primario" type="button" data-acao="ss-nova">+ Nova pauta</button>')}
     ${ref ? `<div class="ava-alerta ss-ref-aviso" role="status">Escolha a pauta para ligar <strong>${esc(ref.titulo)}</strong> (ou crie uma nova).
       <button class="botao botao-secundario botao-pequeno" type="button" data-acao="ss-ref-cancelar">Cancelar</button></div>` : ''}
-    <div class="acoes cal-acoes"><button class="botao botao-primario" type="button" data-acao="ss-nova">Nova pauta</button></div>
     <div class="q-resumo">
       <section class="card">
         <p class="proximo-rotulo">Meta do mês</p>

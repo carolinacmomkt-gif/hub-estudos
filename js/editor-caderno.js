@@ -15,6 +15,10 @@ import { seletorDeFormato, trocarFormato } from './editor-texto.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 import { paginaPedida, notarPaginaDoCaderno } from './continuar.js';
 import { confirmar, perguntarTexto } from './confirmar.js';
+import {
+  painelLetra, painelVer, lembrarAba, fecharAba, renderAbas, abrirIndice, pedirLink, seguirLink,
+  converterSelecao, ortografiaDaSelecao, digitalizar,
+} from './editor-caderno-extras.js';
 
 const CHAVE_PREFS = 'hub.editor.prefs';
 
@@ -27,6 +31,8 @@ const FERRAMENTAS = [
   { id: 'texto', nome: 'Texto' },
   { id: 'borracha', nome: 'Borracha' },
   { id: 'laco', nome: 'Laço' },
+  { id: 'fita', nome: 'Fita de estudo' },
+  { id: 'laser', nome: 'Laser' },
 ];
 const TINTAS = [
   { id: 'tinta', nome: 'Tinta' },
@@ -84,6 +90,7 @@ function lerPrefs() {
     tipoBorracha: 'traco', suavizacao: 'leve', dedo: false, marcaReta: false, formasAuto: true,
     linha: 'continua', fonteTexto: 'sistema', tamTexto: 26, negritoTexto: false, fundoTexto: 'nenhum',
     filtroLaco: 'tudo', todasCamadas: false, marcaPropria: false,
+    letraIntensidade: 0.6, letraAuto: false,
   };
   try {
     return { ...padrao, ...JSON.parse(localStorage.getItem(CHAVE_PREFS) || '{}') };
@@ -131,10 +138,17 @@ export function renderEditorCaderno() {
           <button type="button" class="ferramenta-botao" data-ed="painel" aria-controls="editor-painel">Páginas</button>
         </div>
       </header>
+      <nav class="caderno-abas" id="editor-abas" aria-label="Cadernos abertos"></nav>
       <div class="secoes-abas" id="editor-secoes" role="group" aria-label="Divisórias"></div>
       <div id="editor-barra"></div>
       <div class="selecao-barra" id="editor-selecao" hidden></div>
       <div class="caneta-area" id="caneta-area"></div>
+      <div class="editor-janela" id="editor-janela"></div>
+      <div class="editor-sair" id="editor-sair" hidden>
+        <button type="button" class="ferramenta-botao" data-ed="pagina-anterior" aria-label="Página anterior">‹</button>
+        <button type="button" class="ferramenta-botao" data-ed="pagina-proxima" aria-label="Próxima página">›</button>
+        <button type="button" class="botao botao-secundario botao-pequeno" data-ed="sair-leitura">Sair</button>
+      </div>
       <aside class="editor-painel" id="editor-painel" aria-label="Páginas do caderno" hidden></aside>
     </div>`;
 }
@@ -206,6 +220,8 @@ function barra() {
         <button type="button" class="ferramenta-botao" data-ed="desfazer" aria-label="Desfazer" title="Desfazer (ou toque com dois dedos)">↶</button>
         <button type="button" class="ferramenta-botao" data-ed="refazer" aria-label="Refazer" title="Refazer (ou toque com três dedos)">↷</button>
       </div>
+      ${painelLetra(prefs, editor)}
+      ${painelVer(editor)}
       <details class="ferramenta-mais" data-painel="ajustes">
         <summary class="ferramenta-botao">Ajustes</summary>
         <div class="ferramenta-painel">
@@ -296,6 +312,46 @@ function aplicarPrefs() {
   editor.marcaCamadaPropria = prefs.marcaPropria;
   if (prefs.ferramenta !== 'texto') fecharCaixaTexto();
   if (prefs.ferramenta !== 'laco') editor.limparSelecao();
+  // Melhorar a letra sozinho depois de uma pausa (Cadernos, parte 2).
+  if (Boolean(editor.letraAuto) !== Boolean(prefs.letraAuto)) editor.definirLetraAutomatica(prefs.letraAuto ? Number(prefs.letraIntensidade) : 0);
+  if (editor.letraAuto) editor.letraAuto.intensidade = Number(prefs.letraIntensidade);
+  if (document.body.dataset.leitura === 'apresentar') editor.ferramenta = 'laser';
+}
+
+// Modo leitura (nada escreve; tocar abre links e revela fitas) e apresentação (tela cheia + laser).
+function entrarLeitura(modo) {
+  if (!editor) return;
+  document.querySelector('.ferramenta-mais[open]')?.removeAttribute('open');
+  editor.limparSelecao();
+  editor.somenteLeitura = true;
+  document.body.dataset.leitura = modo;
+  document.getElementById('editor-sair').hidden = false;
+  if (modo === 'apresentar') {
+    editor.ferramenta = 'laser';
+    document.querySelector('.editor-caderno')?.requestFullscreen?.().catch(() => {});
+    avisar('Apresentação: risque com o laser; ‹ › trocam de página.');
+  } else avisar('Modo leitura: nada é escrito. Toque nos links e nas fitas.');
+}
+
+function sairLeitura() {
+  if (!document.body.dataset.leitura) return;
+  delete document.body.dataset.leitura;
+  const sair = document.getElementById('editor-sair');
+  if (sair) sair.hidden = true;
+  if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  if (editor) {
+    editor.somenteLeitura = false;
+    aplicarPrefs();
+  }
+}
+
+function inserirCanvas(canvas) {
+  if (!editor) return;
+  const src = canvas.toDataURL('image/jpeg', 0.85);
+  const w = Math.min(editor.dim.largura * 0.9, 820);
+  editor.inserirCaixa({ tipo: 'imagem', src }, w, Math.round((w * canvas.height) / canvas.width));
+  mudarParaLaco();
+  avisar('Documento na página. Arraste para mover; o canto muda o tamanho.');
 }
 
 function dimDoCaderno() {
@@ -871,6 +927,10 @@ export async function montarEditorCaderno(id) {
       if (el) el.textContent = `${Math.round(z * 100)}%`;
     },
   });
+  editor.aoLink = (destino) => seguirLink(destino, { paginas, abrirPagina, avisar });
+  editor.aoFecharJanela = () => atualizarBarra();
+  lembrarAba(caderno);
+  document.getElementById('editor-abas').innerHTML = renderAbas(caderno.id);
   aplicarPrefs();
   // Veio do "Continuar de onde parou": abre na página em que a Carol estava no outro aparelho.
   const pedida = paginaPedida(caderno.id);
@@ -890,6 +950,8 @@ export async function montarEditorCaderno(id) {
 
 export function desmontarEditorCaderno() {
   fecharCaixaTexto();
+  sairLeitura();
+  editor?.fecharJanela?.();
   montagem += 1;
   document.body.classList.remove('modo-editor');
   document.removeEventListener('click', aoClicar);
@@ -976,6 +1038,75 @@ function aoClicar(evento) {
       break;
     case 'painel-pronto':
       alvo.closest('details')?.removeAttribute('open');
+      return;
+    // --- Cadernos, parte 2 ---
+    case 'letra-pagina':
+    case 'selecao-letra': {
+      const n = editor.melhorarLetraAgora(Number(prefs.letraIntensidade), acao === 'selecao-letra');
+      avisar(n ? 'Letra melhorada. "Voltar ao original" desfaz quando quiser.' : 'Não achei escrita para melhorar.');
+      return;
+    }
+    case 'letra-pauta':
+    case 'selecao-pauta': {
+      const n = editor.alinharAPautaAgora(acao === 'selecao-pauta');
+      avisar(n < 0 ? 'Esta folha não tem pauta. Troque a folha em Ajustes.' : n ? 'Escrita alinhada à pauta.' : 'A escrita já está na pauta.');
+      return;
+    }
+    case 'letra-original':
+    case 'selecao-original': {
+      const n = editor.voltarLetraAgora(acao === 'selecao-original');
+      avisar(n ? 'A letra voltou do jeito que você escreveu.' : 'Nada para voltar: essa escrita é a original.');
+      return;
+    }
+    case 'selecao-converter':
+      converterSelecao(editor, { avisar, estiloDoTexto });
+      return;
+    case 'selecao-ortografia':
+      ortografiaDaSelecao(editor, { avisar });
+      return;
+    case 'selecao-link':
+      pedirLink(editor, avisar);
+      return;
+    case 'selecao-tirar-link':
+      avisar(editor.tirarLinksDaSelecao() ? 'Link tirado.' : 'Não há link nesta seleção.');
+      return;
+    case 'janela':
+      if (editor.janela) editor.fecharJanela();
+      else editor.abrirJanela(document.getElementById('editor-janela'));
+      alvo.closest('details')?.removeAttribute('open');
+      atualizarBarra();
+      return;
+    case 'regua':
+      editor.alternarRegua();
+      atualizarBarra();
+      return;
+    case 'regua-girar':
+      editor.girarRegua(Number(valor));
+      return;
+    case 'fitas-cobrir':
+      editor.cobrirTodasAsFitas();
+      return;
+    case 'fitas-tirar':
+      confirmar('Tirar todas as fitas desta página? A escrita embaixo delas fica como está.', { perigo: true }).then((ok) => {
+        if (!ok || !editor) return;
+        editor.tirarTodasAsFitas();
+        atualizarBarra();
+      });
+      return;
+    case 'leitura':
+    case 'apresentar':
+      entrarLeitura(acao === 'leitura' ? 'leitura' : 'apresentar');
+      return;
+    case 'sair-leitura':
+      sairLeitura();
+      return;
+    case 'indice':
+      alvo.closest('details')?.removeAttribute('open');
+      abrirIndice({ paginas, editor, indice, abrirPagina, aoMudar });
+      return;
+    case 'aba-fechar':
+      fecharAba(valor);
+      document.getElementById('editor-abas').innerHTML = renderAbas(caderno?.id);
       return;
     case 'linha':
       prefs.linha = valor;
@@ -1197,6 +1328,23 @@ function aoMudarCampo(evento) {
     case 'inserir-imagem':
       if (evento.type === 'change') inserirImagem(alvo);
       return;
+    case 'digitalizar':
+      if (evento.type === 'change' && alvo.files?.[0]) {
+        const arquivo = alvo.files[0];
+        alvo.value = '';
+        alvo.closest('details')?.removeAttribute('open');
+        digitalizar(arquivo, { inserirCanvas, avisar });
+      }
+      return;
+    case 'letra-intensidade':
+      if (evento.type !== 'change') return;
+      prefs.letraIntensidade = Number(alvo.value);
+      break;
+    case 'letra-auto':
+      if (evento.type !== 'change') return;
+      prefs.letraAuto = alvo.checked;
+      avisar(alvo.checked ? 'Depois de uma pausa na escrita, a linha fica mais legível sozinha.' : 'Melhorar sozinho desligado.');
+      break;
     case 'texto-fonte':
       if (evento.type !== 'change') return;
       prefs.fonteTexto = alvo.value;
@@ -1256,6 +1404,7 @@ function aoTeclar(evento) {
   if (!editor || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) return;
   const tecla = evento.key.toLowerCase();
   if (tecla === 'escape') {
+    sairLeitura();
     document.querySelector('.ferramenta-mais[open]')?.removeAttribute('open');
     editor.limparSelecao();
     return;

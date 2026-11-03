@@ -166,3 +166,17 @@
     min-height: var(--toque);
   }
 }
+
+/* Celular: o botão principal fica embaixo do título (a lupa flutua no canto) */
+@media (max-width: 700px) {
+  .cabecalho-principal {
+    align-self: flex-start;
+  }
+
+  .cabecalho-principal .botao {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 0.88rem;
+  }
+}

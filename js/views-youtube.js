@@ -252,11 +252,8 @@ function painel(estado) {
     canal: () => visaoCanal(cfg),
   }[visao] || (() => visaoQuadro(estado, cfg, agora));
   return `
-    ${cabecalho('YouTube', 'Ideias, roteiros, gravação, publicação e resultados do canal')}
+    ${cabecalho('YouTube', 'Ideias, roteiros, gravação, publicação e resultados do canal', '<button class="botao botao-primario" type="button" data-acao="yt-novo">+ Nova ideia de vídeo</button>')}
     ${avisoDeMigracao()}
-    <div class="acoes cal-acoes">
-      <button class="botao botao-primario" type="button" data-acao="yt-novo">Nova ideia de vídeo</button>
-    </div>
     ${resumo(estado, cfg, agora)}
     <div class="segmentado yt-visoes" role="tablist" aria-label="Partes do painel">${VISOES_CANAL.map((v) => `
       <button type="button" role="tab" data-acao="yt-visao" data-visao="${v.id}" aria-selected="${visao === v.id}" aria-pressed="${visao === v.id}">${v.nome}</button>`).join('')}

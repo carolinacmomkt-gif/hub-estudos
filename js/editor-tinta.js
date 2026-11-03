@@ -17,6 +17,7 @@
 import { getStroke } from './vendor/perfect-freehand.js';
 import { reconhecerForma } from './formas.js';
 import { dimensoes, desenharFolha } from './folhas.js';
+import { instalarExtras } from './editor-extras.js';
 
 export const LARGURA = 1000;
 export const ALTURA = dimensoes('A4').altura;
@@ -264,7 +265,7 @@ function pontoNoPoligono([x, y], poligono) {
   return dentro;
 }
 
-function caixaDosItens(itens) {
+export function caixaDosItens(itens) {
   let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
   for (const item of itens) {
     const m = ehCaixa(item) ? 0 : item.tamanho / 2;
@@ -706,6 +707,7 @@ export class EditorDeTinta {
       for (const item of camada.itens) if (item.ferramenta !== 'marca-texto' && !escondidos?.has(item.id)) this.desenharItem(x, item);
     }
     x.globalAlpha = 1;
+    this.extraTinta?.(x); // fitas de estudo por cima da página
     this.pedirQuadro();
   }
 
@@ -744,6 +746,7 @@ export class EditorDeTinta {
       this.quadroPedido = false;
       const x = this.xVivo;
       x.clearRect(0, 0, this.dim.largura, this.dim.altura);
+      this.extraQuadro?.(x, agora); // régua, laser, janela de zoom
       if (this.atual) {
         this.desenharTraco(x, this.atual, false, this.previstos);
         if (this.ultimoTempoEvento) this.diag.atrasoQuadro = Math.max(0, agora - this.ultimoTempoEvento);
@@ -808,6 +811,7 @@ export class EditorDeTinta {
   // ---------------------------------------------------------------------------
 
   pontoDoEvento(e) {
+    if (this.naJanela && this.pontoDaJanela) return this.pontoDaJanela(e);
     const r = this.cVivo.getBoundingClientRect();
     const x = (e.clientX - r.left) / this.escala;
     const y = (e.clientY - r.top) / this.escala;
@@ -818,7 +822,7 @@ export class EditorDeTinta {
 
   capturar(e) {
     try {
-      this.cVivo.setPointerCapture(e.pointerId);
+      (this.naJanela && this.cJanela ? this.cJanela : this.cVivo).setPointerCapture(e.pointerId);
     } catch {
       // alguns navegadores recusam a captura; o traço segue mesmo assim
     }
@@ -837,11 +841,14 @@ export class EditorDeTinta {
         // Segundo dedo: vira gesto (cancela a rolagem ou o traço feito com o dedo).
         this.rolagem = null;
         if (this.ponteiro !== null && this.ponteiro !== undefined && this.tipoPonteiro === 'touch') this.cancelarAcao();
+        this.toqueTalvez = null;
+        if (this.extraGestoInicio?.()) return; // dois dedos em cima da régua: movem e giram a régua
         this.iniciarGesto();
         return;
       }
-      if (!this.dedoDesenha) {
+      if (!this.dedoDesenha || this.somenteLeitura) {
         this.rolagem = { id: e.pointerId, y: e.clientY, x: e.clientX, topo: this.recipiente.scrollTop, esquerda: this.recipiente.scrollLeft };
+        this.toqueTalvez = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, ponto: this.pontoDoEvento(e) };
         return;
       }
     }
@@ -853,6 +860,8 @@ export class EditorDeTinta {
     if (e.pointerType === 'pen') this.ponteiroCaneta = e.pointerId;
 
     const ponto = this.pontoDoEvento(e);
+    // Ferramentas e modos extras (régua, fita de estudo, laser, leitura, janela de zoom): editor-extras.js
+    if (this.extraApertar?.(e, ponto)) return;
     const borracha = this.ferramenta === 'borracha' || (e.buttons & BOTAO_BORRACHA_SPEN) === BOTAO_BORRACHA_SPEN || e.button === 5;
     const camada = this.camadaAtiva();
     if (!camada) return;
@@ -930,9 +939,14 @@ export class EditorDeTinta {
       const t = this.toques.get(e.pointerId);
       t.x = e.clientX;
       t.y = e.clientY;
+      if (this.toqueTalvez?.id === e.pointerId && Math.hypot(e.clientX - this.toqueTalvez.x, e.clientY - this.toqueTalvez.y) > 10) this.toqueTalvez = null;
       if (this.gesto) {
         e.preventDefault();
         this.moverGesto();
+        return;
+      }
+      if (this.extraGestoMover?.()) {
+        e.preventDefault();
         return;
       }
     }
@@ -958,6 +972,7 @@ export class EditorDeTinta {
     e.preventDefault();
     const lista = eventos.length ? eventos : [e];
     const ponto = this.pontoDoEvento(e);
+    if (this.extraMover?.(e, ponto, lista)) return;
 
     if (this.apagando) {
       for (const ev of lista) this.apagarEm(this.pontoDoEvento(ev));
@@ -1001,7 +1016,7 @@ export class EditorDeTinta {
       const y = Math.abs(ponto[1] - p0[1]) < 18 ? p0[1] : ponto[1];
       this.atual.pontos = [p0, [ponto[0], y, p0[2]]];
     } else {
-      for (const ev of lista) this.atual.pontos.push(this.pontoDoEvento(ev));
+      for (const ev of lista) this.atual.pontos.push(this.ajustarPonto ? this.ajustarPonto(this.pontoDoEvento(ev), this.atual) : this.pontoDoEvento(ev));
       // Pontos previstos deixam o traço "colado" na ponta da caneta (só na tela, não são salvos).
       this.previstos = typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents().map((ev) => this.pontoDoEvento(ev)) : [];
     }
@@ -1019,7 +1034,13 @@ export class EditorDeTinta {
         this.gesto.levantados = (this.gesto.levantados || 0) + 1;
         if (this.gesto.levantados >= this.gesto.dedos || this.toques.size <= 1) this.terminarGesto(e.timeStamp, cancelado);
       }
+      if (this.toqueTalvez?.id === e.pointerId) {
+        const t = this.toqueTalvez;
+        this.toqueTalvez = null;
+        if (!cancelado && e.timeStamp - t.t < 450) this.extraToque?.(t.ponto, e);
+      }
       this.toques.delete(e.pointerId);
+      this.extraGestoFim?.();
       if (!this.toques.size) this.gesto = null;
     }
     if (this.rolagem && e.pointerId === this.rolagem.id) this.rolagem = null;
@@ -1028,6 +1049,7 @@ export class EditorDeTinta {
     this.ponteiro = null;
     this.previstos = [];
     clearTimeout(this.tempoForma);
+    if (this.extraSoltar?.(e, cancelado)) return;
 
     if (this.apagando) {
       const { camadas, area } = this.apagando;
@@ -1501,3 +1523,6 @@ export class EditorDeTinta {
     this.aoDiagnostico({ ...this.diag, canetaVista: this.canetaVista, tracos: this.totalDeTracos() });
   }
 }
+
+// Régua, fita de estudo, laser, leitura, links, janela de zoom e a letra (Cadernos, parte 2).
+instalarExtras(EditorDeTinta);

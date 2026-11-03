@@ -525,6 +525,12 @@ export function passoDaPauta(modelo, dim) {
   return null;
 }
 
+// Altura da primeira linha da pauta (as pautadas começam a 25 mm; grades e o resto, no primeiro passo).
+export function inicioDaPauta(modelo, dim) {
+  if (PAUTAS[modelo]) return 25 * dim.mm;
+  return passoDaPauta(modelo, dim) || 0;
+}
+
 // <option>s agrupados por tipo de modelo (mais os modelos próprios da Carol).
 export function opcoesDeModelo(atual, proprios = []) {
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

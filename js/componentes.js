@@ -14,17 +14,19 @@ export function seletorTema() {
   return `<div class="seletor-tema" role="group" aria-label="Tema">${botoes}</div>`;
 }
 
-// titulo: texto simples; subtitulo: HTML já escapado.
-export function cabecalho(titulo, subtitulo = '') {
+// titulo: texto simples; subtitulo: HTML já escapado; acao: HTML do botão principal da tela, que
+// fica no topo ao lado da lupa (decisão da Carol, 03/11/2026, como no iPhone e no Android). O tema
+// (claro, escuro, automático) saiu do topo: fica em Configurações → Geral.
+export function cabecalho(titulo, subtitulo = '', acao = '') {
   return `
     <header class="cabecalho">
       <div>
         <h1 tabindex="-1">${esc(titulo)}</h1>
         ${subtitulo ? `<p class="cabecalho-sub">${subtitulo}</p>` : ''}
       </div>
+      ${acao ? `<div class="cabecalho-principal">${acao}</div>` : ''}
       <div class="cabecalho-acoes">
         ${location.hash.startsWith('#buscar') ? '' : `<a class="cabecalho-busca" href="#buscar" aria-label="Pergunte à Bússola: buscar ou perguntar" title="Buscar">${icone('buscar')}</a>`}
-        ${seletorTema()}
       </div>
     </header>`;
 }

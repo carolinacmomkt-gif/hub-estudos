@@ -444,3 +444,39 @@
     width: auto;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Cadernos, parte 2: abas, janela de zoom, leitura e apresentação, folhas e digitalizar
+   --------------------------------------------------------------------------- */
+.caderno-abas { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 2px; }
+.caderno-abas:empty { display: none; }
+.caderno-aba { display: inline-flex; flex: none; align-items: center; gap: 2px; min-height: 36px; padding: 0 4px 0 12px; border-radius: var(--raio); background: var(--cor-superficie-2); font-size: 0.86rem; }
+.caderno-aba a { max-width: 180px; overflow: hidden; color: var(--cor-texto-suave); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.caderno-aba.atual { background: var(--cor-preenchido); }
+.caderno-aba.atual a { color: var(--cor-sobre-preenchido); font-weight: 600; padding-right: 8px; }
+.caderno-aba button { width: 32px; height: 32px; border: 0; border-radius: var(--raio-sm); background: none; color: var(--cor-texto-fraco); cursor: pointer; }
+
+.janela-zoom { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: stretch; padding: 8px; border-top: 1px solid var(--cor-linha); background: var(--cor-superficie); }
+.janela-zoom-folha { width: 100%; height: 180px; border-radius: var(--raio); background: var(--papel); touch-action: none; }
+.janela-zoom-botoes { display: grid; gap: 4px; align-content: center; }
+
+.editor-sair { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 40; display: flex; gap: 6px; padding: 6px; border: 1px solid var(--vidro-borda); border-radius: var(--raio-lg); background: var(--vidro); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: var(--vidro-sombra); }
+.editor-sair[hidden] { display: none; }
+body[data-leitura] #editor-barra,
+body[data-leitura] .selecao-barra,
+body[data-leitura] .editor-janela,
+body[data-leitura] .editor-paginas { display: none; }
+body[data-leitura="apresentar"] .caneta-topo,
+body[data-leitura="apresentar"] .caderno-abas,
+body[data-leitura="apresentar"] .secoes-abas { display: none; }
+body[data-leitura="apresentar"] .editor-caderno { background: var(--cor-fundo); }
+
+.folha-caderno-corpo { display: grid; gap: 12px; margin-bottom: 14px; }
+.folha-caderno-texto { width: 100%; min-height: 160px; padding: 12px; border: 1px solid var(--cor-borda-campo); border-radius: var(--raio); background: var(--cor-superficie); color: var(--cor-texto); font: inherit; }
+.caderno-indice { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.caderno-indice button { display: flex; justify-content: space-between; gap: 12px; width: 100%; min-height: var(--toque); padding: 0 12px; border: 0; border-radius: var(--raio); background: var(--cor-superficie-2); color: var(--cor-texto); font: inherit; text-align: left; cursor: pointer; }
+.caderno-indice small, .caderno-erros small { color: var(--cor-texto-suave); }
+.caderno-erros { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.caderno-erros li { display: grid; gap: 2px; padding: 8px 12px; border-radius: var(--raio); background: var(--cor-superficie-2); }
+.digitalizar-palco { max-height: 60vh; overflow: auto; border-radius: var(--raio); background: var(--cor-superficie-2); }
+.digitalizar-foto { display: block; width: 100%; height: auto; touch-action: none; }
