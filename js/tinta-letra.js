@@ -33,7 +33,7 @@ export function linhasDaEscrita(itens) {
     for (const l of linhas) {
       const ult = l.ultima;
       const s = sobrepoe(x.c, ult) / Math.max(1, Math.min(x.c.y1 - x.c.y0, ult.y1 - ult.y0) || 1);
-      const perto = x.c.x0 - ult.x1 < altura * 3;
+      const perto = x.c.x0 - ult.x1 < altura * 10; // espaços grandes entre palavras continuam na mesma linha
       const naFaixa = x.c.cy > ult.y0 - altura * 0.8 && x.c.cy < ult.y1 + altura * 0.3;
       const nota = perto ? (s > 0.25 ? 1 + s : naFaixa ? 0.5 : 0) : 0;
       if (nota > valor) { valor = nota; melhor = l; }

@@ -169,8 +169,18 @@
 
 /* Celular: o botão principal fica embaixo do título (a lupa flutua no canto) */
 @media (max-width: 700px) {
+  .cabecalho {
+    flex-wrap: wrap;
+  }
+
+  .cabecalho > div:first-child {
+    flex: 1 1 100%;
+  }
+
   .cabecalho-principal {
-    align-self: flex-start;
+    flex-basis: 100%;
+    order: 3;
+    justify-content: flex-start;
   }
 
   .cabecalho-principal .botao {
