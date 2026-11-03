@@ -76,6 +76,11 @@ A base é a identidade da Central de Conteúdo.
 10. **Pergunte à Bússola** (`#buscar`, lupa no topo de todas as telas): busca no aparelho em tudo (`js/dados-busca.js`) e "Perguntar", que manda à IA só o resumo da pergunta (`contextoDaPergunta`) e mostra a resposta com links para os itens.
 11. **Trabalho** (grupo próprio no menu; detalhes em "Trabalho (o Pauta dentro da Bússola)"): Conteúdo, Aprovar, Clientes, Criar, Pautas e Relatórios.
 
+## Organização do app (Configurações e menu)
+
+- **Configurações em seções** (decisão da Carol, 03/11/2026; `SECOES_CONFIG` em `js/views-configuracoes.js`, `css/configuracoes.css`): índice com busca (por palavras de cada seção, sem redesenhar) e o que pede atenção (conexões que pararam, sincronização com erro, com o número na seção); cada seção é `#configuracoes/<seção>`: **Geral** (conta, aparência, menu), **Avisos**, **Rotina** (horas protegidas, ritual de leitura, plano de estudo), **Calendário** (datas especiais), **Trabalho**, **Conexões** (AVA, Lyceum, Trello e Notion das demandas), **Dados** (sincronização, cópias, backup) e **Widgets**. Endereços antigos caem na seção certa (`#configuracoes/demandas` → Conexões). No computador e no tablet deitado (≥1000 px) o índice fica ao lado; no celular, a seção abre com "← Configurações".
+- **Menu pelo fluxo** (03/11/2026; `GRUPOS_PADRAO` em `js/menu.js` e a ordem de `ROTAS`): **Hoje** (Hoje, Calendário, Foco, Pergunte), **Planejar** (Tarefas e projetos, Metas, Hábitos, Resumo da semana), **Trabalho** na ordem do fluxo (Clientes, Conteúdo, Criar, Aprovar, Pautas, Relatórios), **Consultoria**, **Estudos** (Biblioteca, Estudos gerais, Cadernos, Faculdade), **Criação** e **Vida**. Grupo sem tela não aparece. O menu arrumado à mão continua; "Voltar ao menu padrão" (Configurações → Geral) refaz só os grupos.
+
 ## Cadernos (requisito importante)
 
 Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.

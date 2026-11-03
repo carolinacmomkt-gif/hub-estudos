@@ -204,35 +204,107 @@ function resumoAva(d) {
     ${blocoDiagnostico}`;
 }
 
-export function renderConfiguracoes(estado) {
+// Configurações em seções (decisão da Carol, 03/11/2026): um índice com busca e o que pede atenção,
+// e uma página por seção (#configuracoes/<seção>). No computador e no tablet deitado, o índice fica ao lado.
+export const SECOES_CONFIG = [
+  { id: 'geral', nome: 'Geral', icone: 'configuracoes', desc: 'Conta, aparência e menu', palavras: 'conta sair email tema claro escuro texto tamanho vidro menu ordem grupos' },
+  { id: 'avisos', nome: 'Avisos', icone: 'sino', desc: 'Prazos, dia a dia, trabalho e silêncio', palavras: 'avisos notificacao push prazos manha contas habitos trabalho silencio iphone' },
+  { id: 'rotina', nome: 'Rotina', icone: 'foco', desc: 'Horas protegidas, leitura e plano de estudo', palavras: 'rotina horas protegidas academia descanso leitura meta minutos plano estudo provas revisao' },
+  { id: 'calendario', nome: 'Calendário', icone: 'calendario', desc: 'Feriados, datas das clientes e aniversários', palavras: 'calendario feriados datas comemorativas saude profissoes campanhas aniversarios goias anapolis' },
+  { id: 'trabalho', nome: 'Trabalho', icone: 'trabalho', desc: 'Notion da agência, calendários e seus clientes', palavras: 'trabalho notion agencia essence confluir calendarios clientes meus pauta' },
+  { id: 'conexoes', nome: 'Conexões', icone: 'conexao', desc: 'AVA, Lyceum, Trello e Notion', palavras: 'conexoes ava moodle lyceum notas frequencia trello notion demandas quadros designers videos whatsapp' },
+  { id: 'dados', nome: 'Dados', icone: 'nuvem', desc: 'Sincronização, cópias e backup', palavras: 'dados sincronizar sincronizacao backup copia exportar importar restaurar nuvem' },
+  { id: 'widgets', nome: 'Widgets', icone: 'grade', desc: 'Widgets do iPhone e do Mac', palavras: 'widgets iphone mac scriptable codigo' },
+];
+// Endereços antigos (#configuracoes/demandas…) caem na seção certa.
+const APELIDOS = { demandas: 'conexoes', ava: 'conexoes', lyceum: 'conexoes', aparencia: 'geral', conta: 'geral', backup: 'dados', sincronizacao: 'dados', leitura: 'rotina', protegidos: 'rotina' };
+export const secaoDaRota = (parametro) => (SECOES_CONFIG.some((x) => x.id === parametro) ? parametro : APELIDOS[parametro] || null);
+
+// O que pede atenção, por seção: conexões que pararam e sincronização com erro.
+function atencoes(estado) {
+  const saida = {};
+  const marcar = (id, texto) => { (saida[id] ||= []).push(texto); };
+  const nomes = { ava: 'AVA', lyceum: 'Lyceum', trello: 'Trello', notion: 'Notion (demandas)', notion_trabalho: 'Notion do trabalho' };
+  for (const c of estado.conexoes || []) {
+    if (c.excluido_em || !['reconectar', 'erro'].includes(c.status)) continue;
+    marcar(c.servico === 'notion_trabalho' ? 'trabalho' : 'conexoes', `${nomes[c.servico] || c.servico} pede para conectar de novo`);
+  }
+  if (estado.sinc?.estado === 'erro') marcar('dados', 'A última sincronização falhou');
+  return saida;
+}
+
+function cardMenuConfig() {
   return `
-    ${cabecalho('Configurações', 'Conta, sincronização, avisos e conexões')}
-    <div class="pilha">
-      ${cardConta(estado)}
-      ${cardSincronizacao(estado)}
-      ${cardAparencia()}
-      ${cardAvisos(estado)}
-      ${cardDatasConfig(estado)}
-      ${cardPlanoPrefs(estado)}
-      ${cardProtegidos(estado)}
-      ${cardConfigLeitura(estado)}
-      ${cardServico(estado, {
-        servico: 'ava',
-        titulo: 'AVA (Moodle)',
-        rotuloSenha: 'Senha do AVA',
-        explicacao: 'Digite a matrícula e a senha uma vez. O app guarda só o acesso do app do Moodle, criptografado, e descarta a senha. Daí em diante o AVA sincroniza sozinho.',
-        resumo: resumoAva,
-      })}
-      ${cardServico(estado, {
-        servico: 'lyceum',
-        titulo: 'Lyceum (notas e frequência)',
-        rotuloSenha: 'Senha do Lyceum',
-        explicacao: 'Digite a matrícula e a senha uma vez. A senha fica guardada criptografada (só as funções do app conseguem abrir) para o Lyceum sincronizar sozinho. Você pode desconectar quando quiser.',
-        resumo: (d) => `<span>${esc([d.curso, d.turno, d.serie].filter(Boolean).join(' · ') || 'Portal do aluno')}</span>`,
-      })}
-      ${cardConfigDemandas(estado, chaveDoTrello())}
-      ${cardTrabalhoConfig(estado)}
-      ${cardWidgets(estado)}
+    <section class="card" aria-labelledby="config-menu">
+      <h2 class="card-titulo" id="config-menu">Menu</h2>
+      <p class="texto-suave">Os grupos seguem o fluxo: Hoje, Planejar, Trabalho, Estudos, Criação e Vida. Você pode mudar a ordem e os grupos quando quiser.</p>
+      <div class="acoes">
+        <button class="botao botao-secundario" type="button" data-acao="menu-editar">Editar menu</button>
+        <button class="botao botao-secundario" type="button" data-acao="menu-padrao-novo">Voltar ao menu padrão</button>
+      </div>
+    </section>`;
+}
+
+function conteudoDaSecao(estado, id) {
+  switch (id) {
+    case 'geral': return `${cardConta(estado)}${cardAparencia()}${cardMenuConfig()}`;
+    case 'avisos': return cardAvisos(estado);
+    case 'rotina': return `${cardProtegidos(estado)}${cardConfigLeitura(estado)}${cardPlanoPrefs(estado)}`;
+    case 'calendario': return cardDatasConfig(estado);
+    case 'trabalho': return cardTrabalhoConfig(estado);
+    case 'conexoes': return `${cardServico(estado, {
+      servico: 'ava',
+      titulo: 'AVA (Moodle)',
+      rotuloSenha: 'Senha do AVA',
+      explicacao: 'Digite a matrícula e a senha uma vez. O app guarda só o acesso do app do Moodle, criptografado, e descarta a senha. Daí em diante o AVA sincroniza sozinho.',
+      resumo: resumoAva,
+    })}${cardServico(estado, {
+      servico: 'lyceum',
+      titulo: 'Lyceum (notas e frequência)',
+      rotuloSenha: 'Senha do Lyceum',
+      explicacao: 'Digite a matrícula e a senha uma vez. A senha fica guardada criptografada (só as funções do app conseguem abrir) para o Lyceum sincronizar sozinho. Você pode desconectar quando quiser.',
+      resumo: (d) => `<span>${esc([d.curso, d.turno, d.serie].filter(Boolean).join(' · ') || 'Portal do aluno')}</span>`,
+    })}${cardConfigDemandas(estado, chaveDoTrello())}`;
+    case 'dados': return cardSincronizacao(estado);
+    case 'widgets': return cardWidgets(estado);
+    default: return '';
+  }
+}
+
+function indice(estado, atual, aten) {
+  return `
+    <nav class="cfg-indice" aria-label="Seções das configurações">
+      <label class="campo cfg-busca"><span class="visualmente-oculto">Procurar nas configurações</span>
+        <input type="search" placeholder="Procurar (aviso, Trello, backup…)" autocomplete="off" data-acao-mudar="cfg-busca"></label>
+      <ul class="cfg-lista">${SECOES_CONFIG.map((x) => `
+        <li data-cfg-secao="${x.id}" data-palavras="${esc(`${x.nome} ${x.desc} ${x.palavras}`.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase())}">
+          <a class="cfg-item${x.id === atual ? ' ativo' : ''}" href="#configuracoes/${x.id}"${x.id === atual ? ' aria-current="page"' : ''}>
+            <span class="cfg-icone" aria-hidden="true">${icone(x.icone)}</span>
+            <span class="cfg-texto"><b>${esc(x.nome)}</b><small>${esc(x.desc)}</small></span>
+            ${aten[x.id] ? `<span class="cfg-alerta" title="${esc(aten[x.id].join(' · '))}">${aten[x.id].length}</span><span class="visualmente-oculto">pede atenção</span>` : ''}
+          </a></li>`).join('')}
+      </ul>
+      <p class="texto-suave cfg-nada" hidden>Nada com esse nome. Tente outra palavra.</p>
+    </nav>`;
+}
+
+export function renderConfiguracoes(estado) {
+  const atual = secaoDaRota(estado.parametro);
+  const aten = atencoes(estado);
+  const totalAten = Object.values(aten).reduce((t, l) => t + l.length, 0);
+  const secao = SECOES_CONFIG.find((x) => x.id === atual);
+  const resumo = totalAten
+    ? `<div class="card cfg-atencao" role="status"><b>${totalAten === 1 ? '1 coisa pede atenção' : `${totalAten} coisas pedem atenção`}</b><ul>${Object.entries(aten).flatMap(([id, l]) => l.map((t) => `<li><a href="#configuracoes/${id}">${esc(t)}</a></li>`)).join('')}</ul></div>`
+    : '';
+  return `
+    ${cabecalho(secao ? secao.nome : 'Configurações', secao ? secao.desc : 'Escolha uma seção ou procure pelo nome')}
+    <div class="cfg${secao ? ' com-secao' : ''}">
+      ${indice(estado, atual, aten)}
+      <div class="cfg-conteudo">
+        ${secao ? `<a class="botao botao-secundario botao-pequeno cfg-voltar" href="#configuracoes">← Configurações</a>` : ''}
+        ${secao ? '' : resumo}
+        <div class="pilha">${secao ? conteudoDaSecao(estado, atual) : ''}</div>
+      </div>
     </div>`;
 }
 

@@ -3,6 +3,7 @@
 // os ícones ou escondido (o botão ☰ traz de volta).
 
 import { icone } from './icones.js';
+import { confirmar } from './confirmar.js';
 import { ROTAS, ROTA_CONFIGURACOES } from './rotas.js';
 import { esc } from './utilidades.js';
 import {
@@ -243,6 +244,12 @@ export function cliqueMenu(alvo) {
       break;
     case 'menu-editar':
       abrirEditor();
+      break;
+    case 'menu-padrao-novo':
+      confirmar('Voltar ao menu padrão? Os grupos e a ordem voltam ao novo padrão (Hoje, Planejar, Trabalho, Estudos, Criação e Vida). Favoritos, itens escondidos e a barra do celular ficam como estão.', { botao: 'Voltar ao padrão' }).then((ok) => {
+        if (!ok) return;
+        mudarMenu((v) => { v.grupos = []; }).then(() => montarNavegacao());
+      });
       break;
     case 'menu-grupo':
       // Abre e fecha na hora; a escolha fica guardada.

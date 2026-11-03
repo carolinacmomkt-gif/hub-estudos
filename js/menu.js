@@ -7,13 +7,15 @@ import { obterEstado } from './estado.js';
 import { ROTAS } from './rotas.js';
 import { listar, salvar } from './persistencia.js';
 
+// Grupos pelo fluxo (decisão da Carol, 03/11/2026): executar hoje, planejar e revisar, e cada área de
+// ponta a ponta. Grupo sem tela (ex.: Consultoria antes de existir) não aparece.
 export const GRUPOS_PADRAO = [
-  { id: 'dia', nome: 'Meu dia' },
+  { id: 'dia', nome: 'Hoje' },
+  { id: 'planejar', nome: 'Planejar' },
   { id: 'trabalho', nome: 'Trabalho' },
-  { id: 'faculdade', nome: 'Faculdade' },
+  { id: 'consultoria', nome: 'Consultoria' },
   { id: 'estudos', nome: 'Estudos' },
   { id: 'criacao', nome: 'Criação' },
-  { id: 'consultoria', nome: 'Consultoria' },
   { id: 'vida', nome: 'Vida' },
 ];
 export const MODOS_MENU = [

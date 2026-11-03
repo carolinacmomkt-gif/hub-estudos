@@ -1,0 +1,33 @@
+/* Configurações em seções (#configuracoes e #configuracoes/<seção>). */
+.cfg { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.cfg.com-secao .cfg-indice { display: none; }
+.cfg:not(.com-secao) .cfg-conteudo .pilha:empty { display: none; }
+@media (min-width: 1000px) {
+  .cfg { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); }
+  .cfg.com-secao .cfg-indice { display: block; }
+  .cfg-indice { position: sticky; top: 16px; }
+  .cfg-voltar { display: none; }
+  .cfg:not(.com-secao) .cfg-conteudo::after { content: 'Escolha uma seção ao lado.'; color: var(--cor-texto-suave); }
+}
+.cfg-busca { margin: 0 0 10px; }
+.cfg-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.cfg-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; min-height: 56px; border-radius: var(--raio);
+  color: inherit; text-decoration: none; background: var(--cor-superficie); border: 1px solid var(--cor-linha);
+}
+.cfg-item:hover { border-color: var(--cor-borda); }
+.cfg-item.ativo { background: var(--cor-destaque-suave); border-color: var(--cor-destaque); }
+.cfg-item:focus-visible { outline: 2px solid var(--cor-foco); outline-offset: 2px; }
+.cfg-icone { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--cor-superficie-elevada); flex: none; }
+.cfg-icone svg { width: 20px; height: 20px; }
+.cfg-texto { display: grid; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.cfg-texto small { color: var(--cor-texto-suave); }
+.cfg-alerta {
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: grid; place-items: center; font-size: .75rem; font-weight: 700;
+  background: var(--urg-atrasado); color: var(--cor-fundo); flex: none;
+}
+.cfg-atencao { display: grid; gap: 6px; margin-bottom: 16px; border-left: 4px solid var(--urg-atrasado); }
+.cfg-atencao ul { margin: 0; padding-left: 18px; }
+.cfg-atencao a { min-height: 44px; display: inline-flex; align-items: center; }
+.cfg-voltar { margin-bottom: 12px; }
+.cfg-conteudo { min-width: 0; }
