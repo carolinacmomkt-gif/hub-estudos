@@ -19,16 +19,19 @@ import {
   sino, comemorar, ligarPalco, AMBIENTES,
 } from './foco-palco.js';
 
-export const FOCO_PADRAO = { foco: 25, pausa: 5, longa: 15, ciclos: 4, som: true, seguir: true, telaCheia: true, fundo: 'tema', ambiente: '', volume: 0.5 };
+export const FOCO_PADRAO = { foco: 25, pausa: 5, longa: 15, ciclos: 4, som: true, seguir: true, telaCheia: true, fundo: 'tema', ambiente: '', volume: 0.5, acompanhar: true };
 export const OPCOES_FOCO = [15, 25, 50, 90];
 const CHAVE = 'hub.foco';
 const NOME_FASE = { foco: 'Foco', pausa: 'Pausa', longa: 'Pausa longa', aguardando: 'Pronta para o próximo foco' };
 const CHAVE_VERSAO = 'hub.foco.versao';
 const CHAVE_ACOMPANHAR = 'hub.foco.acompanhar';
 const CHAVE_NUVEM = 'foco_ativo';
+const CHAVE_FIM = 'hub.foco.fim'; // "O que ficou pronto?" de uma sessão encerrada (só no aparelho)
 const MIN = 60 * 1000;
 
-// { id, dono, donoTipo, fase, inicio, duracao, pausadoEm, titulo, disciplina_id, area_id, ciclo, focoMin }
+// { id, dono, donoTipo, fase, inicio, duracao, pausadoEm, titulo, disciplina_id, area_id, ciclo, focoMin,
+//   e o Foco acompanhado: tarefa_id, passos [{ t, feito }], checkin { ciclo: seguindo|travei|ok },
+//   respiro (fim da pausa de 2 min), fim { ciclo } (falta o "o que ficou pronto?"), feitos [texto] }
 let sessao = lerGuardada();
 let versao = Number(lerLocal(CHAVE_VERSAO)) || 0;
 let automatico = false; // fim de fase sozinho (não é um toque da Carol)
@@ -172,6 +175,7 @@ export function prefsFoco(estado = obterEstado()) {
     fundo: v.fundo === 'preto' ? 'preto' : 'tema',
     ambiente: AMBIENTES.some((a) => a.id === v.ambiente) ? v.ambiente : '',
     volume: Math.max(0, Math.min(1, Number(v.volume ?? FOCO_PADRAO.volume))),
+    acompanhar: v.acompanhar !== false,
   };
 }
 
@@ -199,7 +203,53 @@ export function situacaoFoco(agora = Date.now()) {
     aqui: souDono(),
     ondeEsta: souDono() ? '' : noAparelho(sessao.donoTipo),
     acompanhando: !souDono() && lerLocal(CHAVE_ACOMPANHAR) === sessao.id,
+    meio: noMeioDoFoco(agora),
   };
+}
+
+// Foco acompanhado: a pergunta "Como está?" aparece na metade de um foco de 10 min ou mais.
+function noMeioDoFoco(agora = Date.now()) {
+  if (!sessao || sessao.fase !== 'foco' || sessao.pausadoEm || sessao.duracao < 10 * MIN) return false;
+  return agora - sessao.inicio >= sessao.duracao / 2;
+}
+
+// A sessão como está (só para ler) e um jeito de mexer nela que já guarda, publica e redesenha.
+export const sessaoCrua = () => sessao;
+export function mexerNaSessao(fn) {
+  if (!sessao) return;
+  fn(sessao);
+  guardar();
+  ligarRelogio();
+  atualizarTela();
+}
+
+// Pausa de 2 minutos quando ela trava: pausa o foco e volta sozinho.
+export function respirar(minutos = 2) {
+  if (!sessao || sessao.fase !== 'foco') return;
+  if (!sessao.pausadoEm) sessao.pausadoEm = Date.now();
+  sessao.respiro = Date.now() + minutos * MIN;
+  guardar();
+  ligarRelogio();
+  atualizarTela();
+}
+
+export function voltarDoRespiro() {
+  if (!sessao) return;
+  delete sessao.respiro;
+  if (sessao.pausadoEm) retomarFoco();
+  else { guardar(); atualizarTela(); }
+}
+
+// Fechamento de uma sessão já encerrada, guardado no aparelho.
+export function fimPendente() {
+  try {
+    return JSON.parse(lerLocal(CHAVE_FIM) || 'null');
+  } catch {
+    return null;
+  }
+}
+export function limparFimPendente() {
+  gravarLocal(CHAVE_FIM, null);
 }
 
 export function relogioTexto(ms) {
@@ -218,12 +268,16 @@ function comecarFase(fase, inicio = Date.now()) {
   guardar();
 }
 
-export function iniciarFoco({ titulo = '', disciplina_id = null, area_id = null, minutos = null } = {}) {
+export function iniciarFoco({ titulo = '', disciplina_id = null, area_id = null, minutos = null, tarefa_id = null, passos = [] } = {}) {
   const p = prefsFoco();
+  const lista = (passos || []).map((t) => String(t).trim().slice(0, 100)).filter(Boolean).slice(0, 12);
+  limparFimPendente();
   sessao = {
     id: crypto.randomUUID(), dono: idDoAparelho(), donoTipo: tipoDoAparelho(),
     fase: 'foco', inicio: Date.now(), duracao: (minutos || p.foco) * MIN, pausadoEm: null,
     titulo: String(titulo).trim().slice(0, 140) || 'Estudo', disciplina_id, area_id, ciclo: 1, focoMin: minutos || p.foco,
+    ...(tarefa_id ? { tarefa_id } : {}),
+    ...(lista.length ? { passos: lista.map((t) => ({ t, feito: false })) } : {}),
   };
   guardar();
   pedirPermissaoDeAviso();
@@ -249,6 +303,7 @@ export function pausarFoco() {
 
 export function retomarFoco() {
   if (!sessao?.pausadoEm) return;
+  delete sessao.respiro;
   sessao.inicio += Date.now() - sessao.pausadoEm;
   sessao.pausadoEm = null;
   guardar();
@@ -273,9 +328,15 @@ export async function pularFase() {
 
 export async function encerrarFoco() {
   if (!sessao) return;
+  let contou = false;
   if (sessao.fase === 'foco') {
     const feito = Math.min(sessao.duracao, (sessao.pausadoEm || Date.now()) - sessao.inicio);
-    if (feito >= MIN) await registrarFoco(feito, false);
+    if (feito >= MIN) { await registrarFoco(feito, false); contou = true; }
+  }
+  // Foco acompanhado: o "o que ficou pronto?" ainda aparece na tela do foco, neste aparelho.
+  if (prefsFoco().acompanhar && (contou || sessao.fim)) {
+    const { titulo, tarefa_id, passos, feitos } = sessao;
+    gravarLocal(CHAVE_FIM, JSON.stringify({ titulo, tarefa_id: tarefa_id || null, passos: passos || [], feitos: feitos || [], em: Date.now() }));
   }
   sessao = null;
   guardar();
@@ -307,6 +368,7 @@ function idDoRegistro() {
 function avancarDepoisDoFoco(quando) {
   const p = prefsFoco();
   const longa = (sessao.ciclo || 1) % p.ciclos === 0;
+  if (p.acompanhar) sessao.fim = { ciclo: sessao.ciclo || 1 };
   sessao.ciclo = (sessao.ciclo || 1) + 1;
   if (longa) sessao.depoisDaLonga = true;
   comecarFase(longa ? 'longa' : 'pausa', quando);
@@ -324,6 +386,16 @@ function conferir() {
 }
 
 async function conferirAgora() {
+  // Acabou a pausa de 2 min do "Travei": o foco volta sozinho.
+  if (sessao?.respiro && sessao.pausadoEm && Date.now() >= sessao.respiro) {
+    delete sessao.respiro;
+    sessao.inicio += Date.now() - sessao.pausadoEm;
+    sessao.pausadoEm = null;
+    guardar();
+    if (souDono()) alarme('Voltando ao foco', 'Só o próximo passo pequeno.');
+    atualizarTela();
+    return;
+  }
   if (!sessao || sessao.pausadoEm || sessao.fase === 'aguardando') return;
   const agora = Date.now();
   const fim = sessao.inicio + sessao.duracao;
@@ -439,7 +511,7 @@ export function atualizarTela({ soRelogio = false } = {}) {
     el.style.width = `${s.total ? Math.round(((s.total - s.restante) / s.total) * 100) : 0}%`;
   });
   // Mudou de fase (ou pausou): a tela do foco e o Início se redesenham; no resto, só o relógio.
-  const faseAgora = sessao ? `${sessao.fase}|${Boolean(sessao.pausadoEm)}|${souDono()}|${s.acompanhando}|${sessao.id}` : 'nenhuma';
+  const faseAgora = sessao ? `${sessao.fase}|${Boolean(sessao.pausadoEm)}|${souDono()}|${s.acompanhando}|${sessao.id}|${s.meio}` : 'nenhuma';
   if (!soRelogio || faseAgora !== atualizarTela.fase) {
     atualizarTela.fase = faseAgora;
     const rota = obterEstado().rota;
@@ -473,7 +545,7 @@ export function ligarFoco(funcoes) {
   barra.setAttribute('aria-label', 'Sessão de foco');
   barra.hidden = true;
   document.body.append(barra);
-  atualizarTela.fase = sessao ? `${sessao.fase}|${Boolean(sessao.pausadoEm)}|${souDono()}|${lerLocal(CHAVE_ACOMPANHAR) === sessao.id}|${sessao.id}` : 'nenhuma';
+  atualizarTela.fase = sessao ? `${sessao.fase}|${Boolean(sessao.pausadoEm)}|${souDono()}|${lerLocal(CHAVE_ACOMPANHAR) === sessao.id}|${sessao.id}|${noMeioDoFoco()}` : 'nenhuma';
   if (sessao) ligarRelogio();
   // Antes de conferir as fases, vê se a sessão não continuou em outro aparelho.
   puxarSessao().finally(() => { if (sessao) conferir(); });
@@ -499,11 +571,18 @@ export function sessoesDoPeriodo(estado, inicio, fim) {
 
 export function cliqueFoco(alvo) {
   switch (alvo.dataset.acao) {
-    case 'foco-iniciar':
+    case 'foco-iniciar': {
+      // De uma tarefa: o próximo passo guardado nela vira o primeiro passo do foco.
+      const tarefa = alvo.dataset.tarefa ? (obterEstado().tarefas || []).find((t) => t.id === alvo.dataset.tarefa) : null;
+      document.querySelectorAll('dialog[open]').forEach((d) => d.close());
       if (prefsFoco().telaCheia) entrarEmTelaCheia();
-      iniciarFoco({ titulo: alvo.dataset.titulo || '', disciplina_id: alvo.dataset.disciplina || null, area_id: alvo.dataset.area || null, minutos: Number(alvo.dataset.minutos) || null });
+      iniciarFoco({
+        titulo: alvo.dataset.titulo || tarefa?.titulo || '', disciplina_id: alvo.dataset.disciplina || null, area_id: alvo.dataset.area || null,
+        minutos: Number(alvo.dataset.minutos) || null, tarefa_id: tarefa?.id || null, passos: tarefa?.dados?.proximo_passo ? [tarefa.dados.proximo_passo] : [],
+      });
       if (obterEstado().rota !== 'foco') location.hash = '#foco';
       return true;
+    }
     case 'foco-continuar-aqui':
       continuarAqui();
       if (obterEstado().rota !== 'foco') location.hash = '#foco';
@@ -541,10 +620,12 @@ export function cliqueFoco(alvo) {
 export function enviarFoco(form) {
   if (form.dataset.form === 'foco-iniciar') {
     const el = form.elements;
+    const tarefa = el.tarefa?.value ? (obterEstado().tarefas || []).find((t) => t.id === el.tarefa.value) : null;
     if (prefsFoco().telaCheia) entrarEmTelaCheia();
     iniciarFoco({
-      titulo: el.titulo.value, disciplina_id: el.disciplina?.value || null, area_id: el.area?.value || null,
+      titulo: el.titulo.value.trim() || tarefa?.titulo || '', disciplina_id: el.disciplina?.value || null, area_id: el.area?.value || null,
       minutos: Number(form.querySelector('[name="minutos"]:checked')?.value) || null,
+      tarefa_id: tarefa?.id || null, passos: String(el.passos?.value || '').split('\n'),
     });
     return true;
   }
@@ -563,7 +644,7 @@ export function mudancaFoco(alvo, tipo) {
   if (!form) return false;
   if (tipo !== 'change') return true;
   const el = form.elements;
-  salvarPrefsFoco({ pausa: Number(el.pausa.value), longa: Number(el.longa.value), ciclos: Number(el.ciclos.value), som: el.som.checked, seguir: el.seguir.checked, telaCheia: el.telaCheia.checked })
+  salvarPrefsFoco({ pausa: Number(el.pausa.value), longa: Number(el.longa.value), ciclos: Number(el.ciclos.value), som: el.som.checked, seguir: el.seguir.checked, telaCheia: el.telaCheia.checked, acompanhar: el.acompanhar.checked })
     .then(() => app?.avisoCurto('Ajustes do foco salvos.'));
   return true;
 }

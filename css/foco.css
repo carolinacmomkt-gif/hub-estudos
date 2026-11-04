@@ -607,3 +607,135 @@
 .foco-onde {
   margin: 0 0 8px;
 }
+
+/* Foco acompanhado: o passo de agora, "Como está?", "Travei", a pausa de 2 min e o fechamento */
+.fa-passos-campo {
+  display: grid;
+  gap: 8px;
+}
+
+.fa-ajudas,
+.fa-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fa-botoes {
+  justify-content: center;
+}
+
+.ditado.ouvindo {
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
+}
+
+.fa-passo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  max-width: min(560px, 100%);
+  margin: 4px auto 0;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid var(--cor-linha);
+  border-radius: 999px;
+  background: var(--cor-superficie-elevada);
+  text-align: center;
+}
+
+.fa-passo-rotulo {
+  color: var(--cor-texto-fraco);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fa-passo-texto {
+  font-weight: 600;
+}
+
+.fa-passo-fim {
+  padding: 8px 16px;
+  color: var(--cor-texto-suave);
+}
+
+.fa-card {
+  display: grid;
+  gap: 10px;
+  width: min(440px, 100%);
+  margin: 8px auto 0;
+  padding: 16px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-card);
+  text-align: left;
+  cursor: auto;
+}
+
+.fa-card-titulo {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.fa-card p {
+  margin: 0;
+}
+
+.fa-respiro {
+  justify-items: center;
+  text-align: center;
+}
+
+.fa-fim-card .fa-card {
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.fa-fim-card .fa-card-titulo {
+  text-align: left;
+}
+
+.fa-fim-card .fa-botoes {
+  justify-content: flex-start;
+}
+
+.foco-palco.calmo .fa-card,
+.foco-palco.calmo .fa-passo {
+  cursor: auto;
+}
+
+.tarefa-proximo {
+  color: var(--cor-texto-suave);
+}
+
+/* Com uma pergunta aberta, o relógio encolhe e o palco rola em vez de cobrir os botões */
+.foco-palco:has(.fa-card) {
+  grid-template-rows: auto auto auto;
+  align-content: space-between;
+}
+
+.foco-palco:has(.fa-card) .flip-relogio {
+  --tam: clamp(2.6rem, 1rem + 7vw, 6.5rem);
+}
+
+.foco-palco:has(.fa-card) .palco-trilho {
+  margin-top: 8px;
+}
+
+.palco-centro:has(.fa-fim) .respiracao,
+.palco-centro:has(.fa-fim) .respiracao + .palco-sub {
+  display: none;
+}
+
+.fa-fim .fa-botoes:first-of-type {
+  justify-content: flex-start;
+}

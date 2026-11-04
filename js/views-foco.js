@@ -7,6 +7,7 @@ import { areasAtivas, nomeDaArea } from './dados-estudos.js';
 import { semanaDe, textoMinutos } from './dados-resumo.js';
 import { situacaoFoco, relogioTexto, prefsFoco, sessoesDoPeriodo, OPCOES_FOCO } from './foco.js';
 import { relogioFlip, conquistaAtual, AMBIENTES } from './foco-palco.js';
+import { camposDoInicio, blocoNoPalco, cardFimPendente } from './foco-acompanhado.js';
 
 const opcoes = (lista, atual) => lista.map((o) => `<option value="${esc(o.id)}"${String(o.id) === String(atual ?? '') ? ' selected' : ''}>${esc(o.nome)}</option>`).join('');
 const fuso = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo';
@@ -58,6 +59,7 @@ function palco(s, p) {
         ${aguardando ? '' : `<div class="palco-trilho" aria-hidden="true"><div class="palco-barra" data-foco-progresso style="width: ${s.total ? Math.round(((s.total - s.restante) / s.total) * 100) : 0}%"></div></div>`}
         <p class="foco-titulo">${esc(s.titulo)}</p>
         <p class="palco-sub">${esc(sub)}</p>
+        ${blocoNoPalco(s)}
         ${pausa && !s.pausado ? `
           <div class="respiracao" aria-hidden="true"><span class="respiracao-circulo"></span>
             <span class="respiracao-texto"><span class="inspira">Inspira</span><span class="solta">Solta</span></span></div>
@@ -81,8 +83,9 @@ function formInicio(estado, p) {
   return `
     <section class="card">
       <form class="formulario" data-form="foco-iniciar" novalidate>
-        <label class="campo"><span class="campo-rotulo">O que você vai estudar?</span>
+        <label class="campo"><span class="campo-rotulo">O que você vai fazer?</span>
           <input name="titulo" type="text" maxlength="140" value="${esc(pre.titulo || '')}" placeholder="Ex.: Revisar Estatística, capítulo 3"></label>
+        ${camposDoInicio(estado)}
         <div class="cal-form-linha">
           ${disciplinas.length ? `<label class="campo"><span class="campo-rotulo">Disciplina <small>(opcional)</small></span>
             <select name="disciplina"><option value="">Nenhuma</option>${opcoes(disciplinas, pre.disciplina || '')}</select></label>` : ''}
@@ -111,6 +114,7 @@ function formPrefs(p) {
         </div>
         <label class="campo-marcar"><input type="checkbox" name="som"${p.som ? ' checked' : ''}><span>Tocar um sino no fim de cada fase</span></label>
         <label class="campo-marcar"><input type="checkbox" name="seguir"${p.seguir ? ' checked' : ''}><span>Começar a pausa sozinha quando o foco acabar</span></label>
+        <label class="campo-marcar"><input type="checkbox" name="acompanhar"${p.acompanhar ? ' checked' : ''}><span>Foco acompanhado: perguntar "Como está?" no meio e "O que ficou pronto?" no fim</span></label>
         <label class="campo-marcar"><input type="checkbox" name="telaCheia"${p.telaCheia ? ' checked' : ''}><span>Entrar em tela cheia ao começar</span></label>
       </form>
     </details>`;
@@ -122,7 +126,7 @@ export function renderFoco(estado) {
   const { hoje, minHoje, minSemana } = hojeEsemana(estado);
   return `
     ${cabecalho('Sessão de foco', 'Foco e pausas no seu ritmo')}
-    ${s.ativa ? palco(s, p) : formInicio(estado, p)}
+    ${s.ativa ? palco(s, p) : `${cardFimPendente()}${formInicio(estado, p)}`}
     <section class="card">
       <div class="card-topo"><h2 class="card-titulo">Hoje: ${esc(textoMinutos(minHoje))} de foco</h2>
         <a class="card-link" href="#resumo">Semana: ${esc(textoMinutos(minSemana))}</a></div>

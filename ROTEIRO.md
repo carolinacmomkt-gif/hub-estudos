@@ -96,4 +96,6 @@ Ordem combinada com a Carol. Faculdade fica separada das outras áreas; criaçã
 - [x] **Cadernos, parte 2** ✓ (03/11/2026): melhorar letra, alinhar à pauta, voltar ao original, melhorar sozinho, janela de zoom, converter em texto e ortografia (IA), régua, fita de estudo, laser, leitura e apresentação, links, índice e marcadores, abas e digitalizar documento.
 - [x] **Topo das telas e Entrada** ✓ (03/11/2026): botão principal ao lado da lupa, tema fora do topo, Entrada em duas colunas.
 - [x] **Testes antigos investigados** ✓ (03/11/2026): Foco, Retrospectiva e Avisos eram do teste; a Faculdade achou dois defeitos de verdade (a mensagem de conectar sumia e o Lyceum conectado durante a leitura do AVA ficava sem ler) e o que foi digitado num formulário agora sobrevive a um redesenho.
+- [x] **Foco acompanhado** ✓ (04/11/2026): passo pequeno antes de começar (IA, sugestão simples ou voz), "Como está?" no meio com Travei (passo menor e pausa de 2 min) e "O que ficou pronto?" no fim, que vira o próximo passo da tarefa.
+- [ ] **Radar do nicho** (proposta enviada em 04/11/2026, esperando o OK da Carol): o que está subindo por nicho nas próximas 2 semanas, sem hashtag e sem áudio.
 - Descartado (Carol, 03/11/2026): as sobras do Pauta (blocos por cliente, intenções da semana, memória e rascunhos do Neon, editor do Notion), o link .ics e a agenda do Lyceum.

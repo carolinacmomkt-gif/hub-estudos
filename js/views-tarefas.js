@@ -61,6 +61,7 @@ export function itemTarefa(t, { projetos = [], hoje = hojeIso(), mostrarData = t
     projeto && `<span class="tarefa-projeto cor-${esc(projeto.cor || 1)}">${esc(projeto.titulo)}</span>`,
     t.area && t.area !== 'pessoal' && !semProjeto && `<span>${esc(nomeArea(t.area))}</span>`,
     t.notas && '<span aria-label="Tem notas">✎</span>',
+    !feita && t.dados?.proximo_passo && `<span class="tarefa-proximo">Próximo: ${esc(t.dados.proximo_passo)}</span>`,
   ].filter(Boolean);
   return `
     <li class="tarefa prio-${t.prioridade || 0}${feita ? ' feita' : ''}" data-tarefa="${esc(t.id)}"${feita ? '' : ` data-deslizar="tarefa" data-id="${esc(t.id)}"`}>
@@ -272,8 +273,10 @@ export function formTarefa(t = {}, projetos = []) {
       <p class="ava-alerta" role="alert" data-erro hidden></p>
       <div class="acoes">
         <button class="botao botao-primario" type="submit">${t.id ? 'Salvar' : 'Adicionar'}</button>
+        ${t.id && !t.feita_em ? `<button class="botao botao-secundario" type="button" data-acao="foco-iniciar" data-tarefa="${esc(t.id)}">Focar nesta tarefa</button>` : ''}
         ${t.id ? `<button class="botao botao-secundario" type="button" data-acao="tarefa-excluir" data-id="${esc(t.id)}">Excluir</button>` : ''}
       </div>
+      ${t.dados?.proximo_passo ? `<p class="campo-ajuda">Próximo passo (do foco): ${esc(t.dados.proximo_passo)}</p>` : ''}
     </form>`;
 }
 
