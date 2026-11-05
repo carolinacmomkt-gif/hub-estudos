@@ -4,6 +4,7 @@
 import { pedirJson, lista, objeto, texto } from './ia-comum.mjs';
 import { DESTINOS_CAPTURA, conferirItens } from '../../js/dados-captura.js';
 import { AREAS_TAREFA } from '../../js/dados-tarefas.js';
+import { conferirDemandas } from '../../js/dados-colar.js';
 
 const SYSTEM = `Você organiza o que a Carol falou (ditado no celular, às vezes sem pontuação) em itens do app dela, a Bússola.
 Ela é estudante de Publicidade, sócia de uma agência de marketing para médicos, cria conteúdo para YouTube e Substack e tem a consultoria Sensus.
@@ -42,4 +43,38 @@ export async function organizarCaptura({ texto: falado, hoje, categorias }, { cl
   };
   const r = await pedirJson({ system: SYSTEM, conteudo: JSON.stringify(pedido), esquema: ESQUEMA, maxTokens: 2000, cliente });
   return conferirItens(r.itens, { categorias });
+}
+
+// "Colar demandas" (Caixa de entrada): um texto colado (mensagem de cliente, e-mail, lista) vira
+// as demandas que ele pede, uma por item. Quem distribui nos dias é o app.
+const SYSTEM_DEMANDAS = `Você lê um texto que a Carol colou (mensagem de WhatsApp de cliente ou da equipe, e-mail, lista de pendências) e separa cada pedido numa tarefa.
+Ela é sócia de uma agência de marketing para médicos (posts, carrosséis, reels, legendas, artes, aprovações), cria conteúdo para YouTube e Substack e tem a consultoria Sensus.
+Regras:
+- Uma tarefa por pedido. Um pedido com várias peças iguais ("3 legendas") pode virar uma tarefa só, com o número no título.
+- Cumprimento, agradecimento, contexto e assinatura não viram tarefa.
+- titulo: curto, começando por verbo, sem travessão, em português do Brasil ("Escrever a legenda do carrossel da Dra. Karyne").
+- area: uma de ${AREAS_TAREFA.map((a) => a.id).join(', ')}; pedidos de cliente e da agência são "trabalho".
+- quem: a cliente ou a pessoa do pedido ("Dra. Karyne"), se aparecer; senão "".
+- prazo: AAAA-MM-DD só se o texto disser ("até sexta", "dia 12", "amanhã"), contado a partir de hoje (o JSON traz hoje e o dia da semana); senão "".
+- hora: HH:MM só se o texto disser uma hora (reunião, entrega com hora); senão "".
+- minutos: o tempo que ela leva, estimado com bom senso (legenda 30, carrossel 60, roteiro 60, ajuste de arte 15, reunião o que o texto disser ou 60).
+- prioridade: 2 se urgente ou para hoje, 1 se importante ou prazo em até 2 dias, senão 0.
+- trecho: o pedaço do texto de onde a tarefa saiu (copiado, até 200 letras).
+Não invente pedidos que não estão no texto. No máximo 25 tarefas.`;
+
+const ESQUEMA_DEMANDAS = objeto({
+  itens: lista('Tarefas tiradas do texto, na ordem em que aparecem', objeto({
+    titulo: texto, area: texto, quem: texto, prazo: texto, hora: texto,
+    minutos: { type: 'integer' }, prioridade: { type: 'integer', enum: [0, 1, 2] }, trecho: texto,
+  })),
+});
+
+export async function separarDemandas({ texto: colado, hoje }, { cliente } = {}) {
+  const pedido = {
+    hoje,
+    dia_da_semana: new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${hoje}T12:00:00Z`)),
+    texto: String(colado).slice(0, 8000),
+  };
+  const r = await pedirJson({ system: SYSTEM_DEMANDAS, conteudo: JSON.stringify(pedido), esquema: ESQUEMA_DEMANDAS, maxTokens: 4000, cliente });
+  return conferirDemandas(r.itens);
 }

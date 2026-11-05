@@ -41,10 +41,13 @@ export function cardCaixaEntrada(itens, agora = Date.now()) {
     <section class="card" aria-labelledby="caixa-titulo">
       <div class="card-topo">
         <h2 class="card-titulo" id="caixa-titulo">Caixa de entrada${abertos.length ? ` <span class="selo">${abertos.length}</span>` : ''}</h2>
-        <button class="card-link" type="button" data-acao="abrir-criar">Anotar ideia</button>
+        <div class="caixa-acoes">
+          <button class="card-link" type="button" data-acao="colar-abrir">Colar demandas</button>
+          <button class="card-link" type="button" data-acao="abrir-criar">Anotar ideia</button>
+        </div>
       </div>
       ${lista
         ? `<ul class="entradas">${lista}</ul>`
-        : '<p class="texto-suave">Nada por aqui. Toque no <strong>+</strong> para anotar uma ideia em segundos.</p>'}
+        : '<p class="texto-suave">Nada por aqui. Toque no <strong>+</strong> para anotar uma ideia, ou em <strong>Colar demandas</strong> para transformar uma mensagem em tarefas.</p>'}
     </section>`;
 }

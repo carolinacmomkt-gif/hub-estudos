@@ -1,0 +1,132 @@
+/* "Colar demandas" na Caixa de entrada: o texto e a prévia das tarefas para conferir */
+.caixa-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  justify-content: flex-end;
+}
+
+.colar-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.colar-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.colar-topo p {
+  margin: 0;
+}
+
+.colar-itens {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.colar-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+}
+
+.colar-item:has([name="usar"]:not(:checked)) > :not(.colar-linha) {
+  display: none;
+}
+
+.colar-item:has([name="usar"]:not(:checked)) .colar-titulo input {
+  color: var(--cor-texto-fraco);
+  text-decoration: line-through;
+}
+
+.colar-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.colar-usar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--toque);
+  min-height: var(--toque);
+}
+
+.colar-usar input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--cor-destaque);
+}
+
+.colar-titulo {
+  flex: 1;
+  margin: 0;
+}
+
+.colar-titulo input {
+  font-weight: 600;
+}
+
+.colar-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px 10px;
+}
+
+.colar-grade .campo {
+  margin: 0;
+}
+
+.colar-sem-espaco {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-radius: var(--raio);
+  background: var(--cor-destaque-suave);
+  font-size: 0.9rem;
+}
+
+.colar-sem-espaco p {
+  margin: 0;
+}
+
+.colar-trecho {
+  margin: 0;
+  color: var(--cor-texto-fraco);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.colar-salvar {
+  position: sticky;
+  bottom: 0;
+  padding-top: 8px;
+  padding-bottom: 4px;
+  background: linear-gradient(to bottom, transparent, var(--cor-superficie-elevada) 35%);
+}
+
+.colar-cal {
+  min-height: var(--toque);
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .colar-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
