@@ -152,7 +152,30 @@ export function conferirRadar(r) {
   const noticias = (Array.isArray(r?.noticias) ? r.noticias : []).map((n) => ({
     titulo: limpo(n?.titulo, 200), link: linkOk(n?.link), fonte: limpo(n?.fonte, 80), porque: limpo(n?.porque, 240), data: limpo(n?.data, 30) || null,
   })).filter((n) => n.titulo && n.link).slice(0, 10);
-  return { itens, noticias, briefing: limpo(r?.briefing, 900) };
+  const clientes = {};
+  for (const c of Array.isArray(r?.clientes) ? r.clientes : []) {
+    const nome = limpo(c?.cliente, 80);
+    if (!nome) continue;
+    clientes[nome] = { sugestoes: (Array.isArray(c?.sugestoes) ? c.sugestoes : []).map(conferirSugestao).filter((x) => x.titulo).slice(0, 4) };
+  }
+  return { itens, noticias, briefing: limpo(r?.briefing, 900), clientes };
+}
+
+export const LINHAS = ['técnico', 'posicionamento', 'conexão', 'venda'];
+export function conferirSugestao(x) {
+  return {
+    titulo: limpo(x?.titulo, 140),
+    formato: limpo(x?.formato, 40),
+    linha: limpo(x?.linha, 40),
+    estrutura: limpo(x?.estrutura, 60),
+    gap: limpo(x?.gap, 240),
+    gancho: limpo(x?.gancho, 200),
+    esqueleto: (Array.isArray(x?.esqueleto) ? x.esqueleto : []).map((e) => limpo(e, 220)).filter(Boolean).slice(0, 10),
+    cta: limpo(x?.cta, 160),
+    cuidado: limpo(x?.cuidado, 220),
+    porque_agora: limpo(x?.porque_agora, 240),
+    link: linkOk(x?.link),
+  };
 }
 
 // Sem IA: os vídeos que mais aceleram, os termos com notícia subindo e as datas do período.
@@ -167,7 +190,16 @@ export function radarSimples({ nicho, videos = [], noticias = [], termos = [], d
   for (const v of videos.slice(0, 4)) {
     itens.push({ tema: v.titulo, temperatura: 'subindo', porque: `${v.porHora.toLocaleString('pt-BR')} visualizações por hora no YouTube (${v.canal}).`, janela: 'Esta semana', formato: v.short ? 'Reels' : '', gancho: '', serve_para: nicho.clientes, links: [v.link] });
   }
-  return conferirRadar({ itens, noticias: noticias.slice(0, 8).map((n) => ({ ...n, porque: '' })), briefing: '' });
+  // Sem IA, uma sugestão-base por cliente a partir do que mais subiu (para ela completar).
+  const base = itens.slice(0, 2);
+  const clientes = nicho.clientes.map((cliente) => ({
+    cliente,
+    sugestoes: base.map((x) => ({
+      titulo: x.tema, formato: x.formato || 'Carrossel', linha: 'técnico', estrutura: x.temperatura === 'data_certa' ? 'Linear clássica' : 'Alerta',
+      gap: 'crença comum: [complete] / realidade: [complete]', gancho: '', esqueleto: [], cta: 'Salve para lembrar', cuidado: '', porque_agora: x.porque, link: x.links?.[0] || null,
+    })),
+  }));
+  return conferirRadar({ itens, noticias: noticias.slice(0, 8).map((n) => ({ ...n, porque: '' })), briefing: '', clientes });
 }
 
 // O relatório está velho? (mais de 3 dias, ou de antes da segunda desta semana: o briefing é semanal)
@@ -181,4 +213,86 @@ export function radarVelho(r, agora = Date.now()) {
   if (!r?.gerado_em) return true;
   const quando = Date.parse(r.gerado_em);
   return agora - quando > 3 * DIA || new Date(quando).toISOString().slice(0, 10) < segundaDaSemana(agora);
+}
+
+// ---------------------------------------------------------------------------
+// Histórico de notícias (14 dias) e o que é novo para cada cliente
+// ---------------------------------------------------------------------------
+
+export const idDaNoticia = (n) => semAcento(n.titulo).replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 90);
+
+// Junta as notícias novas às guardadas: cada uma lembra quando apareceu pela primeira vez.
+export function mesclarNoticias(guardadas = [], novas = [], agora = Date.now()) {
+  const porId = new Map();
+  for (const n of guardadas) if (n?.id) porId.set(n.id, n);
+  for (const n of novas) {
+    const id = idDaNoticia(n);
+    if (!id) continue;
+    const antes = porId.get(id);
+    porId.set(id, antes ? { ...antes, termo: antes.termo || n.termo } : { ...n, id, primeiro_em: new Date(agora).toISOString() });
+  }
+  const limite = agora - 14 * DIA;
+  return [...porId.values()]
+    .filter((n) => Date.parse(n.data || n.primeiro_em) >= limite)
+    .sort((a, b) => String(b.data || b.primeiro_em).localeCompare(String(a.data || a.primeiro_em)))
+    .slice(0, 120);
+}
+
+export const chaveDoVisto = (nicho, cliente = '') => `${nicho}|${cliente}`;
+export function vistosDoRadar(config) {
+  return (config || []).find((c) => c.chave === 'radar_visto' && !c.excluido_em)?.valor || {};
+}
+// Notícias que chegaram depois da última vez que ela marcou a caixa como vista.
+export function novasDesde(noticias = [], visto, inicio = null) {
+  const t = Math.max(visto ? Date.parse(visto) : 0, inicio ? Date.parse(inicio) : 0);
+  return noticias.filter((n) => Date.parse(n.primeiro_em || 0) > t);
+}
+
+// Disparou? Muitas notícias novas de uma vez ou um termo acelerando forte.
+export function disparo(novas = [], termos = []) {
+  const forte = termos.find((t) => t.subida >= 2.5 && t.recentes >= 4);
+  if (novas.length >= 3 || forte) return { termo: forte?.termo || novas[0]?.termo || '', quantas: novas.length };
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Exportar: texto para o WhatsApp e para o Notion
+// ---------------------------------------------------------------------------
+
+const fmtCurto = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`; };
+
+export function textoDoRadar(nicho, r, { formato = 'whatsapp', cliente = null } = {}) {
+  const md = formato === 'notion';
+  const t1 = (x) => (md ? `# ${x}` : `*${x}*`);
+  const t2 = (x) => (md ? `## ${x}` : `*${x}*`);
+  const t3 = (x) => (md ? `### ${x}` : `_${x}_`);
+  const linhas = [t1(`Radar · ${nicho.nome}${cliente ? ` · ${cliente}` : ''}`)];
+  if (r?.gerado_em) linhas.push(`Atualizado em ${fmtCurto(r.gerado_em)}`);
+  if (r?.briefing) linhas.push('', t2('Briefing da semana'), r.briefing);
+  if (r?.itens?.length) {
+    linhas.push('', t2('Vai bombar nas próximas 2 semanas'));
+    for (const x of r.itens) linhas.push(`- ${x.tema} (${(TEMPERATURAS.find((t) => t.id === x.temperatura) || TEMPERATURAS[1]).nome}${x.janela ? `, ${x.janela}` : ''}): ${x.porque}`);
+  }
+  const nomes = cliente ? [cliente] : Object.keys(r?.clientes || {});
+  for (const nome of nomes) {
+    const sug = r?.clientes?.[nome]?.sugestoes || [];
+    if (!sug.length) continue;
+    linhas.push('', t2(`Sugestões para ${nome}`));
+    sug.forEach((x, i) => {
+      linhas.push('', t3(`${i + 1}. ${x.titulo}`));
+      linhas.push(`${[x.formato, x.linha, x.estrutura].filter(Boolean).join(' · ')}`);
+      if (x.gap) linhas.push(`Gap: ${x.gap}`);
+      if (x.gancho) linhas.push(`Gancho: ${x.gancho}`);
+      x.esqueleto.forEach((e, j) => linhas.push(`${j + 1}) ${e}`));
+      if (x.cta) linhas.push(`CTA: ${x.cta}`);
+      if (x.cuidado) linhas.push(`Cuidado: ${x.cuidado}`);
+      if (x.porque_agora) linhas.push(`Por que agora: ${x.porque_agora}`);
+    });
+  }
+  const noticias = (r?.noticias_hist || r?.noticias || []).slice(0, 12);
+  if (noticias.length) {
+    linhas.push('', t2('Notícias'));
+    for (const n of noticias) linhas.push(md ? `- [${n.titulo}](${n.link}) · ${n.fonte || ''} ${fmtCurto(n.data)}` : `- ${n.titulo} (${n.fonte || 'fonte'}, ${fmtCurto(n.data)}) ${n.link}`);
+  }
+  return linhas.join('\n');
 }

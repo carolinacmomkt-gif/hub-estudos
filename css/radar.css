@@ -178,3 +178,91 @@
 .rd-topo + .rd-briefing {
   margin-top: 12px;
 }
+
+/* Radar 2.0: uma caixa por cliente, com as notícias novas e as sugestões */
+.rd-selo-novas {
+  background: var(--cor-preenchido);
+  color: var(--cor-sobre-preenchido);
+}
+
+.rd-caixas {
+  display: grid;
+  gap: 16px;
+}
+
+.rd-caixa {
+  display: grid;
+  gap: 12px;
+}
+
+.rd-caixa-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.rd-caixa-topo .card-titulo {
+  margin: 0;
+}
+
+.rd-caixa-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.rd-noticias-novas li {
+  padding-left: 12px;
+  border-left: 3px solid var(--cor-destaque);
+}
+
+.rd-mais summary {
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.rd-sugestoes-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+}
+
+.rd-sugestao {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-elevada);
+}
+
+.rd-sugestao p,
+.rd-sugestao h5 {
+  margin: 0;
+}
+
+.rd-esqueleto summary {
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rd-esqueleto ol {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+  line-height: 1.45;
+}
+
+.rd-cuidado {
+  color: var(--urg-semana-texto);
+}
+
+.rd-exportar {
+  position: relative;
+}

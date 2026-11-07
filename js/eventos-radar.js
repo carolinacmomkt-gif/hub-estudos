@@ -7,7 +7,8 @@ import { listar, salvar, puxarTabela } from './persistencia.js';
 import { dispararSegundoPlano } from './funcoes.js';
 import { confirmar } from './confirmar.js';
 import { FORMATOS } from './dados-trabalho.js';
-import { nichosDoRadar, sugerirNichos, conferirNicho, idDoNicho, radarVelho } from './dados-radar.js';
+import { nichosDoRadar, sugerirNichos, conferirNicho, idDoNicho, radarVelho, chaveDoVisto, textoDoRadar } from './dados-radar.js';
+import { baixar } from './exportar-caderno.js';
 import { resultadoDoRadar } from './views-radar.js';
 
 let app; // { renderizar, avisoCurto }
@@ -100,6 +101,62 @@ function levarParaCriar(id, i) {
   location.hash = '#criar';
 }
 
+// Marcar a caixa da cliente como vista (o contador de notícias novas volta a zero; segue entre aparelhos).
+async function marcarVisto(nichoId, cliente) {
+  const atual = (await listar('config', { incluirExcluidos: true })).find((c) => c.chave === 'radar_visto');
+  // Até a notícia mais nova que ela viu (o relógio do aparelho pode estar atrás do servidor).
+  const hist = resultadoDoRadar(obterEstado(), nichoId)?.noticias_hist || [];
+  const ultima = Math.max(Date.now(), ...hist.map((n) => Date.parse(n.primeiro_em || 0) || 0));
+  const valor = { ...(atual?.excluido_em ? {} : atual?.valor || {}), [chaveDoVisto(nichoId, cliente)]: new Date(ultima).toISOString() };
+  await salvar('config', { ...(atual || {}), excluido_em: null, chave: 'radar_visto', valor });
+  atualizarEstado({ config: await listar('config') });
+  app.renderizar();
+}
+
+const nichoPeloId = (id) => nichosDoRadar(obterEstado().config).find((n) => n.id === id);
+
+async function exportar(id, como, cliente) {
+  const nicho = nichoPeloId(id);
+  const r = resultadoDoRadar(obterEstado(), id);
+  if (!nicho || !r) return;
+  document.querySelectorAll('.rd-exportar[open]').forEach((d) => { d.open = false; });
+  if (como === 'pdf') {
+    app.avisoCurto('Montando o PDF…');
+    try {
+      const { blocosDoRadar, pdfDoRadar } = await import('./radar-pdf.js');
+      const arquivo = await pdfDoRadar(blocosDoRadar(nicho, r, { cliente: cliente || null }));
+      const dia = new Date().toISOString().slice(0, 10);
+      baixar(arquivo, `radar-${nicho.id}${cliente ? `-${idDoNicho(cliente)}` : ''}-${dia}.pdf`);
+      app.avisoCurto('PDF baixado.');
+    } catch (erro) {
+      app.avisoCurto(erro?.message || 'Não deu para montar o PDF agora.');
+    }
+    return;
+  }
+  const texto = textoDoRadar(nicho, r, { formato: como, cliente: cliente || null });
+  copiar(texto, como === 'notion' ? 'Copiado. No Notion, cole numa página nova: os títulos e as listas vêm junto.' : 'Copiado. É só colar no WhatsApp.');
+}
+
+function copiar(texto, aviso) {
+  navigator.clipboard?.writeText(texto).then(() => app.avisoCurto(aviso), () => app.avisoCurto('Não consegui copiar. Libere a área de transferência para a Bússola.'));
+}
+
+function sugestao(id, cliente, i) {
+  return resultadoDoRadar(obterEstado(), id)?.clientes?.[cliente]?.sugestoes?.[i] || null;
+}
+
+function sugestaoParaCriar(id, cliente, i) {
+  const x = sugestao(id, cliente, i);
+  if (!x) return;
+  const c = (obterEstado().clientesTrabalho || []).find((y) => !y.excluido_em && y.nome === cliente);
+  const formato = (x.formato ? FORMATOS.find((f) => f.toLowerCase().startsWith(String(x.formato).toLowerCase())) : null) || FORMATO_DO_CRIAR[String(x.formato || '').toLowerCase().split(' ')[0]] || FORMATOS[0];
+  const objetivo = { 'técnico': 'Educação', posicionamento: 'Posicionamento', 'conexão': 'Conexão', venda: 'Venda' }[String(x.linha || '').toLowerCase()] || 'Educação';
+  const tema = [x.titulo, x.gap ? `Gap: ${x.gap}` : '', x.estrutura ? `Estrutura: ${x.estrutura}` : '', x.porque_agora ? `Por que agora: ${x.porque_agora}` : ''].filter(Boolean).join('\n');
+  const texto = [x.gancho, ...(x.esqueleto || []), x.cta ? `CTA: ${x.cta}` : ''].filter(Boolean).join('\n\n');
+  atualizarEstado({ criar: { cliente: c?.chave || '', formato, objetivo, tema, titulo: x.titulo, texto }, criarStatus: x.cuidado ? `Cuidado: ${x.cuidado}` : '' });
+  location.hash = '#criar';
+}
+
 async function salvarNicho(form) {
   const erro = form.querySelector('[data-erro]');
   const el = form.elements;
@@ -123,6 +180,14 @@ export function cliqueRadar(alvo) {
   switch (alvo.dataset.acao) {
     case 'radar-atualizar': atualizarRadar(alvo.dataset.id); return true;
     case 'radar-aba': location.hash = `#radar/${alvo.dataset.id}`; return true;
+    case 'radar-visto': marcarVisto(alvo.dataset.id, alvo.dataset.cliente || ''); return true;
+    case 'radar-exportar': exportar(alvo.dataset.id, alvo.dataset.como, alvo.dataset.cliente || ''); return true;
+    case 'radar-criar-sugestao': sugestaoParaCriar(alvo.dataset.id, alvo.dataset.cliente || '', Number(alvo.dataset.i)); return true;
+    case 'radar-copiar-sugestao': {
+      const x = sugestao(alvo.dataset.id, alvo.dataset.cliente || '', Number(alvo.dataset.i));
+      if (x) copiar([x.titulo, [x.formato, x.linha, x.estrutura].filter(Boolean).join(' · '), x.gancho ? `Gancho: ${x.gancho}` : '', x.gap ? `Gap: ${x.gap}` : '', ...x.esqueleto.map((e, j) => `${j + 1}) ${e}`), x.cta ? `CTA: ${x.cta}` : '', x.cuidado ? `Cuidado: ${x.cuidado}` : ''].filter(Boolean).join('\n'), 'Sugestão copiada.');
+      return true;
+    }
     case 'radar-criar': levarParaCriar(alvo.dataset.id, Number(alvo.dataset.i)); return true;
     case 'radar-sugestao':
     case 'radar-sugestoes-todas': {

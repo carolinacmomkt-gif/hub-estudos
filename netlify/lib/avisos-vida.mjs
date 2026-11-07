@@ -18,6 +18,7 @@ export const VIDA_PADRAO = {
   habitos: { ativo: true, hora: '20:00' },
   blocos: { ativo: true },
   trabalho: { ativo: true },
+  radar: { ativo: true },
   silencio: { ativo: true, de: '22:00', ate: '07:00' },
 };
 
@@ -36,6 +37,7 @@ export function configVida(valor) {
     habitos: item('habitos'),
     blocos: { ativo: v.blocos?.ativo ?? VIDA_PADRAO.blocos.ativo },
     trabalho: { ativo: v.trabalho?.ativo ?? VIDA_PADRAO.trabalho.ativo },
+    radar: { ativo: v.radar?.ativo ?? VIDA_PADRAO.radar.ativo },
     silencio: {
       ativo: v.silencio?.ativo ?? VIDA_PADRAO.silencio.ativo,
       de: horaOk(v.silencio?.de, VIDA_PADRAO.silencio.de),

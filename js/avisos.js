@@ -22,6 +22,7 @@ export const VIDA_PADRAO = {
   habitos: { ativo: true, hora: '20:00' },
   blocos: { ativo: true },
   trabalho: { ativo: true },
+  radar: { ativo: true },
   silencio: { ativo: true, de: '22:00', ate: '07:00' },
 };
 
