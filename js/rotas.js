@@ -20,6 +20,7 @@ export const ROTAS = [
   { id: 'resumo', titulo: 'Resumo da semana', curto: 'Semana', icone: 'calendario', grupo: 'planejar' },
   // Trabalho, na ordem do fluxo: planejar → produzir → aprovar → entregar → medir
   { id: 'clientes', titulo: 'Clientes', curto: 'Clientes', icone: 'clientes', grupo: 'trabalho' },
+  { id: 'radar', titulo: 'Radar do nicho', curto: 'Radar', icone: 'radar', grupo: 'trabalho' },
   { id: 'conteudo', titulo: 'Conteúdo', curto: 'Conteúdo', icone: 'conteudo', grupo: 'trabalho' },
   { id: 'criar', titulo: 'Criar', curto: 'Criar', icone: 'criar', grupo: 'trabalho' },
   { id: 'aprovar', titulo: 'Aprovar', curto: 'Aprovar', icone: 'aprovar', grupo: 'trabalho' },

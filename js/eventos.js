@@ -22,6 +22,7 @@ import { ligarFoco, cliqueFoco, enviarFoco, mudancaFoco } from './foco.js';
 import { ligarAcompanhado, cliqueAcompanhado, enviarAcompanhado } from './foco-acompanhado.js';
 import { ligarDitado, cliqueDitado } from './ditado.js';
 import { ligarColar, cliqueColar, enviarColar } from './eventos-colar.js';
+import { ligarRadar, cliqueRadar, enviarRadar } from './eventos-radar.js';
 import { ligarContinuar, cliqueContinuar } from './continuar.js';
 import { ligarLeitor, enviarLeitor } from './leitor-livro.js';
 import { ligarYoutube, cliqueYoutube, enviarYoutube, mudancaYoutube } from './eventos-youtube.js';
@@ -412,7 +413,7 @@ export function ligarEventos(funcoesDoApp) {
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
   ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarMaos, ligarTrabalho, ligarRelatorio, ligarPauta, ligarPortfolio, ligarProjetos, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarAcompanhado, ligarDitado, ligarColar, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarMaos, ligarTrabalho, ligarRelatorio, ligarPauta, ligarPortfolio, ligarProjetos, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarAcompanhado, ligarDitado, ligarColar, ligarRadar, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   ligarFolhas();
   ligarConfirmar(); // os diálogos do navegador viram folhas do app
   const folhaMais = document.getElementById('folha-mais');
@@ -523,7 +524,7 @@ export function ligarEventos(funcoesDoApp) {
           return;
         }
         if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo)
-          || cliqueFoco(alvo) || cliqueAcompanhado(alvo) || cliqueDitado(alvo) || cliqueColar(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueMaos(alvo) || cliqueTrabalho(alvo) || cliqueRelatorio(alvo) || cliquePauta(alvo) || cliquePortfolio(alvo) || cliqueProjetos(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
+          || cliqueFoco(alvo) || cliqueAcompanhado(alvo) || cliqueDitado(alvo) || cliqueColar(alvo) || cliqueRadar(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueMaos(alvo) || cliqueTrabalho(alvo) || cliqueRelatorio(alvo) || cliquePauta(alvo) || cliquePortfolio(alvo) || cliqueProjetos(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -565,7 +566,7 @@ export function ligarEventos(funcoesDoApp) {
     evento.preventDefault();
     // Qual botão enviou (ex.: "Salvar e fazer agora" ou "Só salvar").
     form.dataset.enviadoPor = evento.submitter?.value || '';
-    if (enviarLeitor(form) || enviarProtegidos(form) || enviarRituais(form) || enviarCantinho(form) || enviarCuidar(form) || enviarMaos(form) || enviarTrabalho(form) || enviarRelatorio(form) || enviarPauta(form) || enviarProjetos(form) || enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarAcompanhado(form) || enviarColar(form) || enviarBiblioteca(form) || enviarSubstack(form) || enviarEstudos(form)) return;
+    if (enviarLeitor(form) || enviarProtegidos(form) || enviarRituais(form) || enviarCantinho(form) || enviarCuidar(form) || enviarMaos(form) || enviarTrabalho(form) || enviarRelatorio(form) || enviarPauta(form) || enviarProjetos(form) || enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarAcompanhado(form) || enviarColar(form) || enviarRadar(form) || enviarBiblioteca(form) || enviarSubstack(form) || enviarEstudos(form)) return;
     if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form) || enviarYoutube(form)) return;
     switch (form.dataset.form) {
       case 'login':

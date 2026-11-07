@@ -1,0 +1,184 @@
+// Radar do nicho (Trabalho; decisão da Carol, 07/11/2026): o que está subindo em cada nicho nas
+// próximas 2 semanas, sem hashtag e sem áudio. Sinais oficiais: vídeos e Shorts do YouTube dos
+// últimos 7 dias (visualizações por hora), a velocidade das notícias no Google Notícias, as datas
+// da saúde e campanhas do mês, e a IA com pesquisa na web cruzando tudo. Sem DOM: usado pelo app
+// e pela função radar-background.
+
+import { areasDoNicho, datasEntre } from './datas-especiais.js';
+
+export const TEMPERATURAS = [
+  { id: 'subindo_forte', nome: 'Subindo forte', curto: 'Forte' },
+  { id: 'subindo', nome: 'Subindo', curto: 'Subindo' },
+  { id: 'data_certa', nome: 'Data certa', curto: 'Data' },
+  { id: 'momento', nome: 'Assunto do momento', curto: 'Momento' },
+];
+const IDS_TEMP = TEMPERATURAS.map((t) => t.id);
+export const MAX_PALAVRAS = 6;
+const HORA = 3600e3;
+const DIA = 24 * HORA;
+
+const limpo = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+const semAcento = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const linkOk = (u) => (/^https:\/\/[^\s"'<>]+$/i.test(String(u || '')) ? String(u).slice(0, 500) : null);
+export const idDoNicho = (nome) => semAcento(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'nicho';
+export const chaveDoRadar = (id) => `radar:${id}`;
+
+// ---------------------------------------------------------------------------
+// Nichos (config "radar" { nichos: [{ id, nome, palavras, clientes }] })
+// ---------------------------------------------------------------------------
+
+export function conferirNicho(n) {
+  const nome = limpo(n?.nome, 60);
+  const palavras = [...new Set((Array.isArray(n?.palavras) ? n.palavras : String(n?.palavras || '').split(/[,\n;]/))
+    .map((p) => limpo(p, 60)).filter((p) => p.length >= 2))].slice(0, MAX_PALAVRAS);
+  return { id: limpo(n?.id, 40) || idDoNicho(nome), nome, palavras: palavras.length ? palavras : (nome ? [nome] : []), clientes: (n?.clientes || []).map((c) => limpo(c, 80)).filter(Boolean).slice(0, 30) };
+}
+
+export function nichosDoRadar(config) {
+  const v = (config || []).find((c) => c.chave === 'radar' && !c.excluido_em)?.valor || {};
+  return (Array.isArray(v.nichos) ? v.nichos : []).map(conferirNicho).filter((n) => n.nome);
+}
+
+// Sugestão a partir das clientes do Trabalho: um nicho por especialidade da ficha.
+const PALAVRAS_DA_AREA = {
+  ginecologia: ['saúde da mulher', 'menopausa', 'ciclo menstrual', 'endometriose'],
+  obstetricia: ['gestação', 'parto', 'pré-natal'],
+  mastologia: ['câncer de mama', 'mamografia'],
+  dermatologia: ['skincare', 'acne', 'manchas na pele', 'protetor solar'],
+  hiperidrose: ['suor excessivo', 'hiperidrose'],
+  estetica: ['harmonização facial', 'botox', 'preenchimento'],
+  odontologia: ['saúde bucal', 'clareamento dental', 'lente de contato dental'],
+  oftalmologia: ['saúde dos olhos', 'cirurgia refrativa', 'miopia'],
+  psiquiatria: ['saúde mental', 'ansiedade', 'depressão', 'TDAH'],
+  psicologia: ['ansiedade', 'terapia', 'autoestima'],
+  nutricao: ['alimentação saudável', 'emagrecimento', 'nutrição'],
+  endocrinologia: ['tireoide', 'hormônios', 'diabetes', 'canetas para emagrecer'],
+  pediatria: ['saúde infantil', 'vacinação infantil'],
+  cardiologia: ['saúde do coração', 'pressão alta'],
+  urologia: ['saúde do homem', 'próstata'],
+  ortopedia: ['dor nas costas', 'joelho'],
+  neurologia: ['sono', 'enxaqueca'],
+};
+const NOME_DA_AREA = {
+  ginecologia: 'Ginecologia', obstetricia: 'Obstetrícia', mastologia: 'Mastologia', dermatologia: 'Dermatologia', hiperidrose: 'Hiperidrose',
+  estetica: 'Estética', odontologia: 'Odontologia', oftalmologia: 'Oftalmologia', psiquiatria: 'Psiquiatria', psicologia: 'Psicologia',
+  nutricao: 'Nutrição', endocrinologia: 'Endocrinologia', pediatria: 'Pediatria', cardiologia: 'Cardiologia', urologia: 'Urologia',
+  ortopedia: 'Ortopedia', neurologia: 'Neurologia',
+};
+
+export function sugerirNichos(clientes, ja = []) {
+  const usados = new Set(ja.map((n) => n.id));
+  const porArea = new Map();
+  for (const c of clientes || []) {
+    if (c.excluido_em) continue;
+    const areas = areasDoNicho(c.dados?.nicho, c.nome).filter((a) => NOME_DA_AREA[a]);
+    const area = areas.find((a) => a !== 'medicina') || areas[0];
+    if (!area) continue;
+    if (!porArea.has(area)) porArea.set(area, []);
+    porArea.get(area).push(c.nome);
+  }
+  return [...porArea.entries()].map(([area, nomes]) => conferirNicho({ id: area, nome: NOME_DA_AREA[area], palavras: PALAVRAS_DA_AREA[area] || [NOME_DA_AREA[area]], clientes: nomes }))
+    .filter((n) => !usados.has(n.id));
+}
+
+// Datas da saúde e campanhas do nicho nas próximas semanas (as "datas certas").
+export function datasDoNicho(nicho, hoje, dias = 21) {
+  const areas = new Set(areasDoNicho(`${nicho.nome} ${nicho.palavras.join(' ')}`));
+  const ate = new Date(Date.parse(`${hoje}T12:00:00Z`) + dias * DIA).toISOString().slice(0, 10);
+  const inicioMes = `${hoje.slice(0, 7)}-01`;
+  return datasEntre(inicioMes, ate)
+    .filter((d) => d.tipo !== 'feriado' && d.tipo !== 'facultativo')
+    .filter((d) => (d.tipo === 'campanha' ? d.data <= ate : d.data >= hoje))
+    .filter((d) => (d.areas || []).some((a) => areas.has(a) || (a === 'todas' && areas.size)))
+    .map((d) => ({ data: d.data, titulo: d.nome || d.titulo, tipo: d.tipo, conferir: d.conferir || '' }))
+    .slice(0, 12);
+}
+
+// ---------------------------------------------------------------------------
+// Sinais
+// ---------------------------------------------------------------------------
+
+// Google Notícias (RSS): título, link, fonte e data de cada item.
+const entidade = (t) => t.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+const campo = (item, nome) => entidade((item.match(new RegExp(`<${nome}[^>]*>([\\s\\S]*?)</${nome}>`)) || [])[1] || '').trim();
+
+export function lerRss(xml) {
+  return [...String(xml || '').matchAll(/<item>([\s\S]*?)<\/item>/g)].map(([, item]) => {
+    const fonte = campo(item, 'source');
+    let titulo = campo(item, 'title');
+    if (fonte && titulo.endsWith(` - ${fonte}`)) titulo = titulo.slice(0, -(fonte.length + 3));
+    const quando = Date.parse(campo(item, 'pubDate'));
+    return { titulo: limpo(titulo, 200), link: linkOk(campo(item, 'link')), fonte: limpo(fonte, 80), data: Number.isFinite(quando) ? new Date(quando).toISOString() : null };
+  }).filter((n) => n.titulo && n.link);
+}
+
+// Velocidade de um termo: matérias nas últimas 48 h × a média de 48 h dos 5 dias antes.
+export function velocidade(noticias, agora = Date.now()) {
+  const t = (n) => Date.parse(n.data || 0);
+  const recentes = noticias.filter((n) => agora - t(n) <= 2 * DIA).length;
+  const antes = noticias.filter((n) => agora - t(n) > 2 * DIA && agora - t(n) <= 7 * DIA).length;
+  const base = antes / 2.5; // 5 dias = 2,5 janelas de 48 h
+  return { recentes, antes, subida: base ? Math.round((recentes / base) * 10) / 10 : (recentes ? recentes : 0) };
+}
+
+// YouTube: visualizações por hora desde a publicação (o que acelera, não o que é só grande).
+export function porHora(video, agora = Date.now()) {
+  const horas = Math.max(1, (agora - Date.parse(video.publicado)) / HORA);
+  return Math.round((Number(video.views) || 0) / horas);
+}
+
+// Duração ISO-8601 (PT1M3S) em segundos; até 3 min conta como Short.
+export function segundos(iso) {
+  const m = String(iso || '').match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return 0;
+  return (Number(m[1]) || 0) * 86400 + (Number(m[2]) || 0) * 3600 + (Number(m[3]) || 0) * 60 + (Number(m[4]) || 0);
+}
+
+// ---------------------------------------------------------------------------
+// Resultado (o que a IA devolveu, ou o jeito simples sem IA)
+// ---------------------------------------------------------------------------
+
+export function conferirRadar(r) {
+  const itens = (Array.isArray(r?.itens) ? r.itens : []).map((x) => ({
+    tema: limpo(x?.tema, 120),
+    temperatura: IDS_TEMP.includes(x?.temperatura) ? x.temperatura : 'subindo',
+    porque: limpo(x?.porque, 400),
+    janela: limpo(x?.janela, 80),
+    formato: limpo(x?.formato, 60),
+    gancho: limpo(x?.gancho, 200),
+    serve_para: (Array.isArray(x?.serve_para) ? x.serve_para : []).map((c) => limpo(c, 80)).filter(Boolean).slice(0, 8),
+    links: (Array.isArray(x?.links) ? x.links : []).map(linkOk).filter(Boolean).slice(0, 4),
+  })).filter((x) => x.tema).slice(0, 10);
+  const noticias = (Array.isArray(r?.noticias) ? r.noticias : []).map((n) => ({
+    titulo: limpo(n?.titulo, 200), link: linkOk(n?.link), fonte: limpo(n?.fonte, 80), porque: limpo(n?.porque, 240), data: limpo(n?.data, 30) || null,
+  })).filter((n) => n.titulo && n.link).slice(0, 10);
+  return { itens, noticias, briefing: limpo(r?.briefing, 900) };
+}
+
+// Sem IA: os vídeos que mais aceleram, os termos com notícia subindo e as datas do período.
+export function radarSimples({ nicho, videos = [], noticias = [], termos = [], datas = [] }) {
+  const itens = [];
+  for (const d of datas.slice(0, 3)) {
+    itens.push({ tema: d.titulo, temperatura: 'data_certa', porque: `${d.tipo === 'campanha' ? 'Campanha do mês' : 'Data da saúde'} em ${d.data.slice(8, 10)}/${d.data.slice(5, 7)}.${d.conferir ? ' Confira antes de postar.' : ''}`, janela: d.tipo === 'campanha' ? 'O mês todo' : 'Na semana da data', formato: '', gancho: '', serve_para: nicho.clientes, links: [] });
+  }
+  for (const t of termos.filter((x) => x.subida >= 1.5 && x.recentes >= 3).slice(0, 3)) {
+    itens.push({ tema: t.termo, temperatura: t.subida >= 3 ? 'subindo_forte' : 'subindo', porque: `${t.recentes} matérias nas últimas 48 h, ${t.subida}× o ritmo dos dias anteriores.`, janela: 'Próximos dias', formato: '', gancho: '', serve_para: nicho.clientes, links: [] });
+  }
+  for (const v of videos.slice(0, 4)) {
+    itens.push({ tema: v.titulo, temperatura: 'subindo', porque: `${v.porHora.toLocaleString('pt-BR')} visualizações por hora no YouTube (${v.canal}).`, janela: 'Esta semana', formato: v.short ? 'Reels' : '', gancho: '', serve_para: nicho.clientes, links: [v.link] });
+  }
+  return conferirRadar({ itens, noticias: noticias.slice(0, 8).map((n) => ({ ...n, porque: '' })), briefing: '' });
+}
+
+// O relatório está velho? (mais de 3 dias, ou de antes da segunda desta semana: o briefing é semanal)
+export function segundaDaSemana(agora = Date.now(), fuso = 'America/Sao_Paulo') {
+  const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: fuso }).format(new Date(agora));
+  const d = new Date(`${hoje}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+export function radarVelho(r, agora = Date.now()) {
+  if (!r?.gerado_em) return true;
+  const quando = Date.parse(r.gerado_em);
+  return agora - quando > 3 * DIA || new Date(quando).toISOString().slice(0, 10) < segundaDaSemana(agora);
+}

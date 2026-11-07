@@ -9,7 +9,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 - **YouTube** (planejamento do canal).
 - **Cadernos** com escrita à mão.
 - **Calendário**.
-- **Trabalho** (o Pauta dentro da Bússola, 01/11/2026): Conteúdo, Aprovar, Clientes, Criar, Pautas e Relatórios.
+- **Trabalho** (o Pauta dentro da Bússola, 01/11/2026): Clientes, Radar do nicho, Conteúdo, Criar, Aprovar, Pautas e Relatórios.
 - **Vida** (fase 2, ver ROTEIRO.md): Hoje, tarefas e projetos, hábitos e rotinas, finanças (com gamificação e recompensas), diário, casa, consultoria (carteira de clientes e produto), metas e lazer.
 
 ## Regras gerais
@@ -35,7 +35,7 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 | Banco e sincronização | Supabase (Postgres + Auth com login só da Carol + Storage para PDFs, imagens e páginas de caderno) |
 | Cache local | IndexedDB, para abrir rápido e funcionar sem internet; sincroniza com o Supabase quando volta a conexão |
 | Escrita à mão | `perfect-freehand` (traço com pressão) sobre canvas, usando Pointer Events |
-| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens e, no modo `demandas`, o texto colado do "Colar demandas" em tarefas, `foco-ia`, que quebra o que ela vai fazer em passos pequenos e sugere um passo menor quando ela trava no Foco acompanhado, `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros, `trabalho` (ação `ia`), que escreve peças no método da Essence com a memória de cada cliente, e ação `relatorio-consideracoes`), `relatorio-ler-background`, que lê os prints do Instagram para o relatório de métricas, e `pauta-legenda-background`, que escreve a legenda da pauta olhando as artes) |
+| IA | API da Anthropic (modelo `claude-sonnet-5-5`) com a ferramenta de web search, chamada só pelas funções (`ia-background`, que lê PDFs da Biblioteca, `calendario-ler-background`, que lê o calendário acadêmico, `youtube-ia`, `planejar-dia`, que monta os blocos do "Planejar meu dia", `demandas`, que sugere prazo, tempo e prioridade das demandas e organiza a semana com elas, `perguntar`, que responde o "Pergunte à Bússola", `capturar`, que separa a fala da captura por voz em itens e, no modo `demandas`, o texto colado do "Colar demandas" em tarefas, `foco-ia`, que quebra o que ela vai fazer em passos pequenos e sugere um passo menor quando ela trava no Foco acompanhado, `livro-ia`, que explica um trecho e resume um capítulo no leitor de livros, `trabalho` (ação `ia`), que escreve peças no método da Essence com a memória de cada cliente, e ação `relatorio-consideracoes`), `radar-background`, que cruza os sinais do Radar do nicho com a pesquisa na web, `relatorio-ler-background`, que lê os prints do Instagram para o relatório de métricas, e `pauta-legenda-background`, que escreve a legenda da pauta olhando as artes) |
 | AVA | API de web services do Moodle 5.1 (Open LMS) da UniEVANGÉLICA |
 
 ## Visual
@@ -275,6 +275,14 @@ Inspirados no que o GoodNotes, o Noteshelf e o Samsung Notes oferecem.
 - **Service worker**: estilos e scripts vêm primeiro da rede (até 3 s, senão a cópia guardada), para a tela nunca misturar arquivo novo com antigo (foi o que tirou as cores do Com as mãos no aparelho). Se as tintas não existirem no tema carregado, o Com as mãos mostra "Falta atualizar as cores do app".
 - **Papel** (Carol, 02/11/2026): o papel dos cadernos e do Com as mãos segue o app, grafite `#242424` no escuro e branco no claro (`--papel`); nada de folha marrom.
 
+## Radar do nicho (Trabalho → Radar)
+
+- Decisão da Carol (07/11/2026): o que está subindo em cada nicho para as próximas 2 semanas, **sem hashtag e sem áudio em alta**, só por sinais oficiais (nada de raspar o Instagram). Telas `#radar`, `#radar/<nicho>`, `#radar/novo`, `#radar/editar:<nicho>` (`js/dados-radar.js` sem DOM, `views-radar.js`, `eventos-radar.js`, `css/radar.css`; no menu entre Clientes e Conteúdo).
+- **Nichos** (`config` "radar" `{ nichos: [{ id, nome, palavras (até 6), clientes }] }`): criados à mão ou pelas clientes do Trabalho (`sugerirNichos`: o nicho da ficha vira especialidade com palavras do público, "Usar" / "Criar todos").
+- **Sinais** (`netlify/lib/radar.mjs`): YouTube Data API (`YOUTUBE_API_KEY` na Netlify; até 3 buscas por atualização, vídeos em português dos últimos 7 dias, ordenados por **visualizações por hora**, Short = até 3 min); Google Notícias RSS por palavra (`velocidade`: matérias em 48 h × o ritmo dos 5 dias antes); datas da saúde e campanhas do nicho em 21 dias (`datasDoNicho`). Sem a chave do YouTube, segue com o resto e avisa.
+- **IA** (`radar-background`, só quando ela toca em Atualizar ou quando o radar é de antes da segunda desta semana ao abrir o nicho; o nicho vai no pedido): cruza os sinais com a pesquisa na web (`web_search`) e devolve itens com temperatura (subindo forte, subindo, data certa, assunto do momento), porquê com o sinal concreto, janela, formato, gancho, "serve para" (só clientes do nicho) e links (só `https`), as notícias em alta com o porquê e o **briefing da semana**; normas dos conselhos na saúde, nunca promete viral. Sem IA, `radarSimples` mostra os sinais (datas, termos subindo, vídeos que aceleram). O resultado fica em `config` "radar:<nicho>" (`status` lendo/pronto/erro, `gerado_em`, `fonte`, `avisos`, `itens`, `noticias`, `briefing`, `videos`, `termos`, `datas`); o app puxa a config a cada 4 s até chegar.
+- **Levar para o Criar**: abre o Criar com a cliente do nicho, o formato (Reels → Reels falado, Carrossel → Carrossel de conteúdo, Stories → Stories de venda, Post → Legenda) e o tema com gancho e "por que agora". "Os sinais por trás do radar" mostra os vídeos, os termos e as datas.
+
 ## Relatório de métricas (Trabalho → Relatórios)
 
 - Decisão da Carol (02/11/2026): o mesmo modelo para todos os clientes, o da Confluir (o PPTX "Relatório de métricas · Dra. Karyne Magalhães"). Fundo verde-oliva `#4E5C2B`, títulos laranja `#E06919`, números e textos `#D9D9D9`, Open Sans (`MARCA` em `js/dados-relatorio.js`; são cores do documento, não do app). Slides: capa, Atividade do perfil (visitas ao perfil + toques em links externos em laranja), Alcance (contas alcançadas), Seguidores ("Foram +N novas contas."), Engajamento (interações com o conteúdo), Conteúdo relevante (até 3 capas com cantos arredondados) e Considerações (tópicos em negrito + texto). Mês e ano no alto à direita, nome da cliente embaixo à direita. Números no padrão brasileiro (1.194).
@@ -423,3 +431,4 @@ Todas as tabelas usam RLS ligado ao usuário da Carol.
 - `VAPID_PUBLIC_KEY` (pode ir para o front-end; é pública)
 - `VAPID_PRIVATE_KEY` (somente nas funções)
 - `TRELLO_API_KEY` (chave do app no Trello; pública, vai para o front-end pelo `config-publica`)
+- `YOUTUBE_API_KEY` (YouTube Data API v3, só nas funções; Radar do nicho)
