@@ -101,6 +101,11 @@
 
 .menu-mais-lista .botao {
   justify-content: flex-start;
+  max-width: min(80vw, 420px);
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lista-simples {

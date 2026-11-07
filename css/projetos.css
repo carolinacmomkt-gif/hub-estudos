@@ -73,6 +73,8 @@
 }
 
 .pj-outros-lista li:first-child { border-top: 0; }
+.pj-outros-lista li > a:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pj-outros-lista .botao { flex: none; white-space: nowrap; }
 
 /* Tipos e métodos (Novo projeto e lista vazia) */
 .pj-vazio > p { max-width: 68ch; }

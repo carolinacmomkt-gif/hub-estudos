@@ -42,7 +42,7 @@ button.selo { border: 0; font: inherit; font-size: 0.78rem; font-weight: 600; cu
 .tb-proximas .tb-linha + .tb-linha { border-top: 1px solid var(--cor-linha); }
 .tb-proximas .tb-linha > a { padding: 6px 0; }
 
-.tb-radar { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.tb-radar { display: grid; grid-template-columns: repeat(auto-fit, minmax(max(240px, calc((100% - 20px) / 3)), 1fr)); gap: 10px; } /* no máximo 3 por linha: 6 = 3 + 3 */
 .tb-alerta { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--cor-texto); text-decoration: none; }
 .tb-alerta b { display: block; font-size: 0.9rem; }
 .tb-alerta small { display: block; margin-top: 2px; color: var(--cor-texto-suave); font-size: 0.8rem; }
