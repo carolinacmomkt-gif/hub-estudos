@@ -172,9 +172,9 @@ export function formPrefsOrganizar(estado) {
     <form class="formulario" data-form="org-prefs" novalidate>
       <label class="campo campo-curto"><span class="campo-rotulo">Horas por dia para as demandas</span>
         <input name="horas" type="number" min="1" max="12" step="0.5" inputmode="decimal" value="${p.horasPorDia}"></label>
-      <fieldset class="grupo-marcar grupo-marcar-linha">
+      <fieldset class="campo">
         <legend class="campo-rotulo">Dias de trabalho</legend>
-        ${NOMES_DIAS.map((nome, i) => `<label class="campo-marcar"><input type="checkbox" name="dia" value="${i}"${p.dias.includes(i) ? ' checked' : ''}><span>${nome}</span></label>`).join('')}
+        <div class="protegido-dias">${[1, 2, 3, 4, 5, 6, 0].map((i) => `<label class="segmentado-opcao"><input type="checkbox" name="dia" value="${i}"${p.dias.includes(i) ? ' checked' : ''}><span>${NOMES_DIAS[i]}</span></label>`).join('')}</div>
       </fieldset>
       <label class="campo-marcar"><input type="checkbox" name="automatico"${p.automatico ? ' checked' : ''}><span>Montar uma proposta sozinha toda manhã (você ainda aceita antes)</span></label>
       <p class="campo-ajuda">O horário do dia (início, fim e almoço) é o mesmo do "Planejar meu dia".</p>

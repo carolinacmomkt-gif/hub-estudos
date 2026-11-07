@@ -36,8 +36,8 @@ export function cardProtegidos(estado) {
         <div class="cal-form-linha">
           <label class="campo"><span class="campo-rotulo">Das</span><input name="inicio" type="time" value="12:00" required></label>
           <label class="campo"><span class="campo-rotulo">Até</span><input name="fim" type="time" value="13:00" required></label>
-          <button class="botao botao-secundario" type="submit">Proteger</button>
         </div>
+        <div class="acoes"><button class="botao botao-primario" type="submit">Proteger</button></div>
         <p class="campo-ajuda" data-erro hidden></p>
       </form>
     </section>`;

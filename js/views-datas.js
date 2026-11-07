@@ -30,7 +30,7 @@ export function cardDatasConfig(estado) {
     <section class="card" id="config-calendario" aria-labelledby="titulo-config-calendario">
       <h2 class="card-titulo" id="titulo-config-calendario">Calendário: datas especiais</h2>
       <p class="texto-suave">Feriados com o nome e as datas da saúde para os posts das clientes. A Bússola calcula todo ano; nada fica guardado.</p>
-      <fieldset class="rel-slides"><legend class="campo-rotulo">Mostrar no Calendário</legend>
+      <fieldset class="rel-slides datas-grupos"><legend class="campo-rotulo">Mostrar no Calendário</legend>
         ${OPCOES.map(([id, nome]) => `<label class="rel-slide-opcao"><input type="checkbox" data-acao-mudar="datas-pref" value="${id}"${p[id] ? ' checked' : ''}><span>${esc(nome)}</span></label>`).join('')}
       </fieldset>
       <label class="rel-slide-opcao"><input type="checkbox" data-acao-mudar="datas-pref" value="soDasClientes"${p.soDasClientes ? ' checked' : ''}><span>Só as datas das áreas das minhas clientes</span></label>
@@ -56,6 +56,6 @@ export function cardDatasConteudo(estado, hoje) {
   if (!datas.length) return '';
   return `<section class="card tb-datas" aria-label="Datas que vêm aí">
     <p class="tb-rot">Datas que vêm aí · 30 dias</p>
-    <ul class="lista-simples datas-lista">${datas.map((d) => `<li><b>${esc(fmtDia(d.data))}</b> ${esc(d.titulo)}<small>${esc(clientesDaData(d, clientes).map((c) => c.nome).join(', '))}</small></li>`).join('')}</ul>
+    <ul class="lista-simples datas-lista">${datas.map((d) => `<li class="tb-data"><b>${esc(fmtDia(d.data))}</b><span>${esc(d.titulo)}</span><small>${esc(clientesDaData(d, clientes).map((c) => c.nome).join(', '))}</small></li>`).join('')}</ul>
   </section>`;
 }

@@ -68,6 +68,11 @@ mark.tb-marca-confira { background: var(--tb-espera-fundo); box-shadow: inset 0 
 div.segmentado.tb-abas-aprovar { display: none; }
 .tb-coluna-vazia { margin: 4px; color: var(--cor-texto-fraco); font-size: 0.85rem; }
 .tb-quadro { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 12px; align-items: start; }
+/* Tablet e computador: uma faixa só, colunas de 260 px que rolam de lado (nada de quebrar em duas fileiras). */
+@media (min-width: 701px) {
+  .tb-quadro { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); overflow-x: auto; padding-bottom: 8px; overscroll-behavior-x: contain; scroll-snap-type: x proximity; }
+  .tb-quadro > .tb-coluna { scroll-snap-align: start; }
+}
 .tb-arte-leve { box-shadow: none; opacity: 0.85; }
 .tb-visoes { flex: 0 1 auto; min-width: 0; max-width: 100%; }
 .tb-filtro { position: relative; }
@@ -94,6 +99,7 @@ div.segmentado.tb-abas-aprovar { display: none; }
 .tb-coluna-titulo small { color: var(--cor-texto-fraco); font-weight: 600; }
 .tb-coluna-ajuda { margin: 0 4px 10px; color: var(--cor-texto-fraco); font-size: 0.78rem; }
 .tb-arte { position: relative; margin-bottom: 10px; padding: 12px 12px 12px 34px; border: 1px solid var(--cor-linha); border-radius: var(--raio); background: var(--cor-superficie); box-shadow: var(--sombra-card); }
+.tb-arte:not(:has(.tb-alca)) { padding-left: 12px; }
 .tb-arte.arrastando { z-index: 5; box-shadow: var(--sombra); opacity: 0.95; }
 .tb-alca { position: absolute; top: 8px; left: 4px; width: 26px; height: 36px; border: 0; border-radius: var(--raio-sm); background: transparent; color: var(--cor-texto-fraco); font-size: 1rem; cursor: grab; touch-action: none; }
 .tb-arte-topo { display: flex; flex-direction: column; gap: 4px; color: var(--cor-texto); text-decoration: none; }

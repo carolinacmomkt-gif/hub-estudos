@@ -105,13 +105,13 @@ export function renderHabitos(estado) {
   const sub = d.total ? `${dia === hojeIso() ? 'Hoje' : fmtDia.format(deIso(dia))}: ${d.feitos} de ${d.total} feitos` : 'Pequenas coisas, todo dia';
   return `
     ${cabecalho('Hábitos e rotinas', esc(sub), '<button class="botao botao-primario" type="button" data-acao="hab-novo">+ Novo hábito</button>')}
-    <div class="acoes">
-      <button class="botao botao-secundario" type="button" data-acao="hab-nova-rotina">Nova rotina</button>
+    <div class="linha-controles">
+      <nav class="segmentado tarefa-abas" aria-label="Visões dos hábitos">
+        <a href="#habitos" aria-current="${aba === 'dia' ? 'page' : 'false'}">Dia</a>
+        <a href="#habitos/mapa" aria-current="${aba === 'mapa' ? 'page' : 'false'}">Mapa</a>
+      </nav>
+      <button class="botao botao-secundario botao-pequeno" type="button" data-acao="hab-nova-rotina">Nova rotina</button>
     </div>
-    <nav class="segmentado tarefa-abas" aria-label="Visões dos hábitos">
-      <a href="#habitos" aria-current="${aba === 'dia' ? 'page' : 'false'}">Dia</a>
-      <a href="#habitos/mapa" aria-current="${aba === 'mapa' ? 'page' : 'false'}">Mapa</a>
-    </nav>
     ${aba === 'dia' ? faixaDeDias(dia) : ''}
     ${d.total && aba === 'dia' ? barraProgresso(d.feitos / d.total, 'Hábitos feitos no dia') : ''}
     <div class="tarefa-visao">

@@ -109,8 +109,8 @@ export function cardMeuDia(estado, agora = Date.now()) {
       <p class="texto-suave">${resumo ? `Para hoje: ${esc(resumo)}${entrada.energia ? '' : '. Marque a energia em "Como estou hoje" para um plano mais certeiro'}.` : 'Nada marcado para hoje ainda. Dá para planejar mesmo assim.'}</p>
       <form class="formulario dia-form" data-form="dia-pedir" novalidate>
         <div class="cal-form-linha">
-          <label class="campo"><span class="campo-rotulo">Meu dia vai das</span><input name="inicio" type="time" value="${esc(prefs.inicio)}"></label>
-          <label class="campo"><span class="campo-rotulo">até</span><input name="fim" type="time" value="${esc(prefs.fim)}"></label>
+          <label class="campo"><span class="campo-rotulo">Começo</span><input name="inicio" type="time" value="${esc(prefs.inicio)}"></label>
+          <label class="campo"><span class="campo-rotulo">Fim</span><input name="fim" type="time" value="${esc(prefs.fim)}"></label>
           <label class="campo"><span class="campo-rotulo">Almoço</span><input name="almoco" type="time" value="${esc(prefs.almoco)}"></label>
         </div>
         <label class="campo"><span class="campo-rotulo">Algo para considerar hoje? (opcional)</span>

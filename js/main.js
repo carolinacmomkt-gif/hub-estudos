@@ -61,6 +61,7 @@ import { sincronizarFaculdade, situacaoFaculdade } from './faculdade-sinc.js';
 import { ligarEventos } from './eventos.js';
 import { carregarConfig, nuvemConfigurada, sessaoAtual, emailDaSessao } from './nuvem.js';
 import { listar, situacaoSincronizacao, iniciarSincronizacaoAutomatica, sincronizar } from './persistencia.js';
+import { marcarRolagens, ligarRolagens, fecharLinhas } from './rolagem.js';
 
 const VIEWS = {
   inicio: renderInicio,
@@ -226,6 +227,8 @@ export function renderizar({ mudouDeTela = false } = {}) {
     CICLO[rota.id].montar(rota.parametro);
   }
   atualizarBotoesTema();
+  marcarRolagens(conteudo);
+  fecharLinhas(conteudo);
   marcarRotaAtiva(rota.id);
   atualizarFoco({ soRelogio: true }); // a barrinha do foco some na tela do foco e aparece nas outras
   notarTela(); // "continuar de onde parei" no outro aparelho
@@ -520,6 +523,7 @@ function avisarNovaVersao(trabalhador) {
 }
 
 async function iniciar() {
+  ligarRolagens();
   iniciarTema();
   montarNavegacao();
   ligarEventos({ renderizar, mostrarLogin, entrarNoApp });

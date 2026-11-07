@@ -120,7 +120,7 @@ export function renderRevisao(estado) {
         <ol class="rv-lista">${PASSOS_REVISAO.map((p, i) => `
           <li class="rv-passo${r.passos?.[p.id] ? ' feito' : ''}">
             <label class="rv-check"><input type="checkbox" data-acao-mudar="revisao-passo" value="${p.id}"${r.passos?.[p.id] ? ' checked' : ''}><span class="visualmente-oculto">Marcar ${esc(p.nome)}</span></label>
-            <span class="rv-texto"><b>${i + 1}. ${esc(p.nome)}</b>${contaDe[p.id] !== undefined ? ` <span class="selo${contaDe[p.id] ? ' rv-selo-alerta' : ''}">${contaDe[p.id]}</span>` : ''}<small>${esc(p.ajuda)}</small></span>
+            <span class="rv-texto"><span class="rv-titulo"><b>${i + 1}. ${esc(p.nome)}</b>${contaDe[p.id] !== undefined ? ` <span class="selo${contaDe[p.id] ? ' rv-selo-alerta' : ''}">${contaDe[p.id]}</span>` : ''}</span><small>${esc(p.ajuda)}</small></span>
             ${p.rota !== '#revisao' ? `<a class="botao botao-secundario botao-pequeno" href="${p.rota}">Abrir</a>` : ''}
           </li>`).join('')}
         </ol>

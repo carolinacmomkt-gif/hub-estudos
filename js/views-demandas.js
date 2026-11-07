@@ -339,14 +339,19 @@ export function cardConfigDemandas(estado, chaveTrello) {
   const algum = ligada(trello) || ligada(notion);
   return `
     <section class="card" aria-labelledby="config-demandas" id="demandas-config">
-      <h2 class="card-titulo" id="config-demandas">Demandas: Trello e Notion</h2>
+      <h2 class="card-titulo" id="config-demandas">Demandas do Trello</h2>
       <p class="campo-ajuda">A cada 2 horas (e no "Ler agora") a Bússola procura o que é novo e deixa no card Demandas do Hoje. Nada vira tarefa sem o seu OK.</p>
-      <h3 class="ava-subtitulo">Trello</h3>
       ${blocoTrello(trello, chaveTrello)}
-      <h3 class="ava-subtitulo">Notion</h3>
+    </section>
+    <section class="card" aria-labelledby="config-demandas-notion">
+      <h2 class="card-titulo" id="config-demandas-notion">Demandas do Notion</h2>
       ${blocoNotion(notion)}
+    </section>
+    <section class="card cfg-organizar">
       ${formPrefsOrganizar(estado)}
-      <h3 class="ava-subtitulo">WhatsApp</h3>
+    </section>
+    <section class="card" aria-labelledby="config-demandas-whats">
+      <h2 class="card-titulo" id="config-demandas-whats">WhatsApp</h2>
       <p class="campo-ajuda">O WhatsApp não deixa nenhum app ler as conversas. No tablet: segure a mensagem, toque em <strong>Compartilhar</strong> e escolha <strong>Bússola</strong>. No iPhone (que não mostra apps instalados pelo navegador no Compartilhar): segure a mensagem, toque em <strong>Copiar</strong> e, no card Demandas, em <strong>Colar mensagem</strong>. A IA transforma o texto em demanda.</p>
       ${algum ? `<div class="acoes"><button class="botao botao-secundario" type="button" data-acao="dem-ler"${estado.lendoDemandas ? ' disabled' : ''}>${estado.lendoDemandas ? 'Lendo…' : 'Ler agora'}</button></div>` : ''}
       <div class="ava-resultado" id="resultado-demandas" aria-live="polite"></div>

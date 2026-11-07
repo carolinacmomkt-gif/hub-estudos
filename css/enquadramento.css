@@ -1,0 +1,642 @@
+/*
+  Enquadramento (varredura de 07/11/2026): regras gerais que deixam as telas na mesma grade.
+  Carregado depois dos estilos das áreas e antes do vidro e do celular.
+*/
+
+/* Campos ocupam a largura da coluna em que estão (nada de 420 px num card largo e 100% no vizinho).
+   Campos curtos de propósito continuam com .campo-curto. */
+.campo input,
+.campo select {
+  max-width: none;
+}
+
+/* Fieldset sem a borda do navegador: vira um grupo comum, com a legenda no estilo de rótulo. */
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+fieldset > legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-weight: 600;
+}
+
+/* Texto de ajuda logo depois de botões, e rótulo logo depois de um parágrafo: respiro. */
+.acoes + .campo-ajuda,
+.acoes + p,
+.acoes + .texto-suave {
+  margin-top: 12px;
+}
+
+.formulario p + .campo,
+.card p + .campo,
+.card > p + label.campo {
+  margin-top: 4px;
+}
+
+/* Campos lado a lado: os rótulos na mesma linha, mesmo quando um deles tem ajuda embaixo. */
+.cal-form-linha {
+  align-items: start;
+}
+
+/* Botão principal do topo na mesma linha da lupa (os dois no alto). */
+.cabecalho-principal {
+  align-self: flex-start;
+  min-height: calc(var(--toque) + 6px);
+}
+
+/* Títulos de card nunca deixam um ponto ou uma palavra solta: quebram de forma equilibrada. */
+.card-titulo,
+.cabecalho h1 {
+  text-wrap: balance;
+}
+
+/* Número grande ao lado de uma legenda (Sessão de foco, revisão): o número não quebra. */
+.revisao-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.revisao-total > strong {
+  white-space: nowrap;
+}
+
+/* Linha de controles de filtro (abas, chips, botões): todos com a mesma altura e centrados. */
+.tb-visoes,
+.cal-acoes,
+.tb-acoes {
+  align-items: center;
+}
+
+/* ---------------------------------------------------------------------------
+   Hoje
+   --------------------------------------------------------------------------- */
+
+/* Leituras: o selo e o título juntos, à esquerda. */
+.lista-simples li > a:has(.bib-status) {
+  justify-content: flex-start;
+}
+
+/* Projetos em andamento: o nome numa linha inteira e a barra embaixo dele. */
+.lista-simples li:has(> .projeto-linha) {
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 0;
+  padding: 8px 0;
+}
+
+.lista-simples li:has(> .projeto-linha) .progresso {
+  flex: none;
+}
+
+.lista-simples li:has(> .projeto-linha) .projeto-linha {
+  flex: none;
+  justify-content: flex-start;
+  min-height: 0;
+}
+
+/* Notas do AVA e contas: quando o card é estreito, o valor vai para baixo do nome. */
+.notas,
+.fin-contas {
+  container-type: inline-size;
+}
+
+@container (max-width: 420px) {
+  .nota {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+@container (max-width: 380px) {
+  .fin-conta {
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+  }
+
+  .fin-conta-corpo {
+    flex-basis: 100%;
+  }
+
+  .fin-conta .fin-valor {
+    margin-right: auto;
+  }
+}
+
+/* Planejar meu dia: as três horas numa linha (duas no celular estreito), campos largos para a hora inteira. */
+.dia-form .cal-form-linha {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 400px) {
+  .dia-form .cal-form-linha {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dia-form input[type="time"] {
+  min-width: 0;
+  padding-right: 8px;
+  padding-left: 10px;
+}
+
+/* Caixa de entrada: com duas ações, o título fica numa linha e as ações descem. */
+.card-topo:has(.caixa-acoes) {
+  flex-wrap: wrap;
+}
+
+.card-topo:has(.caixa-acoes) .card-titulo {
+  flex: 1 1 12ch;
+  white-space: nowrap;
+}
+
+.caixa-acoes {
+  justify-content: flex-start;
+}
+
+/* ---------------------------------------------------------------------------
+   Planejar, Finanças, Foco, Busca
+   --------------------------------------------------------------------------- */
+
+/* Pergunte à Bússola: na largura do topo, como as outras telas. */
+.pilha.busca {
+  max-width: none;
+}
+
+/* Finanças: os três números grandes não encostam na borda do card no tablet. */
+@media (min-width: 701px) and (max-width: 1099px) {
+  .fin-grande {
+    font-size: clamp(1.05rem, 0.3rem + 2.2vw, 1.6rem);
+  }
+}
+
+/* Metas e caixinhas: o nome numa coluna fixa, todas as barras começam no mesmo ponto. */
+.fin-caixinha-linha {
+  display: grid !important;
+  grid-template-columns: minmax(0, 10rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.fin-caixinha-linha > span:first-child {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 420px) {
+  .fin-caixinha-linha {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+/* Retrospectiva: os 7 números em 4 + 3 no computador e 2 por linha no celular. */
+.retro-numeros {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+@media (max-width: 1099px) {
+  .retro-numeros {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .retro-numeros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mural de sonhos: o emoji fica no alto da capa, longe do nome e da área. */
+.sonho-sem-foto {
+  align-content: start;
+  padding-top: 10%;
+}
+
+/* Cards que abrem e fecham (Ajustes do foco e afins): o título no mesmo estilo dos outros cards. */
+details.card > summary > strong {
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+/* Duração do foco: as quatro opções numa linha no celular. */
+@media (max-width: 700px) {
+  [data-form="foco-iniciar"] .grupo-marcar-linha {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 8px;
+  }
+}
+
+/* Textos de ajuda e notas longas: no máximo ~68 caracteres por linha. */
+.campo-ajuda,
+.card > .texto-suave,
+.card > p:not([class]) {
+  max-width: 68ch;
+}
+
+/* Revisão da semana: o número de cada passo na mesma linha do título; "Abrir" com caixa no celular. */
+.rv-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.rv-passo .botao-secundario {
+  flex: none;
+  background: var(--cor-superficie);
+}
+
+/* Abas e um botão na mesma linha (Hábitos: Dia | Mapa e Nova rotina). */
+.linha-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+
+.linha-controles > .segmentado {
+  margin: 0;
+}
+
+/* Botões de navegação no celular: dividem a linha em partes iguais em vez de ficar um por linha. */
+@media (max-width: 700px) {
+  .cal-acoes > .botao,
+  .cal-acoes > a.botao {
+    flex: 1 1 auto;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   YouTube e Substack
+   --------------------------------------------------------------------------- */
+
+/* Próximo vídeo: o texto começa na esquerda (sem a coluna vazia de uma capa que não existe). */
+.yt-resumo > .proximo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: end;
+  align-items: end;
+  justify-items: start;
+}
+
+.yt-resumo > .proximo > div {
+  text-align: left;
+}
+
+/* Cartão do quadro: o título alinhado com o resto; a alça de arrastar vai para a direita. */
+.yt-cartao-topo {
+  align-items: center;
+}
+
+.yt-cartao-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.yt-alca {
+  order: 2;
+  margin-right: -6px;
+}
+
+/* Meta da semana sozinha no tablet em pé: ocupa a linha toda. */
+@media (min-width: 701px) and (max-width: 1099px) {
+  .yt-resumo > .tam-1-3:last-child,
+  .yt-resumo > .tam-1-3:has(+ .yt-atencao) {
+    grid-column: span 12;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Trabalho
+   --------------------------------------------------------------------------- */
+
+/* Status da peça na semana: quebra inteiro em vez de cortar com reticências. */
+.tb-selo {
+  display: inline-block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+/* Datas que vêm aí: data, nome logo depois e as clientes no fim, sem vãos no meio. */
+.tb-data {
+  display: grid !important;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.tb-data small {
+  color: var(--cor-texto-suave);
+  text-align: right;
+}
+
+@media (max-width: 700px) {
+  .tb-data {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
+
+  .tb-data small {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Faculdade e Estudos
+   --------------------------------------------------------------------------- */
+
+/* Disciplinas: até 4 por linha (4 = uma linha só; nada de 3 + 1). */
+.disciplinas {
+  grid-template-columns: repeat(auto-fit, minmax(max(220px, calc((100% - 48px) / 4)), 1fr));
+}
+
+/* Aviso de conexão: uma faixa com respiro e o link ao lado, não texto solto. */
+div.ava-alerta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: var(--raio-lg);
+}
+
+/* Criar: campos em 2 × 2 (o Formato não corta), botões da IA em 2 × 2, o calendário em bloco
+   e, no tablet e no celular, o revisor logo depois do texto que ele revisa. */
+.tb-criar-campos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tb-criar-form > .acoes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tb-enviar > .campo,
+.tb-enviar .cal-form-linha {
+  margin-top: 12px;
+}
+
+.tb-enviar > legend {
+  float: left;
+  width: 100%;
+  margin: 0;
+}
+
+.tb-enviar > legend + * {
+  clear: both;
+}
+
+@media (max-width: 1099px) {
+  .tb-criar-form {
+    display: contents;
+  }
+
+  .tb-criar > .tb-criar-form > *,
+  .tb-criar > .tb-revisor {
+    min-width: 0;
+  }
+
+  .tb-criar > .tb-revisor {
+    order: 5;
+  }
+
+  .tb-criar-form > .tb-enviar,
+  .tb-criar-form > [data-erro] {
+    order: 6;
+  }
+}
+
+@media (max-width: 480px) {
+  .tb-criar-form > .acoes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Pautas e Relatórios: o card do formulário começa na mesma linha do card do lado. */
+.rel-lista > form.card {
+  margin-top: 0;
+}
+
+/* Filtros do Trabalho: abas, chip de clientes e botões com a mesma altura, centrados. */
+.tb-acoes .botao-pequeno,
+.tb-acoes .chip-filtro,
+.tb-acoes .tb-setas .botao-icone {
+  min-height: 44px;
+}
+
+.tb-sync {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .tb-acoes > .tb-chips {
+    display: contents;
+  }
+
+  .tb-acoes .tb-visoes {
+    flex: 1 1 100%;
+  }
+}
+
+/* Radar: o mesmo respiro embaixo das abas que nas outras barras. */
+.rd-abas {
+  margin-bottom: 16px;
+}
+
+/* Cadernos: a legenda de cada capa sempre à esquerda e com a mesma altura (os botões alinhados). */
+.caderno-info-acoes {
+  align-items: flex-start;
+  min-height: 2.6em;
+  text-align: left;
+}
+
+.caderno-info-acoes > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Biblioteca: os dois botões do topo lado a lado também no celular. */
+.cabecalho-principal {
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------------------
+   Configurações
+   --------------------------------------------------------------------------- */
+
+/* Dias em pílula fora de uma barra (Horas protegidas): os desmarcados também com fundo de chip. */
+.protegido-dias .segmentado-opcao span {
+  background: var(--cor-superficie-2);
+}
+
+/* Índice: a descrição de cada seção numa linha só (todos os itens da mesma altura). */
+.cfg-texto small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sem seção escolhida (computador): a frase vira um card alinhado ao topo da busca. */
+@media (min-width: 1000px) {
+  .cfg:not(.com-secao) .cfg-conteudo::after {
+    display: block;
+    padding: 22px;
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio-lg);
+    background: var(--cor-superficie);
+    box-shadow: var(--sombra-card);
+  }
+}
+
+/* Texto corrido do card seguido de um campo: respiro antes do rótulo. */
+.card > p + .campo,
+.card > p + label.campo,
+.formulario > p + .campo {
+  margin-top: 12px;
+}
+
+/* Conexões: cada parte das demandas num card; "Organizar a semana" com título de card. */
+.cfg-organizar > .ava-subtitulo:first-child {
+  margin-top: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+/* Quadros dos clientes: no celular a etiqueta ocupa a linha, alinhada ao nome. */
+@media (max-width: 700px) {
+  .dem-cliente select {
+    flex: 1 1 100%;
+    margin-left: 34px;
+    max-width: calc(100% - 34px);
+  }
+}
+
+/* Dias em pílula: no celular, todos numa grade de 4 + 3 (nada de um dia sozinho). */
+@media (max-width: 480px) {
+  .protegido-dias {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .protegido-dias .segmentado-opcao span {
+    padding: 0 6px;
+  }
+}
+
+/* Avisos do dia a dia no celular: o horário desce para baixo do texto (o texto usa a linha toda). */
+@media (max-width: 480px) {
+  .aviso-vida {
+    flex-wrap: wrap;
+  }
+
+  .aviso-vida .campo-marcar {
+    flex-basis: 100%;
+  }
+
+  .aviso-vida > input[type="time"] {
+    margin-left: 34px;
+  }
+
+  /* Silêncio: "das … às …" numa linha que cabe, recuada como o texto. */
+  .aviso-vida-horas {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-basis: 100%;
+    min-width: 0;
+    padding-left: 34px;
+  }
+
+  .aviso-vida-horas input[type="time"] {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-left: 0;
+  }
+}
+
+/* Configurações → Geral: Tema, Tamanho do texto e Vidro na mesma grade de 3 colunas
+   (o Vidro, com 2 opções, fica alinhado às duas primeiras em vez de esticar). */
+@media (min-width: 481px) {
+  .opcoes-tema {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.opcoes-tema + .campo-ajuda,
+.acoes + .campo-ajuda {
+  margin-top: 12px;
+}
+
+/* Configurações → Dados: no celular, os botões de backup empilham em largura toda. */
+@media (max-width: 480px) {
+  [aria-labelledby="config-sinc"] .acoes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  [aria-labelledby="config-sinc"] .acoes > .botao {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Configurações → Calendário: as caixinhas dos grupos em colunas do mesmo tamanho. */
+.datas-grupos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 0 16px;
+}
+
+.datas-grupos legend {
+  grid-column: 1 / -1;
+}
+
+/* ---- Meu cantinho ---- */
+/* Cuidar de mim (e outras grades de 2): o último card sozinho ocupa a linha toda. */
+@media (min-width: 701px) {
+  .ct-grade > :last-child:nth-child(odd):not(:first-child) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Com as mãos: miniaturas menores, mais por linha (menos card sozinho na última). */
+.maos-galeria,
+.maos-modelos {
+  grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr));
+}
+
+/* Copos de água: 8 copos em 4 + 4 no celular, nunca 6 + 2. */
+@media (max-width: 480px) {
+  .ct-copos {
+    display: grid;
+    grid-template-columns: repeat(4, var(--toque));
+    gap: 8px;
+  }
+
+  /* Sons: 2 × 2 com o ícone ao lado do nome, sem quebrar "Ruído marrom". */
+  .ct-sons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ct-som {
+    flex-direction: row;
+    justify-content: center;
+    white-space: nowrap;
+  }
+}

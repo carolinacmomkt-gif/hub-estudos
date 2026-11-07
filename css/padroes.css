@@ -304,3 +304,20 @@ body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):no
     height: var(--toque);
   }
 }
+
+/* Faixas que rolam de lado (abas, quadros por etapa): a borda esmaece onde ainda há conteúdo
+   (js/rolagem.js marca data-rola, data-inicio e data-fim). A máscara usa só a transparência. */
+:is(.segmentado, .yt-quadro, .tb-quadro)[data-rola]:not([data-fim]) {
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, black calc(100% - 36px), transparent);
+}
+
+:is(.segmentado, .yt-quadro, .tb-quadro)[data-rola]:not([data-inicio]):not([data-fim]) {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 36px, black calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, transparent, black 36px, black calc(100% - 36px), transparent);
+}
+
+:is(.segmentado, .yt-quadro, .tb-quadro)[data-rola][data-fim]:not([data-inicio]) {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 36px);
+  mask-image: linear-gradient(to right, transparent, black 36px);
+}
