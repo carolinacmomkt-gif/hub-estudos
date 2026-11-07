@@ -41,6 +41,12 @@ export function nichosDoRadar(config) {
 
 // Sugestão a partir das clientes do Trabalho: um nicho por especialidade da ficha.
 const PALAVRAS_DA_AREA = {
+  halitose: ['mau hálito', 'halitose', 'saburra', 'boca seca'],
+  integrativa: ['saúde integrativa', 'inflamação', 'cansaço constante', 'intestino'],
+  plastica: ['cirurgia plástica', 'lipo', 'mamoplastia', 'pós-operatório'],
+  fisioterapia: ['dor nas costas', 'postura', 'pilates', 'reabilitação'],
+  fonoaudiologia: ['fala', 'voz', 'deglutição', 'gagueira'],
+  marketing: ['marketing para médicos', 'Instagram para profissionais', 'posicionamento', 'captação de pacientes'],
   ginecologia: ['saúde da mulher', 'menopausa', 'ciclo menstrual', 'endometriose'],
   obstetricia: ['gestação', 'parto', 'pré-natal'],
   mastologia: ['câncer de mama', 'mamografia'],
@@ -60,11 +66,47 @@ const PALAVRAS_DA_AREA = {
   neurologia: ['sono', 'enxaqueca'],
 };
 const NOME_DA_AREA = {
+  halitose: 'Halitose', integrativa: 'Clínica integrativa', plastica: 'Cirurgia plástica', fisioterapia: 'Fisioterapia',
+  fonoaudiologia: 'Fonoaudiologia', marketing: 'Marketing e negócios',
   ginecologia: 'Ginecologia', obstetricia: 'Obstetrícia', mastologia: 'Mastologia', dermatologia: 'Dermatologia', hiperidrose: 'Hiperidrose',
   estetica: 'Estética', odontologia: 'Odontologia', oftalmologia: 'Oftalmologia', psiquiatria: 'Psiquiatria', psicologia: 'Psicologia',
   nutricao: 'Nutrição', endocrinologia: 'Endocrinologia', pediatria: 'Pediatria', cardiologia: 'Cardiologia', urologia: 'Urologia',
   ortopedia: 'Ortopedia', neurologia: 'Neurologia',
 };
+
+// A lista de especialidades para escolher (montar pelos clientes e o "Novo nicho").
+export const ESPECIALIDADES = Object.keys(NOME_DA_AREA).map((id) => ({ id, nome: NOME_DA_AREA[id], palavras: PALAVRAS_DA_AREA[id] || [NOME_DA_AREA[id]] }))
+  .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+export const especialidade = (id) => ESPECIALIDADES.find((e) => e.id === id) || null;
+
+// Qual especialidade da lista a ficha da cliente já diz (o nicho escrito), se diz.
+export function especialidadeDaCliente(c) {
+  const t = semAcento(c?.dados?.nicho);
+  if (!t) return '';
+  const direto = ESPECIALIDADES.find((e) => semAcento(e.nome) === t || e.id === t);
+  if (direto) return direto.id;
+  if (/halit|halito/.test(t)) return 'halitose';
+  if (/integrativ|funcional/.test(t)) return 'integrativa';
+  if (/marketing|negocio|empreend/.test(t)) return 'marketing';
+  if (/plastic/.test(t)) return 'plastica';
+  const areas = areasDoNicho(c.dados.nicho, '').filter((a) => NOME_DA_AREA[a]);
+  return areas.find((a) => a !== 'medicina') || '';
+}
+
+// Junta as escolhas (cliente → especialidade) nos nichos que já existem: cria o que falta,
+// acrescenta e tira clientes. Devolve { nichos, novos } (ids dos nichos criados agora).
+export function nichosPelasEscolhas(existentes, escolhas) {
+  const nichos = existentes.map((n) => ({ ...n, clientes: n.clientes.filter((c) => !(c in escolhas)) }));
+  const novos = [];
+  for (const [cliente, esp] of Object.entries(escolhas)) {
+    const e = especialidade(esp);
+    if (!e) continue;
+    let n = nichos.find((x) => x.id === e.id);
+    if (!n) { n = conferirNicho({ id: e.id, nome: e.nome, palavras: e.palavras, clientes: [] }); nichos.push(n); novos.push(e.id); }
+    if (!n.clientes.includes(cliente)) n.clientes.push(cliente);
+  }
+  return { nichos, novos };
+}
 
 export function sugerirNichos(clientes, ja = []) {
   const usados = new Set(ja.map((n) => n.id));

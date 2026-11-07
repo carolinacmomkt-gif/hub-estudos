@@ -7,7 +7,7 @@ import { listar, salvar, puxarTabela } from './persistencia.js';
 import { dispararSegundoPlano } from './funcoes.js';
 import { confirmar } from './confirmar.js';
 import { FORMATOS } from './dados-trabalho.js';
-import { nichosDoRadar, sugerirNichos, conferirNicho, idDoNicho, radarVelho, chaveDoVisto, textoDoRadar } from './dados-radar.js';
+import { nichosDoRadar, sugerirNichos, conferirNicho, idDoNicho, radarVelho, chaveDoVisto, textoDoRadar, nichosPelasEscolhas, especialidade } from './dados-radar.js';
 import { baixar } from './exportar-caderno.js';
 import { resultadoDoRadar } from './views-radar.js';
 
@@ -17,6 +17,33 @@ const jaAtualizados = new Set(); // atualização automática: uma vez por nicho
 
 export function ligarRadar(funcoes) {
   app = funcoes;
+  try { atualizarEstado({ radarAba: localStorage.getItem('hub.radar.aba') || 'geral' }); } catch { /* fica na visão geral */ }
+}
+
+// "Clientes e especialidades": grava a especialidade na ficha de cada cliente e monta os nichos.
+async function montarPelosClientes(form) {
+  const escolhas = {};
+  const mudadas = [];
+  for (const sel of form.querySelectorAll('select[name="esp"]')) {
+    escolhas[sel.dataset.cliente] = sel.value;
+    const c = (obterEstado().clientesTrabalho || []).find((x) => !x.excluido_em && x.nome === sel.dataset.cliente);
+    const e = especialidade(sel.value);
+    if (c && e && c.dados?.nicho !== e.nome) mudadas.push({ ...c, dados: { ...(c.dados || {}), nicho: e.nome } });
+  }
+  if (!Object.values(escolhas).some(Boolean)) { app.avisoCurto('Escolha a especialidade de pelo menos uma cliente.'); return; }
+  for (const c of mudadas) await salvar('clientes_trabalho', c);
+  let novos = [];
+  let lista = [];
+  await gravarNichos((existentes) => {
+    const r = nichosPelasEscolhas(existentes, escolhas);
+    novos = r.novos;
+    lista = r.nichos;
+    return r.nichos;
+  });
+  const primeiro = novos[0] || lista.find((n) => n.clientes.length)?.id || lista[0]?.id;
+  location.hash = primeiro ? `#radar/${primeiro}` : '#radar';
+  novos.forEach((id) => atualizarRadar(id, { silencioso: true }));
+  app.avisoCurto(novos.length ? `${novos.length} ${novos.length === 1 ? 'nicho criado' : 'nichos criados'}. Os radares estão sendo montados.` : 'Nichos atualizados.');
 }
 
 async function gravarNichos(fn) {
@@ -180,6 +207,11 @@ export function cliqueRadar(alvo) {
   switch (alvo.dataset.acao) {
     case 'radar-atualizar': atualizarRadar(alvo.dataset.id); return true;
     case 'radar-aba': location.hash = `#radar/${alvo.dataset.id}`; return true;
+    case 'radar-parte':
+      atualizarEstado({ radarAba: alvo.dataset.parte });
+      try { localStorage.setItem('hub.radar.aba', alvo.dataset.parte); } catch { /* só nesta visita */ }
+      app.renderizar();
+      return true;
     case 'radar-visto': marcarVisto(alvo.dataset.id, alvo.dataset.cliente || ''); return true;
     case 'radar-exportar': exportar(alvo.dataset.id, alvo.dataset.como, alvo.dataset.cliente || ''); return true;
     case 'radar-criar-sugestao': sugestaoParaCriar(alvo.dataset.id, alvo.dataset.cliente || '', Number(alvo.dataset.i)); return true;
@@ -218,7 +250,20 @@ export function cliqueRadar(alvo) {
   }
 }
 
+// "Novo nicho": a especialidade preenche o nome e as palavras.
+export function mudancaRadar(alvo) {
+  if (alvo.dataset?.acaoMudar !== 'radar-especialidade') return false;
+  const e = especialidade(alvo.value);
+  const form = alvo.form;
+  if (e && form) {
+    form.elements.nome.value = e.nome;
+    form.elements.palavras.value = e.palavras.join(', ');
+  }
+  return true;
+}
+
 export function enviarRadar(form) {
+  if (form.dataset.form === 'radar-montar') { montarPelosClientes(form); return true; }
   if (form.dataset.form !== 'radar-nicho') return false;
   salvarNicho(form);
   return true;

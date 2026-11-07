@@ -3,7 +3,7 @@
 
 import { esc } from './utilidades.js';
 import { cabecalho } from './componentes.js';
-import { TEMPERATURAS, nichosDoRadar, sugerirNichos, chaveDoRadar, MAX_PALAVRAS, vistosDoRadar, chaveDoVisto, novasDesde } from './dados-radar.js';
+import { TEMPERATURAS, nichosDoRadar, chaveDoRadar, MAX_PALAVRAS, vistosDoRadar, chaveDoVisto, novasDesde, ESPECIALIDADES, especialidadeDaCliente } from './dados-radar.js';
 
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' });
 const fmtQuando = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -11,19 +11,67 @@ const dominio = (u) => { try { return new URL(u).hostname.replace(/^www\./, '');
 const temp = (id) => TEMPERATURAS.find((t) => t.id === id) || TEMPERATURAS[1];
 
 export const resultadoDoRadar = (estado, id) => (estado.config || []).find((c) => c.chave === chaveDoRadar(id) && !c.excluido_em)?.valor || null;
-const clientesVivas = (estado) => (estado.clientesTrabalho || []).filter((c) => !c.excluido_em);
+const clientesVivas = (estado) => (estado.clientesTrabalho || []).filter((c) => !c.excluido_em && c.nome && !/\bteste\b/i.test(c.nome))
+  .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+export const ABAS_RADAR = [['geral', 'Geral'], ['clientes', 'Clientes'], ['noticias', 'Notícias'], ['sinais', 'Sinais']];
 
 export function renderRadar(estado) {
   const nichos = nichosDoRadar(estado.config);
   const p = estado.parametro || '';
-  if (p === 'novo' || !nichos.length) return formNicho(estado, null, nichos);
+  if (p === 'clientes' || (!nichos.length && p !== 'novo')) return telaMontar(estado, nichos);
+  if (p === 'novo') return formNicho(estado, null, nichos);
   if (p.startsWith('editar:')) return formNicho(estado, nichos.find((n) => n.id === p.slice(7)) || null, nichos);
   const nicho = nichos.find((n) => n.id === p) || nichos[0];
   return `
-    ${cabecalho('Radar do nicho', 'O que está subindo no nicho das suas clientes para as próximas 2 semanas, pelos sinais do YouTube, das notícias e das datas. Sem hashtag e sem áudio.', '<a class="botao botao-primario" href="#radar/novo">+ Novo nicho</a>')}
-    ${nichos.length > 1 ? `<div class="segmentado rd-nichos" role="group" aria-label="Nichos">${nichos.map((n) => `
-      <button type="button" data-acao="radar-aba" data-id="${esc(n.id)}" aria-pressed="${n.id === nicho.id}">${esc(n.nome)}</button>`).join('')}</div>` : ''}
+    ${cabecalho('Radar do nicho', 'O que está subindo no nicho das suas clientes nas próximas 2 semanas, com as notícias novas e as sugestões de conteúdo de cada uma.', '<a class="botao botao-primario" href="#radar/novo">+ Novo nicho</a>')}
+    <div class="rd-barra">
+      ${nichos.length > 1 ? `<div class="segmentado rd-nichos" role="group" aria-label="Nichos">${nichos.map((n) => `
+        <button type="button" data-acao="radar-aba" data-id="${esc(n.id)}" aria-pressed="${n.id === nicho.id}">${esc(n.nome)}</button>`).join('')}</div>` : '<span></span>'}
+      <div class="rd-barra-acoes">
+        <a class="botao botao-secundario botao-pequeno" href="#radar/editar:${esc(nicho.id)}">Editar o nicho</a>
+        <a class="botao botao-secundario botao-pequeno" href="#radar/clientes">Clientes e especialidades</a>
+      </div>
+    </div>
     ${painel(estado, nicho)}`;
+}
+
+// Primeira vez (ou "Clientes e especialidades"): a especialidade de cada cliente monta os nichos.
+function telaMontar(estado, nichos) {
+  const clientes = clientesVivas(estado);
+  const noNicho = new Map(nichos.flatMap((n) => n.clientes.map((c) => [c, n.id])));
+  const opcoes = (atual) => `<option value="">Não entra no radar</option>${ESPECIALIDADES.map((e) => `<option value="${esc(e.id)}"${e.id === atual ? ' selected' : ''}>${esc(e.nome)}</option>`).join('')}`;
+  return `
+    ${cabecalho('Radar do nicho', 'Marque a especialidade de cada cliente e o radar monta os nichos, com as palavras que o público usa.', nichos.length ? '<a class="botao botao-secundario" href="#radar">Voltar ao radar</a>' : '')}
+    ${nichos.length ? '' : `
+      <section class="card rd-como">
+        <h2 class="card-titulo">Como o radar funciona</h2>
+        <ol class="rd-como-lista">
+          <li><strong>Atualiza sozinho:</strong> notícias a cada 2 horas (7h às 21h) e a análise com a IA às 6h30.</li>
+          <li><strong>Avisa no celular</strong> quando um assunto dispara para uma cliente, com tempo para criar.</li>
+          <li><strong>Uma caixa por cliente:</strong> quantas notícias novas, quais são e as fontes.</li>
+          <li><strong>Sugestões no seu método:</strong> formato, linha editorial, gancho, slides ou roteiro, CTA e o cuidado do conselho.</li>
+          <li><strong>Exporta</strong> em PDF ou copia para o WhatsApp e o Notion.</li>
+        </ol>
+      </section>`}
+    ${clientes.length ? `
+      <form class="card formulario rd-montar" data-form="radar-montar" novalidate>
+        <div class="card-topo"><h2 class="card-titulo">Suas clientes</h2><span class="campo-ajuda">${clientes.length} no Trabalho</span></div>
+        <ul class="rd-montar-lista">${clientes.map((c, i) => {
+          const atual = noNicho.get(c.nome) || especialidadeDaCliente(c);
+          return `
+          <li>
+            <label class="rd-montar-nome" for="rd-esp-${i}">${esc(c.nome)}</label>
+            <span class="campo"><select id="rd-esp-${i}" name="esp" data-cliente="${esc(c.nome)}" data-chave="${esc(c.chave || '')}">${opcoes(atual)}</select></span>
+          </li>`;
+        }).join('')}</ul>
+        <p class="campo-ajuda">A especialidade também fica na ficha da cliente e passa a valer para as datas da saúde do Calendário.</p>
+        <div class="acoes">
+          <button class="botao botao-primario" type="submit">${nichos.length ? 'Salvar e atualizar os nichos' : 'Criar os nichos'}</button>
+          <a class="botao botao-secundario" href="#radar/novo">Criar um nicho à mão</a>
+        </div>
+      </form>` : `
+      <section class="card"><p>Ainda não há clientes no Trabalho. Conecte o Trabalho em Configurações, ou crie um nicho à mão.</p>
+        <div class="acoes"><a class="botao botao-primario" href="#radar/novo">Criar um nicho à mão</a></div></section>`}`;
 }
 
 function menuExportar(nicho, cliente = '') {
@@ -60,7 +108,6 @@ function painel(estado, nicho) {
         <div class="rd-topo-acoes">
           <button class="botao botao-primario" type="button" data-acao="radar-atualizar" data-id="${esc(nicho.id)}"${lendo ? ' disabled aria-busy="true"' : ''}>${lendo ? 'Atualizando…' : 'Atualizar agora'}</button>
           ${r?.gerado_em ? menuExportar(nicho) : ''}
-          <a class="botao botao-secundario" href="#radar/editar:${esc(nicho.id)}">Editar</a>
         </div>
       </div>
       <p class="campo-ajuda" role="status">${lendo ? 'Lendo o YouTube e as notícias e pesquisando na web. Leva até 1 minuto; pode sair da tela.'
@@ -68,22 +115,43 @@ function painel(estado, nicho) {
       ${r?.status === 'erro' && r.erro ? `<p class="ava-alerta">${esc(r.erro)}</p>` : ''}
       ${(r?.avisos || []).map((a) => `<p class="campo-ajuda rd-aviso">${esc(a)}</p>`).join('')}
     </section>
+    ${abasDoNicho(estado, nicho, r, totalNovas)}
+    ${conteudoDaAba(estado, nicho, r, { itens, lendo, caixas, vistos })}`;
+}
+
+const abaAtual = (estado) => (ABAS_RADAR.some(([id]) => id === estado.radarAba) ? estado.radarAba : 'geral');
+
+function abasDoNicho(estado, nicho, r, totalNovas) {
+  const n = (r?.noticias_hist || []).length;
+  const rotulo = { clientes: totalNovas ? `Clientes · ${totalNovas}` : 'Clientes', noticias: n ? `Notícias · ${n}` : 'Notícias' };
+  return `<div class="segmentado rd-abas" role="tablist" aria-label="Partes do radar">${ABAS_RADAR.map(([id, nome]) => `
+    <button type="button" role="tab" data-acao="radar-parte" data-parte="${id}" aria-selected="${abaAtual(estado) === id}" aria-pressed="${abaAtual(estado) === id}">${esc(rotulo[id] || nome)}</button>`).join('')}</div>`;
+}
+
+function conteudoDaAba(estado, nicho, r, { itens, lendo, caixas, vistos }) {
+  const aba = abaAtual(estado);
+  if (aba === 'clientes') {
+    return `<section class="rd-secao" aria-label="Por cliente"><div class="rd-caixas">${caixas.map((c) => caixaDaCliente(nicho, r, c, vistos)).join('')}</div></section>`;
+  }
+  if (aba === 'noticias') {
+    const hist = r?.noticias_hist || [];
+    return `
+      ${(r?.noticias || []).length ? `<section class="card rd-secao" aria-labelledby="rd-noticias">
+        <h2 class="card-titulo" id="rd-noticias">Em alta, segundo a análise</h2>
+        <ul class="rd-noticias">${r.noticias.map((x) => linhaDaNoticia(x)).join('')}</ul></section>` : ''}
+      <section class="card rd-secao" aria-labelledby="rd-hist">
+        <h2 class="card-titulo" id="rd-hist">Todas as notícias dos últimos 14 dias</h2>
+        ${hist.length ? `<ul class="rd-noticias">${hist.slice(0, 60).map((x) => linhaDaNoticia(x)).join('')}</ul>` : '<p class="texto-suave">As notícias aparecem aqui assim que o radar rodar.</p>'}
+      </section>`;
+  }
+  if (aba === 'sinais') return r?.gerado_em ? sinais(r, true) : '<p class="texto-suave rd-secao">Os sinais aparecem depois da primeira análise.</p>';
+  return `
     ${r?.briefing ? `<section class="card rd-briefing"><p class="proximo-rotulo">Briefing da semana</p><p>${esc(r.briefing)}</p></section>` : ''}
-    ${itens.length ? `
-      <section class="rd-secao" aria-labelledby="rd-bombar">
-        <h2 class="rd-secao-titulo" id="rd-bombar">Vai bombar nas próximas 2 semanas</h2>
-        <div class="rd-itens">${itens.map((x, i) => itemDoRadar(x, i, nicho)).join('')}</div>
-      </section>` : (lendo ? '' : `<p class="texto-suave rd-secao">${r?.gerado_em ? 'Nada subindo forte agora.' : 'Toque em Atualizar agora para montar o primeiro radar deste nicho.'}</p>`)}
-    <section class="rd-secao" aria-labelledby="rd-clientes">
-      <h2 class="rd-secao-titulo" id="rd-clientes">${nicho.clientes.length ? 'Por cliente' : 'Novidades do nicho'}</h2>
-      <div class="rd-caixas">${caixas.map((c) => caixaDaCliente(nicho, r, c, vistos)).join('')}</div>
-    </section>
-    ${(r?.noticias || []).length ? `
-      <section class="card rd-secao" aria-labelledby="rd-noticias">
-        <h2 class="card-titulo" id="rd-noticias">Notícias em alta</h2>
-        <ul class="rd-noticias">${r.noticias.map((n) => linhaDaNoticia(n)).join('')}</ul>
-      </section>` : ''}
-    ${r?.gerado_em ? sinais(r) : ''}`;
+    <section class="rd-secao" aria-labelledby="rd-bombar">
+      <h2 class="rd-secao-titulo" id="rd-bombar">Vai bombar nas próximas 2 semanas</h2>
+      ${itens.length ? `<div class="rd-itens">${itens.map((x, i) => itemDoRadar(x, i, nicho)).join('')}</div>`
+        : `<p class="texto-suave">${lendo ? 'Montando…' : r?.gerado_em ? 'Nada subindo forte agora.' : 'Toque em Atualizar agora para montar o primeiro radar deste nicho.'}</p>`}
+    </section>`;
 }
 
 const fmtNoticia = (n) => [n.fonte, n.data && !Number.isNaN(Date.parse(n.data)) ? fmtDia.format(new Date(n.data)) : ''].filter(Boolean).join(' · ');
@@ -148,13 +216,13 @@ function itemDoRadar(x, i, nicho) {
     </article>`;
 }
 
-function sinais(r) {
+function sinais(r, aberto = false) {
   const videos = r.videos || [];
   const termos = (r.termos || []).filter((t) => t.recentes || t.antes);
   const datas = r.datas || [];
   if (!videos.length && !termos.length && !datas.length) return '';
   return `
-    <details class="card rd-sinais">
+    <details class="card rd-sinais"${aberto ? ' open' : ''}>
       <summary><strong>Os sinais por trás do radar</strong></summary>
       ${videos.length ? `<h3 class="rd-sub">Vídeos subindo no YouTube (7 dias)</h3><ul class="lista-simples">${videos.map((v) => `
         <li><a href="${esc(v.link)}" target="_blank" rel="noopener">${esc(v.titulo)}</a>
@@ -167,19 +235,12 @@ function sinais(r) {
 }
 
 function formNicho(estado, nicho, nichos) {
-  const sugestoes = nicho ? [] : sugerirNichos(clientesVivas(estado), nichos);
-  const nomes = clientesVivas(estado).map((c) => c.nome).filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const nomes = clientesVivas(estado).map((c) => c.nome);
   return `
     ${cabecalho(nicho ? `Editar ${nicho.nome}` : 'Novo nicho', 'Um nicho é um assunto com as palavras que as pessoas usam para falar dele. O radar busca por essas palavras, sem hashtag.')}
-    ${sugestoes.length ? `
-      <section class="card">
-        <h2 class="card-titulo">Pelas suas clientes</h2>
-        <ul class="rd-sugestoes">${sugestoes.map((s, i) => `
-          <li><div><strong>${esc(s.nome)}</strong><span class="campo-ajuda">${esc(s.palavras.join(', '))} · ${esc(s.clientes.join(', '))}</span></div>
-            <button class="botao botao-secundario botao-pequeno" type="button" data-acao="radar-sugestao" data-i="${i}">Usar</button></li>`).join('')}</ul>
-        ${sugestoes.length > 1 ? '<div class="acoes"><button class="botao botao-secundario" type="button" data-acao="radar-sugestoes-todas">Criar todos</button></div>' : ''}
-      </section>` : ''}
-    <form class="card formulario" data-form="radar-nicho" data-id="${esc(nicho?.id || '')}" novalidate>
+    <form class="card formulario rd-form" data-form="radar-nicho" data-id="${esc(nicho?.id || '')}" novalidate>
+      ${nicho ? '' : `<label class="campo"><span class="campo-rotulo">Especialidade <small>(preenche o nome e as palavras)</small></span>
+        <select name="especialidade" data-acao-mudar="radar-especialidade"><option value="">Escolha ou escreva abaixo</option>${ESPECIALIDADES.map((e) => `<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('')}</select></label>`}
       <label class="campo"><span class="campo-rotulo">Nome do nicho</span>
         <input name="nome" type="text" maxlength="60" required value="${esc(nicho?.nome || '')}" placeholder="Ex.: Dermatologia"></label>
       <label class="campo"><span class="campo-rotulo">Palavras-chave (até ${MAX_PALAVRAS}, separadas por vírgula)</span>
@@ -191,7 +252,7 @@ function formNicho(estado, nicho, nichos) {
       <p class="ava-alerta" data-erro hidden></p>
       <div class="acoes">
         <button class="botao botao-primario" type="submit">${nicho ? 'Salvar' : 'Criar e montar o radar'}</button>
-        ${nichos.length ? `<a class="botao botao-secundario" href="#radar${nicho ? `/${esc(nicho.id)}` : ''}">Cancelar</a>` : ''}
+        <a class="botao botao-secundario" href="#radar${nicho ? `/${esc(nicho.id)}` : ''}">Cancelar</a>
         ${nicho ? `<button class="botao botao-secundario botao-perigo" type="button" data-acao="radar-excluir" data-id="${esc(nicho.id)}">Excluir o nicho</button>` : ''}
       </div>
     </form>`;

@@ -22,7 +22,7 @@ import { ligarFoco, cliqueFoco, enviarFoco, mudancaFoco } from './foco.js';
 import { ligarAcompanhado, cliqueAcompanhado, enviarAcompanhado } from './foco-acompanhado.js';
 import { ligarDitado, cliqueDitado } from './ditado.js';
 import { ligarColar, cliqueColar, enviarColar } from './eventos-colar.js';
-import { ligarRadar, cliqueRadar, enviarRadar } from './eventos-radar.js';
+import { ligarRadar, cliqueRadar, enviarRadar, mudancaRadar } from './eventos-radar.js';
 import { ligarContinuar, cliqueContinuar } from './continuar.js';
 import { ligarLeitor, enviarLeitor } from './leitor-livro.js';
 import { ligarYoutube, cliqueYoutube, enviarYoutube, mudancaYoutube } from './eventos-youtube.js';
@@ -58,7 +58,7 @@ import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './ev
 import { confirmar } from './confirmar.js';
 
 // Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaRelatorio(alvo, tipo) || mudancaPauta(alvo, tipo) || mudancaDatas(alvo, tipo) || mudancaPortfolio(alvo, tipo) || mudancaProjetos(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+const mudancaAreas = (alvo, tipo) => (tipo === 'change' && mudancaRadar(alvo)) || mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaRelatorio(alvo, tipo) || mudancaPauta(alvo, tipo) || mudancaDatas(alvo, tipo) || mudancaPortfolio(alvo, tipo) || mudancaProjetos(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
