@@ -7,7 +7,7 @@ import { listar, salvar, puxarTabela } from './persistencia.js';
 import { dispararSegundoPlano } from './funcoes.js';
 import { confirmar } from './confirmar.js';
 import { FORMATOS } from './dados-trabalho.js';
-import { nichosDoRadar, sugerirNichos, conferirNicho, idDoNicho, radarVelho, chaveDoVisto, textoDoRadar, nichosPelasEscolhas, especialidade } from './dados-radar.js';
+import { nichosDoRadar, sugerirNichos, conferirNicho, idDoNicho, radarVelho, chaveDoVisto, textoDoRadar, nichosPelasEscolhas, especialidade, idPeloNome } from './dados-radar.js';
 import { baixar } from './exportar-caderno.js';
 import { resultadoDoRadar } from './views-radar.js';
 
@@ -24,12 +24,16 @@ export function ligarRadar(funcoes) {
 async function montarPelosClientes(form) {
   const escolhas = {};
   const mudadas = [];
-  for (const sel of form.querySelectorAll('select[name="esp"]')) {
-    escolhas[sel.dataset.cliente] = sel.value;
+  const naoAchei = [];
+  for (const sel of form.querySelectorAll('[name="esp"]')) {
+    const id = idPeloNome(sel.value);
+    if (sel.value.trim() && !id) naoAchei.push(sel.value.trim());
+    escolhas[sel.dataset.cliente] = id;
     const c = (obterEstado().clientesTrabalho || []).find((x) => !x.excluido_em && x.nome === sel.dataset.cliente);
-    const e = especialidade(sel.value);
+    const e = especialidade(id);
     if (c && e && c.dados?.nicho !== e.nome) mudadas.push({ ...c, dados: { ...(c.dados || {}), nicho: e.nome } });
   }
+  if (naoAchei.length) { app.avisoCurto(`Não achei "${naoAchei[0]}" na lista. Digite parte do nome e escolha uma das sugestões.`); return; }
   if (!Object.values(escolhas).some(Boolean)) { app.avisoCurto('Escolha a especialidade de pelo menos uma cliente.'); return; }
   for (const c of mudadas) await salvar('clientes_trabalho', c);
   let novos = [];
@@ -250,12 +254,14 @@ export function cliqueRadar(alvo) {
   }
 }
 
-// "Novo nicho": a especialidade preenche o nome e as palavras.
-export function mudancaRadar(alvo) {
+// "Novo nicho": a especialidade (escolhida na busca) preenche o nome e as palavras. Ao digitar, só
+// quando o texto já é o nome de uma da lista (escolha na lista de sugestões); ao sair do campo, sempre.
+export function mudancaRadar(alvo, tipo) {
   if (alvo.dataset?.acaoMudar !== 'radar-especialidade') return false;
-  const e = especialidade(alvo.value);
+  const e = especialidade(idPeloNome(alvo.value));
+  const exato = e && e.nome.toLowerCase() === String(alvo.value).trim().toLowerCase();
   const form = alvo.form;
-  if (e && form) {
+  if (e && form && (tipo === 'change' || exato)) {
     form.elements.nome.value = e.nome;
     form.elements.palavras.value = e.palavras.join(', ');
   }

@@ -5,6 +5,7 @@
 // e pela função radar-background.
 
 import { areasDoNicho, datasEntre } from './datas-especiais.js';
+import { especialidadeDoTexto, especialidade as espPorId } from './especialidades.js';
 
 export const TEMPERATURAS = [
   { id: 'subindo_forte', nome: 'Subindo forte', curto: 'Forte' },
@@ -39,58 +40,13 @@ export function nichosDoRadar(config) {
   return (Array.isArray(v.nichos) ? v.nichos : []).map(conferirNicho).filter((n) => n.nome);
 }
 
-// Sugestão a partir das clientes do Trabalho: um nicho por especialidade da ficha.
-const PALAVRAS_DA_AREA = {
-  halitose: ['mau hálito', 'halitose', 'saburra', 'boca seca'],
-  integrativa: ['saúde integrativa', 'inflamação', 'cansaço constante', 'intestino'],
-  plastica: ['cirurgia plástica', 'lipo', 'mamoplastia', 'pós-operatório'],
-  fisioterapia: ['dor nas costas', 'postura', 'pilates', 'reabilitação'],
-  fonoaudiologia: ['fala', 'voz', 'deglutição', 'gagueira'],
-  marketing: ['marketing para médicos', 'Instagram para profissionais', 'posicionamento', 'captação de pacientes'],
-  ginecologia: ['saúde da mulher', 'menopausa', 'ciclo menstrual', 'endometriose'],
-  obstetricia: ['gestação', 'parto', 'pré-natal'],
-  mastologia: ['câncer de mama', 'mamografia'],
-  dermatologia: ['skincare', 'acne', 'manchas na pele', 'protetor solar'],
-  hiperidrose: ['suor excessivo', 'hiperidrose'],
-  estetica: ['harmonização facial', 'botox', 'preenchimento'],
-  odontologia: ['saúde bucal', 'clareamento dental', 'lente de contato dental'],
-  oftalmologia: ['saúde dos olhos', 'cirurgia refrativa', 'miopia'],
-  psiquiatria: ['saúde mental', 'ansiedade', 'depressão', 'TDAH'],
-  psicologia: ['ansiedade', 'terapia', 'autoestima'],
-  nutricao: ['alimentação saudável', 'emagrecimento', 'nutrição'],
-  endocrinologia: ['tireoide', 'hormônios', 'diabetes', 'canetas para emagrecer'],
-  pediatria: ['saúde infantil', 'vacinação infantil'],
-  cardiologia: ['saúde do coração', 'pressão alta'],
-  urologia: ['saúde do homem', 'próstata'],
-  ortopedia: ['dor nas costas', 'joelho'],
-  neurologia: ['sono', 'enxaqueca'],
-};
-const NOME_DA_AREA = {
-  halitose: 'Halitose', integrativa: 'Clínica integrativa', plastica: 'Cirurgia plástica', fisioterapia: 'Fisioterapia',
-  fonoaudiologia: 'Fonoaudiologia', marketing: 'Marketing e negócios',
-  ginecologia: 'Ginecologia', obstetricia: 'Obstetrícia', mastologia: 'Mastologia', dermatologia: 'Dermatologia', hiperidrose: 'Hiperidrose',
-  estetica: 'Estética', odontologia: 'Odontologia', oftalmologia: 'Oftalmologia', psiquiatria: 'Psiquiatria', psicologia: 'Psicologia',
-  nutricao: 'Nutrição', endocrinologia: 'Endocrinologia', pediatria: 'Pediatria', cardiologia: 'Cardiologia', urologia: 'Urologia',
-  ortopedia: 'Ortopedia', neurologia: 'Neurologia',
-};
-
-// A lista de especialidades para escolher (montar pelos clientes e o "Novo nicho").
-export const ESPECIALIDADES = Object.keys(NOME_DA_AREA).map((id) => ({ id, nome: NOME_DA_AREA[id], palavras: PALAVRAS_DA_AREA[id] || [NOME_DA_AREA[id]] }))
-  .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-export const especialidade = (id) => ESPECIALIDADES.find((e) => e.id === id) || null;
+// A lista de especialidades (todas as médicas do CFM, áreas de atuação e outras da saúde) fica em
+// js/especialidades.js; o Radar usa o nome e as palavras do público de cada uma.
+export { ESPECIALIDADES, especialidade, GRUPOS_ESPECIALIDADE, idPeloNome } from './especialidades.js';
 
 // Qual especialidade da lista a ficha da cliente já diz (o nicho escrito), se diz.
 export function especialidadeDaCliente(c) {
-  const t = semAcento(c?.dados?.nicho);
-  if (!t) return '';
-  const direto = ESPECIALIDADES.find((e) => semAcento(e.nome) === t || e.id === t);
-  if (direto) return direto.id;
-  if (/halit|halito/.test(t)) return 'halitose';
-  if (/integrativ|funcional/.test(t)) return 'integrativa';
-  if (/marketing|negocio|empreend/.test(t)) return 'marketing';
-  if (/plastic/.test(t)) return 'plastica';
-  const areas = areasDoNicho(c.dados.nicho, '').filter((a) => NOME_DA_AREA[a]);
-  return areas.find((a) => a !== 'medicina') || '';
+  return especialidadeDoTexto(c?.dados?.nicho)?.id || '';
 }
 
 // Junta as escolhas (cliente → especialidade) nos nichos que já existem: cria o que falta,
@@ -99,7 +55,7 @@ export function nichosPelasEscolhas(existentes, escolhas) {
   const nichos = existentes.map((n) => ({ ...n, clientes: n.clientes.filter((c) => !(c in escolhas)) }));
   const novos = [];
   for (const [cliente, esp] of Object.entries(escolhas)) {
-    const e = especialidade(esp);
+    const e = espPorId(esp);
     if (!e) continue;
     let n = nichos.find((x) => x.id === e.id);
     if (!n) { n = conferirNicho({ id: e.id, nome: e.nome, palavras: e.palavras, clientes: [] }); nichos.push(n); novos.push(e.id); }
@@ -110,22 +66,23 @@ export function nichosPelasEscolhas(existentes, escolhas) {
 
 export function sugerirNichos(clientes, ja = []) {
   const usados = new Set(ja.map((n) => n.id));
-  const porArea = new Map();
+  const porEsp = new Map();
   for (const c of clientes || []) {
     if (c.excluido_em) continue;
-    const areas = areasDoNicho(c.dados?.nicho, c.nome).filter((a) => NOME_DA_AREA[a]);
-    const area = areas.find((a) => a !== 'medicina') || areas[0];
-    if (!area) continue;
-    if (!porArea.has(area)) porArea.set(area, []);
-    porArea.get(area).push(c.nome);
+    const e = especialidadeDoTexto(c.dados?.nicho);
+    if (!e) continue;
+    if (!porEsp.has(e.id)) porEsp.set(e.id, { e, nomes: [] });
+    porEsp.get(e.id).nomes.push(c.nome);
   }
-  return [...porArea.entries()].map(([area, nomes]) => conferirNicho({ id: area, nome: NOME_DA_AREA[area], palavras: PALAVRAS_DA_AREA[area] || [NOME_DA_AREA[area]], clientes: nomes }))
+  return [...porEsp.values()].map(({ e, nomes }) => conferirNicho({ id: e.id, nome: e.nome, palavras: e.palavras, clientes: nomes }))
     .filter((n) => !usados.has(n.id));
 }
 
 // Datas da saúde e campanhas do nicho nas próximas semanas (as "datas certas").
 export function datasDoNicho(nicho, hoje, dias = 21) {
-  const areas = new Set(areasDoNicho(`${nicho.nome} ${nicho.palavras.join(' ')}`));
+  // Nicho de uma especialidade da lista: as áreas dela; nicho à mão: pelo nome e pelas palavras.
+  const esp = espPorId(nicho.id);
+  const areas = new Set(esp ? [...esp.areas, ...areasDoNicho(nicho.nome)] : areasDoNicho(`${nicho.nome} ${nicho.palavras.join(' ')}`));
   const ate = new Date(Date.parse(`${hoje}T12:00:00Z`) + dias * DIA).toISOString().slice(0, 10);
   const inicioMes = `${hoje.slice(0, 7)}-01`;
   return datasEntre(inicioMes, ate)

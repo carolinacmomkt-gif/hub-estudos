@@ -3,7 +3,7 @@
 
 import { esc } from './utilidades.js';
 import { cabecalho } from './componentes.js';
-import { TEMPERATURAS, nichosDoRadar, chaveDoRadar, MAX_PALAVRAS, vistosDoRadar, chaveDoVisto, novasDesde, ESPECIALIDADES, especialidadeDaCliente } from './dados-radar.js';
+import { TEMPERATURAS, nichosDoRadar, chaveDoRadar, MAX_PALAVRAS, vistosDoRadar, chaveDoVisto, novasDesde, ESPECIALIDADES, GRUPOS_ESPECIALIDADE, especialidade, especialidadeDaCliente } from './dados-radar.js';
 
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' });
 const fmtQuando = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -35,11 +35,17 @@ export function renderRadar(estado) {
     ${painel(estado, nicho)}`;
 }
 
+// A busca das especialidades: as sugestões aparecem enquanto ela digita, com o grupo ao lado
+// (Especialidades médicas, Áreas de atuação, Outras da saúde, Negócios).
+function listaDeEspecialidades() {
+  const grupo = Object.fromEntries(GRUPOS_ESPECIALIDADE.map((g) => [g.id, g.nome]));
+  return `<datalist id="rd-especialidades">${ESPECIALIDADES.map((e) => `<option value="${esc(e.nome)}" label="${esc(grupo[e.grupo] || '')}"></option>`).join('')}</datalist>`;
+}
+
 // Primeira vez (ou "Clientes e especialidades"): a especialidade de cada cliente monta os nichos.
 function telaMontar(estado, nichos) {
   const clientes = clientesVivas(estado);
   const noNicho = new Map(nichos.flatMap((n) => n.clientes.map((c) => [c, n.id])));
-  const opcoes = (atual) => `<option value="">Não entra no radar</option>${ESPECIALIDADES.map((e) => `<option value="${esc(e.id)}"${e.id === atual ? ' selected' : ''}>${esc(e.nome)}</option>`).join('')}`;
   return `
     ${cabecalho('Radar do nicho', 'Marque a especialidade de cada cliente e o radar monta os nichos, com as palavras que o público usa.', nichos.length ? '<a class="botao botao-secundario" href="#radar">Voltar ao radar</a>' : '')}
     ${nichos.length ? '' : `
@@ -61,10 +67,11 @@ function telaMontar(estado, nichos) {
           return `
           <li>
             <label class="rd-montar-nome" for="rd-esp-${i}">${esc(c.nome)}</label>
-            <span class="campo"><select id="rd-esp-${i}" name="esp" data-cliente="${esc(c.nome)}" data-chave="${esc(c.chave || '')}">${opcoes(atual)}</select></span>
+            <span class="campo"><input id="rd-esp-${i}" name="esp" type="search" list="rd-especialidades" autocomplete="off" enterkeyhint="next" placeholder="Digite: neuro…" value="${esc(especialidade(atual)?.nome || '')}" data-cliente="${esc(c.nome)}" data-chave="${esc(c.chave || '')}"></span>
           </li>`;
         }).join('')}</ul>
-        <p class="campo-ajuda">A especialidade também fica na ficha da cliente e passa a valer para as datas da saúde do Calendário.</p>
+        ${listaDeEspecialidades()}
+        <p class="campo-ajuda">${ESPECIALIDADES.length} especialidades: todas as médicas, as áreas de atuação (neuropediatria, medicina do sono, fertilidade…) e as outras da saúde. Deixe em branco quem não entra no radar. A especialidade também fica na ficha da cliente e vale para as datas da saúde do Calendário.</p>
         <div class="acoes">
           <button class="botao botao-primario" type="submit">${nichos.length ? 'Salvar e atualizar os nichos' : 'Criar os nichos'}</button>
           <a class="botao botao-secundario" href="#radar/novo">Criar um nicho à mão</a>
@@ -240,7 +247,7 @@ function formNicho(estado, nicho, nichos) {
     ${cabecalho(nicho ? `Editar ${nicho.nome}` : 'Novo nicho', 'Um nicho é um assunto com as palavras que as pessoas usam para falar dele. O radar busca por essas palavras, sem hashtag.')}
     <form class="card formulario rd-form" data-form="radar-nicho" data-id="${esc(nicho?.id || '')}" novalidate>
       ${nicho ? '' : `<label class="campo"><span class="campo-rotulo">Especialidade <small>(preenche o nome e as palavras)</small></span>
-        <select name="especialidade" data-acao-mudar="radar-especialidade"><option value="">Escolha ou escreva abaixo</option>${ESPECIALIDADES.map((e) => `<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('')}</select></label>`}
+        <input name="especialidade" type="search" list="rd-especialidades" autocomplete="off" data-acao-mudar="radar-especialidade" placeholder="Digite: neuro, pneumo, dentista…"></label>${listaDeEspecialidades()}`}
       <label class="campo"><span class="campo-rotulo">Nome do nicho</span>
         <input name="nome" type="text" maxlength="60" required value="${esc(nicho?.nome || '')}" placeholder="Ex.: Dermatologia"></label>
       <label class="campo"><span class="campo-rotulo">Palavras-chave (até ${MAX_PALAVRAS}, separadas por vírgula)</span>
