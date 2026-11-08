@@ -12,7 +12,7 @@ import { configVida, emSilencio } from './avisos-vida.mjs';
 import { METODO, metodoDoNicho } from './metodo-essence.mjs';
 import {
   TEMPERATURAS, LINHAS, conferirNicho, nichosDoRadar, chaveDoRadar, datasDoNicho, lerRss, velocidade, porHora, segundos, conferirRadar,
-  radarSimples, mesclarNoticias, disparo, noticiasQueCrescem, amarrarNoticias,
+  radarSimples, mesclarNoticias, disparo, noticiasQueCrescem, amarrarNoticias, ehUrgente,
 } from '../../js/dados-radar.js';
 import { especialidade, especialidadeDoTexto, palavrasEmIngles } from '../../js/especialidades.js';
 
@@ -165,6 +165,7 @@ Regras das sugestões (2 ou 3 por cliente, diferentes entre si em formato e linh
 - caso: o fato da notícia contado como uma situação próxima de quem lê, para a pessoa se ver nele (ex. de espírito, não de fórmula: uma notícia sobre uma noiva que pediu para a amiga engordar para o casamento vira "imagina se a sua amiga te pedisse para engordar 54 quilos para o casamento dela, o que você faria?"). Varie o jeito de abrir: pergunta, cena, "aconteceu essa semana", confissão de quem atende, número da notícia. Nunca repita a mesma abertura nas sugestões. O gancho sai do caso.
 - Depois do caso, o esqueleto desenvolve o assunto pela especialidade da cliente: o que ela explicaria sobre aquele caso, com o medo e o desejo do público do nicho, a estrutura de exibição e o cuidado do conselho.
 - O fato vem só da notícia: não acrescente detalhe que ela não diz. Não exponha nem julgue a pessoa da notícia (nada de nome de quem não é figura pública, nada de deboche), nada de sensacionalismo.
+- prazo: a data limite para postar (AAAA-MM-DD). A produção da Carol é mensal: só entra no meio da produção o que é URGENTE, e urgente é só o que perde o sentido se esperar a próxima produção (notícia quente do momento, data da saúde ou campanha em até 3 dias). Para essas, prazo em até 3 dias a partir de hoje. Para o resto, prazo mais longe (o fim do mês seguinte, ou a data da campanha). Não force urgência: na maioria das semanas, nenhuma ou uma sugestão por cliente é urgente.
 - Respeite a ficha e a memória da cliente (o que ela já pediu, o que não gosta). Nunca invente caso de paciente, número ou depoimento: use [espaço para preencher].
 Português do Brasil. Entre 4 e 8 itens no radar.
 
@@ -182,7 +183,7 @@ const ESQUEMA = objeto({
     sugestoes: lista('Sugestões de conteúdo', objeto({
       titulo: texto, formato: texto, linha: texto, estrutura: texto, gap: texto, gancho: texto,
       esqueleto: lista('Slides ou blocos', texto), cta: texto, cuidado: texto, porque_agora: texto, link: texto,
-      noticia: objeto({ titulo: texto, link: texto }), caso: texto,
+      noticia: objeto({ titulo: texto, link: texto }), caso: texto, prazo: texto,
     })),
   })),
 });
@@ -252,14 +253,16 @@ export async function montarRadar(userId, pedido, agora = Date.now()) {
       fonte = 'simples';
       avisos.push(erro instanceof ErroIa ? `${erro.message} Mostrando os sinais sem a análise.` : 'A IA não respondeu agora. Mostrando os sinais sem a análise.');
       if (!(erro instanceof ErroIa)) console.error('radar ia:', erro?.message);
-      resultado = radarSimples({ nicho, videos, noticias, termos, datas });
+      resultado = radarSimples({ nicho, videos, noticias, termos, datas, hoje });
     }
     const atual = await lerLinha(userId, nicho.id);
     await gravarLinha(userId, nicho.id, {
       ...atual, status: 'pronto', erro: null, gerado_em: new Date().toISOString(), fonte, avisos,
       nicho: nicho.nome, ...resultado, videos: videos.slice(0, 8), termos, datas,
     });
-    await avisarDoRadar(userId, [{ tipo: 'forte', nicho, itens: resultado.itens.filter((x) => x.temperatura === 'subindo_forte') }], agora).catch((e) => console.warn('radar push:', e?.message));
+    // Aviso só do que é urgente (prazo em até 3 dias): o resto vai para a próxima produção.
+    const urgentes = Object.entries(resultado.clientes || {}).flatMap(([cliente, c]) => (c.sugestoes || []).filter((x) => ehUrgente(x, hoje)).map((x) => ({ ...x, cliente })));
+    await avisarDoRadar(userId, [{ tipo: 'urgente', nicho, itens: urgentes }], agora).catch((e) => console.warn('radar push:', e?.message));
     return { ok: true };
   } catch (erro) {
     console.error('radar:', erro?.message);
@@ -287,13 +290,13 @@ export function notificacoesDoRadar(eventos, hoje) {
         tag: `radar-${e.nicho.id}`, url: `/#radar/${e.nicho.id}`,
       });
     }
-    if (e.tipo === 'forte') {
-      for (const x of e.itens.slice(0, 2)) {
+    if (e.tipo === 'urgente') {
+      for (const x of e.itens.slice(0, 3)) {
         saida.push({
-          chave: `radar:forte:${e.nicho.id}:${hoje}:${x.tema.slice(0, 40)}`,
-          titulo: `Subindo forte · ${e.nicho.nome}`,
-          texto: `${x.tema}.${x.janela ? ` ${x.janela}.` : ''}${paraQuem(e.nicho)}`,
-          tag: `radar-forte-${e.nicho.id}`, url: `/#radar/${e.nicho.id}`,
+          chave: `radar:urgente:${e.nicho.id}:${hoje}:${x.cliente}:${x.titulo.slice(0, 40)}`,
+          titulo: `Urgente para ${x.cliente}`,
+          texto: `${x.titulo}. Poste até ${x.prazo.slice(8, 10)}/${x.prazo.slice(5, 7)}: entra na produção atual.`,
+          tag: `radar-urgente-${e.nicho.id}`, url: `/#radar/${e.nicho.id}`,
         });
       }
     }
@@ -381,7 +384,7 @@ export async function rodarRadarAgendado(userId, agora = Date.now()) {
     if (h >= 7 && h <= 21 && agora - Date.parse(r.noticias_em || 0) >= 115 * 60e3) {
       const { novas, termos } = await atualizarNoticias(userId, nicho, agora);
       disparou = disparo(novas, termos);
-      if (disparou) eventos.push({ tipo: 'disparo', nicho, ...disparou });
+      // A notícia que disparou só pede uma análise nova; o aviso sai depois, se virar algo urgente.
     }
     const analisadoHoje = r.gerado_em && diaEm(Date.parse(r.gerado_em)) === hoje;
     const lendo = r.status === 'lendo' && agora - Date.parse(r.pedido_em || 0) < 20 * 60e3;
@@ -394,9 +397,9 @@ export async function rodarRadarAgendado(userId, agora = Date.now()) {
     const linhas = [];
     for (const nicho of nichos) {
       const r = await lerLinha(userId, nicho.id);
-      const n = (r.noticias_hist || []).filter((x) => agora - Date.parse(x.primeiro_em || 0) <= DIA).length;
-      const sug = Object.values(r.clientes || {}).reduce((s, c) => s + (c.sugestoes?.length || 0), 0);
-      if (n || sug) linhas.push(`${nicho.nome}: ${plural(n, 'notícia nova', 'notícias novas')}${sug ? `, ${plural(sug, 'sugestão', 'sugestões')}` : ''}`);
+      // Só as urgentes (prazo em até 3 dias), com as clientes.
+      const urg = Object.entries(r.clientes || {}).flatMap(([cliente, c]) => (c.sugestoes || []).filter((x) => ehUrgente(x, hoje)).map(() => cliente));
+      if (urg.length) linhas.push(`${nicho.nome}: ${plural(urg.length, 'urgente', 'urgentes')} para ${[...new Set(urg)].join(', ')}`);
     }
     if (linhas.length) eventos.push({ tipo: 'manha', linhas });
   }

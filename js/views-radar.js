@@ -3,7 +3,8 @@
 
 import { esc } from './utilidades.js';
 import { cabecalho } from './componentes.js';
-import { TEMPERATURAS, nichosDoRadar, chaveDoRadar, MAX_PALAVRAS, vistosDoRadar, chaveDoVisto, novasDesde, ESPECIALIDADES, GRUPOS_ESPECIALIDADE, especialidade, especialidadeDaCliente } from './dados-radar.js';
+import { TEMPERATURAS, nichosDoRadar, chaveDoRadar, MAX_PALAVRAS, vistosDoRadar, chaveDoVisto, novasDesde, ESPECIALIDADES, GRUPOS_ESPECIALIDADE, especialidade, especialidadeDaCliente, porProducao, mesDaProxima, nomeDoMesRadar, guardadasDoRadar, idDaGuardada } from './dados-radar.js';
+import { hojeLocal } from './views-demandas.js';
 
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' });
 const fmtQuando = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -138,7 +139,7 @@ function abasDoNicho(estado, nicho, r, totalNovas) {
 function conteudoDaAba(estado, nicho, r, { itens, lendo, caixas, vistos }) {
   const aba = abaAtual(estado);
   if (aba === 'clientes') {
-    return `<section class="rd-secao" aria-label="Por cliente"><div class="rd-caixas">${caixas.map((c) => caixaDaCliente(nicho, r, c, vistos)).join('')}</div></section>`;
+    return `<section class="rd-secao" aria-label="Por cliente"><div class="rd-caixas">${caixas.map((c) => caixaDaCliente(nicho, r, c, vistos, guardadasDoRadar(estado.config))).join('')}</div></section>`;
   }
   if (aba === 'noticias') {
     const hist = r?.noticias_hist || [];
@@ -167,7 +168,7 @@ const linhaDaNoticia = (n, nova = false) => `
     <span class="campo-ajuda">${esc(fmtNoticia(n))}${n.termo ? ` · ${esc(n.termo)}` : ''}</span>
     ${n.porque ? `<span class="rd-porque">${esc(n.porque)}</span>` : ''}</li>`;
 
-function caixaDaCliente(nicho, r, cliente, vistos) {
+function caixaDaCliente(nicho, r, cliente, vistos, guardadas = []) {
   const hist = r?.noticias_hist || [];
   const novas = novasDesde(hist, vistos[chaveDoVisto(nicho.id, cliente)], r?.inicio_em);
   const sugestoes = (cliente && r?.clientes?.[cliente]?.sugestoes) || [];
@@ -185,15 +186,37 @@ function caixaDaCliente(nicho, r, cliente, vistos) {
       ${novas.length ? `<ul class="rd-noticias rd-noticias-novas">${novas.slice(0, 5).map((n) => linhaDaNoticia(n, true)).join('')}</ul>
         ${novas.length > 5 ? `<details class="rd-mais"><summary>Ver as outras ${novas.length - 5}</summary><ul class="rd-noticias">${novas.slice(5, 30).map((n) => linhaDaNoticia(n, true)).join('')}</ul></details>` : ''}`
         : `<p class="campo-ajuda">${hist.length ? `Nenhuma notícia nova desde a última vez. ${hist.length} no histórico de 14 dias.` : 'As notícias aparecem aqui assim que o radar rodar.'}</p>`}
-      ${sugestoes.length ? `
-        <h4 class="rd-sub">Sugestões de conteúdo</h4>
-        <div class="rd-sugestoes-grade">${sugestoes.map((x, i) => cartaoSugestao(nicho, cliente, x, i)).join('')}</div>` : ''}
+      ${sugestoes.length ? blocosDeProducao(nicho, cliente, sugestoes, guardadas) : ''}
     </article>`;
 }
 
-function cartaoSugestao(nicho, cliente, x, i) {
+// Produção mensal (Carol, 08/11/2026): só entra no meio da produção o urgente (prazo em até 3 dias);
+// o resto fica para a pauta do mês seguinte, e ela guarda o que quer levar.
+function blocosDeProducao(nicho, cliente, sugestoes, guardadas) {
+  const hoje = hojeLocal();
+  const { urgentes, proxima } = porProducao(sugestoes, hoje);
+  const mes = nomeDoMesRadar(mesDaProxima(hoje));
+  const ids = new Set(guardadas.filter((g) => g.cliente === cliente).map((g) => g.id));
+  const daCliente = guardadas.filter((g) => g.cliente === cliente && g.mes === mesDaProxima(hoje)).length;
   return `
-    <article class="rd-sugestao">
+    <section class="rd-producao rd-producao-urgente" aria-label="Urgentes">
+      <h4 class="rd-sub">Urgente · entra na produção atual</h4>
+      ${urgentes.length ? `<div class="rd-sugestoes-grade">${urgentes.map(({ x, i }) => cartaoSugestao(nicho, cliente, x, i, { urgente: true })).join('')}</div>`
+        : '<p class="campo-ajuda">Nada urgente agora. Só entra no meio da produção o que precisa ser postado em até 3 dias.</p>'}
+    </section>
+    ${proxima.length ? `
+    <section class="rd-producao" aria-label="Próxima produção">
+      <h4 class="rd-sub">Para a próxima produção · pauta de ${esc(mes)}${daCliente ? ` <span class="selo">${daCliente} ${daCliente === 1 ? 'guardada' : 'guardadas'}</span>` : ''}</h4>
+      <div class="rd-sugestoes-grade">${proxima.map(({ x, i }) => cartaoSugestao(nicho, cliente, x, i, { guardar: mes, guardada: ids.has(idDaGuardada(cliente, x)) })).join('')}</div>
+    </section>` : ''}`;
+}
+
+const dataDoPrazo = (d) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '');
+
+function cartaoSugestao(nicho, cliente, x, i, { urgente = false, guardar = '', guardada = false } = {}) {
+  return `
+    <article class="rd-sugestao${urgente ? ' rd-urgente' : ''}">
+      ${urgente ? `<p class="rd-selo-urgente">Urgente · poste até ${esc(dataDoPrazo(x.prazo))}</p>` : ''}
       <p class="rd-temp">${esc([x.formato, x.linha, x.estrutura].filter(Boolean).join(' · '))}</p>
       <h5 class="rd-tema">${esc(x.titulo)}</h5>
       ${x.noticia ? `<p class="rd-da-noticia"><span>Partiu desta notícia</span> <a href="${esc(x.noticia.link)}" target="_blank" rel="noopener">${esc(x.noticia.titulo)} ↗</a>${x.noticia.fonte || x.noticia.data ? ` <small>${esc([x.noticia.fonte, fmtCurtoData(x.noticia.data)].filter(Boolean).join(' · '))}</small>` : ''}</p>` : ''}
@@ -207,6 +230,8 @@ function cartaoSugestao(nicho, cliente, x, i) {
       <div class="rd-item-acoes">
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="radar-criar-sugestao" data-id="${esc(nicho.id)}" data-cliente="${esc(cliente)}" data-i="${i}">Levar para o Criar</button>
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="radar-copiar-sugestao" data-id="${esc(nicho.id)}" data-cliente="${esc(cliente)}" data-i="${i}">Copiar</button>
+        ${guardar ? (guardada ? `<span class="selo rd-guardada">Guardada para ${esc(guardar)}</span>`
+          : `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="radar-guardar" data-id="${esc(nicho.id)}" data-cliente="${esc(cliente)}" data-i="${i}">Guardar para ${esc(guardar)}</button>`) : ''}
       </div>
     </article>`;
 }

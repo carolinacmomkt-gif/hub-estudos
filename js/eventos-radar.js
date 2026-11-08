@@ -7,7 +7,8 @@ import { listar, salvar, puxarTabela } from './persistencia.js';
 import { dispararSegundoPlano } from './funcoes.js';
 import { confirmar } from './confirmar.js';
 import { FORMATOS } from './dados-trabalho.js';
-import { nichosDoRadar, sugerirNichos, conferirNicho, idDoNicho, radarVelho, chaveDoVisto, textoDoRadar, nichosPelasEscolhas, especialidade, idPeloNome } from './dados-radar.js';
+import { nichosDoRadar, sugerirNichos, conferirNicho, idDoNicho, radarVelho, chaveDoVisto, textoDoRadar, nichosPelasEscolhas, especialidade, idPeloNome, guardadasDoRadar, mesDaProxima, nomeDoMesRadar, idDaGuardada } from './dados-radar.js';
+import { hojeLocal } from './views-demandas.js';
 import { baixar } from './exportar-caderno.js';
 import { resultadoDoRadar } from './views-radar.js';
 
@@ -132,6 +133,24 @@ function levarParaCriar(id, i) {
   location.hash = '#criar';
 }
 
+// Guardar uma sugestão para a próxima produção (a pauta do mês seguinte); segue entre aparelhos.
+async function gravarGuardadas(mudar) {
+  const atual = (await listar('config', { incluirExcluidos: true })).find((c) => c.chave === 'radar_proxima');
+  const lista = Array.isArray(atual?.valor?.lista) && !atual?.excluido_em ? atual.valor.lista : [];
+  await salvar('config', { ...(atual || {}), excluido_em: null, chave: 'radar_proxima', valor: { lista: mudar(lista).slice(-200) } });
+  atualizarEstado({ config: await listar('config') });
+  app.renderizar();
+}
+export async function guardarSugestao(nichoId, cliente, i) {
+  const x = sugestao(nichoId, cliente, i);
+  if (!x) return;
+  const mes = mesDaProxima(hojeLocal());
+  const id = idDaGuardada(cliente, x);
+  await gravarGuardadas((lista) => (lista.some((g) => g.id === id) ? lista : [...lista, { id, cliente, nicho: nichoId, mes, guardada_em: new Date().toISOString(), sugestao: x }]));
+  app.avisoCurto(`Guardada para a pauta de ${nomeDoMesRadar(mes)}. Ela aparece na Pauta de ${cliente}.`);
+}
+export const tirarGuardada = (id) => gravarGuardadas((lista) => lista.filter((g) => g.id !== id));
+
 // Marcar a caixa da cliente como vista (o contador de notícias novas volta a zero; segue entre aparelhos).
 async function marcarVisto(nichoId, cliente) {
   const atual = (await listar('config', { incluirExcluidos: true })).find((c) => c.chave === 'radar_visto');
@@ -177,7 +196,13 @@ function sugestao(id, cliente, i) {
 }
 
 function sugestaoParaCriar(id, cliente, i) {
-  const x = sugestao(id, cliente, i);
+  levarSugestao(sugestao(id, cliente, i), cliente);
+}
+function guardadaParaCriar(id) {
+  const g = guardadasDoRadar(obterEstado().config).find((y) => y.id === id);
+  if (g) levarSugestao(g.sugestao, g.cliente);
+}
+function levarSugestao(x, cliente) {
   if (!x) return;
   const c = (obterEstado().clientesTrabalho || []).find((y) => !y.excluido_em && y.nome === cliente);
   const formato = (x.formato ? FORMATOS.find((f) => f.toLowerCase().startsWith(String(x.formato).toLowerCase())) : null) || FORMATO_DO_CRIAR[String(x.formato || '').toLowerCase().split(' ')[0]] || FORMATOS[0];
@@ -219,6 +244,9 @@ export function cliqueRadar(alvo) {
     case 'radar-visto': marcarVisto(alvo.dataset.id, alvo.dataset.cliente || ''); return true;
     case 'radar-exportar': exportar(alvo.dataset.id, alvo.dataset.como, alvo.dataset.cliente || ''); return true;
     case 'radar-criar-sugestao': sugestaoParaCriar(alvo.dataset.id, alvo.dataset.cliente || '', Number(alvo.dataset.i)); return true;
+    case 'radar-guardar': guardarSugestao(alvo.dataset.id, alvo.dataset.cliente || '', Number(alvo.dataset.i)); return true;
+    case 'radar-tirar-guardada': tirarGuardada(alvo.dataset.valor); return true;
+    case 'radar-guardada-criar': guardadaParaCriar(alvo.dataset.valor); return true;
     case 'radar-copiar-sugestao': {
       const x = sugestao(alvo.dataset.id, alvo.dataset.cliente || '', Number(alvo.dataset.i));
       if (x) copiar([x.titulo, [x.formato, x.linha, x.estrutura].filter(Boolean).join(' · '), x.noticia ? `Notícia: ${x.noticia.titulo} ${x.noticia.link}` : '', x.caso ? `O caso: ${x.caso}` : '', x.gancho ? `Gancho: ${x.gancho}` : '', x.gap ? `Gap: ${x.gap}` : '', ...x.esqueleto.map((e, j) => `${j + 1}) ${e}`), x.cta ? `CTA: ${x.cta}` : '', x.cuidado ? `Cuidado: ${x.cuidado}` : ''].filter(Boolean).join('\n'), 'Sugestão copiada.');

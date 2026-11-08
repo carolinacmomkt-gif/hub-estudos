@@ -5,6 +5,7 @@ import { cabecalho } from './componentes.js';
 import { esc } from './utilidades.js';
 import { clientesAtivos, clientePelaChave } from './dados-trabalho.js';
 import { mesCurto, nomeDoMes } from './dados-relatorio.js';
+import { guardadasDoRadar } from './dados-radar.js';
 import {
   TIPOS, pautasSalvas, pautaDaRota, lerParametroPauta, parametroDaPauta, mesDaPautaPadrao, cartaoDoMes, ehImagem, ehVideo, listaEmAprovacao, ordenarLaminas,
 } from './dados-pauta.js';
@@ -53,6 +54,26 @@ function lista(estado) {
 
 const dataCurta = (d) => (d ? new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '');
 
+// Ideias que ela guardou no Radar para esta produção (pauta do mês da cliente). Carol, 08/11/2026.
+function ideiasGuardadas(estado, cliente, mes) {
+  const lista = guardadasDoRadar(estado.config).filter((g) => g.cliente === cliente && g.mes === mes);
+  if (!lista.length) return '';
+  return `
+    <details class="card pauta-ideias" open>
+      <summary class="card-titulo">Ideias guardadas do Radar · ${lista.length}</summary>
+      <p class="campo-ajuda">O que não era urgente e ficou para esta produção. Leve para o Criar ou tire da lista.</p>
+      <ul class="lista-simples pauta-ideias-lista">${lista.map((g) => `
+        <li>
+          <span><b>${esc(g.sugestao.titulo)}</b>
+            <small>${esc([g.sugestao.formato, g.sugestao.linha].filter(Boolean).join(' · '))}${g.sugestao.noticia ? ` · <a href="${esc(g.sugestao.noticia.link)}" target="_blank" rel="noopener">notícia ↗</a>` : ''}</small></span>
+          <span class="pauta-ideias-acoes">
+            <button class="botao botao-secundario botao-pequeno" type="button" data-acao="radar-guardada-criar" data-valor="${esc(g.id)}">Levar para o Criar</button>
+            <button class="botao-icone" type="button" data-acao="radar-tirar-guardada" data-valor="${esc(g.id)}" aria-label="Tirar ${esc(g.sugestao.titulo)} da lista">×</button>
+          </span>
+        </li>`).join('')}</ul>
+    </details>`;
+}
+
 function editor(estado, p) {
   const cli = clientePelaChave(estado, p.cliente);
   const pauta = pautaDaRota(estado, estado.parametro, cli?.nome || '');
@@ -75,6 +96,7 @@ function editor(estado, p) {
       <button class="botao botao-secundario botao-pequeno" type="button" data-acao="pauta-baixar" data-valor="pdf"${ocupado || !pauta.pecas.length ? ' disabled' : ''}>Baixar PDF</button>
       <span class="texto-suave rel-ocupado" aria-live="polite">${esc(ocupado)}</span>
     </div>
+    ${ideiasGuardadas(estado, cli?.nome || pauta.nome, pauta.mes)}
     <div class="rel-editor">
       <div class="rel-form">
         <section class="card rel-passo">

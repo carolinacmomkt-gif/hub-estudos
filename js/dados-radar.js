@@ -177,8 +177,40 @@ export function conferirSugestao(x) {
     // A notícia de onde a sugestão partiu (o fato vem dela) e o caso contado a partir dela.
     noticia: conferirNoticiaDaSugestao(x?.noticia),
     caso: limpo(x?.caso, 400),
+    prazo: /^\d{4}-\d{2}-\d{2}$/.test(x?.prazo || '') ? x.prazo : null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Produção (Carol, 08/11/2026): a produção é mensal. Só entra no meio da produção atual o que é
+// urgente, com prazo para postar em até 3 dias; o resto vai para a próxima produção (a pauta do
+// mês seguinte), numa lista que ela guarda (config "radar_proxima").
+// ---------------------------------------------------------------------------
+
+export const URGENTE_DIAS = 3;
+const maisDias = (dia, n) => new Date(Date.parse(`${dia}T12:00:00Z`) + n * DIA).toISOString().slice(0, 10);
+export const ehUrgente = (x, hoje) => Boolean(x?.prazo) && x.prazo >= hoje && x.prazo <= maisDias(hoje, URGENTE_DIAS);
+export function porProducao(sugestoes = [], hoje) {
+  const lista = sugestoes.map((x, i) => ({ x, i }));
+  return {
+    urgentes: lista.filter(({ x }) => ehUrgente(x, hoje)).sort((a, b) => a.x.prazo.localeCompare(b.x.prazo)),
+    proxima: lista.filter(({ x }) => !ehUrgente(x, hoje)),
+  };
+}
+// A próxima produção é a pauta do mês seguinte (AAAA-MM).
+export function mesDaProxima(hoje) {
+  const [a, m] = hoje.split('-').map(Number);
+  return m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, '0')}`;
+}
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+export const nomeDoMesRadar = (mes) => MESES[Number(String(mes).slice(5, 7)) - 1] || '';
+
+// Ideias guardadas para a próxima produção: { lista: [{ id, cliente, nicho, mes, guardada_em, sugestao }] }.
+export function guardadasDoRadar(linhas) {
+  const v = (linhas || []).find((l) => l.chave === 'radar_proxima' && !l.excluido_em)?.valor;
+  return Array.isArray(v?.lista) ? v.lista.filter((g) => g && g.id && g.cliente && g.sugestao) : [];
+}
+export const idDaGuardada = (cliente, x) => `${cliente}|${x.noticia?.link || ''}|${x.titulo}`.slice(0, 300);
 function conferirNoticiaDaSugestao(n) {
   const link = linkOk(n?.link);
   const titulo = limpo(n?.titulo, 200);
@@ -211,10 +243,10 @@ export function amarrarNoticias(clientes, noticias) {
 }
 
 // Sem IA: os vídeos que mais aceleram, os termos com notícia subindo e as datas do período.
-export function radarSimples({ nicho, videos = [], noticias = [], termos = [], datas = [] }) {
+export function radarSimples({ nicho, videos = [], noticias = [], termos = [], datas = [], hoje = null }) {
   const itens = [];
   for (const d of datas.slice(0, 3)) {
-    itens.push({ tema: d.titulo, temperatura: 'data_certa', porque: `${d.tipo === 'campanha' ? 'Campanha do mês' : 'Data da saúde'} em ${d.data.slice(8, 10)}/${d.data.slice(5, 7)}.${d.conferir ? ' Confira antes de postar.' : ''}`, janela: d.tipo === 'campanha' ? 'O mês todo' : 'Na semana da data', formato: '', gancho: '', serve_para: nicho.clientes, links: [] });
+    itens.push({ tema: d.titulo, temperatura: 'data_certa', porque: `${d.tipo === 'campanha' ? 'Campanha do mês' : 'Data da saúde'} em ${d.data.slice(8, 10)}/${d.data.slice(5, 7)}.${d.conferir ? ' Confira antes de postar.' : ''}`, janela: d.tipo === 'campanha' ? 'O mês todo' : 'Na semana da data', formato: '', gancho: '', serve_para: nicho.clientes, links: [], prazo: d.tipo === 'campanha' ? null : d.data });
   }
   for (const t of termos.filter((x) => x.subida >= 1.5 && x.recentes >= 3).slice(0, 3)) {
     itens.push({ tema: t.termo, temperatura: t.subida >= 3 ? 'subindo_forte' : 'subindo', porque: `${t.recentes} matérias nas últimas 48 h, ${t.subida}× o ritmo dos dias anteriores.`, janela: 'Próximos dias', formato: '', gancho: '', serve_para: nicho.clientes, links: [] });
@@ -230,13 +262,15 @@ export function radarSimples({ nicho, videos = [], noticias = [], termos = [], d
     gap: 'crença comum: [complete] / realidade: [complete]', gancho: '', esqueleto: [], cta: 'Comenta o que você faria', cuidado: '',
     porque_agora: `${topo.nova ? 'Notícia que acabou de sair' : 'Notícia do momento'}${topo.subida >= 1.5 ? `; o assunto subiu ${String(topo.subida).replace('.', ',')}× em 48 h` : ''}.`,
     link: topo.link, noticia: topo, caso: '[conte o caso da notícia como uma situação próxima de quem lê]',
+    // Sem IA, só é urgente a notícia que acabou de chegar num assunto que dobrou de ritmo.
+    prazo: hoje && topo.nova && topo.subida >= 2 ? maisDias(hoje, 2) : null,
   }] : [];
   const base = itens.slice(0, 2 - Math.min(1, daNoticia.length));
   const clientes = nicho.clientes.map((cliente) => ({
     cliente,
     sugestoes: [...daNoticia, ...base.map((x) => ({
       titulo: x.tema, formato: x.formato || 'Carrossel', linha: 'técnico', estrutura: x.temperatura === 'data_certa' ? 'Linear clássica' : 'Alerta',
-      gap: 'crença comum: [complete] / realidade: [complete]', gancho: '', esqueleto: [], cta: 'Salve para lembrar', cuidado: '', porque_agora: x.porque, link: x.links?.[0] || null,
+      gap: 'crença comum: [complete] / realidade: [complete]', gancho: '', esqueleto: [], cta: 'Salve para lembrar', cuidado: '', porque_agora: x.porque, link: x.links?.[0] || null, prazo: x.prazo || null,
     }))],
   }));
   return conferirRadar({ itens, noticias: noticias.slice(0, 8).map((n) => ({ ...n, porque: '' })), briefing: '', clientes });
