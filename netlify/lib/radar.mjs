@@ -10,6 +10,7 @@ import { banco } from './supabase.mjs';
 import { enviarPush } from './avisos.mjs';
 import { configVida, emSilencio } from './avisos-vida.mjs';
 import { METODO, metodoDoNicho } from './metodo-essence.mjs';
+import { revisarTextos, textosDoRadar, aplicarNoRadar, REGRAS_DA_VOZ } from './revisao-texto.mjs';
 import {
   TEMPERATURAS, LINHAS, conferirNicho, nichosDoRadar, chaveDoRadar, datasDoNicho, lerRss, velocidade, porHora, segundos, conferirRadar,
   radarSimples, mesclarNoticias, disparo, noticiasQueCrescem, amarrarNoticias, ehUrgente,
@@ -197,11 +198,14 @@ export async function analisarComIa({ nicho, hoje, videos, noticias, termos, dat
     noticias: noticiasQueCrescem(noticias, termos).slice(0, 25).map((n) => ({ titulo: n.titulo, fonte: n.fonte, data: n.data, link: n.link, nova: Boolean(n.nova), termo: n.termo, subida: n.subida })),
   };
   const r = await pedirJson({
-    system: `${SYSTEM}\n\n${metodoDoNicho(nicho)}`, conteudo: JSON.stringify(pedido), esquema: ESQUEMA, maxTokens: 16000, esforco: 'medium', cliente,
+    system: `${SYSTEM}\n\n${metodoDoNicho(nicho)}\n\nANTES DE ENTREGAR, releia cada gancho, caso, slide, CTA e o briefing. Português do Brasil correto (crase, concordância, vírgula, acentuação) e nenhuma estrutura proibida:\n${REGRAS_DA_VOZ}`, conteudo: JSON.stringify(pedido), esquema: ESQUEMA, maxTokens: 16000, esforco: 'medium', cliente,
     ferramentas: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5, user_location: { type: 'approximate', country: 'BR' } }],
   });
   const radar = conferirRadar(r);
-  return { ...radar, clientes: amarrarNoticias(radar.clientes, noticias) };
+  const amarrado = { ...radar, clientes: amarrarNoticias(radar.clientes, noticias) };
+  // A volta de revisão: estruturas proibidas e português (o travessão que sobrar sai sem IA).
+  const saude = especialidade(nicho.id)?.grupo !== 'negocios';
+  return aplicarNoRadar(amarrado, await revisarTextos(textosDoRadar(amarrado), { saude, cliente }));
 }
 
 // Ficha e memória das clientes do nicho (para as sugestões).

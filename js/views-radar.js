@@ -183,9 +183,9 @@ function caixaDaCliente(nicho, r, cliente, vistos, guardadas = []) {
           ${r?.gerado_em && cliente ? menuExportar(nicho, cliente) : ''}
         </div>
       </div>
-      ${novas.length ? `<ul class="rd-noticias rd-noticias-novas">${novas.slice(0, 5).map((n) => linhaDaNoticia(n, true)).join('')}</ul>
-        ${novas.length > 5 ? `<details class="rd-mais"><summary>Ver as outras ${novas.length - 5}</summary><ul class="rd-noticias">${novas.slice(5, 30).map((n) => linhaDaNoticia(n, true)).join('')}</ul></details>` : ''}`
-        : `<p class="campo-ajuda">${hist.length ? `Nenhuma notícia nova desde a última vez. ${hist.length} no histórico de 14 dias.` : 'As notícias aparecem aqui assim que o radar rodar.'}</p>`}
+      ${novas.length ? `<ul class="rd-noticias rd-noticias-novas">${novas.slice(0, 3).map((n) => linhaDaNoticia(n, true)).join('')}</ul>
+        ${novas.length > 3 ? `<details class="rd-mais"><summary>Ver as outras ${novas.length - 3}</summary><ul class="rd-noticias">${novas.slice(3, 30).map((n) => linhaDaNoticia(n, true)).join('')}</ul></details>` : ''}`
+        : `<p class="campo-ajuda rd-nada-novo">${hist.length ? 'Nenhuma notícia nova desde a última vez.' : 'As notícias aparecem aqui assim que o radar rodar.'}</p>`}
       ${sugestoes.length ? blocosDeProducao(nicho, cliente, sugestoes, guardadas) : ''}
     </article>`;
 }
@@ -217,16 +217,20 @@ function cartaoSugestao(nicho, cliente, x, i, { urgente = false, guardar = '', g
   return `
     <article class="rd-sugestao${urgente ? ' rd-urgente' : ''}">
       ${urgente ? `<p class="rd-selo-urgente">Urgente · poste até ${esc(dataDoPrazo(x.prazo))}</p>` : ''}
-      <p class="rd-temp">${esc([x.formato, x.linha, x.estrutura].filter(Boolean).join(' · '))}</p>
+      <p class="rd-temp">${esc([x.formato, x.linha].filter(Boolean).join(' · '))}</p>
       <h5 class="rd-tema">${esc(x.titulo)}</h5>
       ${x.noticia ? `<p class="rd-da-noticia"><span>Partiu desta notícia</span> <a href="${esc(x.noticia.link)}" target="_blank" rel="noopener">${esc(x.noticia.titulo)} ↗</a>${x.noticia.fonte || x.noticia.data ? ` <small>${esc([x.noticia.fonte, fmtCurtoData(x.noticia.data)].filter(Boolean).join(' · '))}</small>` : ''}</p>` : ''}
-      ${x.caso ? `<p class="rd-caso"><strong>O caso:</strong> ${esc(x.caso)}</p>` : ''}
       ${x.gancho ? `<blockquote class="rd-gancho">${esc(x.gancho)}</blockquote>` : ''}
-      ${x.gap ? `<p class="campo-ajuda"><strong>Gap:</strong> ${esc(x.gap)}</p>` : ''}
-      ${x.esqueleto?.length ? `<details class="rd-esqueleto"><summary>${x.esqueleto.length} ${/reels/i.test(x.formato) ? 'blocos do roteiro' : 'slides'}</summary><ol>${x.esqueleto.map((e) => `<li>${esc(e)}</li>`).join('')}</ol></details>` : ''}
-      ${x.cta ? `<p class="campo-ajuda"><strong>CTA:</strong> ${esc(x.cta)}</p>` : ''}
-      ${x.cuidado ? `<p class="campo-ajuda rd-cuidado"><strong>Cuidado:</strong> ${esc(x.cuidado)}</p>` : ''}
-      ${x.porque_agora ? `<p class="campo-ajuda"><strong>Por que agora:</strong> ${esc(x.porque_agora)}${x.link ? ` <a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(dominio(x.link))} ↗</a>` : ''}</p>` : ''}
+      <details class="rd-roteiro">
+        <summary>Ver o roteiro</summary>
+        ${x.caso ? `<p class="rd-caso"><strong>O caso:</strong> ${esc(x.caso)}</p>` : ''}
+        ${x.estrutura ? `<p class="campo-ajuda"><strong>Estrutura:</strong> ${esc(x.estrutura)}</p>` : ''}
+        ${x.gap ? `<p class="campo-ajuda"><strong>Gap:</strong> ${esc(x.gap)}</p>` : ''}
+        ${x.esqueleto?.length ? `<p class="campo-ajuda"><strong>${/reels/i.test(x.formato) ? 'Blocos do roteiro' : 'Slides'}:</strong></p><ol class="rd-esqueleto">${x.esqueleto.map((e) => `<li>${esc(e)}</li>`).join('')}</ol>` : ''}
+        ${x.cta ? `<p class="campo-ajuda"><strong>CTA:</strong> ${esc(x.cta)}</p>` : ''}
+        ${x.cuidado ? `<p class="campo-ajuda rd-cuidado"><strong>Cuidado:</strong> ${esc(x.cuidado)}</p>` : ''}
+        ${x.porque_agora ? `<p class="campo-ajuda"><strong>Por que agora:</strong> ${esc(x.porque_agora)}${x.link && !x.noticia ? ` <a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(dominio(x.link))} ↗</a>` : ''}</p>` : ''}
+      </details>
       <div class="rd-item-acoes">
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="radar-criar-sugestao" data-id="${esc(nicho.id)}" data-cliente="${esc(cliente)}" data-i="${i}">Levar para o Criar</button>
         <button class="botao botao-secundario botao-pequeno" type="button" data-acao="radar-copiar-sugestao" data-id="${esc(nicho.id)}" data-cliente="${esc(cliente)}" data-i="${i}">Copiar</button>
