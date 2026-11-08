@@ -11,6 +11,7 @@ import { decifrar } from './cripto.mjs';
 import { ErroOrigem, chaveTrello } from './demandas.mjs';
 import { pedirJson, objeto, texto as tipoTexto, ErroIa } from './ia-comum.mjs';
 import { fontes, calendariosDaConexao } from './trabalho-fontes.mjs';
+import { regraDoCta } from '../../js/especialidades.js';
 import {
   normalizar, slug, nomeDoCliente, nomeDoQuadro, semAcessos, acharCliente, etiquetaDoCliente, listaAtiva, formatoDasEtiquetas,
   destinoDaAprovacao, destinoDoAjuste, casaDoCliente, corDoCliente, ehMinha, clienteDeSaude,
@@ -700,7 +701,8 @@ Formato: ${formato || 'não informado'}
 Objetivo: ${objetivo || 'não informado'}
 Tema: ${tema || 'não informado'}
 Observações: ${notas || 'nenhuma'}
-${saudeDo(cliente) ? 'Cliente da área da saúde: siga as normas do conselho.\n' : ''}${texto ? `Texto atual:\n${String(texto).slice(0, 12000)}\n` : ''}</pedido>
+${saudeDo(cliente) ? 'Cliente da área da saúde: siga as normas do conselho.\n' : ''}${regraDoCta(cliente?.dados?.nicho || '', { saude: Boolean(saudeDo(cliente)) })}
+${texto ? `Texto atual:\n${String(texto).slice(0, 12000)}\n` : ''}</pedido>
 
 ${PEDIDOS_IA[acao]}`;
   const r = await pedirJson({ system: METODO, conteudo, esquema: objeto({ texto: tipoTexto }), maxTokens: 8000, esforco: acao === 'criar' ? 'medium' : 'low' });
@@ -815,5 +817,6 @@ export async function contextoDoCliente(userId, chave) {
     ficha: String(cliente?.dados?.ficha || '').slice(0, 12000),
     memoria: (cliente?.dados?.memoria || []).map((m) => m.texto).filter(Boolean).slice(0, 30),
     saude: Boolean(cliente && clienteDeSaude(cliente.nome, cliente.dados?.nicho)),
+    cta: regraDoCta(cliente?.dados?.nicho || '', { saude: Boolean(cliente && clienteDeSaude(cliente.nome, cliente.dados?.nicho)) }),
   };
 }

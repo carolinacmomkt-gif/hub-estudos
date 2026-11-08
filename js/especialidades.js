@@ -243,6 +243,9 @@ const LISTA = [
   A('hiperidrose', 'Hiperidrose', 'hiperidrose|\\bsuor|sudorese', ['hiperidrose', 'dermatologia'], ['suor excessivo', 'hiperidrose', 'mãos suando', 'suor nas axilas'],
     'julgamento social pelo suor em situações comuns; anos tratando como traço de personalidade', 'agir socialmente sem calcular cada interação pelo suor',
     'Alerta (suor comum × condição clínica) e Pergunta aberta (romper a associação com ansiedade)', 'não prometer resultado igual para todos; diferenciar tratamento clínico e cirúrgico ao falar em "definitivo"'),
+  A('endovenosa', 'Terapia endovenosa e clínica multidisciplinar', 'endovenos|intravenos|soroterap|vitamina na veia|ferro na veia|multidisciplinar|infusao', ['endovenosa', 'integrativa', 'nutrologia'], ['soroterapia', 'vitamina na veia', 'ferro na veia', 'reposição de vitaminas', 'deficiência de vitamina', 'equipe multidisciplinar'],
+    'gastar com algo que não serve ou que faz mal; insegurança com agulha, procedimento e com quem aplica; já ter ouvido promessa de "soro milagroso"', 'tratar a deficiência que os exames mostram, com médico, nutricionista e enfermagem olhando junto, em um lugar seguro',
+    'Pergunta aberta (quando a via endovenosa faz sentido e quando não faz) e Linear clássica (avaliação, exames, protocolo e acompanhamento)', 'Anvisa (alerta de 14/07/2026) e CFM: não há evidência para pessoas saudáveis usarem soro para energia, imunidade, rejuvenescimento, emagrecimento ou "detox", então nunca prometa isso; reposição endovenosa só com deficiência diagnosticada e avaliação médica individual; mostre a avaliação, os exames, a equipe e o protocolo de segurança; nada de "pacote", preço ou "soro do dia" (publicidade médica, Resolução CFM 2.336/2023)'),
   A('integrativa', 'Clínica integrativa', 'integrativ|funcional|ortomolec', ['integrativa'], ['saúde integrativa', 'inflamação', 'cansaço constante', 'intestino', 'hormônios'],
     'ceticismo de quem já tentou abordagens fragmentadas', 'ser avaliado como um todo, com um plano que conecta os sintomas',
     'Contraste de entendimento (fragmentado × integrado) e Pergunta aberta', 'nunca como substituto do tratamento convencional; reforçar complementaridade'),
@@ -263,7 +266,7 @@ const LISTA = [
   S('halitose', 'Halitose', 'halit|halito|mau halito', ['halitose', 'odontologia'], ['mau hálito', 'halitose', 'saburra', 'boca seca'],
     'que os outros percebam e não falem; vigilância constante do próprio hálito', 'conversar de perto sem monitorar a respiração',
     'Pergunta aberta (romper a crença de que é só higiene) e Alerta (sinais de causa não higiênica)', 'acolher, não reforçar a vergonha'),
-  S('psicologia', 'Psicologia', 'psicolog|terapia|saude mental', ['psicologia'], ['ansiedade', 'terapia', 'autoestima', 'relacionamentos', 'burnout'],
+  S('psicologia', 'Psicologia', 'psicolog|psicoterap|fazer terapia|terapeuta|saude mental', ['psicologia'], ['ansiedade', 'terapia', 'autoestima', 'relacionamentos', 'burnout'],
     'achar que terapia é para quem está mal demais; medo de se expor', 'entender o que sente e viver mais leve',
     'Pergunta aberta e Confissão (só com material real)', 'nunca autodiagnóstico, nunca prometer resultado; normas do CFP'),
   S('nutricao', 'Nutrição', 'nutri(?!olog)|aliment|emagrec|dieta', ['nutricao'], ['alimentação saudável', 'emagrecimento', 'reeducação alimentar', 'intestino', 'dieta'],
@@ -355,7 +358,7 @@ const EM_INGLES = {
   cardiologia_pediatrica: ['heart murmur child', 'pediatric cardiologist'], reproducao: ['fertility doctor', 'IVF', 'egg freezing'], fetal: ['fetal medicine', 'anatomy scan'],
   neonatologia: ['NICU', 'premature baby'], oncologia_pediatrica: ['childhood cancer'], hepatologia: ['fatty liver', 'liver health'],
   bariatrica: ['bariatric surgery', 'gastric sleeve'], coluna: ['spine surgeon', 'herniated disc'], tricologia: ['hair loss', 'dermatologist hair loss'],
-  medicina_estetica: ['botox', 'aesthetic doctor', 'filler'], hiperidrose: ['hyperhidrosis', 'excessive sweating'], integrativa: ['functional medicine', 'integrative medicine'],
+  medicina_estetica: ['botox', 'aesthetic doctor', 'filler'], endovenosa: ['IV therapy', 'iron infusion', 'vitamin deficiency'], hiperidrose: ['hyperhidrosis', 'excessive sweating'], integrativa: ['functional medicine', 'integrative medicine'],
   odontologia: ['dentist', 'teeth whitening'], odontopediatria: ['pediatric dentist', 'baby teeth'], ortodontia: ['orthodontist', 'Invisalign', 'braces'],
   implantodontia: ['dental implants'], halitose: ['bad breath', 'halitosis'], psicologia: ['therapist', 'anxiety', 'mental health'],
   nutricao: ['dietitian', 'healthy eating', 'gut health'], fisioterapia: ['physical therapist', 'back pain exercises'], fonoaudiologia: ['speech therapist', 'speech delay'],
@@ -363,3 +366,34 @@ const EM_INGLES = {
   biomedicina: ['aesthetic injector'], estetica: ['aesthetician', 'skincare routine'], marketing: ['marketing for doctors', 'healthcare marketing'],
 };
 export const palavrasEmIngles = (id) => EM_INGLES[id] || [];
+
+// ---------------------------------------------------------------------------
+// CTA que faz sentido (Carol, 08/11/2026): no nicho da saúde o convite principal é agendar.
+// ---------------------------------------------------------------------------
+
+const CTA_POR_ID = {
+  odontologia: 'Agende sua avaliação', odontopediatria: 'Agende a avaliação do seu filho', ortodontia: 'Agende sua avaliação', implantodontia: 'Agende sua avaliação',
+  halitose: 'Agende sua avaliação', psicologia: 'Agende sua sessão', nutricao: 'Agende sua consulta', fisioterapia: 'Agende sua avaliação',
+  fonoaudiologia: 'Agende uma avaliação', terapia_ocupacional: 'Agende uma avaliação', enfermagem: 'Agende o atendimento', farmacia: 'Fale com o farmacêutico',
+  biomedicina: 'Agende sua avaliação', estetica: 'Agende sua avaliação', plastica: 'Agende sua avaliação', medicina_estetica: 'Agende sua avaliação',
+  tricologia: 'Agende sua avaliação', bariatrica: 'Agende sua avaliação', endovenosa: 'Agende sua avaliação com a equipe',
+  radiologia: 'Agende seu exame', nuclear: 'Agende seu exame', patologia_clinica: 'Agende seus exames', endoscopia: 'Agende seu exame',
+  neuropediatria: 'Agende a avaliação do seu filho', pediatria: 'Agende a consulta do seu filho', hebiatria: 'Agende a consulta', psiquiatria_infantil: 'Agende a avaliação do seu filho',
+  emergencia: 'Salve e mande para quem você cuida', intensiva: 'Salve e mande para quem precisa ler', legal: 'Agende sua consulta',
+  marketing: 'Chame no direct para um diagnóstico do seu perfil',
+};
+export function ctaDaEspecialidade(e) {
+  if (!e) return '';
+  if (CTA_POR_ID[e.id]) return CTA_POR_ID[e.id];
+  return e.grupo === 'medica' || e.grupo === 'atuacao' ? 'Agende sua consulta' : '';
+}
+
+// A regra do CTA para os prompts de criação (Radar, Criar e legenda da Pauta).
+export function regraDoCta(nicho = '', { saude = true } = {}) {
+  const e = especialidadeDoTexto(nicho);
+  const principal = ctaDaEspecialidade(e);
+  if (e?.grupo === 'negocios' || (!e && !saude)) {
+    return `CTA: ligado ao objetivo da peça e ao que a pessoa faz depois (conversar no direct, salvar, comentar). ${principal ? `Convite principal sugerido: "${principal}".` : ''}`.trim();
+  }
+  return `CTA que faz sentido (cliente da saúde${e ? `, ${e.nome}` : ''}): o convite principal é agendar${principal ? ` ("${principal}")` : ' (consulta, avaliação ou sessão, conforme a profissão)'}, pelo caminho que a ficha disser (WhatsApp, link na bio, site, Doctoralia); sem caminho na ficha, "pelo link da bio". Salvar, compartilhar ou comentar só entram como segundo convite e só quando combinam com o conteúdo (ex.: "Salve para lembrar. Se você se identificou, agende sua avaliação."). Nunca "Comenta PALAVRA" como CTA principal, nunca desconto, preço, "últimas vagas" ou promessa de resultado (normas do conselho). O CTA tem que continuar a conversa da peça: quem leu sobre um sintoma é convidado a investigar esse sintoma, não um convite genérico.`;
+}

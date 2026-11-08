@@ -11,7 +11,7 @@ Como escrever:
 - Português do Brasil, na voz da cliente (primeira pessoa quando fizer sentido: "no consultório, eu..."), tom acolhedor, claro e seguro.
 - Primeira frase forte, que puxa a leitura e conversa com a dor ou a dúvida de quem lê.
 - Parágrafos curtos (1 a 3 frases), separados por uma linha em branco. Entre 60 e 160 palavras.
-- A legenda complementa a arte: não repita lâmina por lâmina; explique, dê contexto e feche com um convite simples (ex.: agendar pelo link da bio, mandar para alguém, salvar o post).
+- A legenda complementa a arte: não repita lâmina por lâmina; explique, dê contexto e feche com um convite que faça sentido para a cliente (siga a regra do CTA que vem com a cliente).
 - Siga o que a descrição do cartão pedir (tema, CTA, pontos obrigatórios) e as preferências da ficha e da memória da cliente.
 - Sem travessão (—), sem hashtags, no máximo um emoji (ou nenhum), sem jargão de marketing e sem exagero ("incrível", "revolucionário").
 - Saúde: siga as normas dos conselhos. Nada de promessa de resultado, garantia, "antes e depois", preço, desconto ou autopromoção sensacionalista.
@@ -25,6 +25,7 @@ export async function escreverLegenda({ imagens, cliente, titulo, formato, descr
       text: `<cliente nome="${limpar(cliente.nome, 120) || 'não informado'}"${cliente.saude ? ' area="saude"' : ''}>
 ${cliente.ficha || 'Ficha não preenchida.'}
 </cliente>
+${cliente.cta ? `<regra_do_cta>${cliente.cta}</regra_do_cta>\n` : ''}
 ${cliente.memoria.length ? `<ajustes_ja_pedidos>\n${cliente.memoria.map((m) => `- ${limpar(m, 300)}`).join('\n')}\n</ajustes_ja_pedidos>\n` : ''}<cartao titulo="${limpar(titulo, 200)}" formato="${limpar(formato, 40) || 'post'}">
 ${String(descricao || '').slice(0, 6000) || 'Sem descrição.'}
 </cartao>
