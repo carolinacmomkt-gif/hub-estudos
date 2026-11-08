@@ -12,8 +12,9 @@ import { configVida, emSilencio } from './avisos-vida.mjs';
 import { METODO, metodoDoNicho } from './metodo-essence.mjs';
 import {
   TEMPERATURAS, LINHAS, conferirNicho, nichosDoRadar, chaveDoRadar, datasDoNicho, lerRss, velocidade, porHora, segundos, conferirRadar,
-  radarSimples, mesclarNoticias, disparo,
+  radarSimples, mesclarNoticias, disparo, noticiasQueCrescem, amarrarNoticias,
 } from '../../js/dados-radar.js';
+import { especialidade, especialidadeDoTexto, palavrasEmIngles } from '../../js/especialidades.js';
 
 const DIA = 864e5;
 const HORA = 3600e3;
@@ -36,30 +37,58 @@ async function pedir(url, { json = true, ms = 12000 } = {}) {
 // Sinais
 // ---------------------------------------------------------------------------
 
-// Vídeos e Shorts em português dos últimos 7 dias, pelas palavras do nicho (até 3 buscas: cada
-// busca custa 100 da cota diária de 10.000 da YouTube Data API).
-export async function buscarYoutube(palavras, agora = Date.now()) {
+// Vídeos e Shorts dos últimos 7 dias (decisão da Carol, 08/11/2026): do Brasil (em português) e
+// dos EUA (em inglês); de outro país só quando explode (3× o mais rápido do Brasil e dos EUA).
+// Cada busca custa 100 da cota diária de 10.000 da YouTube Data API: até 4 buscas (as palavras vão
+// juntas com "|", o OU do YouTube), mais 1 para os vídeos e 1 para o país dos canais.
+export const FATOR_MUNDO = 3;
+export async function buscarYoutube(palavras, agora = Date.now(), { ingles = [] } = {}) {
   const chave = process.env.YOUTUBE_API_KEY;
   if (!chave) return { videos: [], aviso: 'Sem a chave do YouTube (YOUTUBE_API_KEY na Netlify): o radar usou só as notícias, as datas e a pesquisa na web.' };
   const depois = new Date(agora - 7 * DIA).toISOString();
-  const ids = new Set();
-  for (const p of palavras.slice(0, 3)) {
-    const q = new URLSearchParams({ part: 'id', q: p, type: 'video', order: 'viewCount', publishedAfter: depois, regionCode: 'BR', relevanceLanguage: 'pt', maxResults: '12', key: chave });
+  const ou = (lista) => lista.map((p) => (/\s/.test(p) ? `"${p}"` : p)).join('|');
+  const buscas = [
+    { origem: 'BR', q: ou(palavras.slice(0, 3)), regionCode: 'BR', relevanceLanguage: 'pt' },
+    palavras.length > 3 && { origem: 'BR', q: ou(palavras.slice(3, 6)), regionCode: 'BR', relevanceLanguage: 'pt' },
+    ingles.length && { origem: 'US', q: ou(ingles.slice(0, 3)), regionCode: 'US', relevanceLanguage: 'en' },
+    ingles.length && { origem: 'mundo', q: ou(ingles.slice(0, 3)) },
+  ].filter((x) => x && x.q);
+  const origem = new Map();
+  for (const { origem: o, ...filtro } of buscas) {
+    const q = new URLSearchParams({ part: 'id', type: 'video', order: 'viewCount', publishedAfter: depois, maxResults: '15', key: chave, ...filtro });
     const r = await pedir(`${baseYoutube()}/search?${q}`);
-    for (const it of r.items || []) if (it.id?.videoId) ids.add(it.id.videoId);
+    for (const it of r.items || []) if (it.id?.videoId && !origem.has(it.id.videoId)) origem.set(it.id.videoId, o);
   }
-  if (!ids.size) return { videos: [] };
-  const q = new URLSearchParams({ part: 'snippet,statistics,contentDetails', id: [...ids].slice(0, 50).join(','), key: chave });
+  if (!origem.size) return { videos: [] };
+  const q = new URLSearchParams({ part: 'snippet,statistics,contentDetails', id: [...origem.keys()].slice(0, 50).join(','), key: chave });
   const r = await pedir(`${baseYoutube()}/videos?${q}`);
-  const videos = (r.items || []).map((v) => {
+  // O país do canal (quando o canal informa); sem ele, vale a busca de onde o vídeo veio.
+  const canais = [...new Set((r.items || []).map((v) => v.snippet?.channelId).filter(Boolean))].slice(0, 50);
+  const paisDoCanal = new Map();
+  if (canais.length) {
+    try {
+      const c = await pedir(`${baseYoutube()}/channels?${new URLSearchParams({ part: 'snippet', id: canais.join(','), key: chave })}`);
+      for (const it of c.items || []) if (it.snippet?.country) paisDoCanal.set(it.id, String(it.snippet.country).toUpperCase());
+    } catch (erro) {
+      console.warn('radar youtube canais:', erro?.message);
+    }
+  }
+  const todos = (r.items || []).map((v) => {
     const short = segundos(v.contentDetails?.duration) <= 180;
+    const o = origem.get(v.id);
+    const pais = paisDoCanal.get(v.snippet?.channelId) || (o === 'mundo' ? '' : o);
     const video = {
       titulo: String(v.snippet?.title || '').slice(0, 160), canal: String(v.snippet?.channelTitle || '').slice(0, 80),
-      publicado: v.snippet?.publishedAt, views: Number(v.statistics?.viewCount) || 0, short,
+      publicado: v.snippet?.publishedAt, views: Number(v.statistics?.viewCount) || 0, short, pais,
       link: short ? `https://www.youtube.com/shorts/${v.id}` : `https://www.youtube.com/watch?v=${v.id}`,
     };
     return { ...video, porHora: porHora(video, agora) };
-  }).sort((a, b) => b.porHora - a.porHora);
+  });
+  const daqui = todos.filter((v) => v.pais === 'BR' || v.pais === 'US');
+  const teto = Math.max(0, ...daqui.map((v) => v.porHora));
+  const deFora = todos.filter((v) => v.pais !== 'BR' && v.pais !== 'US' && teto > 0 && v.porHora >= FATOR_MUNDO * teto)
+    .map((v) => ({ ...v, fora: true }));
+  const videos = [...daqui, ...deFora].sort((a, b) => b.porHora - a.porHora);
   return { videos: videos.slice(0, 12) };
 }
 
@@ -118,7 +147,7 @@ export async function atualizarNoticias(userId, nicho, agora = Date.now()) {
 // ---------------------------------------------------------------------------
 
 const SYSTEM = `Você é o radar de conteúdo da Carol, social media de uma agência de marketing para médicos e profissionais da saúde.
-Para um nicho, você aponta o que está subindo e vale postar nas próximas 2 semanas, cruzando os sinais que o app juntou (vídeos e Shorts do YouTube com visualizações por hora, notícias do Google Notícias com a velocidade de cada termo, datas da saúde e campanhas) com uma pesquisa na web sua sobre o que veículos e criadores brasileiros estão comentando e as perguntas que as pessoas estão fazendo.
+Para um nicho, você aponta o que está subindo e vale postar nas próximas 2 semanas, cruzando os sinais que o app juntou (vídeos e Shorts do YouTube do Brasil e dos EUA com visualizações por hora, mais algum de outro país só quando explodiu (fora_do_brasil_e_eua), notícias do Google Notícias com a velocidade de cada termo, datas da saúde e campanhas) com uma pesquisa na web sua sobre o que veículos e criadores brasileiros estão comentando e as perguntas que as pessoas estão fazendo.
 Depois, para cada cliente do nicho, você sugere conteúdos prontos para produzir, no método de criação abaixo, usando a ficha e a memória de feedback da cliente.
 Regras do radar:
 - Só aponte o que os sinais ou a sua pesquisa mostram. Não invente números nem tendências. Não prometa que algo vai viralizar.
@@ -132,7 +161,11 @@ Regras do radar:
 Regras das sugestões (2 ou 3 por cliente, diferentes entre si em formato e linha editorial):
 - formato: Carrossel, Reels falado, Reels de texto na tela, Stories ou Post. linha: ${LINHAS.join(', ')}. estrutura: a estrutura de exibição do método.
 - gap em uma linha (crença comum / realidade), gancho pronto, esqueleto (os slides do carrossel ou os blocos do Reels, um item por slide ou bloco, já escrito na fala contada), cta ligado ao objetivo, cuidado (norma do conselho ou do nicho) e porque_agora (o sinal do radar que justifica postar agora, com o link em link).
-- Respeite a ficha e a memória da cliente (o que ela já pediu, o que não gosta). Nunca invente caso, paciente ou número: use [espaço para preencher].
+- Parta das notícias que mais estão crescendo (a lista vem na ordem: as que acabaram de chegar e as do termo que mais subiu primeiro; "subida" é quantas vezes o termo acelerou em 48 h). Pelo menos 2 das sugestões de cada cliente saem de UMA notícia específica da lista: em noticia, copie o titulo e o link exatamente como vieram. A outra pode sair de uma data, de um vídeo em alta ou da sua pesquisa (aí noticia fica vazia).
+- caso: o fato da notícia contado como uma situação próxima de quem lê, para a pessoa se ver nele (ex. de espírito, não de fórmula: uma notícia sobre uma noiva que pediu para a amiga engordar para o casamento vira "imagina se a sua amiga te pedisse para engordar 54 quilos para o casamento dela, o que você faria?"). Varie o jeito de abrir: pergunta, cena, "aconteceu essa semana", confissão de quem atende, número da notícia. Nunca repita a mesma abertura nas sugestões. O gancho sai do caso.
+- Depois do caso, o esqueleto desenvolve o assunto pela especialidade da cliente: o que ela explicaria sobre aquele caso, com o medo e o desejo do público do nicho, a estrutura de exibição e o cuidado do conselho.
+- O fato vem só da notícia: não acrescente detalhe que ela não diz. Não exponha nem julgue a pessoa da notícia (nada de nome de quem não é figura pública, nada de deboche), nada de sensacionalismo.
+- Respeite a ficha e a memória da cliente (o que ela já pediu, o que não gosta). Nunca invente caso de paciente, número ou depoimento: use [espaço para preencher].
 Português do Brasil. Entre 4 e 8 itens no radar.
 
 ${METODO}`;
@@ -149,6 +182,7 @@ const ESQUEMA = objeto({
     sugestoes: lista('Sugestões de conteúdo', objeto({
       titulo: texto, formato: texto, linha: texto, estrutura: texto, gap: texto, gancho: texto,
       esqueleto: lista('Slides ou blocos', texto), cta: texto, cuidado: texto, porque_agora: texto, link: texto,
+      noticia: objeto({ titulo: texto, link: texto }), caso: texto,
     })),
   })),
 });
@@ -158,14 +192,15 @@ export async function analisarComIa({ nicho, hoje, videos, noticias, termos, dat
     hoje, nicho: { nome: nicho.nome, palavras: nicho.palavras },
     clientes: clientes.map((c) => ({ nome: c.nome, nicho: c.nicho, ficha: c.ficha, memoria: c.memoria })),
     datas, termos,
-    videos: videos.map((v) => ({ titulo: v.titulo, canal: v.canal, por_hora: v.porHora, short: v.short, link: v.link })),
-    noticias: noticias.slice(0, 25).map((n) => ({ titulo: n.titulo, fonte: n.fonte, data: n.data, link: n.link, nova: Boolean(n.nova) })),
+    videos: videos.map((v) => ({ titulo: v.titulo, canal: v.canal, pais: v.pais || 'outro', fora_do_brasil_e_eua: Boolean(v.fora), por_hora: v.porHora, short: v.short, link: v.link })),
+    noticias: noticiasQueCrescem(noticias, termos).slice(0, 25).map((n) => ({ titulo: n.titulo, fonte: n.fonte, data: n.data, link: n.link, nova: Boolean(n.nova), termo: n.termo, subida: n.subida })),
   };
   const r = await pedirJson({
     system: `${SYSTEM}\n\n${metodoDoNicho(nicho)}`, conteudo: JSON.stringify(pedido), esquema: ESQUEMA, maxTokens: 16000, esforco: 'medium', cliente,
     ferramentas: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5, user_location: { type: 'approximate', country: 'BR' } }],
   });
-  return conferirRadar(r);
+  const radar = conferirRadar(r);
+  return { ...radar, clientes: amarrarNoticias(radar.clientes, noticias) };
 }
 
 // Ficha e memória das clientes do nicho (para as sugestões).
@@ -192,7 +227,7 @@ export async function montarRadar(userId, pedido, agora = Date.now()) {
   try {
     let videos = [];
     try {
-      const y = await buscarYoutube(nicho.palavras, agora);
+      const y = await buscarYoutube(nicho.palavras, agora, { ingles: palavrasEmIngles(especialidade(nicho.id)?.id || especialidadeDoTexto(nicho.nome)?.id) });
       videos = y.videos;
       if (y.aviso) avisos.push(y.aviso);
     } catch (erro) {

@@ -196,6 +196,8 @@ function cartaoSugestao(nicho, cliente, x, i) {
     <article class="rd-sugestao">
       <p class="rd-temp">${esc([x.formato, x.linha, x.estrutura].filter(Boolean).join(' · '))}</p>
       <h5 class="rd-tema">${esc(x.titulo)}</h5>
+      ${x.noticia ? `<p class="rd-da-noticia"><span>Partiu desta notícia</span> <a href="${esc(x.noticia.link)}" target="_blank" rel="noopener">${esc(x.noticia.titulo)} ↗</a>${x.noticia.fonte || x.noticia.data ? ` <small>${esc([x.noticia.fonte, fmtCurtoData(x.noticia.data)].filter(Boolean).join(' · '))}</small>` : ''}</p>` : ''}
+      ${x.caso ? `<p class="rd-caso"><strong>O caso:</strong> ${esc(x.caso)}</p>` : ''}
       ${x.gancho ? `<blockquote class="rd-gancho">${esc(x.gancho)}</blockquote>` : ''}
       ${x.gap ? `<p class="campo-ajuda"><strong>Gap:</strong> ${esc(x.gap)}</p>` : ''}
       ${x.esqueleto?.length ? `<details class="rd-esqueleto"><summary>${x.esqueleto.length} ${/reels/i.test(x.formato) ? 'blocos do roteiro' : 'slides'}</summary><ol>${x.esqueleto.map((e) => `<li>${esc(e)}</li>`).join('')}</ol></details>` : ''}
@@ -208,6 +210,17 @@ function cartaoSugestao(nicho, cliente, x, i) {
       </div>
     </article>`;
 }
+
+// A bandeira do país do vídeo (pelas letras do código do país: BR → 🇧🇷); sem país, um globo.
+function bandeira(pais) {
+  const p = String(pais || '').toUpperCase();
+  if (!/^[A-Z]{2}$/.test(p)) return '🌐';
+  return String.fromCodePoint(...[...p].map((l) => 0x1f1e6 + l.charCodeAt(0) - 65));
+}
+const fmtCurtoData = (d) => {
+  const t = Date.parse(d || '');
+  return Number.isNaN(t) ? '' : new Date(t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+};
 
 function itemDoRadar(x, i, nicho) {
   const t = temp(x.temperatura);
@@ -231,9 +244,9 @@ function sinais(r, aberto = false) {
   return `
     <details class="card rd-sinais"${aberto ? ' open' : ''}>
       <summary><strong>Os sinais por trás do radar</strong></summary>
-      ${videos.length ? `<h3 class="rd-sub">Vídeos subindo no YouTube (7 dias)</h3><ul class="lista-simples">${videos.map((v) => `
+      ${videos.length ? `<h3 class="rd-sub">Vídeos subindo no YouTube (7 dias, Brasil e EUA)</h3><ul class="lista-simples">${videos.map((v) => `
         <li><a href="${esc(v.link)}" target="_blank" rel="noopener">${esc(v.titulo)}</a>
-          <span class="campo-ajuda">${esc(v.canal)} · ${Number(v.porHora || 0).toLocaleString('pt-BR')}/hora${v.short ? ' · Short' : ''}</span></li>`).join('')}</ul>` : ''}
+          <span class="campo-ajuda">${bandeira(v.pais)} ${esc(v.canal)} · ${Number(v.porHora || 0).toLocaleString('pt-BR')}/hora${v.short ? ' · Short' : ''}${v.fora ? ' · fora do Brasil e dos EUA, muito acima da média' : ''}</span></li>`).join('')}</ul>` : ''}
       ${termos.length ? `<h3 class="rd-sub">Notícias por termo</h3><ul class="lista-simples">${termos.map((t) => `
         <li><span>${esc(t.termo)}</span><span class="campo-ajuda">${t.recentes} em 48 h${t.subida ? ` · ${String(t.subida).replace('.', ',')}× o ritmo` : ''}</span></li>`).join('')}</ul>` : ''}
       ${datas.length ? `<h3 class="rd-sub">Datas do período</h3><ul class="lista-simples">${datas.map((d) => `

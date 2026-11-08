@@ -182,7 +182,7 @@ function sugestaoParaCriar(id, cliente, i) {
   const c = (obterEstado().clientesTrabalho || []).find((y) => !y.excluido_em && y.nome === cliente);
   const formato = (x.formato ? FORMATOS.find((f) => f.toLowerCase().startsWith(String(x.formato).toLowerCase())) : null) || FORMATO_DO_CRIAR[String(x.formato || '').toLowerCase().split(' ')[0]] || FORMATOS[0];
   const objetivo = { 'técnico': 'Educação', posicionamento: 'Posicionamento', 'conexão': 'Conexão', venda: 'Venda' }[String(x.linha || '').toLowerCase()] || 'Educação';
-  const tema = [x.titulo, x.gap ? `Gap: ${x.gap}` : '', x.estrutura ? `Estrutura: ${x.estrutura}` : '', x.porque_agora ? `Por que agora: ${x.porque_agora}` : ''].filter(Boolean).join('\n');
+  const tema = [x.titulo, x.noticia ? `Notícia: ${x.noticia.titulo} (${x.noticia.link})` : '', x.caso ? `O caso: ${x.caso}` : '', x.gap ? `Gap: ${x.gap}` : '', x.estrutura ? `Estrutura: ${x.estrutura}` : '', x.porque_agora ? `Por que agora: ${x.porque_agora}` : ''].filter(Boolean).join('\n');
   const texto = [x.gancho, ...(x.esqueleto || []), x.cta ? `CTA: ${x.cta}` : ''].filter(Boolean).join('\n\n');
   atualizarEstado({ criar: { cliente: c?.chave || '', formato, objetivo, tema, titulo: x.titulo, texto }, criarStatus: x.cuidado ? `Cuidado: ${x.cuidado}` : '' });
   location.hash = '#criar';
@@ -221,7 +221,7 @@ export function cliqueRadar(alvo) {
     case 'radar-criar-sugestao': sugestaoParaCriar(alvo.dataset.id, alvo.dataset.cliente || '', Number(alvo.dataset.i)); return true;
     case 'radar-copiar-sugestao': {
       const x = sugestao(alvo.dataset.id, alvo.dataset.cliente || '', Number(alvo.dataset.i));
-      if (x) copiar([x.titulo, [x.formato, x.linha, x.estrutura].filter(Boolean).join(' · '), x.gancho ? `Gancho: ${x.gancho}` : '', x.gap ? `Gap: ${x.gap}` : '', ...x.esqueleto.map((e, j) => `${j + 1}) ${e}`), x.cta ? `CTA: ${x.cta}` : '', x.cuidado ? `Cuidado: ${x.cuidado}` : ''].filter(Boolean).join('\n'), 'Sugestão copiada.');
+      if (x) copiar([x.titulo, [x.formato, x.linha, x.estrutura].filter(Boolean).join(' · '), x.noticia ? `Notícia: ${x.noticia.titulo} ${x.noticia.link}` : '', x.caso ? `O caso: ${x.caso}` : '', x.gancho ? `Gancho: ${x.gancho}` : '', x.gap ? `Gap: ${x.gap}` : '', ...x.esqueleto.map((e, j) => `${j + 1}) ${e}`), x.cta ? `CTA: ${x.cta}` : '', x.cuidado ? `Cuidado: ${x.cuidado}` : ''].filter(Boolean).join('\n'), 'Sugestão copiada.');
       return true;
     }
     case 'radar-criar': levarParaCriar(alvo.dataset.id, Number(alvo.dataset.i)); return true;

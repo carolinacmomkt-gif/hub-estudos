@@ -339,3 +339,37 @@
 .rd-form {
   max-width: 820px;
 }
+
+/* Sugestão que partiu de uma notícia: a notícia com o link e o caso contado (Carol, 08/11/2026). */
+.rd-da-noticia {
+  display: grid;
+  gap: 2px;
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--cor-destaque);
+  border-radius: 0 var(--raio) var(--raio) 0;
+  background: var(--cor-superficie-2);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.rd-da-noticia > span {
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rd-da-noticia a {
+  font-weight: 600;
+}
+
+.rd-da-noticia small {
+  color: var(--cor-texto-suave);
+}
+
+.rd-caso {
+  margin: 8px 0 0;
+  max-width: 68ch;
+}

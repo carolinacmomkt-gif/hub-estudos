@@ -327,3 +327,39 @@ export function idPeloNome(nome) {
   const e = ESPECIALIDADES.find((x) => semAcento(x.nome) === t) || especialidadeDoTexto(nome);
   return e?.id || '';
 }
+
+// Como o público dos EUA busca no YouTube (para os vídeos dos EUA e os que explodem no mundo).
+// Nicho escrito à mão, sem especialidade da lista, busca só no Brasil.
+const EM_INGLES = {
+  acupuntura: ['acupuncture', 'acupuncture for pain'], alergia: ['allergy', 'food allergy', 'allergist'], anestesiologia: ['anesthesia', 'anesthesiologist'],
+  angiologia: ['varicose veins', 'spider veins'], cardiologia: ['heart health', 'cardiologist', 'heart attack signs'],
+  cirurgia_cardiovascular: ['heart surgery', 'bypass surgery'], cirurgia_mao: ['carpal tunnel', 'hand surgeon'], cabeca_pescoco: ['thyroid nodule', 'head and neck cancer'],
+  cirurgia_digestivo: ['gallbladder surgery', 'hernia surgery'], cirurgia_geral: ['general surgeon', 'hernia surgery'], cirurgia_oncologica: ['cancer surgery', 'surgical oncologist'],
+  cirurgia_pediatrica: ['pediatric surgery'], plastica: ['plastic surgery', 'plastic surgeon'], cirurgia_toracica: ['lung nodule', 'thoracic surgeon'],
+  cirurgia_vascular: ['varicose veins', 'blood clot', 'vascular surgeon'], clinica_medica: ['internal medicine', 'annual checkup'], coloproctologia: ['hemorrhoids', 'colonoscopy', 'colorectal cancer'],
+  dermatologia: ['dermatologist', 'skincare', 'acne'], endocrinologia: ['endocrinologist', 'thyroid', 'GLP-1'], endoscopia: ['endoscopy', 'colonoscopy prep'],
+  gastroenterologia: ['gut health', 'gastroenterologist', 'IBS'], genetica: ['genetic testing', 'rare disease'], geriatria: ['healthy aging', 'dementia signs'],
+  ginecologia: ['gynecologist', 'menopause', 'endometriosis'], obstetricia: ['pregnancy', 'OB GYN', 'postpartum'], hematologia: ['anemia', 'hematologist'],
+  homeopatia: ['homeopathy'], infectologia: ['infectious disease doctor', 'vaccines'], mastologia: ['breast cancer', 'mammogram'],
+  emergencia: ['ER doctor', 'emergency medicine'], familia: ['family medicine', 'family doctor'], trabalho_medicina: ['occupational health', 'burnout'],
+  trafego: ['drowsy driving'], esportiva: ['sports medicine', 'running injury'], fisiatria: ['physical medicine rehabilitation', 'PM&R'],
+  intensiva: ['ICU doctor', 'intensive care'], legal: ['forensic pathologist'], nuclear: ['nuclear medicine', 'PET scan'],
+  preventiva: ['preventive medicine'], nefrologia: ['kidney health', 'nephrologist', 'kidney stones'], neurocirurgia: ['neurosurgeon', 'herniated disc'],
+  neurologia: ['neurologist', 'migraine', 'stroke signs'], nutrologia: ['weight loss doctor', 'supplements'], oftalmologia: ['eye doctor', 'ophthalmologist', 'LASIK'],
+  oncologia: ['oncologist', 'cancer treatment'], ortopedia: ['orthopedic surgeon', 'knee pain', 'back pain'], otorrino: ['ENT doctor', 'sinusitis', 'tinnitus'],
+  patologia: ['pathologist', 'biopsy results'], patologia_clinica: ['blood test results', 'lab results explained'], pediatria: ['pediatrician', 'baby health'],
+  pneumologia: ['pulmonologist', 'asthma', 'lung health'], psiquiatria: ['psychiatrist', 'ADHD', 'anxiety'], radiologia: ['radiologist', 'MRI'],
+  radioterapia: ['radiation therapy'], reumatologia: ['rheumatologist', 'arthritis', 'lupus'], urologia: ['urologist', 'prostate'],
+  neuropediatria: ['autism signs', 'speech delay', 'pediatric neurologist'], hebiatria: ['teen health', 'adolescent medicine'], sono: ['sleep doctor', 'insomnia', 'sleep apnea'],
+  dor: ['chronic pain', 'pain management'], endocrino_pediatrica: ['early puberty', 'pediatric endocrinologist'], psiquiatria_infantil: ['child psychiatrist', 'ADHD kids'],
+  cardiologia_pediatrica: ['heart murmur child', 'pediatric cardiologist'], reproducao: ['fertility doctor', 'IVF', 'egg freezing'], fetal: ['fetal medicine', 'anatomy scan'],
+  neonatologia: ['NICU', 'premature baby'], oncologia_pediatrica: ['childhood cancer'], hepatologia: ['fatty liver', 'liver health'],
+  bariatrica: ['bariatric surgery', 'gastric sleeve'], coluna: ['spine surgeon', 'herniated disc'], tricologia: ['hair loss', 'dermatologist hair loss'],
+  medicina_estetica: ['botox', 'aesthetic doctor', 'filler'], hiperidrose: ['hyperhidrosis', 'excessive sweating'], integrativa: ['functional medicine', 'integrative medicine'],
+  odontologia: ['dentist', 'teeth whitening'], odontopediatria: ['pediatric dentist', 'baby teeth'], ortodontia: ['orthodontist', 'Invisalign', 'braces'],
+  implantodontia: ['dental implants'], halitose: ['bad breath', 'halitosis'], psicologia: ['therapist', 'anxiety', 'mental health'],
+  nutricao: ['dietitian', 'healthy eating', 'gut health'], fisioterapia: ['physical therapist', 'back pain exercises'], fonoaudiologia: ['speech therapist', 'speech delay'],
+  terapia_ocupacional: ['occupational therapist', 'sensory processing'], enfermagem: ['nurse tips'], farmacia: ['pharmacist', 'drug interactions'],
+  biomedicina: ['aesthetic injector'], estetica: ['aesthetician', 'skincare routine'], marketing: ['marketing for doctors', 'healthcare marketing'],
+};
+export const palavrasEmIngles = (id) => EM_INGLES[id] || [];

@@ -174,7 +174,40 @@ export function conferirSugestao(x) {
     cuidado: limpo(x?.cuidado, 220),
     porque_agora: limpo(x?.porque_agora, 240),
     link: linkOk(x?.link),
+    // A notícia de onde a sugestão partiu (o fato vem dela) e o caso contado a partir dela.
+    noticia: conferirNoticiaDaSugestao(x?.noticia),
+    caso: limpo(x?.caso, 400),
   };
+}
+function conferirNoticiaDaSugestao(n) {
+  const link = linkOk(n?.link);
+  const titulo = limpo(n?.titulo, 200);
+  return link && titulo ? { titulo, link, fonte: limpo(n?.fonte, 80), data: limpo(n?.data, 30) || null } : null;
+}
+
+// As notícias na ordem do que mais cresce: as que acabaram de chegar, depois as do termo que mais
+// subiu, depois as mais novas. Cada uma leva a subida do termo dela (para a IA e para a tela).
+export function noticiasQueCrescem(noticias = [], termos = []) {
+  const subida = new Map(termos.map((t) => [t.termo, t.subida || 0]));
+  return noticias.map((n) => ({ ...n, subida: subida.get(n.termo) || 0 }))
+    .sort((a, b) => Number(Boolean(b.nova)) - Number(Boolean(a.nova)) || b.subida - a.subida || String(b.data || '').localeCompare(String(a.data || '')));
+}
+
+// A sugestão só fica com a notícia se ela veio mesmo dos sinais (o título e a fonte são os nossos,
+// não os reescritos pela IA). Sem notícia de verdade, o caso contado sai junto.
+export function amarrarNoticias(clientes, noticias) {
+  const porLink = new Map(noticias.filter((n) => n.link).map((n) => [n.link, n]));
+  const saida = {};
+  for (const [nome, c] of Object.entries(clientes || {})) {
+    saida[nome] = {
+      ...c,
+      sugestoes: (c.sugestoes || []).map((x) => {
+        const n = x.noticia && porLink.get(x.noticia.link);
+        return n ? { ...x, noticia: { titulo: n.titulo, link: n.link, fonte: n.fonte || '', data: n.data || null } } : { ...x, noticia: null, caso: '' };
+      }),
+    };
+  }
+  return saida;
 }
 
 // Sem IA: os vídeos que mais aceleram, os termos com notícia subindo e as datas do período.
@@ -189,14 +222,22 @@ export function radarSimples({ nicho, videos = [], noticias = [], termos = [], d
   for (const v of videos.slice(0, 4)) {
     itens.push({ tema: v.titulo, temperatura: 'subindo', porque: `${v.porHora.toLocaleString('pt-BR')} visualizações por hora no YouTube (${v.canal}).`, janela: 'Esta semana', formato: v.short ? 'Reels' : '', gancho: '', serve_para: nicho.clientes, links: [v.link] });
   }
-  // Sem IA, uma sugestão-base por cliente a partir do que mais subiu (para ela completar).
-  const base = itens.slice(0, 2);
+  // Sem IA, uma sugestão-base por cliente a partir da notícia que mais cresce e do que mais subiu
+  // (para ela completar o caso e o desenvolvimento).
+  const topo = noticiasQueCrescem(noticias, termos)[0];
+  const daNoticia = topo ? [{
+    titulo: topo.titulo, formato: 'Reels falado', linha: 'conexão', estrutura: 'Pergunta aberta',
+    gap: 'crença comum: [complete] / realidade: [complete]', gancho: '', esqueleto: [], cta: 'Comenta o que você faria', cuidado: '',
+    porque_agora: `${topo.nova ? 'Notícia que acabou de sair' : 'Notícia do momento'}${topo.subida >= 1.5 ? `; o assunto subiu ${String(topo.subida).replace('.', ',')}× em 48 h` : ''}.`,
+    link: topo.link, noticia: topo, caso: '[conte o caso da notícia como uma situação próxima de quem lê]',
+  }] : [];
+  const base = itens.slice(0, 2 - Math.min(1, daNoticia.length));
   const clientes = nicho.clientes.map((cliente) => ({
     cliente,
-    sugestoes: base.map((x) => ({
+    sugestoes: [...daNoticia, ...base.map((x) => ({
       titulo: x.tema, formato: x.formato || 'Carrossel', linha: 'técnico', estrutura: x.temperatura === 'data_certa' ? 'Linear clássica' : 'Alerta',
       gap: 'crença comum: [complete] / realidade: [complete]', gancho: '', esqueleto: [], cta: 'Salve para lembrar', cuidado: '', porque_agora: x.porque, link: x.links?.[0] || null,
-    })),
+    }))],
   }));
   return conferirRadar({ itens, noticias: noticias.slice(0, 8).map((n) => ({ ...n, porque: '' })), briefing: '', clientes });
 }
@@ -280,6 +321,8 @@ export function textoDoRadar(nicho, r, { formato = 'whatsapp', cliente = null } 
     sug.forEach((x, i) => {
       linhas.push('', t3(`${i + 1}. ${x.titulo}`));
       linhas.push(`${[x.formato, x.linha, x.estrutura].filter(Boolean).join(' · ')}`);
+      if (x.noticia) linhas.push(md ? `Partiu da notícia: [${x.noticia.titulo}](${x.noticia.link})${x.noticia.fonte ? ` · ${x.noticia.fonte}` : ''}` : `Partiu da notícia: ${x.noticia.titulo}${x.noticia.fonte ? ` (${x.noticia.fonte})` : ''} ${x.noticia.link}`);
+      if (x.caso) linhas.push(`O caso: ${x.caso}`);
       if (x.gap) linhas.push(`Gap: ${x.gap}`);
       if (x.gancho) linhas.push(`Gancho: ${x.gancho}`);
       x.esqueleto.forEach((e, j) => linhas.push(`${j + 1}) ${e}`));

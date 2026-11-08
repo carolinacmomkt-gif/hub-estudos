@@ -43,6 +43,8 @@ export function blocosDoRadar(nicho, r, { cliente = null } = {}) {
     lista.forEach((x, i) => {
       add('t3', `${i + 1}. ${x.titulo}`);
       add('meta', [x.formato, x.linha, x.estrutura].filter(Boolean).join(' · '));
+      if (x.noticia) add('p', `Partiu da notícia: ${x.noticia.titulo}${x.noticia.fonte ? ` (${x.noticia.fonte})` : ''} · ${x.noticia.link}`);
+      if (x.caso) add('p', `O caso: ${x.caso}`);
       if (x.gancho) add('gancho', x.gancho);
       if (x.gap) add('p', `Gap: ${x.gap}`);
       x.esqueleto.forEach((e, j) => add('li', `${j + 1}. ${e}`));
