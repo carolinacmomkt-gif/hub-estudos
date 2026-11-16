@@ -1,5 +1,5 @@
-// Radar do nicho sozinho, UMA VEZ POR DIA (Carol, 16/11/2026, para gastar menos crédito da Netlify):
-// às 7h31 de Brasília lê as notícias e pede a análise com a IA (em segundo plano, pela
+// Radar do nicho sozinho, só SEGUNDA E QUINTA (Carol, 16/11/2026, para gastar menos crédito da Netlify):
+// às 7h31 de Brasília (segunda prepara a semana; quinta pega o urgente do fim de semana) lê as notícias e pede a análise com a IA (em segundo plano, pela
 // radar-background), que avisa no celular só as urgentes. Atualizar agora, no app, continua valendo.
 
 import { banco } from '../lib/supabase.mjs';
@@ -17,5 +17,5 @@ export default async () => {
   return new Response('ok');
 };
 
-// 10:31 UTC = 7h31 em Brasília.
-export const config = { schedule: '31 10 * * *' };
+// 10:31 UTC = 7h31 em Brasília, segunda (1) e quinta (4).
+export const config = { schedule: '31 10 * * 1,4' };

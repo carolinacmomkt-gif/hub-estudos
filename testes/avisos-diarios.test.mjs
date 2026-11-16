@@ -34,8 +34,8 @@ test('mais de 6 coisas: mostra 6 e "e mais N"', () => {
 
 test('tarefas automáticas: no máximo 1 vez por dia (trabalho a cada 2 h)', () => {
   assert.equal(cfgAvisos.schedule, '45 10 * * *');
-  assert.equal(cfgRadar.schedule, '31 10 * * *');
+  assert.equal(cfgRadar.schedule, '31 10 * * 1,4');
   assert.equal(cfgDemandas.schedule, '0 10 * * *');
   assert.equal(cfgSincronizar.schedule, '0 9 * * *');
-  assert.equal(cfgTrabalho.schedule, '17 10-22/2 * * *');
+  assert.equal(cfgTrabalho.schedule, '17 10,15,20 * * 1-5');
 });

@@ -62,7 +62,7 @@ export function lerDemandas({ silencioso = false } = {}) {
   return lendo;
 }
 
-// Ao abrir o app: lê de novo se a última leitura tem mais de 1h (a função agendada lê a cada 2h).
+// Ao abrir o app: lê de novo se a última leitura tem mais de 1h (a função agendada lê uma vez por dia, às 7h).
 export async function lerDemandasSeFaz() {
   if (!navigator.onLine) return;
   const conexoes = (await listar('conexoes')).filter((c) => ['trello', 'notion'].includes(c.servico) && c.status === 'conectado');

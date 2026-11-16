@@ -53,7 +53,7 @@ function telaMontar(estado, nichos) {
       <section class="card rd-como">
         <h2 class="card-titulo">Como o radar funciona</h2>
         <ol class="rd-como-lista">
-          <li><strong>Atualiza sozinho</strong> uma vez por dia, às 7h30, e quando você toca em Atualizar agora.</li>
+          <li><strong>Atualiza sozinho</strong> na segunda e na quinta, às 7h30, e quando você toca em Atualizar agora.</li>
           <li><strong>Avisa no celular</strong> o que é urgente (prazo em até 3 dias), com tempo para criar.</li>
           <li><strong>Uma caixa por cliente:</strong> quantas notícias novas, quais são e as fontes.</li>
           <li><strong>Sugestões no seu método:</strong> formato, linha editorial, gancho, slides ou roteiro, CTA e o cuidado do conselho.</li>

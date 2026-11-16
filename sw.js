@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v117';
+const VERSAO = 'hub-v118';
 
 const ARQUIVOS = [
   './',
@@ -15,6 +15,7 @@ const ARQUIVOS = [
   './css/calendario.css',
   './js/tema-inicial.js',
   './js/main.js',
+  './js/dados-backup.js',
   './js/tema.js',
   './js/estado.js',
   './js/rotas.js',
@@ -260,7 +261,7 @@ const ARQUIVOS = [
 ];
 
 self.addEventListener('install', (evento) => {
-  evento.waitUntil(caches.open(VERSAO).then((cache) => cache.addAll(ARQUIVOS)));
+  evento.waitUntil(caches.open(VERSAO).then((cache) => cache.addAll(ARQUIVOS.map((u) => new Request(u, { cache: 'reload' })))));
 });
 
 self.addEventListener('activate', (evento) => {
@@ -282,7 +283,7 @@ self.addEventListener('fetch', (evento) => {
 
   // Só arquivos do próprio app. Funções da Netlify e o Supabase nunca passam pelo cache.
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith('/.netlify/')) return;
+  if (url.pathname.startsWith('/.netlify/') || url.pathname === '/config-publica.json') return;
 
   // Abrir o app: tenta a rede e, sem internet, usa a cópia guardada.
   if (request.mode === 'navigate') {
@@ -299,40 +300,21 @@ self.addEventListener('fetch', (evento) => {
     return;
   }
 
-  // Estilos e scripts do app: primeiro a rede (com até 3 s), senão a cópia guardada. Assim a tela nunca
-  // mistura um arquivo novo com um antigo (ex.: telas novas com as cores da versão anterior).
-  if (/\.(css|js|mjs)$/.test(url.pathname) && !url.pathname.includes('/vendor/')) {
-    evento.respondWith((async () => {
-      const cache = await caches.open(VERSAO);
-      const daRede = fetch(request, { cache: 'no-cache' }).then((resposta) => {
-        if (resposta.ok) cache.put(request, resposta.clone());
-        return resposta;
-      });
-      const espera = new Promise((resolver) => { setTimeout(resolver, 3000, null); });
-      try {
-        const primeiro = await Promise.race([daRede, espera]);
-        if (primeiro) return primeiro;
-      } catch { /* sem internet: usa a cópia */ }
-      return (await cache.match(request)) || (await caches.match(request)) || daRede.catch(() => Response.error());
-    })());
-    return;
-  }
-
-  // Demais arquivos (imagens, ícones, vendor): responde do cache na hora e atualiza em segundo plano.
+  // Os arquivos do app (estilos, scripts, ícones, vendor) saem da cópia desta VERSAO, sem ir à rede
+  // (Carol, 16/11/2026: cada conferência contava como acesso na Netlify; eram ~230 por abertura).
+  // A versão nova chega inteira pelo sw.js: ele baixa a lista toda de uma vez na instalação, então a
+  // tela nunca mistura arquivo novo com antigo. Arquivo fora da lista vem da rede e fica guardado.
   evento.respondWith((async () => {
     const cache = await caches.open(VERSAO);
-    const guardado = await cache.match(request);
-    const daRede = fetch(request)
-      .then((resposta) => {
-        if (resposta.ok) cache.put(request, resposta.clone());
-        return resposta;
-      })
-      .catch(() => guardado);
-    if (guardado) {
-      evento.waitUntil(daRede);
-      return guardado;
+    const guardado = (await cache.match(request)) || (await caches.match(request));
+    if (guardado) return guardado;
+    try {
+      const resposta = await fetch(request);
+      if (resposta.ok) cache.put(request, resposta.clone());
+      return resposta;
+    } catch {
+      return Response.error();
     }
-    return daRede;
   })());
 });
 

@@ -396,7 +396,7 @@ export async function rodarRadarAgendado(userId, agora = Date.now()) {
     const deNovo = disparou && h >= 7 && h <= 20 && agora - Date.parse(r.gerado_em || 0) >= 6 * HORA;
     if (!lendo && (deManha || deNovo)) await pedirAnalise(userId, nicho);
   }));
-  // (O resumo das 8h saiu em 16/11/2026: o radar roda uma vez por dia, às 7h31, e o aviso das
+  // (O resumo das 8h saiu em 16/11/2026: o radar roda segunda e quinta, às 7h31, e o aviso das
   // urgentes sai da própria análise.)
   if (eventos.length) await avisarDoRadar(userId, eventos, agora).catch((e) => console.warn('radar push:', e?.message));
   return { nichos: nichos.length, eventos: eventos.length };
