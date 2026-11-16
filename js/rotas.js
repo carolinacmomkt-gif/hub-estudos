@@ -24,6 +24,7 @@ export const ROTAS = [
   { id: 'conteudo', titulo: 'Conteúdo', curto: 'Conteúdo', icone: 'conteudo', grupo: 'trabalho' },
   { id: 'criar', titulo: 'Criar', curto: 'Criar', icone: 'criar', grupo: 'trabalho' },
   { id: 'aprovar', titulo: 'Aprovar', curto: 'Aprovar', icone: 'aprovar', grupo: 'trabalho' },
+  { id: 'r7', titulo: 'R7', curto: 'R7', icone: 'clientes', grupo: 'trabalho' },
   { id: 'pautas', titulo: 'Pautas', curto: 'Pautas', icone: 'pauta', grupo: 'trabalho' },
   { id: 'relatorio', titulo: 'Relatórios', curto: 'Relatórios', icone: 'relatorio', grupo: 'trabalho' },
   // Estudos (a Faculdade entra aqui; está acabando)

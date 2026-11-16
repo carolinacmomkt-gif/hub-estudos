@@ -12,6 +12,7 @@ export const ORIGENS_PADRAO = [
   { id: 'freela', nome: 'Freelas', palavras: ['freela', 'freelance', 'freelas', 'job'] },
   { id: 'agencia', nome: 'Salário da agência', palavras: ['agencia', 'agência', 'essence'] },
   { id: 'confluir', nome: 'Salário da Confluir', palavras: ['confluir'] },
+  { id: 'r7', nome: 'R7', palavras: ['r7'] },
   { id: 'criacao', nome: 'Criação (YouTube e Substack)', palavras: ['youtube', 'substack', 'adsense', 'publi'] },
   { id: 'outros', nome: 'Outros', palavras: [] },
 ];

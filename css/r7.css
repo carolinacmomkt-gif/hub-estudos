@@ -1,0 +1,261 @@
+/* R7 (quarta casa do Trabalho, 16/11/2026): lista de clientes com o contador do contrato e a ficha
+   completa em abas. Só tokens do tema. */
+
+.r7-contador {
+  display: grid;
+  gap: 12px;
+}
+
+.r7-numero {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.r7-numero strong {
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.r7-numero span {
+  color: var(--cor-texto-suave);
+}
+
+.r7-barra {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cor-superficie-2);
+  overflow: hidden;
+}
+
+.r7-barra span {
+  display: block;
+  height: 100%;
+  background: var(--cor-destaque);
+}
+
+.r7-clientes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.r7-clientes li {
+  display: flex;
+}
+
+.r7-cliente {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  margin: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.r7-cliente:hover,
+.r7-cliente:focus-visible {
+  border-color: var(--cor-destaque);
+}
+
+.r7-cliente-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.r7-cliente-topo strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.r7-cliente-linha {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.r7-extra {
+  flex: none;
+}
+
+.r7-config summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--toque);
+  cursor: pointer;
+}
+
+.r7-abas {
+  margin: 0 0 16px;
+}
+
+.r7-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 0 16px;
+  align-items: start;
+}
+
+.r7-bloco {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+
+.r7-bloco legend {
+  margin-bottom: 8px;
+}
+
+.r7-dias {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 8px;
+}
+
+.r7-dia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+}
+
+.r7-dia > .campo-marcar {
+  grid-column: 1 / -1;
+}
+
+.r7-dia:not(.ligado) select,
+.r7-dia:not(.ligado) input[type="number"] {
+  opacity: 0.55;
+}
+
+.r7-dia:has(input[type="checkbox"]:checked) select,
+.r7-dia:has(input[type="checkbox"]:checked) input[type="number"] {
+  opacity: 1;
+}
+
+.r7-dia-story {
+  margin: 0;
+}
+
+.r7-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.r7-videos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 4px 16px;
+}
+
+.r7-video {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.r7-prefere span {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+/* Acessos */
+.r7-acessos li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.r7-acesso-nome {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.r7-acesso-valor {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 100%;
+  order: 3;
+  padding: 8px 12px;
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+  overflow-wrap: anywhere;
+}
+
+.r7-acesso-valor code {
+  font-size: 0.95rem;
+}
+
+/* Memória */
+.r7-memoria li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Voz */
+.r7-voz {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.r7-fontes li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.r7-fontes .campo-marcar span {
+  display: grid;
+  gap: 2px;
+}
+
+.r7-fontes small,
+.r7-fonte {
+  color: var(--cor-texto-suave);
+  font-weight: 400;
+}
+
+.r7-voz-ok {
+  color: var(--cor-sucesso, var(--cor-texto));
+  font-weight: 600;
+}
+
+.r7-voz-atencao {
+  padding: 8px 12px;
+  border-left: 3px solid var(--urg-hoje-borda, var(--cor-destaque));
+  border-radius: 0 var(--raio) var(--raio) 0;
+  background: var(--cor-superficie-2);
+}
+
+.r7-voz-atencao p,
+.r7-voz-atencao ul {
+  margin: 0;
+}
+
+.r7-voz-atencao ul {
+  padding-left: 18px;
+}
+
+input[type="color"][name="estilo-cor"] {
+  width: 72px;
+  min-height: var(--toque);
+  padding: 4px;
+}

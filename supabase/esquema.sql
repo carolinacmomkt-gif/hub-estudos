@@ -432,7 +432,7 @@ create unique index if not exists demandas_origem_uk on public.demandas (user_id
 create table if not exists public.importacoes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  tipo text not null default 'calendario' check (tipo in ('calendario', 'questoes', 'artigo')),
+  tipo text not null default 'calendario' check (tipo in ('calendario', 'questoes', 'artigo', 'relatorio', 'pauta', 'voz')),
   status text not null default 'lendo' check (status in ('lendo', 'pronto', 'erro')),
   arquivo text,      -- caminho do PDF no Storage (apagado depois da leitura)
   texto text,        -- ou o texto colado
@@ -790,6 +790,22 @@ $$;
 drop trigger if exists tocar_atualizado_em on public.credenciais;
 create trigger tocar_atualizado_em before insert or update on public.credenciais
   for each row execute function public.tocar_atualizado_em();
+
+-- Acessos dos clientes da R7 (migração 016): criptografados, RLS sem política (só as funções leem).
+create table if not exists public.acessos_clientes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  cliente text not null,
+  rotulo text not null,
+  dados_cifrados text not null,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+create index if not exists acessos_clientes_cliente_ix on public.acessos_clientes (user_id, cliente);
+alter table public.acessos_clientes enable row level security;
+drop trigger if exists tocar_atualizado_em on public.acessos_clientes;
+create trigger tocar_atualizado_em before insert or update on public.acessos_clientes
+  for each row execute function public.tocar_atualizado_em();
 alter table public.credenciais enable row level security;
 -- Sem nenhuma política: anon e authenticated não leem nem escrevem.
 revoke all on public.credenciais from anon, authenticated;
@@ -826,7 +842,7 @@ create table if not exists public.clientes_trabalho (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   chave text not null,           -- "dra-anisse"
   nome text not null,
-  casa text check (casa in ('essence', 'confluir', 'minha')),
+  casa text check (casa in ('essence', 'confluir', 'minha', 'r7')),
   notion_id text,
   url text,
   dados jsonb not null default '{}'::jsonb, -- status, nicho, instagram, servicos, ficha, memoria [{ id, texto, em, origem }], cor

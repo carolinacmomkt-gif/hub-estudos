@@ -149,6 +149,7 @@ export const segundaDe = (dia) => somarDias(dia, -((new Date(`${dia}T12:00:00`).
 export const CASAS = [
   { id: 'essence', nome: 'Essence' },
   { id: 'confluir', nome: 'Confluir' },
+  { id: 'r7', nome: 'R7' },
   { id: 'minha', nome: 'Minha marca' },
 ];
 const EH_MINHA = /^(carol|carol lima|portal da carol|organiza sm|essence)$/;

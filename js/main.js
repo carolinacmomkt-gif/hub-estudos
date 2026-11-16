@@ -31,6 +31,8 @@ import { renderConteudo, renderAprovar, renderClientes, renderCriar } from './vi
 import { montarTrabalho } from './eventos-trabalho.js';
 import { renderRelatorio } from './views-relatorio.js';
 import { renderRadar } from './views-radar.js';
+import { renderR7 } from './views-r7.js';
+import { montarR7 } from './eventos-r7.js';
 import { montarRadar } from './eventos-radar.js';
 import { montarRelatorio, desmontarRelatorio } from './eventos-relatorio.js';
 import { renderPautas } from './views-pauta.js';
@@ -89,6 +91,7 @@ const VIEWS = {
   criar: renderCriar,
   relatorio: renderRelatorio,
   radar: renderRadar,
+  r7: renderR7,
   pautas: renderPautas,
   portfolio: renderPortfolio,
   projetos: renderProjetos,
@@ -123,6 +126,7 @@ const CICLO = {
   criar: { montar: montarTrabalho, desmontar: () => {} },
   relatorio: { montar: montarRelatorio, desmontar: desmontarRelatorio },
   radar: { montar: montarRadar, desmontar: () => {} },
+  r7: { montar: montarR7, desmontar: () => {} },
   pautas: { montar: montarPauta, desmontar: desmontarPauta },
 };
 let telaMontada = null;
@@ -302,8 +306,8 @@ const TELAS_DA_TABELA = {
   conexoes: ['configuracoes', 'faculdade', 'inicio', 'conteudo', 'aprovar', 'clientes', 'criar'],
   conteudos: ['conteudo', 'aprovar', 'clientes', 'inicio'],
   maos: [], // o Com as mãos cuida da própria tela (a folha não pode ser refeita no meio do traço)
-  clientes_trabalho: ['clientes', 'criar', 'conteudo', 'aprovar', 'pautas', 'relatorio', 'radar'],
-  rascunhos: ['criar'],
+  clientes_trabalho: ['clientes', 'criar', 'conteudo', 'aprovar', 'pautas', 'relatorio', 'radar', 'r7'],
+  rascunhos: ['criar', 'r7'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
@@ -317,7 +321,7 @@ const TELAS_DA_TABELA = {
   lazer: ['metas', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario', 'projetos'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'metas', 'radar'],
+  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'metas', 'radar', 'r7'],
   videos: ['youtube', 'inicio'],
   artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'livro'],
   pautas_substack: ['substack', 'inicio'],
