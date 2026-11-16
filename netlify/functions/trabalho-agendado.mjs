@@ -1,4 +1,4 @@
-// Grupo Trabalho: copia os calendários do Notion e os quadros do Trello de hora em hora, das 7h às 21h
+// Grupo Trabalho: copia os calendários do Notion e os quadros do Trello a cada 2 horas, das 7h às 19h
 // em Brasília, mesmo com o app fechado (Netlify Scheduled Function, ~30 s). Vai em partes: o que não
 // couber na rodada fica para a próxima (a próxima começa de onde esta parou).
 
@@ -34,4 +34,5 @@ export default async () => {
 };
 
 // De hora em hora, das 10h às 23h UTC (7h às 20h em Brasília).
-export const config = { schedule: '17 10-23 * * *' };
+// 10, 12, 14, 16, 18, 20 e 22 UTC = 7h a 19h em Brasília, a cada 2 horas (Carol, 16/11/2026).
+export const config = { schedule: '17 10-22/2 * * *' };

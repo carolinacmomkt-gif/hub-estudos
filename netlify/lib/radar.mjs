@@ -396,17 +396,8 @@ export async function rodarRadarAgendado(userId, agora = Date.now()) {
     const deNovo = disparou && h >= 7 && h <= 20 && agora - Date.parse(r.gerado_em || 0) >= 6 * HORA;
     if (!lendo && (deManha || deNovo)) await pedirAnalise(userId, nicho);
   }));
-  // Resumo das 8h: o que chegou nas últimas 24 h, por nicho.
-  if (h === 8) {
-    const linhas = [];
-    for (const nicho of nichos) {
-      const r = await lerLinha(userId, nicho.id);
-      // Só as urgentes (prazo em até 3 dias), com as clientes.
-      const urg = Object.entries(r.clientes || {}).flatMap(([cliente, c]) => (c.sugestoes || []).filter((x) => ehUrgente(x, hoje)).map(() => cliente));
-      if (urg.length) linhas.push(`${nicho.nome}: ${plural(urg.length, 'urgente', 'urgentes')} para ${[...new Set(urg)].join(', ')}`);
-    }
-    if (linhas.length) eventos.push({ tipo: 'manha', linhas });
-  }
+  // (O resumo das 8h saiu em 16/11/2026: o radar roda uma vez por dia, às 7h31, e o aviso das
+  // urgentes sai da própria análise.)
   if (eventos.length) await avisarDoRadar(userId, eventos, agora).catch((e) => console.warn('radar push:', e?.message));
   return { nichos: nichos.length, eventos: eventos.length };
 }

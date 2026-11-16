@@ -43,7 +43,7 @@ export function cardAvisos(estado) {
   return `
     <section class="card" aria-labelledby="config-avisos">
       <h2 class="card-titulo" id="config-avisos">Avisos no aparelho</h2>
-      <p class="texto-suave">Os avisos chegam mesmo com o app fechado. Ative em cada aparelho onde quiser receber (celular e tablet).</p>
+      <p class="texto-suave">Os avisos chegam mesmo com o app fechado, juntos, uma vez por dia: às 7h45 sai o "Seu dia", com tudo o que o dia pede (os horários abaixo aparecem dentro dele). Ative em cada aparelho onde quiser receber.</p>
       <div id="avisos-situacao" aria-live="polite"><p class="ava-status">Verificando este aparelho…</p></div>
       <form class="formulario" data-form="avisos" novalidate>
         <label class="campo campo-curto">
@@ -65,8 +65,8 @@ export function cardAvisos(estado) {
           ${linhaVida('contas', 'Contas do dia', 'Contas fixas e faturas que vencem hoje', cfg.vida.contas)}
           ${linhaVida('habitos', 'Hábitos que faltam', 'Só se ainda faltar algum no dia', cfg.vida.habitos)}
           <div class="aviso-vida">${marcar('vida-blocos', '1', 'Começo de cada bloco do "Meu dia"', cfg.vida.blocos.ativo)}</div>
-          <div class="aviso-vida">${marcar('vida-radar', '1', 'Radar do nicho: notícia que disparou, assunto subindo forte e o resumo das 8h', cfg.vida.radar?.ativo ?? true)}</div>
-          <div class="aviso-vida">${marcar('vida-trabalho', '1', 'Trabalho: 7h, 12h e 17h nos dias úteis (comece por aqui, artes para mandar e agendar)', cfg.vida.trabalho?.ativo ?? true)}</div>
+          <div class="aviso-vida">${marcar('vida-radar', '1', 'Radar do nicho: as urgentes, de manhã', cfg.vida.radar?.ativo ?? true)}</div>
+          <div class="aviso-vida">${marcar('vida-trabalho', '1', 'Trabalho nos dias úteis (comece por aqui, artes para mandar e agendar), no "Seu dia"', cfg.vida.trabalho?.ativo ?? true)}</div>
           <div class="aviso-vida">
             ${marcar('silencio-ativo', '1', 'Horário de silêncio', cfg.vida.silencio.ativo)}
             <span class="aviso-vida-horas">

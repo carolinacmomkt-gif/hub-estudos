@@ -2,3 +2,5 @@
 .netlify/
 node_modules/
 vapid.pem
+dist/
+config-publica.json

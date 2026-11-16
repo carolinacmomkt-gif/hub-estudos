@@ -251,7 +251,7 @@ function formConfigTrello(c) {
         <label class="campo"><span class="campo-rotulo">Lista de aprovação</span><select name="aprovacao">${opcoesListas(designers, config.designers?.aprovacao, LISTA_APROVACAO)}</select></label>
         <label class="campo"><span class="campo-rotulo">Lista de aprovados</span><select name="aprovado">${opcoesListas(designers, config.designers?.aprovado, LISTA_APROVADO)}</select></label>
       </div>
-      <p class="campo-ajuda">Post de cliente seu que cair na aprovação avisa no celular na hora. Quando for aprovado, a Bússola lembra de atualizar o Trello do cliente. As listas com nome de mês são o arquivo do design e nunca contam.</p>
+      <p class="campo-ajuda">Post de cliente seu que cair na aprovação avisa no celular de manhã (às 7h) ou na hora em que você abrir o app. Quando for aprovado, a Bússola lembra de atualizar o Trello do cliente. As listas com nome de mês são o arquivo do design e nunca contam.</p>
       <label class="campo"><span class="campo-rotulo">Quadro de vídeos (Confluir)</span>
         <select name="videos" data-acao-mudar="dem-videos"><option value="">Nenhum</option>${quadros.filter((q) => q.id !== designers?.id).map((q) => `<option value="${esc(q.id)}"${q.id === videos?.id ? ' selected' : ''}>${esc(q.nome)}</option>`).join('')}</select></label>
       <div class="cal-form-linha">

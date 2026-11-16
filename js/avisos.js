@@ -1,6 +1,6 @@
 // Avisos de prazo neste aparelho (Web Push): ativar, desativar, testar e preferências.
 // O aparelho se inscreve no serviço de push do navegador e a inscrição fica no Supabase;
-// a função avisos-agendado (de hora em hora) é quem manda os avisos.
+// a função avisos-agendado (uma vez por dia, às 7h45) é quem manda os avisos.
 
 import { chaveDosAvisos, rest, idDaUsuaria } from './nuvem.js';
 import { chamar } from './funcoes.js';

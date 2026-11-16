@@ -1,4 +1,4 @@
-// Sincronização automática a cada 6h, mesmo com o app fechado (Netlify Scheduled Function).
+// Sincronização automática uma vez por dia (6h em Brasília), mesmo com o app fechado (Netlify Scheduled Function).
 // Uma função agendada tem cerca de 30 s: o AVA vai em partes e para quando o tempo acaba;
 // o que faltar entra na próxima rodada (ou quando a Carol abrir o app).
 
@@ -36,4 +36,5 @@ export default async () => {
   return new Response('ok');
 };
 
-export const config = { schedule: '0 */6 * * *' };
+// Uma vez por dia, 6h em Brasília (antes eram 4; Carol, 16/11/2026, para gastar menos crédito).
+export const config = { schedule: '0 9 * * *' };

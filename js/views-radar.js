@@ -53,8 +53,8 @@ function telaMontar(estado, nichos) {
       <section class="card rd-como">
         <h2 class="card-titulo">Como o radar funciona</h2>
         <ol class="rd-como-lista">
-          <li><strong>Atualiza sozinho:</strong> notícias a cada 2 horas (7h às 21h) e a análise com a IA às 6h30.</li>
-          <li><strong>Avisa no celular</strong> quando um assunto dispara para uma cliente, com tempo para criar.</li>
+          <li><strong>Atualiza sozinho</strong> uma vez por dia, às 7h30, e quando você toca em Atualizar agora.</li>
+          <li><strong>Avisa no celular</strong> o que é urgente (prazo em até 3 dias), com tempo para criar.</li>
           <li><strong>Uma caixa por cliente:</strong> quantas notícias novas, quais são e as fontes.</li>
           <li><strong>Sugestões no seu método:</strong> formato, linha editorial, gancho, slides ou roteiro, CTA e o cuidado do conselho.</li>
           <li><strong>Exporta</strong> em PDF ou copia para o WhatsApp e o Notion.</li>
@@ -119,7 +119,7 @@ function painel(estado, nicho) {
         </div>
       </div>
       <p class="campo-ajuda" role="status">${lendo ? 'Lendo o YouTube e as notícias e pesquisando na web. Leva até 1 minuto; pode sair da tela.'
-        : r?.gerado_em ? `Análise de ${esc(fmtQuando.format(new Date(r.gerado_em)))}${r.fonte === 'simples' ? ' (só os sinais, sem a IA)' : ''}${r.noticias_em ? ` · notícias conferidas ${esc(fmtQuando.format(new Date(r.noticias_em)))}` : ''}. Atualiza sozinho: notícias a cada 2 h e a análise às 6h30.` : 'Ainda sem radar para este nicho.'}</p>
+        : r?.gerado_em ? `Análise de ${esc(fmtQuando.format(new Date(r.gerado_em)))}${r.fonte === 'simples' ? ' (só os sinais, sem a IA)' : ''}${r.noticias_em ? ` · notícias conferidas ${esc(fmtQuando.format(new Date(r.noticias_em)))}` : ''}. Atualiza sozinho às 7h30.` : 'Ainda sem radar para este nicho.'}</p>
       ${r?.status === 'erro' && r.erro ? `<p class="ava-alerta">${esc(r.erro)}</p>` : ''}
       ${(r?.avisos || []).map((a) => `<p class="campo-ajuda rd-aviso">${esc(a)}</p>`).join('')}
     </section>

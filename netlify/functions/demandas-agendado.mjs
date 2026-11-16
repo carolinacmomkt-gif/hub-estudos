@@ -1,4 +1,5 @@
-// Lê o Trello e o Notion a cada 15 minutos (post em aprovação avisa na hora), mesmo com o app fechado (Netlify Scheduled Function).
+// Lê o Trello e o Notion UMA VEZ POR DIA, às 7h de Brasília (Carol, 16/11/2026, para gastar menos crédito
+// da Netlify), mesmo com o app fechado. Com o app aberto, a leitura continua na hora.
 // As demandas novas esperam o OK da Carol na caixa do Hoje.
 
 import { banco } from '../lib/supabase.mjs';
@@ -21,4 +22,5 @@ export default async () => {
   return new Response('ok');
 };
 
-export const config = { schedule: '*/15 * * * *' };
+// 10:00 UTC = 7h em Brasília.
+export const config = { schedule: '0 10 * * *' };

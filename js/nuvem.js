@@ -55,6 +55,20 @@ export async function carregarConfig() {
   } catch {
     // offline ou rodando sem as funções: segue com o que estiver guardado
   }
+  // Cópia sem a Netlify (Cloudflare Pages, 16/11/2026): a configuração pública vem de um arquivo
+  // gerado na publicação a partir das variáveis do Cloudflare (nunca fica no repositório).
+  if (!config?.supabaseUrl) {
+    try {
+      const r = await fetch('/config-publica.json', { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+      const dados = r.ok ? await r.json() : null;
+      if (dados?.supabaseUrl && dados?.supabaseAnonKey) {
+        config = { supabaseUrl: new URL(dados.supabaseUrl).origin, supabaseAnonKey: dados.supabaseAnonKey, avaBaseUrl: null, vapidPublicKey: dados.vapidPublicKey || null, trelloApiKey: dados.trelloApiKey || null };
+        guardar(CHAVE_CONFIG, config);
+      }
+    } catch {
+      // sem o arquivo: segue com o que estiver guardado
+    }
+  }
   return config;
 }
 
