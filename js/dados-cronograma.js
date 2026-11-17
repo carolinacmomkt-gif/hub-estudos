@@ -119,6 +119,7 @@ export function pecaVazia(data, tipo, extra = {}) {
     tema: '', legenda: '', slides: '', video: '', capa: '', telas: '',
     figurinha: ehStory({ tipo }) ? figurinhaPadrao(extra.modelo || (tipo === 'bomdia' ? 'bomdia' : 'contexto_enquete'), extra.temPost) : '',
     pode: false,
+    artes: [], // [{ caminho, origem: 'trello' | 'manual', anexo? }] na ordem: lâminas, telas, capa do reel
   };
 }
 
@@ -329,6 +330,7 @@ export function pedidoParaClaude(cron, { nome, fichaTexto = '', voz = {}, nicho 
 const CAMPOS = [
   ['tema', /^tema$/], ['legenda', /^legenda$/], ['slides', /^(slides?|laminas?|copy das laminas)$/], ['video', /^(link do video|video)$/],
   ['capa', /^(texto da capa|capa)$/], ['figurinha', /^(figurinha|por cima|interacao|enquete|caixinha)$/],
+  ['slides', /^(texto da arte|arte)$/],
 ];
 const semAcentoMin = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
@@ -343,18 +345,31 @@ function campoDaLinha(linha) {
   return { campo: campo[0], resto: campo[0] === 'figurinha' && /^(enquete|caixinha)$/.test(nome) ? `${nome} ${m[2]}`.trim() : m[2] };
 }
 
-const RE_CAB = /^\s*#{2,4}\s*(\d{1,2})[./-](\d{1,2})\s*[·•|\-–—]\s*([^·•|]+?)\s*(?:[·•|]\s*(.+))?\s*$/;
+// Cabeçalho de cada peça: "### 23.11 · POSTAGEM", "23/11 seg · Carrossel", "## 25.11 - REELS"… (o "###" some
+// quando o documento vira PDF, então ele é opcional; o tipo precisa estar na lista).
+const TIPOS_CAB = 'POSTAGEM|POST|EST[AÁ]TICO|CARROSS[EÉ]L|REELS?|V[IÍ]DEO|STOR(?:Y|IES)(?:\\s+DE\\s+BOM\\s+DIA)?|BOM\\s+DIA';
+const RE_CAB = new RegExp(`^\\s*(?:#{1,4}\\s*)?\\**\\s*(\\d{1,2})[./-](\\d{1,2})(?:[./-]\\d{2,4})?(?:\\s*\\(?[a-zçá]{3,7}\\.?\\)?)?\\s*[·•|\\-–—:]\\s*(${TIPOS_CAB})\\b\\s*(?:[·•|\\-–—:]\\s*([^\\n]*?))?\\**\\s*$`, 'i');
 
-// Lê a resposta do Claude e põe cada campo na peça certa (mesma data e mesmo tipo, na ordem).
-// Devolve { pecas, lidas, sobras } sem apagar o que já estava escrito nos campos que não vieram.
-export function lerRespostaDoClaude(textoColado, pecas) {
+function tipoDoRotulo(rotulo, resto = '') {
+  const r = semAcentoMin(rotulo).toUpperCase();
+  const x = semAcentoMin(resto);
+  if (/BOM DIA/.test(r)) return { tipo: 'bomdia', formato: '' };
+  if (/STOR/.test(r)) return { tipo: 'story', formato: '' };
+  if (/REEL|VIDEO/.test(r)) return { tipo: 'reels', formato: '' };
+  if (/CARROS/.test(r) || /carross/.test(x)) return { tipo: 'post', formato: 'carrossel' };
+  if (/ESTATICO/.test(r) || /estatic/.test(x)) return { tipo: 'post', formato: 'estatico' };
+  return { tipo: 'post', formato: '' };
+}
+
+// Texto → blocos { dia, mes, tipo, formato, campos }.
+function blocosDoTexto(textoColado) {
   const linhas = String(textoColado || '').replace(/\r\n?/g, '\n').split('\n');
   const blocos = [];
   let atual = null;
   for (const linha of linhas) {
     const cab = linha.match(RE_CAB);
     if (cab) {
-      atual = { dia: cab[1].padStart(2, '0'), mes: cab[2].padStart(2, '0'), rotulo: semAcentoMin(cab[3]).toUpperCase(), campos: {}, campo: null };
+      atual = { dia: cab[1].padStart(2, '0'), mes: cab[2].padStart(2, '0'), rotulo: semAcentoMin(cab[3]).toUpperCase(), ...tipoDoRotulo(cab[3], cab[4] || ''), campos: {}, campo: null };
       blocos.push(atual);
       continue;
     }
@@ -370,23 +385,143 @@ export function lerRespostaDoClaude(textoColado, pecas) {
       atual.campos[atual.campo].push(linha);
     }
   }
+  return blocos;
+}
+
+function aplicarCampos(alvo, campos) {
+  for (const [campo, linhasCampo] of Object.entries(campos)) {
+    const valor = texto(linhasCampo.join('\n').replace(/\*\*/g, ''), campo === 'slides' || campo === 'telas' ? 8000 : 4000);
+    if (valor) alvo[campo] = ['tema', 'capa', 'figurinha', 'video'].includes(campo) ? limpo(valor, campo === 'video' ? 500 : 200) : valor;
+  }
+}
+
+// Lê a resposta do Claude e põe cada campo na peça certa (mesma data e mesmo tipo, na ordem).
+// Devolve { pecas, lidas, sobras } sem apagar o que já estava escrito nos campos que não vieram.
+export function lerRespostaDoClaude(textoColado, pecas) {
   const usadas = new Set();
   const novas = pecas.map((p) => ({ ...p }));
   let lidas = 0;
   const sobras = [];
-  for (const b of blocos) {
-    const tipo = /BOM DIA/.test(b.rotulo) ? 'bomdia' : /REEL/.test(b.rotulo) ? 'reels' : /STOR/.test(b.rotulo) ? 'story' : 'post';
-    const alvo = novas.find((p) => !usadas.has(p.id) && p.data.slice(8, 10) === b.dia && p.data.slice(5, 7) === b.mes && p.tipo === tipo);
+  for (const b of blocosDoTexto(textoColado)) {
+    const alvo = novas.find((p) => !usadas.has(p.id) && p.data.slice(8, 10) === b.dia && p.data.slice(5, 7) === b.mes && p.tipo === b.tipo);
     if (!alvo) { sobras.push(`${b.dia}.${b.mes} · ${b.rotulo}`); continue; }
     usadas.add(alvo.id);
-    for (const [campo, linhasCampo] of Object.entries(b.campos)) {
-      const valor = texto(linhasCampo.join('\n').replace(/\*\*/g, ''), campo === 'slides' || campo === 'telas' ? 8000 : 4000);
-      if (valor) alvo[campo] = ['tema', 'capa', 'figurinha'].includes(campo) ? limpo(valor, 200) : valor;
-    }
+    aplicarCampos(alvo, b.campos);
     lidas += 1;
   }
   return { pecas: novas, lidas, sobras };
 }
+
+// O ano de cada dd/mm: o mais perto de hoje (de 4 meses para trás a 8 para a frente).
+function isoDoDia(dia, mes, hoje) {
+  const ano = Number(hoje.slice(0, 4));
+  const candidatos = [ano - 1, ano, ano + 1].map((a) => `${a}-${mes}-${dia}`).filter((iso) => !Number.isNaN(Date.parse(`${iso}T12:00:00Z`)));
+  const t = Date.parse(`${hoje}T12:00:00Z`);
+  return candidatos.find((iso) => { const d = (Date.parse(`${iso}T12:00:00Z`) - t) / DIA_MS; return d >= -120 && d <= 240; }) || `${ano}-${mes}-${dia}`;
+}
+
+// O documento da quinzena (o que ela monta no Claude, em PDF, Word ou texto) → { nome, inicio, fim, pecas, lidas }.
+// O formato está em FORMATO_DO_DOCUMENTO; o período vem da linha "Período:" ou das datas das peças.
+export function lerDocumentoDaQuinzena(textoDoc, { hoje = new Date().toISOString().slice(0, 10) } = {}) {
+  const t = String(textoDoc || '').replace(/\r\n?/g, '\n');
+  const nome = limpo(/^\s*\**\s*cliente\s*\**\s*:\s*(.+)$/im.exec(t)?.[1] || '', 120);
+  const per = /^\s*\**\s*per[ií]odo\s*\**\s*:\s*(\d{1,2})[./-](\d{1,2})(?:[./-]\d{2,4})?\s*(?:a|até|-|–)\s*(\d{1,2})[./-](\d{1,2})/im.exec(t);
+  const pecas = [];
+  const vistos = {};
+  for (const b of blocosDoTexto(t)) {
+    const data = isoDoDia(b.dia, b.mes, hoje);
+    const k = `${data}-${b.tipo}`;
+    vistos[k] = (vistos[k] || 0) + 1;
+    const p = pecaVazia(data, b.tipo, { id: `${k}-doc${vistos[k]}`, formato: b.tipo === 'post' ? (b.formato || 'carrossel') : '', modelo: b.tipo === 'bomdia' ? 'bomdia' : 'contexto_enquete' });
+    if (b.tipo === 'story') p.figurinha = '';
+    aplicarCampos(p, b.campos);
+    if (b.tipo === 'post' && !b.formato && !p.slides.trim()) p.formato = 'estatico';
+    pecas.push(p);
+  }
+  pecas.sort((a, z) => a.data.localeCompare(z.data) || (ehStory(a) - ehStory(z)));
+  const datas = pecas.map((p) => p.data);
+  const inicio = per ? isoDoDia(per[1].padStart(2, '0'), per[2].padStart(2, '0'), hoje) : (datas[0] || '');
+  let fim = per ? isoDoDia(per[3].padStart(2, '0'), per[4].padStart(2, '0'), hoje) : (datas[datas.length - 1] || '');
+  if (fim && inicio && fim < inicio) fim = `${Number(fim.slice(0, 4)) + 1}${fim.slice(4)}`;
+  return { nome, inicio, fim, pecas, lidas: pecas.length };
+}
+
+// Junta o documento a um cronograma: a peça da mesma data e tipo recebe os campos que vieram (as artes ficam);
+// a que não existia entra. Sem cronograma, ele nasce do documento.
+export function cronogramaDoDocumento(doc, cron, { cliente, nome } = {}) {
+  const base = cron ? normalizarCronograma(cron) : cronogramaVazio({ cliente, nome: nome || doc.nome, inicio: doc.inicio, fim: doc.fim, rotina: { feed: [], stories: { tem: false } } });
+  const pecas = base.pecas.map((p) => ({ ...p }));
+  const usadas = new Set();
+  let novas = 0;
+  for (const d of doc.pecas) {
+    const alvo = pecas.find((p) => !usadas.has(p.id) && p.data === d.data && p.tipo === d.tipo);
+    if (alvo) {
+      usadas.add(alvo.id);
+      for (const campo of ['tema', 'legenda', 'slides', 'video', 'capa', 'telas', 'figurinha']) if (String(d[campo] || '').trim()) alvo[campo] = d[campo];
+      if (d.tipo === 'post' && d.formato) alvo.formato = d.formato;
+    } else {
+      pecas.push({ ...d, id: `${d.id}-${Math.random().toString(36).slice(2, 6)}` });
+      usadas.add(pecas[pecas.length - 1].id);
+      novas += 1;
+    }
+  }
+  const datas = pecas.map((p) => p.data).sort();
+  const inicio = [base.inicio, doc.inicio, datas[0]].filter(Boolean).sort()[0];
+  const fim = [base.fim, doc.fim, datas.at(-1)].filter(Boolean).sort().at(-1);
+  return { cron: normalizarCronograma({ ...base, inicio, fim, pecas, documento_em: new Date().toISOString() }), novas };
+}
+
+// O formato do documento que a Bússola lê sem IA (vai no projeto de cada cliente no Claude).
+export const FORMATO_DO_DOCUMENTO = `FORMATO DO CONTEÚDO DA QUINZENA (para a Bússola ler sozinha)
+
+Regras:
+- Uma peça por bloco, na ordem de postagem.
+- Cada bloco começa com uma linha só com a data e o tipo: 23.11 · CARROSSEL (pode ter ### na frente).
+- Tipos aceitos: CARROSSEL, ESTÁTICO, REEL, STORIES, STORIES DE BOM DIA.
+- Cada campo começa com o nome e dois-pontos, numa linha própria. Pode ocupar várias linhas.
+- Não use tabela: a Bússola lê linha por linha.
+- Carrossel: capa + 4 a 7 cards, o último é a chamada, sem emoji nas lâminas.
+- Stories: de 3 a 5 telas, na ordem gancho, interação, virada, prova, chamada; o link sempre na última.
+- Toda legenda termina com a assinatura e o registro do cliente.
+
+Topo do documento:
+Cliente: Dr. Nome Sobrenome
+Período: 23/11 a 04/12
+
+### 23.11 · CARROSSEL
+Tema: Eu sou ansiosa?
+Slides:
+Slide 01 | Capa (foto do cliente sorrindo): Eu sou ansiosa?
+Slide 02 | Card 1: Texto do card 1.
+Slide 03 | Card 2: Texto do card 2.
+Legenda:
+Texto da legenda em parágrafos curtos.
+Frase-assinatura.
+Dr. Nome Sobrenome | Médico | CRM-UF 00000
+
+### 24.11 · STORIES
+Tema: A consulta de uma hora
+Tela 1 (gancho): Título da tela | Texto de apoio
+Tela 2 (interação): Título | Apoio
+Tela 3 (virada): Título | Apoio
+Tela 4 (prova): Título | Apoio
+Tela 5 (chamada): Título | Apoio
+Por cima: repost do post do dia; enquete Sim / Não; link de agendamento
+
+### 25.11 · REEL
+Tema: Antidepressivo vicia?
+Texto da capa: Antidepressivo vicia? Em geral, não.
+Link do vídeo: https://drive.google.com/...
+Legenda:
+Texto da legenda.
+Dr. Nome Sobrenome | Médico | CRM-UF 00000
+
+### 26.11 · ESTÁTICO
+Tema: Circulação em viagens longas
+Texto da arte: O texto que vai na arte.
+Legenda:
+Texto da legenda.
+Dr. Nome Sobrenome | Médico | CRM-UF 00000`;
 
 // ---------------------------------------------------------------------------
 // Saídas: WhatsApp, Trello e Drive
@@ -584,8 +719,9 @@ function blocoDaLegenda(p, assinatura, x, y, w, h, medir) {
 // Telas dos stories (manual): liso escuro no gancho, na interação e na virada; liso claro na prova e na chamada.
 const telaEscura = (t, k, total) => (/gancho|intera|pergunta|virada|dor|resposta|sinais/i.test(t.funcao) ? true : /prova|chamada|solu/i.test(t.funcao) ? false : k < total - 1 && k % 2 === 0);
 
-export function montarSlidesDoCronograma(cron, { cor = '', assinatura = '' } = {}, medir) {
+export function montarSlidesDoCronograma(cron, { cor = '', assinatura = '', artes = {} } = {}, medir) {
   const C = CORES_CRONOGRAMA;
+  const arte = (p, k) => { const c = (p.artes || [])[k]?.caminho; return c && artes[c] ? artes[c] : null; };
   const A = acentoDoCronograma(cor);
   const rodape = `Cronograma ${ddBarraMm(cron.inicio)} a ${ddBarraMm(cron.fim)} · R7 Estratégias Digitais`;
   const slides = [];
@@ -635,26 +771,32 @@ export function montarSlidesDoCronograma(cron, { cor = '', assinatura = '' } = {
     if (p.tipo === 'post' && p.formato === 'carrossel') {
       // Grade com todas as lâminas na ordem (o texto de cada uma) e a legenda completa ao lado.
       const laminas = lerLaminas(p.slides);
-      els.push(rotulo(`Lâminas (${laminas.length})`, MARGEM, topo));
+      els.push(rotulo(`Lâminas (${Math.max(laminas.length, (p.artes || []).length)})`, MARGEM, topo));
       const area = { x: MARGEM, y: topo + 24, w: 580, h: altura - 24 };
       const col = 4;
-      const lin = Math.max(2, Math.ceil(laminas.length / col));
+      const lin = Math.max(2, Math.ceil(Math.max(laminas.length, (p.artes || []).length) / col));
       const lw = (area.w - (col - 1) * 8) / col;
       const lh = Math.min(lw * 1.25, (area.h - (lin - 1) * 8) / lin);
-      laminas.forEach((l, k) => {
+      const total = Math.max(laminas.length, (p.artes || []).length);
+      for (let k = 0; k < total; k += 1) {
+        const l = laminas[k] || { n: k + 1, texto: '' };
         const x = area.x + (k % col) * (lw + 8);
         const y = area.y + Math.floor(k / col) * (lh + 8);
+        const src = arte(p, k);
+        if (src) { els.push({ tipo: 'imagem', x, y, w: lw, h: lh, src, ajuste: 'cobrir' }); continue; }
         els.push({ tipo: 'retangulo', x, y, w: lw, h: lh, cor: C.caixa });
         els.push({ tipo: 'texto', x: x + 8, y: y + 8, w: lw - 16, tam: 8, f: 'isans', alinhar: 'l', runs: [{ t: String(l.n).padStart(2, '0'), b: 700, cor: A }] });
         els.push(paragrafosQueCabem([[{ t: l.texto, cor: C.suave }]], x + 8, y + 24, lw - 16, lh - 30, medir, { tam: 8.5, minimo: 6, entrelinha: 1.3 }));
-      });
+      }
       els.push(...blocoDaLegenda(p, assinatura, 680, topo, 480, altura, medir));
     } else if (p.tipo === 'reels') {
       // Capa clicável (abre o vídeo), "Assistir ao vídeo", o texto da capa separado e a legenda.
       const w = 200;
       const h = Math.min(w * 16 / 9, altura);
-      els.push({ tipo: 'retangulo', x: MARGEM, y: topo, w, h, cor: C.caixa, ...(p.video ? { link: p.video } : {}) });
-      if (p.capa) els.push(paragrafosQueCabem([[{ t: p.capa, cor: C.texto }]], MARGEM + 16, topo + h * 0.18, w - 32, h * 0.5, medir, { tam: 22, minimo: 11, f: 'serif', entrelinha: 1.1 }));
+      const capa = arte(p, 0);
+      if (capa) els.push({ tipo: 'imagem', x: MARGEM, y: topo, w, h, src: capa, ajuste: 'cobrir', ...(p.video ? { link: p.video } : {}) });
+      else els.push({ tipo: 'retangulo', x: MARGEM, y: topo, w, h, cor: C.caixa, ...(p.video ? { link: p.video } : {}) });
+      if (p.capa && !capa) els.push(paragrafosQueCabem([[{ t: p.capa, cor: C.texto }]], MARGEM + 16, topo + h * 0.18, w - 32, h * 0.5, medir, { tam: 22, minimo: 11, f: 'serif', entrelinha: 1.1 }));
       const xm = 290;
       els.push(rotulo('Vídeo', xm, topo));
       els.push({ tipo: 'texto', x: xm, y: topo + 22, w: 300, tam: 11.5, f: 'isans', alinhar: 'l', runs: [{ t: p.video ? 'Assistir ao vídeo ↗' : 'Falta o link do vídeo', b: 600, cor: p.video ? A : C.claro, ...(p.video ? { link: p.video } : {}) }] });
@@ -665,11 +807,17 @@ export function montarSlidesDoCronograma(cron, { cor = '', assinatura = '' } = {
       }
       els.push(...blocoDaLegenda(p, assinatura, 640, topo, 520, altura, medir));
     } else if (p.tipo === 'post') {
-      els.push(...blocoDaLegenda(p, assinatura, MARGEM, topo, 760, altura, medir));
+      const img = arte(p, 0);
+      if (img) {
+        els.push(rotulo('Arte', MARGEM, topo));
+        els.push({ tipo: 'imagem', x: MARGEM, y: topo + 24, w: 340, h: Math.min(425, altura - 24), src: img, ajuste: 'conter' });
+        els.push(...blocoDaLegenda(p, assinatura, 420, topo, 740, altura, medir));
+      } else els.push(...blocoDaLegenda(p, assinatura, MARGEM, topo, 760, altura, medir));
     } else {
       // Sequência de stories: as telas lado a lado na ordem (liso escuro ou claro, como a arte vai sair), com o
       // direcionamento escrito onde entra a figurinha; embaixo, o número e a função e o que entra por cima.
-      const telas = lerTelas(p.telas);
+      const lidas = lerTelas(p.telas);
+      const telas = Array.from({ length: Math.max(lidas.length, (p.artes || []).length) }, (_, k) => lidas[k] || { n: k + 1, funcao: '', titulo: '', apoio: '' });
       const n = Math.max(1, telas.length);
       const acoes = acoesDaFigurinha(p.figurinha);
       const th = 330;
@@ -685,8 +833,12 @@ export function montarSlidesDoCronograma(cron, { cor = '', assinatura = '' } = {
         const mx = tw * 96 / 1080;
         const yTexto = y0 + th * 0.36;
         const blocos = [[{ t: t.titulo, b: 600, cor: corTexto }], ...(t.apoio ? [[{ t: t.apoio, cor: corTexto }]] : []), ...aqui.map((a) => [{ t: direcionamentoDe(a), b: 600, cor: escura ? '#D0D0D0' : C.claro }])];
-        els.push({ tipo: 'retangulo', x, y: y0, w: tw, h: th, cor: escura ? A : C.telaClara });
-        els.push(paragrafosQueCabem(blocos, x + mx, yTexto, tw - mx * 2, y0 + th * (1 - 340 / 1920) - yTexto, medir, { tam: 12.5, minimo: 6, entrelinha: 1.2, espaco: 0.5 }));
+        const src = arte(p, k);
+        if (src) els.push({ tipo: 'imagem', x, y: y0, w: tw, h: th, src, ajuste: 'cobrir' });
+        else {
+          els.push({ tipo: 'retangulo', x, y: y0, w: tw, h: th, cor: escura ? A : C.telaClara });
+          els.push(paragrafosQueCabem(blocos, x + mx, yTexto, tw - mx * 2, y0 + th * (1 - 340 / 1920) - yTexto, medir, { tam: 12.5, minimo: 6, entrelinha: 1.2, espaco: 0.5 }));
+        }
         els.push({ tipo: 'texto', x, y: y0 + th + 10, w: tw, tam: 8, f: 'isans', alinhar: 'l', runs: [{ t: `${t.n}${t.funcao ? ` · ${t.funcao.toUpperCase()}` : ''}`, b: 700, cor: C.texto }] });
         if (aqui.length) els.push(paragrafosQueCabem([[{ t: aqui.map(rotuloDaAcao).join(' · '), cor: C.claro }]], x, y0 + th + 26, tw, 30, medir, { tam: 8, minimo: 6, entrelinha: 1.25 }));
       });

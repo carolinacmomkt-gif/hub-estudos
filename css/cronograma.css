@@ -175,3 +175,71 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* Subir o documento e anexar artes (17/11/2026) */
+.cron-arquivo {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.cron-arquivo input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+
+.cron-arquivo:focus-within {
+  outline: 2px solid var(--cor-foco, var(--cor-destaque));
+  outline-offset: 2px;
+}
+
+.cron-subir .aviso-inline {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+
+.cron-subir .aviso-inline p {
+  margin: 0 0 8px;
+}
+
+.cron-artes {
+  margin: 12px 0 4px;
+}
+
+.cron-artes-lista {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.cron-artes-lista li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.cron-artes-lista img {
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--cor-superficie-2);
+}
+
+.cron-artes-lista small {
+  color: var(--cor-texto-fraco);
+  font-variant-numeric: tabular-nums;
+}
+
+.cron-auto,
+.r7-auto {
+  border-left: 3px solid var(--cor-destaque);
+}

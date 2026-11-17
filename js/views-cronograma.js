@@ -25,7 +25,7 @@ export function cronogramaAberto(estado, chave, inicio) {
 export function telaCronograma(estado, c, f, inicio) {
   const cron = cronogramaAberto(estado, c.chave, inicio);
   const voltar = `<a class="botao botao-secundario" href="#r7/cliente:${esc(c.chave)}">← Ficha</a>`;
-  if (!cron) return `${cabecalho(`Cronograma · ${c.nome}`, 'Escolha o período e o app monta a grade pela rotina da ficha.', voltar)}${cardNovo(c)}`;
+  if (!cron) return `${cabecalho(`Cronograma · ${c.nome}`, 'Suba o conteúdo da quinzena que você montou no Claude, ou escolha o período e o app monta a grade pela rotina da ficha.', voltar)}${cardSubir(c, null, estado)}${cardNovo(c)}`;
   const ctx = contextoDoCliente(c, f);
   const r = resumoDoQueFalta(cron, ctx);
   const ocupado = estado.cronOcupado || '';
@@ -34,6 +34,7 @@ export function telaCronograma(estado, c, f, inicio) {
     ${cabecalho(`Cronograma · ${c.nome}`, `${periodoEmTexto(cron.inicio, cron.fim)} · ${cron.pecas.length} peças · ${frasesDoQueFalta(r)}`, voltar)}
     <div class="cron-grade">
       <div class="cron-principal">
+        ${cardSubir(c, cron, estado)}
         ${cardEscrever(c, cron, r, ocupado)}
         <section class="cron-pecas" aria-label="Peças do cronograma">
           ${r.itens.map((x) => cardPeca(c, x)).join('')}
@@ -54,6 +55,26 @@ export function telaCronograma(estado, c, f, inicio) {
         ${cardNovo(c, true)}
       </aside>
     </div>`;
+}
+
+// Subir o documento da quinzena (PDF, Word, PowerPoint ou texto) no formato que a Bússola lê.
+function cardSubir(c, cron, estado) {
+  const k = `data-cliente="${esc(c.chave)}"${cron ? ` data-inicio="${esc(cron.inicio)}"` : ''}`;
+  const semLeitura = estado.cronDocSemLeitura;
+  return `
+    <section class="card cron-subir" aria-labelledby="cron-subir-titulo">
+      <h2 class="card-titulo" id="cron-subir-titulo">Subir o conteúdo da quinzena</h2>
+      <p class="campo-ajuda">O documento que você montou no Claude (PDF, Word, PowerPoint ou texto). A Bússola monta ${cron ? 'ou atualiza ' : ''}o cronograma no visual da R7: peças novas entram, as que já existem recebem o texto novo e as artes ficam.</p>
+      <div class="acoes">
+        <label class="botao botao-primario cron-arquivo">Escolher o documento
+          <input type="file" accept=".pdf,.docx,.pptx,.txt,.md,application/pdf,text/plain" data-acao-mudar="cron-documento" ${k}></label>
+        <button class="botao botao-secundario" type="button" data-acao="cron-formato">Copiar o formato</button>
+      </div>
+      <p class="campo-ajuda">"Copiar o formato" leva as regras para você colar no projeto do cliente no Claude. Com o documento nesse formato, a leitura é na hora e sem IA.</p>
+      ${semLeitura && semLeitura.cliente === c.chave ? `<div class="aviso-inline" role="status"><p>Não achei os blocos "23.11 · CARROSSEL" em "${esc(semLeitura.nome)}". A IA pode organizar o documento no formato (um toque, uma vez).</p>
+        <div class="acoes"><button class="botao botao-primario botao-pequeno" type="button" data-acao="cron-doc-ia" ${k}${estado.cronOcupado ? ' disabled' : ''}>✨ Organizar com a IA</button>
+          <button class="botao botao-secundario botao-pequeno" type="button" data-acao="cron-doc-cancelar">Deixar para lá</button></div></div>` : ''}
+    </section>`;
 }
 
 function cardNovo(c, recolhido = false) {
@@ -155,12 +176,30 @@ function cardPeca(c, { p, falta, atencao, pronta }) {
       </div>
       <p class="cron-falta">${pronta ? '<span class="cron-ok">✓ Pronta</span>' : ''}${falta.map((x) => `<span class="cron-chip">Falta ${esc(x)}</span>`).join('')}${p.pode ? '' : atencao.map((x) => `<span class="cron-chip cron-chip-atencao">${esc(x)}</span>`).join('')}</p>
       ${campos}
+      ${tiraDeArtes(c, p)}
       <div class="acoes cron-peca-acoes">
         ${p.tipo === 'post' && p.formato === 'carrossel' && p.slides ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="cron-trello" ${k}>Copiar para o Trello</button>` : ''}
         ${p.tipo === 'story' && p.telas.trim() ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="cron-artes" ${k}>Copiar o pedido das artes</button>` : ''}
         ${atencao.length && !falta.length ? `<label class="campo-marcar"><input type="checkbox" data-acao-mudar="cron-campo" data-peca="${esc(p.id)}" data-campo="pode"${p.pode ? ' checked' : ''}><span>Pode seguir assim</span></label>` : ''}
       </div>
     </article>`;
+}
+
+// As artes da peça (miniaturas na ordem) e o botão de anexar: lâminas, telas dos stories, capa do reel.
+function tiraDeArtes(c, p) {
+  const artes = p.artes || [];
+  const rotulo = p.tipo === 'story' || p.tipo === 'bomdia' ? 'Artes dos stories (uma por tela, na ordem)' : p.tipo === 'reels' ? 'Capa do reel' : p.formato === 'carrossel' ? 'Lâminas (na ordem)' : 'Arte';
+  const k = `data-cliente="${esc(c.chave)}" data-peca="${esc(p.id)}"`;
+  return `
+    <div class="cron-artes">
+      <span class="campo-rotulo">${esc(rotulo)}${artes.some((a) => a.origem === 'trello') ? ' · do Trello' : ''}</span>
+      ${artes.length ? `<ol class="cron-artes-lista">${artes.map((a, i) => `<li><img data-arte="${esc(a.caminho)}" alt="Arte ${i + 1}" loading="lazy" width="72" height="${p.tipo === 'story' || p.tipo === 'bomdia' || p.tipo === 'reels' ? 128 : 90}"><small>${i + 1}</small></li>`).join('')}</ol>` : ''}
+      <div class="acoes">
+        <label class="botao botao-secundario botao-pequeno cron-arquivo">${artes.length ? 'Trocar as artes' : 'Anexar as artes'}
+          <input type="file" multiple accept="image/*,.pdf,application/pdf" data-acao-mudar="cron-artes" ${k}></label>
+        ${artes.length ? `<button class="botao-icone" type="button" data-acao="cron-artes-tirar" ${k} aria-label="Tirar as artes">×</button>` : ''}
+      </div>
+    </div>`;
 }
 
 // Linha do cliente na lista da R7: o cronograma em andamento e o que falta.

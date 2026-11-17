@@ -54,3 +54,39 @@ test('Trello: cartões da lista do cliente, pelo estado das etiquetas', () => {
   assert.equal(frasesDoTrello(t), '1 com o designer · 1 em ajuste · 1 vencida · 1 pronta');
   assert.equal(trelloDoCliente(robo, { nome: 'Dra. Exemplo Teste' }, '2026-11-17').total, 4);
 });
+
+test('cadastro pelos briefings: nome, registro e assinatura; quem já existe ou foi recusado fica de fora', async () => {
+  const { nomeDoBriefing, registroDoBriefing, assinaturaDoRegistro, clientesNovosDoRobo } = await import('../js/dados-robo.js');
+  assert.equal(nomeDoBriefing('BRIENF Briefing Dra Fulana Exemplo –  fevereiro.docx'), 'Dra. Fulana Exemplo');
+  assert.equal(nomeDoBriefing('Briefing DRA BELTRANA TESTE  - Março.docx'), 'Dra. Beltrana Teste');
+  assert.equal(nomeDoBriefing('Briefing Briefing Dr Ciclano Modelo – Cirurgião - Novembro.docx'), 'Dr. Ciclano Modelo');
+  const r = registroDoBriefing('Briefing Dr Ciclano Modelo Médico– CRM/GO 12.345\n\nMês de Abril', 'Dr. Ciclano Modelo');
+  assert.deepEqual(r, { conselho: 'CRM', uf: 'GO', numero: '12345', profissao: 'Médico' });
+  assert.equal(assinaturaDoRegistro('Dr. Ciclano Modelo', r), 'Dr. Ciclano Modelo | Médico | CRM-GO 12345');
+  assert.equal(registroDoBriefing('Briefing Dra Fulana – CRO-GO 1234', 'Dra. Fulana').profissao, 'Cirurgiã-dentista');
+  const robo = { briefings: [
+    { arquivo: 'Briefing Dra Fulana Exemplo - Outubro.docx', texto: 'Briefing Dra Fulana Exemplo Médica – CRM-GO 111', modificado: '2026-10-01T10:00:00Z' },
+    { arquivo: 'Briefing Dra Fulana Exemplo - Novembro.docx', texto: 'Briefing Dra Fulana Exemplo Médica – CRM-GO 111', modificado: '2026-11-01T10:00:00Z' },
+    { arquivo: 'Briefing Dr Ciclano Modelo - Novembro.docx', texto: 'Briefing Dr Ciclano Modelo – CRM-GO 222', modificado: '2026-11-02T10:00:00Z' },
+    { arquivo: 'Briefing Dra Antiga Teste - Março.docx', texto: '', modificado: '2026-03-01T10:00:00Z' },
+  ] };
+  const novos = clientesNovosDoRobo(robo, [{ nome: 'Dr. Ciclano Modelo' }], [], { hoje: '2026-11-17' });
+  assert.deepEqual(novos.map((c) => [c.nome, c.assinatura]), [['Dra. Fulana Exemplo', 'Dra. Fulana Exemplo | Médica | CRM-GO 111']]);
+  assert.equal(clientesNovosDoRobo(robo, [], [novos[0].chave, 'ciclano modelo'], { hoje: '2026-11-17' }).length, 0);
+});
+
+test('artes do Trello: o card casa com a peça pela copy e as imagens vão na ordem do número', async () => {
+  const { artesDoTrelloParaCronograma } = await import('../js/dados-robo.js');
+  const cron = { pecas: [
+    { id: 'p1', tipo: 'post', formato: 'carrossel', tema: 'Sono ruim tem jeito', slides: 'Slide 01 | Capa: Sono ruim tem jeito\nSlide 02 | Card 1: Dormir mal todos os dias cansa o corpo inteiro' },
+    { id: 'p2', tipo: 'post', formato: 'carrossel', tema: 'Ansiedade no trabalho', slides: 'Slide 01 | Capa: Ansiedade no trabalho\nSlide 02 | Card 1: Prazos apertados deixam qualquer pessoa tensa' },
+    { id: 's1', tipo: 'story', telas: 'Tela 1: oi' },
+  ] };
+  const trello = { quadros: [{ quadro: 'DESIGN', cartoes: [
+    { lista: 'DRA FULANA EXEMPLO', nome: 'carrossel', desc: '**Capa**\nAnsiedade no trabalho\n\n**Card 1**\nPrazos apertados deixam qualquer pessoa tensa', anexos: [
+      { id: 'b', nome: 'lamina 2.png', caminho: 'h/b.png' }, { id: 'a', nome: 'lamina 1.png', caminho: 'h/a.png' }] },
+    { lista: 'OUTRA CLIENTE', nome: 'carrossel', desc: '**Capa**\nSono ruim tem jeito', anexos: [{ id: 'c', nome: '1.png', caminho: 'h/c.png' }] },
+  ] }] };
+  const r = artesDoTrelloParaCronograma(cron, trello, { nome: 'Dra. Fulana Exemplo' });
+  assert.deepEqual(r.map((x) => [x.peca, x.anexos.map((a) => a.id)]), [['p2', ['a', 'b']]]);
+});

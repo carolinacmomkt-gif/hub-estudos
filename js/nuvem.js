@@ -266,12 +266,12 @@ export function idDaUsuaria() {
 }
 
 // Envia um arquivo para o Storage (bucket "arquivos"). caminho: "{id da usuária}/pasta/nome".
-export async function enviarArquivo(caminho, arquivo) {
+export async function enviarArquivo(caminho, arquivo, bucket = 'arquivos') {
   const token = await tokenDeAcesso();
   if (!token) throw new ErroNuvem('Entre no app para enviar arquivos.', 401, 'sem_sessao');
   let r;
   try {
-    r = await fetch(`${config.supabaseUrl}/storage/v1/object/arquivos/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
+    r = await fetch(`${config.supabaseUrl}/storage/v1/object/${bucket}/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
       method: 'POST',
       headers: {
         apikey: config.supabaseAnonKey,
@@ -291,12 +291,12 @@ export async function enviarArquivo(caminho, arquivo) {
 }
 
 // Baixa um arquivo do Storage (bucket privado: precisa do login) e devolve um Blob.
-export async function baixarArquivo(caminho) {
+export async function baixarArquivo(caminho, bucket = 'arquivos') {
   const token = await tokenDeAcesso();
   if (!token) throw new ErroNuvem('Entre no app para ver os arquivos.', 401, 'sem_sessao');
   let r;
   try {
-    r = await fetch(`${config.supabaseUrl}/storage/v1/object/arquivos/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
+    r = await fetch(`${config.supabaseUrl}/storage/v1/object/${bucket}/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
       headers: { apikey: config.supabaseAnonKey, Authorization: `Bearer ${token}` },
     });
   } catch {
@@ -306,10 +306,10 @@ export async function baixarArquivo(caminho) {
   return r.blob();
 }
 
-export async function apagarArquivo(caminho) {
+export async function apagarArquivo(caminho, bucket = 'arquivos') {
   const token = await tokenDeAcesso();
   if (!token) return;
-  await fetch(`${config.supabaseUrl}/storage/v1/object/arquivos/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
+  await fetch(`${config.supabaseUrl}/storage/v1/object/${bucket}/${caminho.split('/').map(encodeURIComponent).join('/')}`, {
     method: 'DELETE',
     headers: { apikey: config.supabaseAnonKey, Authorization: `Bearer ${token}` },
   }).catch(() => {});

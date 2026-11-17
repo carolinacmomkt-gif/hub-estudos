@@ -3,7 +3,9 @@
 // (r7-voz-background + linha em importacoes) e o checador de voz ao vivo.
 
 import { obterEstado, atualizarEstado } from './estado.js';
-import { listar, salvar } from './persistencia.js';
+import { listar, salvar, excluir } from './persistencia.js';
+import { rodarAutomaticoR7 } from './r7-automatico.js';
+import { montarArtes } from './eventos-cronograma.js';
 import { chamar, dispararSegundoPlano } from './funcoes.js';
 import { rest, idDaUsuaria } from './nuvem.js';
 import { confirmar } from './confirmar.js';
@@ -26,6 +28,8 @@ const cliente = (chave) => clientesR7(obterEstado()).find((c) => c.chave === cha
 
 // Ao abrir a ficha na aba Acessos, lê a lista (só os nomes) uma vez.
 export function montarR7(parametro) {
+  rodarAutomaticoR7(app);
+  montarArtes();
   const p = parametro || '';
   if (!p.startsWith('cliente:')) return;
   const chave = p.slice(8);
@@ -293,6 +297,23 @@ export function cliqueR7(alvo) {
       app.renderizar();
       return true;
     case 'r7-mostrar': mostrarAcesso(alvo.dataset.id); return true;
+    case 'r7-conferi': {
+      const c = cliente(alvo.dataset.cliente);
+      if (c) gravarCliente(c, (d) => { d.r7_auto = { ...(d.r7_auto || {}), confira: false }; });
+      return true;
+    }
+    case 'r7-nao-e': {
+      const c = cliente(alvo.dataset.cliente);
+      if (!c) return true;
+      confirmar(`Tirar ${c.nome} da R7? O robô não cadastra de novo.`, { botao: 'Tirar', perigo: true }).then(async (ok) => {
+        if (!ok) return;
+        await excluir('clientes_trabalho', c.id);
+        atualizarEstado({ clientesTrabalho: await listar('clientes_trabalho') });
+        location.hash = '#r7';
+        app.renderizar();
+      });
+      return true;
+    }
     case 'r7-esconder': esconder(); return true;
     case 'r7-copiar': {
       const v = obterEstado().r7AcessoVisivel?.[alvo.dataset.valor];

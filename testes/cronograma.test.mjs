@@ -182,3 +182,37 @@ test('pedido das artes dos stories para o projeto do cliente', () => {
   assert.match(t, /Direcionamento: "colocar o link aqui"/);
   assert.match(t, /Arquivo: S1_3 - link\.jpg/);
 });
+
+test('documento da quinzena: formato com ### e o mesmo texto vindo de PDF (sem ###), virada de ano', async () => {
+  const { lerDocumentoDaQuinzena, cronogramaDoDocumento, FORMATO_DO_DOCUMENTO } = await import('../js/dados-cronograma.js');
+  const d = lerDocumentoDaQuinzena(FORMATO_DO_DOCUMENTO, { hoje: '2026-11-17' });
+  assert.equal(d.nome, 'Dr. Nome Sobrenome');
+  assert.deepEqual([d.inicio, d.fim, d.lidas], ['2026-11-23', '2026-12-04', 4]);
+  assert.deepEqual(d.pecas.map((p) => [p.tipo, p.formato]), [['post', 'carrossel'], ['story', ''], ['reels', ''], ['post', 'estatico']]);
+  assert.equal(lerLaminas(d.pecas[0].slides).length, 3);
+  assert.equal(lerTelas(d.pecas[1].telas).length, 5);
+  assert.match(d.pecas[1].figurinha, /enquete Sim \/ Não; link/);
+  assert.equal(d.pecas[2].video, 'https://drive.google.com/...');
+  assert.equal(d.pecas[3].slides, 'O texto que vai na arte.');
+  const pdf = lerDocumentoDaQuinzena('Cliente: Dra. Exemplo\nPeríodo: 28/12 a 08/01\n28/12 seg · Carrossel\nTema: A\nLegenda:\nOi\n05/01 · Stories\nTela 1 (gancho): oi', { hoje: '2026-12-20' });
+  assert.deepEqual([pdf.inicio, pdf.fim], ['2026-12-28', '2027-01-08']);
+  assert.deepEqual(pdf.pecas.map((p) => p.data), ['2026-12-28', '2027-01-05']);
+  // Atualizar um cronograma: a peça do mesmo dia e tipo recebe o texto e mantém as artes; a nova entra.
+  const base = normalizarCronograma({ cliente: 'x', nome: 'Dra. Exemplo', inicio: '2026-11-23', fim: '2026-12-04', pecas: [
+    { id: 'a', data: '2026-11-23', tipo: 'post', formato: 'carrossel', legenda: 'antiga', artes: [{ caminho: 'u/r7/a.jpg', origem: 'trello' }] }] });
+  const { cron, novas } = cronogramaDoDocumento(d, base, { cliente: 'x' });
+  assert.equal(novas, 3);
+  assert.equal(cron.pecas.find((p) => p.id === 'a').artes.length, 1);
+  assert.match(cron.pecas.find((p) => p.id === 'a').legenda, /^Texto da legenda/);
+});
+
+test('slides usam as artes no lugar das caixas', async () => {
+  const cron = normalizarCronograma({ nome: 'Dra. Cliente Exemplo', inicio: '2026-11-23', fim: '2026-11-27', pecas: [
+    { id: 'a', data: '2026-11-23', tipo: 'post', formato: 'carrossel', slides: 'Slide 01 | Capa: a\nSlide 02 | b', artes: [{ caminho: 'x/1.jpg' }, { caminho: 'x/2.jpg' }] },
+    { id: 'b', data: '2026-11-24', tipo: 'story', telas: 'Tela 1: a\nTela 2: b', artes: [{ caminho: 'x/s1.jpg' }, { caminho: 'x/s2.jpg' }, { caminho: 'x/s3.jpg' }] },
+  ] });
+  const medir = (t, tam) => String(t).length * tam * 0.5;
+  const s = montarSlidesDoCronograma(cron, { assinatura: ASS, artes: { 'x/1.jpg': 'blob:1', 'x/2.jpg': 'blob:2', 'x/s1.jpg': 'blob:s1', 'x/s2.jpg': 'blob:s2', 'x/s3.jpg': 'blob:s3' } }, medir);
+  const imagens = s.flatMap((x) => x.elementos).filter((e) => e.tipo === 'imagem').map((e) => e.src);
+  assert.deepEqual(imagens, ['blob:1', 'blob:2', 'blob:s1', 'blob:s2', 'blob:s3']);
+});

@@ -184,3 +184,130 @@ export function dadosDoRobo(config = [], tipo) {
 export function pedidosDeVideo(config = []) {
   return config.find((c) => c.chave === 'r7-videos' && !c.excluido_em)?.valor?.pedidos || [];
 }
+
+// ---------------------------------------------------------------------------
+// Cadastro automático pelos briefings (Carol, 17/11/2026): cada briefing de vídeo da R7 é de um cliente, e a
+// primeira linha traz a profissão e o registro ("Briefing Dr Fulano Médico – CRM/GO 12.345"). O app cria a
+// ficha de quem ainda não está na Bússola, com o selo "confira"; o que ela escreveu nunca é trocado.
+// ---------------------------------------------------------------------------
+
+const CONSELHOS = 'CRM|CRO|CRP|CRN|CREFITO|CREFONO|CRFA|CRF|COREN|CRBM|CRMV';
+const PROFISSOES = [
+  [/m[eé]dic[oa]/i, (f) => (f ? 'Médica' : 'Médico')], [/cirurgi[aã]o?-?dentista|dentista/i, (f) => (f ? 'Cirurgiã-dentista' : 'Cirurgião-dentista')],
+  [/psic[oó]log[oa]/i, (f) => (f ? 'Psicóloga' : 'Psicólogo')], [/nutricionista/i, () => 'Nutricionista'], [/fisioterapeuta/i, () => 'Fisioterapeuta'],
+  [/fonoaudi[oó]log[oa]/i, (f) => (f ? 'Fonoaudióloga' : 'Fonoaudiólogo')], [/biom[eé]dic[oa]/i, (f) => (f ? 'Biomédica' : 'Biomédico')],
+  [/farmac[eê]utic[oa]/i, (f) => (f ? 'Farmacêutica' : 'Farmacêutico')], [/enfermeir[oa]/i, (f) => (f ? 'Enfermeira' : 'Enfermeiro')],
+];
+const PELO_CONSELHO = { CRM: (f) => (f ? 'Médica' : 'Médico'), CRO: (f) => (f ? 'Cirurgiã-dentista' : 'Cirurgião-dentista'), CRP: (f) => (f ? 'Psicóloga' : 'Psicólogo'), CRN: () => 'Nutricionista', CREFITO: () => 'Fisioterapeuta' };
+
+const titulo = (t) => t.split(' ').map((p) => (p.length <= 3 && /^(de|da|do|das|dos|e)$/i.test(p) ? p.toLowerCase() : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())).join(' ');
+
+// "BRIENF Briefing Dra Fulana  - Março.docx" → "Dra. Fulana"
+export function nomeDoBriefing(arquivo) {
+  let t = String(arquivo || '').replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[_]+/g, ' ');
+  t = t.replace(/^\s*((brienf|briefing|brief)\b[\s:–—-]*)+/i, '');
+  t = t.split(/\s[-–—]\s*|\s{2,}[-–—]|[-–—]\s+/)[0];
+  t = t.replace(/\s+(m[eé]dic[oa]|cirurgi[aã]o?|dentista|psic[oó]log[oa]|nutricionista)\b.*$/i, '');
+  t = t.split(' ').filter((p) => p && indiceDoMes(sem(p)) < 0).join(' ').replace(/\s+/g, ' ').trim();
+  if (!t) return '';
+  if (t === t.toUpperCase()) t = titulo(t);
+  return t.replace(/^(dra|dr)\.?\s+/i, (m) => (/dra/i.test(m) ? 'Dra. ' : 'Dr. '));
+}
+
+// O registro da primeira linha: { conselho, uf, numero, profissao } ou null.
+export function registroDoBriefing(texto, nome = '') {
+  const topo = String(texto || '').split('\n').slice(0, 4).join(' ');
+  const m = new RegExp(`\\b(${CONSELHOS})\\s*[/-]?\\s*([A-Z]{2})?\\s*[:nº°-]*\\s*(\\d[\\d.]{1,9}\\d)`, 'i').exec(topo);
+  if (!m) return null;
+  const fem = /^dra\b/i.test(nome);
+  const conselho = m[1].toUpperCase();
+  const achada = PROFISSOES.find(([re]) => re.test(topo));
+  const profissao = achada ? achada[1](fem) : (PELO_CONSELHO[conselho] ? PELO_CONSELHO[conselho](fem) : '');
+  return { conselho, uf: (m[2] || '').toUpperCase(), numero: m[3].replace(/[.\s]/g, ''), profissao };
+}
+
+export function assinaturaDoRegistro(nome, r) {
+  if (!r) return '';
+  return [nome, r.profissao, `${r.conselho}${r.uf ? `-${r.uf}` : ''} ${r.numero}`].filter(Boolean).join(' | ');
+}
+
+// Os clientes que os briefings mostram (o briefing mais recente de cada um, dos últimos "dias").
+export function clientesDosBriefings(robo, { hoje = new Date().toISOString().slice(0, 10), dias = 150 } = {}) {
+  const limite = Date.parse(`${hoje}T12:00:00Z`) - dias * DIA_MS;
+  const porNome = new Map();
+  for (const b of robo?.briefings || []) {
+    if (b.modificado && Date.parse(b.modificado) < limite) continue;
+    const nome = nomeDoBriefing(b.arquivo);
+    if (palavrasDoNome(nome).length === 0) continue;
+    const chave = palavrasDoNome(nome).join(' ');
+    const atual = porNome.get(chave);
+    if (atual && String(atual.modificado || '') >= String(b.modificado || '')) continue;
+    const reg = registroDoBriefing(b.texto, nome);
+    porNome.set(chave, { chave, nome, registro: reg, assinatura: assinaturaDoRegistro(nome, reg), topo: String(b.texto || '').split('\n').slice(0, 3).join(' '), arquivo: b.arquivo, modificado: b.modificado || '' });
+  }
+  return [...porNome.values()].sort((a, z) => a.nome.localeCompare(z.nome));
+}
+
+// Quem dos briefings ainda não está na Bússola (nem foi recusado antes).
+export function clientesNovosDoRobo(robo, existentes = [], vistos = [], opcoes) {
+  const jaVistos = new Set(vistos);
+  return clientesDosBriefings(robo, opcoes).filter((c) => !jaVistos.has(c.chave)
+    && !existentes.some((e) => ehDoCliente(c.nome, e.nome) || ehDoCliente(e.nome, c.nome)));
+}
+
+// A lista do cliente nos quadros dos designers (pelo nome) → { quadro, lista } ou null.
+export function listaDoCliente(roboTrello, nome) {
+  for (const q of roboTrello?.quadros || []) {
+    const lista = [...new Set((q.cartoes || []).map((c) => c.lista))].find((l) => ehDoCliente(l, nome));
+    if (lista) return { quadro: q.quadro, lista };
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Artes do Trello no cronograma: o card do designer tem a copy na descrição (a que a Bússola montou com
+// "Copiar para o Trello"); a peça é a de copy mais parecida, e as imagens entram na ordem das lâminas.
+// ---------------------------------------------------------------------------
+
+const palavras = (t) => new Set(sem(t).replace(/\*\*|capa|card \d+/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').split(' ').filter((p) => p.length > 3));
+
+export function parecido(a, b) {
+  const x = palavras(a);
+  const y = palavras(b);
+  if (!x.size || !y.size) return 0;
+  let comum = 0;
+  for (const p of x) if (y.has(p)) comum += 1;
+  return comum / Math.min(x.size, y.size);
+}
+
+// Os cartões com arte (anexos de imagem guardados pelo robô) → [{ peca, cartao, anexos }].
+// Só casa peça de feed com a copy, ou pelo tema no nome do card; cada card vai para uma peça só.
+export function artesDoTrelloParaCronograma(cron, roboTrello, { nome = '', lista = '' } = {}) {
+  const alvo = lista ? sem(lista) : '';
+  const cartoes = (roboTrello?.quadros || []).flatMap((q) => (q.cartoes || []).map((c) => ({ ...c, quadro: q.quadro })))
+    .filter((c) => (c.anexos || []).some((a) => a.caminho))
+    .filter((c) => (alvo ? sem(c.lista) === alvo || sem(c.lista).startsWith(alvo) : ehDoCliente(c.lista, nome)));
+  const usados = new Set();
+  const saida = [];
+  for (const p of cron.pecas) {
+    if (!(p.tipo === 'post' || p.tipo === 'reels')) continue;
+    const copy = [p.slides, p.tema].join('\n');
+    let melhor = null;
+    for (const c of cartoes) {
+      if (usados.has(c.url || c.nome)) continue;
+      const nota = Math.max(parecido(c.desc || '', copy), p.tema ? parecido(c.nome, p.tema) : 0);
+      if (nota >= 0.6 && (!melhor || nota > melhor.nota)) melhor = { c, nota };
+    }
+    if (!melhor) continue;
+    usados.add(melhor.c.url || melhor.c.nome);
+    const anexos = [...melhor.c.anexos].filter((a) => a.caminho)
+      .sort((a, z) => (numeroNoNome(a.nome) - numeroNoNome(z.nome)) || ((a.pos ?? 0) - (z.pos ?? 0)));
+    saida.push({ peca: p.id, cartao: melhor.c.nome, anexos });
+  }
+  return saida;
+}
+
+function numeroNoNome(n) {
+  const m = /(\d+)(?!.*\d)/.exec(String(n || '').replace(/\.[a-z0-9]+$/i, ''));
+  return m ? Number(m[1]) : Number.MAX_SAFE_INTEGER;
+}

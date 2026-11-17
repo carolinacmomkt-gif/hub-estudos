@@ -21,7 +21,7 @@ import { cifrar } from '../lib/cripto.mjs';
 import { ErroIa } from '../lib/ia-comum.mjs';
 import {
   ErroOrigem, contaNotionTrabalho, trelloEscreve, tokenDe, partesDaSincronizacao, sincronizarParte, mudarPeca, comentarPeca,
-  lerTextoDaPeca, criarPeca, pedirIa, escreverLegendasR7, calendariosDe, buscarCalendarios, salvarCalendarios, cartoesDaPauta, anexoDaPauta,
+  lerTextoDaPeca, criarPeca, pedirIa, escreverLegendasR7, organizarDocumentoR7, calendariosDe, buscarCalendarios, salvarCalendarios, cartoesDaPauta, anexoDaPauta,
 } from '../lib/trabalho.mjs';
 import { fontes } from '../lib/trabalho-fontes.mjs';
 import { escreverConsideracoes } from '../lib/ia-relatorio.mjs';
@@ -112,6 +112,11 @@ export default async (req) => {
         })).filter((p) => p.id);
         if (!pecas.length || !texto(e.cliente, 120)) return resposta(200, { ok: false, erro: 'Nada para escrever.' });
         return resposta(200, await escreverLegendasR7(usuaria.id, { clienteChave: texto(e.cliente, 120), pecas }));
+      }
+      case 'r7-documento': {
+        const t = texto(e.texto, 60000);
+        if (t.trim().length < 40 || !texto(e.cliente, 120)) return resposta(200, { ok: false, erro: 'O documento está vazio.' });
+        return resposta(200, await organizarDocumentoR7(usuaria.id, { clienteChave: texto(e.cliente, 120), texto: t, hoje: texto(e.hoje, 10) }));
       }
       case 'pauta-cartoes':
         if (!texto(e.cliente, 120)) return resposta(200, { ok: false, erro: 'Escolha a cliente.' });

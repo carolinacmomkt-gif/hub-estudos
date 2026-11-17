@@ -13,6 +13,7 @@ import { pedirJson, objeto, lista as tipoLista, texto as tipoTexto, ErroIa } fro
 import { REGRAS_DA_VOZ, semTravessao } from './revisao-texto.mjs';
 import { fontes, calendariosDaConexao } from './trabalho-fontes.mjs';
 import { regraDoCta } from '../../js/especialidades.js';
+import { FORMATO_DO_DOCUMENTO } from '../../js/dados-cronograma.js';
 import {
   normalizar, slug, nomeDoCliente, nomeDoQuadro, semAcessos, acharCliente, etiquetaDoCliente, listaAtiva, formatoDasEtiquetas,
   destinoDaAprovacao, destinoDoAjuste, casaDoCliente, corDoCliente, ehMinha, clienteDeSaude,
@@ -743,6 +744,25 @@ ${REGRAS_DA_VOZ}`;
     return { id: x.id, legenda: t.slice(0, 4000) };
   });
   return { ok: true, legendas };
+}
+// O documento da quinzena que veio em outro jeito (tabela, títulos soltos) → o formato que a Bússola lê.
+// Só reorganiza: não escreve, não corta e não muda nenhuma palavra das copys (Carol, 17/11/2026).
+export async function organizarDocumentoR7(userId, { clienteChave, texto, hoje }) {
+  const cliente = (await clientesGuardados(userId)).find((c) => c.chave === clienteChave);
+  if (!cliente || cliente.casa !== 'r7') throw new ErroIa('Cliente da R7 não encontrado.');
+  const conteudo = `<documento cliente="${cliente.nome}" hoje="${hoje || ''}">
+${String(texto).slice(0, 60000)}
+</documento>
+
+<pedido>
+Reorganize o documento acima no formato abaixo, sem escrever nada novo: copie cada texto exatamente como está (lâminas, legendas, telas, textos da capa, links), só trocando de lugar e pondo os rótulos. O que não couber em nenhum campo fica de fora. Se o documento não disser o tipo de uma peça, deduza pelo conteúdo (lâminas = carrossel; telas = stories; vídeo = reel). Datas no formato dd.mm.
+
+${FORMATO_DO_DOCUMENTO}
+</pedido>`;
+  const r = await pedirJson({ system: 'Você organiza documentos de cronograma de conteúdo de Instagram num formato fixo. Nunca reescreve nem resume o texto do cliente.', conteudo, esquema: objeto({ documento: tipoTexto }), maxTokens: 16000, esforco: 'low' });
+  const documento = String(r.documento || '').trim();
+  if (!documento) throw new ErroIa('A IA não conseguiu organizar este documento.');
+  return { ok: true, documento };
 }
 export { casaDoCliente };
 

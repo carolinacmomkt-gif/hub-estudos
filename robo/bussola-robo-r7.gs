@@ -4,7 +4,8 @@
  * O que faz, sem gastar nada da Netlify:
  *  - toda segunda às 6h: lê os briefings de vídeo (pasta de briefings → ano → mês) e as pastas
  *    "VIDEOS <MÊS>" (com a subpasta USADO) de cada cliente, e manda o resumo para a Bússola;
- *  - de 2 em 2 horas, nos dias úteis: lê os quadros dos designers no Trello da R7 e manda o resumo.
+ *  - de 2 em 2 horas, nos dias úteis: lê os quadros dos designers no Trello da R7 e manda o resumo, com a
+ *    descrição dos cards e as artes anexadas (guardadas uma vez no Storage da Bússola, numa pasta só do robô).
  *
  * Só leitura: nunca cria, move, renomeia ou apaga nada no Drive nem no Trello (só GET).
  * Nada secreto fica neste arquivo: o código do robô, o Trello e a pasta ficam nas Propriedades do script
@@ -126,6 +127,56 @@ function trello(caminho) {
   return JSON.parse(r.getContentText());
 }
 
+// Artes dos cards (Carol, 17/11/2026): as imagens anexadas pelos designers vão para o Storage da Bússola
+// (pasta com o SHA-256 do código do robô, que só ele e a dona enxergam), uma vez cada. A Bússola põe cada
+// arte na peça certa do cronograma pela copy da descrição do card.
+var MAX_ARTES_POR_RODADA = 40;
+var MAX_BYTES = 8 * 1024 * 1024;
+
+function pastaDoRobo() {
+  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, prop('BUSSOLA_CODIGO'), Utilities.Charset.UTF_8);
+  return bytes.map(function (b) { var h = (b < 0 ? b + 256 : b).toString(16); return h.length === 1 ? '0' + h : h; }).join('');
+}
+
+// Os ids dos anexos já guardados, em pedaços (cada propriedade aceita até 9 KB).
+function enviados() {
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var lista = [];
+  Object.keys(props).filter(function (k) { return /^ENVIADOS_\d+$/.test(k); }).sort().forEach(function (k) { lista = lista.concat(props[k].split(',').filter(String)); });
+  return lista;
+}
+function guardarEnviados(lista) {
+  var props = PropertiesService.getScriptProperties();
+  Object.keys(props.getProperties()).filter(function (k) { return /^ENVIADOS_\d+$/.test(k); }).forEach(function (k) { props.deleteProperty(k); });
+  var ultimos = lista.slice(-3000);
+  for (var i = 0; i * 300 < ultimos.length; i++) props.setProperty('ENVIADOS_' + i, ultimos.slice(i * 300, (i + 1) * 300).join(','));
+}
+
+function extensao(nome, tipo) {
+  var m = /\.(png|jpe?g|webp|gif)$/i.exec(nome || '');
+  return m ? m[1].toLowerCase().replace('jpeg', 'jpg') : (/png/.test(tipo || '') ? 'png' : 'jpg');
+}
+
+function guardarArte(cartao, anexo, pasta) {
+  var caminho = pasta + '/' + anexo.id + '.' + extensao(anexo.name, anexo.mimeType);
+  var auth = 'OAuth oauth_consumer_key="' + prop('TRELLO_CHAVE') + '", oauth_token="' + prop('TRELLO_TOKEN') + '"';
+  var r = UrlFetchApp.fetch('https://api.trello.com/1/cards/' + cartao + '/attachments/' + anexo.id + '/download/' + encodeURIComponent(anexo.name || 'arte'), { method: 'get', headers: { Authorization: auth }, muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) return null;
+  var blob = r.getBlob();
+  if (blob.getBytes().length > MAX_BYTES) return null;
+  var url = prop('BUSSOLA_SUPABASE_URL').replace(/\/+$/, '') + '/storage/v1/object/robo-r7/' + caminho;
+  var s = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: blob.getContentType() || 'image/jpeg',
+    headers: { apikey: prop('BUSSOLA_CHAVE_PUBLICA'), Authorization: 'Bearer ' + prop('BUSSOLA_CHAVE_PUBLICA') },
+    payload: blob.getBytes(),
+    muteHttpExceptions: true,
+  });
+  var codigo = s.getResponseCode();
+  if (codigo >= 300 && !/Duplicate|already exists/i.test(s.getContentText())) { Logger.log('Arte não guardada (' + codigo + '): ' + s.getContentText().slice(0, 160)); return null; }
+  return caminho;
+}
+
 function rodarTrello(forcar) {
   var agora = new Date();
   var dia = agora.getDay();
@@ -136,20 +187,39 @@ function rodarTrello(forcar) {
     return nomes.length ? nomes.indexOf(n) >= 0 : /desing|design/.test(n) && !/portf|trafeg|tráfeg/.test(n);
   });
   var limite = agora - 45 * 864e5;
+  var pasta = pastaDoRobo();
+  var ja = enviados();
+  var jaSet = {};
+  ja.forEach(function (id) { jaSet[id] = true; });
+  var guardadas = 0;
   var saida = [];
+  var ehIdentidade = function (c) { return /\b(idv|infos?|identidade)\b/i.test(c.name); };
   quadros.forEach(function (q) {
     var listas = {};
     trello('/boards/' + q.id + '/lists?filter=open&fields=name').forEach(function (l) { listas[l.id] = l.name; });
-    var cartoes = trello('/boards/' + q.id + '/cards?filter=open&fields=name,idList,due,dueComplete,dateLastActivity,labels,shortUrl&members=true&member_fields=fullName');
+    var cartoes = trello('/boards/' + q.id + '/cards?filter=open&fields=name,desc,idList,due,dueComplete,dateLastActivity,labels,shortUrl&members=true&member_fields=fullName&attachments=true&attachment_fields=id,name,mimeType,pos,isUpload,bytes');
     saida.push({
       quadro: q.name,
-      cartoes: cartoes.filter(function (c) { return listas[c.idList] && (Date.parse(c.dateLastActivity) > limite || (c.due && Date.parse(c.due) > limite)); })
+      cartoes: cartoes.filter(function (c) { return listas[c.idList] && (ehIdentidade(c) || Date.parse(c.dateLastActivity) > limite || (c.due && Date.parse(c.due) > limite)); })
         .slice(0, 400).map(function (c) {
+          var imagens = (c.attachments || []).filter(function (a) { return a.isUpload && /^image\//.test(a.mimeType || '') && (!a.bytes || a.bytes <= MAX_BYTES); });
+          var anexos = [];
+          imagens.forEach(function (a) {
+            var caminho = pasta + '/' + a.id + '.' + extensao(a.name, a.mimeType);
+            if (!jaSet[a.id] && guardadas < MAX_ARTES_POR_RODADA && !ehIdentidade(c)) {
+              if (guardarArte(c.id, a, pasta)) { jaSet[a.id] = true; ja.push(a.id); guardadas++; }
+            }
+            if (jaSet[a.id]) anexos.push({ id: a.id, nome: String(a.name || '').slice(0, 120), pos: a.pos || 0, caminho: caminho });
+          });
           return { lista: listas[c.idList], nome: String(c.name).slice(0, 160), vence: c.due || null, feito: Boolean(c.dueComplete),
             etiquetas: (c.labels || []).map(function (e) { return e.name; }).filter(String), membros: (c.members || []).map(function (m) { return m.fullName; }),
-            ativo: c.dateLastActivity, url: c.shortUrl };
+            ativo: c.dateLastActivity, url: c.shortUrl,
+            desc: (imagens.length || ehIdentidade(c)) ? String(c.desc || '').slice(0, 3000) : '',
+            anexos: anexos };
         }),
     });
   });
+  guardarEnviados(ja);
+  if (guardadas) Logger.log(guardadas + ' artes novas guardadas na Bússola.');
   enviar('trello', { quadros: saida, lido_em: agora.toISOString() });
 }

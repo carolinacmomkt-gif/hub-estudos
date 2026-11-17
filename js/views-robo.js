@@ -3,7 +3,7 @@
 
 import { esc, haQuantoTempo } from './utilidades.js';
 import { cabecalho } from './componentes.js';
-import { videosDoCliente, trelloDoCliente, frasesDoTrello, dadosDoRobo, pedidosDeVideo, textoDaDemanda } from './dados-robo.js';
+import { videosDoCliente, trelloDoCliente, frasesDoTrello, dadosDoRobo, pedidosDeVideo, textoDaDemanda, clientesDosBriefings, ehDoCliente } from './dados-robo.js';
 import { PREFIXO_CRONOGRAMA, normalizarCronograma, resumoDoQueFalta, frasesDoQueFalta, periodoEmTexto } from './dados-cronograma.js';
 
 const hojeIso = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
@@ -53,11 +53,18 @@ export function cardSemanaR7(estado, clientes, fichaDe) {
   const captar = demanda.filter((l) => l.captacao === 'acabou' || l.captacao === 'sem-briefing').length;
   const vencidas = trello ? clientes.reduce((n, c) => n + trelloDe(estado, c, fichaDe(c)).conta.vencida, 0) : 0;
   const ajustes = trello ? clientes.reduce((n, c) => n + trelloDe(estado, c, fichaDe(c)).conta.ajuste, 0) : 0;
+  const doBriefing = videos ? clientesDosBriefings(videos, { hoje }) : [];
+  const recusados = new Set((estado.config || []).find((l) => l.chave === 'r7-auto' && !l.excluido_em)?.valor?.vistos || []);
+  const semFicha = doBriefing.filter((b) => !recusados.has(b.chave) && !clientes.some((c) => ehDoCliente(b.nome, c.nome) || ehDoCliente(c.nome, b.nome)));
+  const quadros = trello?.quadros?.length || 0;
+  const artes = (trello?.quadros || []).reduce((n, q) => n + (q.cartoes || []).reduce((m, c) => m + (c.anexos?.length || 0), 0), 0);
+  const robo = videos || trello ? `<li><span class="r7-semana-rotulo">Robô</span><span>${[videos && `${doBriefing.length} ${doBriefing.length === 1 ? 'cliente' : 'clientes'} nos briefings`, trello && `${quadros} ${quadros === 1 ? 'quadro' : 'quadros'} no Trello`, artes && `${artes} ${artes === 1 ? 'arte' : 'artes'} dos designers`].filter(Boolean).join(' · ')}${semFicha.length ? `<br><small>Sem ficha na Bússola: ${semFicha.slice(0, 8).map((b) => esc(b.nome)).join(', ')}${semFicha.length > 8 ? ` e mais ${semFicha.length - 8}` : ''}. Cadastre em "+ Novo cliente" se for da R7.</small>` : ''}</span></li>` : '';
   return `
     <section class="card r7-semana" aria-labelledby="r7-semana-titulo">
       <div class="card-topo"><h2 class="card-titulo" id="r7-semana-titulo">Esta semana</h2>
         <span class="campo-ajuda">${videos || trello ? `Robô: Drive lido ${videos ? esc(quando(videos.recebido_em)) : '(ainda não)'} · Trello lido ${trello ? esc(quando(trello.recebido_em)) : '(ainda não)'}` : 'Robô do Google desligado'}</span></div>
       <ul class="r7-semana-lista">
+        ${robo}
         <li><span class="r7-semana-rotulo">Cronogramas</span><span>${linhasCron.length ? linhasCron.map(({ c, cron, r }) => `<a href="#r7/cronograma:${esc(c.chave)}:${esc(cron.inicio)}">${esc(c.nome)}</a> <small>${esc(frasesDoQueFalta(r))}${cron.marcas?.finalizado ? ' · finalizado' : ''}</small>`).join('<br>') : 'Nenhum cronograma começando nos próximos 10 dias.'}</span></li>
         <li><span class="r7-semana-rotulo">Vídeos</span><span>${videos ? `<a href="#r7/videos">${pedir ? `${pedir} ${pedir === 1 ? 'cliente com vídeo' : 'clientes com vídeos'} para pedir` : 'Nada para pedir agora'}</a>${captar ? ` <small>· ${captar} ${captar === 1 ? 'precisa' : 'precisam'} de nova captação</small>` : ''}` : 'Ligue o robô em "Ajustes da R7" e a demanda de segunda sai pronta.'}</span></li>
         <li><span class="r7-semana-rotulo">Design</span><span>${trello ? (vencidas || ajustes ? `${vencidas ? `${vencidas} ${vencidas === 1 ? 'peça vencida' : 'peças vencidas'}` : ''}${vencidas && ajustes ? ' · ' : ''}${ajustes ? `${ajustes} em ajuste` : ''}` : 'Tudo no prazo com os designers.') : 'O Trello da R7 entra quando o robô estiver ligado.'}</span></li>

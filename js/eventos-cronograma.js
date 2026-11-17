@@ -3,7 +3,7 @@
 // por vez), marcar as etapas e baixar PDF/PPTX. Tudo fica em config "cronograma-r7:<cliente>:<início>".
 
 import { obterEstado, atualizarEstado } from './estado.js';
-import { listar, salvar } from './persistencia.js';
+import { listar, salvar, excluir } from './persistencia.js';
 import { chamar } from './funcoes.js';
 import { confirmar } from './confirmar.js';
 import { prepararMedidas, medir, pptxDeSlides, pdfDeSlides } from './slides-arquivos.js';
@@ -13,7 +13,9 @@ import { contextoDoCliente, cronogramaAberto } from './views-cronograma.js';
 import {
   chaveDoCronograma, cronogramaVazio, normalizarCronograma, pecaVazia, pedidoParaClaude, lerRespostaDoClaude, oQueFalta,
   textoWhatsApp, textoParaTrello, entregaDoDesigner, pedidoDasArtesDosStories, textoDaEntrega, montarSlidesDoCronograma, nomeDoArquivoDoCronograma,
+  lerDocumentoDaQuinzena, cronogramaDoDocumento, cronogramasDoCliente, FORMATO_DO_DOCUMENTO,
 } from './dados-cronograma.js';
+import { textoDoArquivo, imagensDosArquivos, guardarArte, apagarArte, artesDoCronograma, urlDaArte, carregarArte } from './cronograma-importar.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -121,7 +123,8 @@ async function baixarArquivo(alvo) {
   app.renderizar();
   try {
     await prepararMedidas();
-    const slides = montarSlidesDoCronograma(cron, { cor: f.rotina.estilo?.corDestaque, assinatura: f.identificacao.assinatura }, medir);
+    const artes = await artesDoCronograma(cron);
+    const slides = montarSlidesDoCronograma(cron, { cor: f.rotina.estilo?.corDestaque, assinatura: f.identificacao.assinatura, artes }, medir);
     const arquivo = tipo === 'pptx' ? await pptxDeSlides(slides, { titulo: `Cronograma · ${cron.nome}` }) : await pdfDeSlides(slides);
     baixar(arquivo, nomeDoArquivoDoCronograma(cron, tipo));
     avisar(`${tipo.toUpperCase()} baixado.`);
@@ -131,6 +134,101 @@ async function baixarArquivo(alvo) {
     atualizarEstado({ cronOcupado: '' });
     app.renderizar();
   }
+}
+
+// O documento da quinzena: lido no aparelho; vira cronograma novo ou atualiza o do mesmo período.
+const hojeIso = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+
+async function aplicarDocumento(chave, textoDoc, nomeArquivo) {
+  const c = cliente(chave);
+  if (!c) return;
+  const doc = lerDocumentoDaQuinzena(textoDoc, { hoje: hojeIso() });
+  if (!doc.lidas) {
+    atualizarEstado({ cronDocSemLeitura: { cliente: chave, nome: nomeArquivo }, cronDocTexto: textoDoc });
+    app.renderizar();
+    return;
+  }
+  const existentes = cronogramasDoCliente(obterEstado().config || [], chave);
+  const alvo = existentes.find((x) => x.inicio <= doc.fim && x.fim >= doc.inicio) || null;
+  const { cron, novas } = cronogramaDoDocumento(doc, alvo, { cliente: chave, nome: c.nome });
+  await gravar(chave, cron);
+  if (alvo && alvo.inicio !== cron.inicio) {
+    const velha = (await listar('config')).find((l) => l.chave === chaveDoCronograma(chave, alvo.inicio) && !l.excluido_em);
+    if (velha) await excluir('config', velha.id);
+    atualizarEstado({ config: await listar('config') });
+  }
+  atualizarEstado({ cronDocSemLeitura: null, cronDocTexto: '' });
+  location.hash = `#r7/cronograma:${chave}:${cron.inicio}`;
+  app.renderizar();
+  avisar(alvo ? `Cronograma atualizado: ${doc.lidas} ${doc.lidas === 1 ? 'peça lida' : 'peças lidas'}${novas ? `, ${novas} ${novas === 1 ? 'nova' : 'novas'}` : ''}.` : `Cronograma montado com ${doc.lidas} ${doc.lidas === 1 ? 'peça' : 'peças'}. Confira o que falta.`);
+}
+
+async function subirDocumento(input) {
+  const arquivo = input.files?.[0];
+  const chave = input.dataset.cliente;
+  input.value = '';
+  if (!arquivo) return;
+  atualizarEstado({ cronOcupado: 'Lendo o documento…' });
+  app.renderizar();
+  try {
+    const textoDoc = await textoDoArquivo(arquivo);
+    atualizarEstado({ cronOcupado: '' });
+    await aplicarDocumento(chave, textoDoc, arquivo.name);
+  } catch (e) {
+    atualizarEstado({ cronOcupado: '' });
+    app.renderizar();
+    avisar(e?.message || 'Não deu para ler esse arquivo. Tente exportar de novo em PDF.');
+  }
+}
+
+async function organizarComIa(alvo) {
+  const chave = alvo.dataset.cliente;
+  const textoDoc = obterEstado().cronDocTexto || '';
+  if (!textoDoc.trim()) return;
+  atualizarEstado({ cronOcupado: 'A IA está organizando o documento…' });
+  app.renderizar();
+  const r = await chamar('trabalho', { acao: 'r7-documento', cliente: chave, texto: textoDoc.slice(0, 60000), hoje: hojeIso() }).catch((e) => ({ ok: false, erro: e.message }));
+  atualizarEstado({ cronOcupado: '' });
+  if (!r?.ok || !r.documento) { app.renderizar(); avisar(r?.erro || 'A IA não respondeu agora. Tente de novo em instantes.'); return; }
+  await aplicarDocumento(chave, r.documento, obterEstado().cronDocSemLeitura?.nome || 'documento');
+}
+
+// Artes anexadas à mão (imagens ou PDF): trocam as da peça, na ordem do número no nome do arquivo.
+async function anexarArtes(input) {
+  const arquivos = [...(input.files || [])];
+  input.value = '';
+  if (!arquivos.length) return;
+  const { chave, cron } = doAlvo(input);
+  const p = cron?.pecas.find((x) => x.id === input.dataset.peca);
+  if (!p) return;
+  atualizarEstado({ cronOcupado: 'Guardando as artes…' });
+  app.renderizar();
+  try {
+    const blobs = await imagensDosArquivos(arquivos);
+    if (!blobs.length) throw new Error('Não achei imagens nesses arquivos.');
+    const artes = [];
+    for (const [i, b] of blobs.entries()) artes.push({ caminho: await guardarArte(b, { cliente: chave, inicio: cron.inicio, peca: p.id, n: i + 1 }), origem: 'manual' });
+    const antigas = (p.artes || []).filter((a) => a.caminho);
+    const atual = cronogramaAberto(obterEstado(), chave, cron.inicio) || cron;
+    await gravar(chave, { ...atual, pecas: atual.pecas.map((x) => (x.id === p.id ? { ...x, artes } : x)) });
+    antigas.forEach((a) => apagarArte(a.caminho));
+    avisar(`${artes.length} ${artes.length === 1 ? 'arte guardada' : 'artes guardadas'}.`);
+  } catch (e) {
+    avisar(e?.message || 'Não deu para guardar as artes agora.');
+  } finally {
+    atualizarEstado({ cronOcupado: '' });
+    app.renderizar();
+  }
+}
+
+// Miniaturas: põe o endereço das artes que já estão em memória e busca as outras, sem redesenhar a tela.
+export function montarArtes() {
+  document.querySelectorAll('img[data-arte]:not([src])').forEach((img) => {
+    const caminho = img.dataset.arte;
+    const url = urlDaArte(caminho);
+    if (url) { img.src = url; return; }
+    carregarArte(caminho).then((u) => { if (u && img.isConnected) img.src = u; });
+  });
 }
 
 export function cliqueCronograma(alvo) {
@@ -170,6 +268,18 @@ export function cliqueCronograma(alvo) {
       if (p) copiar(pedidoDasArtesDosStories(cron, p), 'Pedido das artes copiado. Cole no projeto do cliente no Claude.');
       return true;
     }
+    case 'cron-formato': copiar(FORMATO_DO_DOCUMENTO, 'Formato copiado. Cole no projeto do cliente no Claude.'); return true;
+    case 'cron-doc-ia': organizarComIa(alvo); return true;
+    case 'cron-doc-cancelar': atualizarEstado({ cronDocSemLeitura: null, cronDocTexto: '' }); app.renderizar(); return true;
+    case 'cron-artes-tirar':
+      confirmar('Tirar as artes desta peça?', { botao: 'Tirar', perigo: true }).then((ok) => {
+        if (!ok) return;
+        const { cron } = doAlvo(alvo);
+        const p = cron?.pecas.find((x) => x.id === alvo.dataset.peca);
+        (p?.artes || []).forEach((a) => apagarArte(a.caminho));
+        mudarPeca(alvo, (x) => ({ ...x, artes: [] }));
+      });
+      return true;
     case 'cron-tirar':
       confirmar('Tirar esta peça do cronograma?', { botao: 'Tirar', perigo: true }).then((ok) => { if (ok) mudarPeca(alvo, () => null); });
       return true;
@@ -190,6 +300,8 @@ export function enviarCronograma(form) {
 // Campos da peça salvam no "change" (ao sair do campo), sem redesenhar a cada letra.
 export function mudancaCronograma(alvo, tipo) {
   const acao = alvo.dataset?.acaoMudar;
+  if (acao === 'cron-documento') { if (tipo === 'change') subirDocumento(alvo); return true; }
+  if (acao === 'cron-artes') { if (tipo === 'change') anexarArtes(alvo); return true; }
   if (acao === 'cron-campo') {
     if (tipo !== 'change') return true;
     const campo = alvo.dataset.campo;
