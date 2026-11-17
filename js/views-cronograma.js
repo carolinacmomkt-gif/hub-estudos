@@ -157,6 +157,7 @@ function cardPeca(c, { p, falta, atencao, pronta }) {
       ${campos}
       <div class="acoes cron-peca-acoes">
         ${p.tipo === 'post' && p.formato === 'carrossel' && p.slides ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="cron-trello" ${k}>Copiar para o Trello</button>` : ''}
+        ${p.tipo === 'story' && p.telas.trim() ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="cron-artes" ${k}>Copiar o pedido das artes</button>` : ''}
         ${atencao.length && !falta.length ? `<label class="campo-marcar"><input type="checkbox" data-acao-mudar="cron-campo" data-peca="${esc(p.id)}" data-campo="pode"${p.pode ? ' checked' : ''}><span>Pode seguir assim</span></label>` : ''}
       </div>
     </article>`;

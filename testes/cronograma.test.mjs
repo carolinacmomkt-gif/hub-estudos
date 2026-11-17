@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   periodoPadrao, gradeDoPeriodo, oQueFalta, resumoDoQueFalta, pedidoParaClaude, lerRespostaDoClaude, textoWhatsApp, tituloDaPeca,
   normalizarCronograma, montarSlidesDoCronograma, lerTelas, lerLaminas, nomesDaEntrega, totaisDoCronograma,
-  acoesDaFigurinha, telaDaAcao, textoParaTrello, entregaDoDesigner, acentoDoCronograma, resumoDoQueFalta as resumo, CHECKLIST_FINAL,
+  acoesDaFigurinha, telaDaAcao, pedidoDasArtesDosStories, textoParaTrello, entregaDoDesigner, acentoDoCronograma, resumoDoQueFalta as resumo, CHECKLIST_FINAL,
 } from '../js/dados-cronograma.js';
 import { rotinaPadrao } from '../js/dados-r7.js';
 
@@ -167,4 +167,18 @@ test('Trello do designer, entrega na quinta e acento legível', () => {
   assert.notEqual(acentoDoCronograma('#E8D3BF'), '#E8D3BF');
   assert.equal(CHECKLIST_FINAL.length, 6);
   assert.equal(typeof resumo, 'function');
+});
+
+test('pedido das artes dos stories para o projeto do cliente', () => {
+  const cron = normalizarCronograma({ nome: 'Dra. Cliente Exemplo', inicio: '2026-11-23', fim: '2026-11-27', pecas: [
+    { id: 'b', data: '2026-11-24', tipo: 'story', telas: 'Tela 1 (gancho): Oi | apoio\nTela 2 (interação): Enquete\nTela 3 (chamada): Agende', figurinha: 'enquete Sim / Não; link de agendamento' },
+  ] });
+  const t = pedidoDasArtesDosStories(cron, cron.pecas[0]);
+  assert.match(t, /1080 × 1920/);
+  assert.match(t, /a da identidade visual deste cliente/);
+  assert.doesNotMatch(t, /Instrument/);
+  assert.match(t, /### Tela 1 · gancho · fundo sugerido: liso escuro\nTítulo: Oi\nApoio: apoio/);
+  assert.match(t, /Direcionamento: "colocar a enquete aqui"/);
+  assert.match(t, /Direcionamento: "colocar o link aqui"/);
+  assert.match(t, /Arquivo: S1_3 - link\.jpg/);
 });

@@ -460,6 +460,42 @@ export function nomesDaEntrega(cron) {
   });
 }
 
+// Pedido das artes de uma sequência de stories, para colar no projeto do cliente no Claude (Carol, 17/11/2026:
+// cada cliente tem a própria fonte, então a arte é feita lá, com a identidade dele). Leva as regras de design do
+// manual da R7, as telas com a função e o fundo sugerido, o direcionamento escrito e o nome de cada arquivo.
+export function pedidoDasArtesDosStories(cron, p) {
+  const telas = lerTelas(p.telas);
+  const acoes = acoesDaFigurinha(p.figurinha);
+  const i = cron.pecas.indexOf(p);
+  const arquivos = (i >= 0 ? nomesDaEntrega(cron)[i]?.arquivos : null) || [];
+  const n = telas.length;
+  return [
+    `Crie as artes dos stories de ${cron.nome} para ${nomeDoDia(p.data).toLowerCase()}, ${ddBarraMm(p.data)} (${plural(n, 'tela', 'telas')}).`,
+    '',
+    '## Regras de design (manual da R7)',
+    '- Arte em 1080 × 1920 px, em JPG, com cara de Instagram orgânico.',
+    '- Uma fonte só: a da identidade visual deste cliente (veja o projeto). Título 66 a 84 px em semibold, apoio 38 a 40 px regular, direcionamento 30 px semibold.',
+    '- Cores da identidade do cliente: uma escura, uma clara e uma de acento, só na expressão de destaque (uma por título).',
+    '- Fundos alternando na sequência: liso escuro (gancho, virada), liso claro (prova, chamada sem foto), foto com sombra curta e clara só atrás das letras (quando o rosto ajuda) e foto com caixa quadrada na cor escura (última tela, com link).',
+    '- Deixe livres os 250 px do topo e os 340 px de baixo. Margem lateral de 96 px. Título, apoio e direcionamento alinhados à esquerda na mesma linha, o apoio logo abaixo do título.',
+    '- Linhas equilibradas, sem palavra sozinha na última linha. Na foto, o texto fica onde não há rosto.',
+    '- A arte não leva figurinha: só uma linha de texto de 30 px, sem seta, tracejado ou caixa, no lugar onde ela entra.',
+    '- Não fazer: fundo branco atrás de cada linha, sombra grande e escura, figurinha de verdade na arte.',
+    '',
+    '## Telas',
+    ...telas.map((t, k) => {
+      const aqui = acoes.filter((a) => telaDaAcao(a, n, acoes) === k + 1);
+      return [
+        `### Tela ${t.n}${t.funcao ? ` · ${t.funcao}` : ''} · fundo sugerido: ${telaEscura(t, k, n) ? 'liso escuro' : 'liso claro ou foto'}`,
+        `Título: ${t.titulo}`,
+        ...(t.apoio ? [`Apoio: ${t.apoio}`] : []),
+        ...aqui.map((a) => `Direcionamento: "${direcionamentoDe(a)}" (${rotuloDaAcao(a)})`),
+        ...(arquivos[k] ? [`Arquivo: ${arquivos[k]}`] : []),
+      ].join('\n');
+    }),
+  ].join('\n').trim();
+}
+
 export function textoDaEntrega(cron) {
   return nomesDaEntrega(cron).map((x) => `${x.pasta}\n${x.arquivos.map((a) => `  ${a}`).join('\n')}`).join('\n\n');
 }
