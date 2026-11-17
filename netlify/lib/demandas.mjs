@@ -10,8 +10,6 @@ import { banco } from './supabase.mjs';
 import { decifrar } from './cripto.mjs';
 import { pedirJson, ErroIa, lista, objeto, texto, limpar } from './ia-comum.mjs';
 import { noFuso } from './avisos.mjs';
-import { enviarPush } from './avisos.mjs';
-import { configVida, emSilencio } from './avisos-vida.mjs';
 import {
   pareceFeito, prazoDaOrigem, assinaturaDe, aplicarSugestao, sugestaoSimples, mudancaDe, AREAS_DEMANDA,
   nomeDoCliente, etiquetaDoCliente, contaNoAlinhamento, ehListaDeDemandas, semanaDe, paginaEhDela, TERMOS_NOTION_PADRAO,
@@ -332,32 +330,13 @@ async function lerOrigem(userId, servico, contexto) {
   return lerNotion(segredo.token, conexao?.detalhe?.bases || [], conexao?.detalhe?.termos ?? TERMOS_NOTION_PADRAO);
 }
 
-// Post novo em aprovação: aviso no celular na hora (fora do horário de silêncio).
-async function avisarAprovacoes(userId, linhas, agora) {
-  if (!linhas.length) return;
-  try {
-    const [assinaturas, configs] = await Promise.all([
-      banco.listar('assinaturas_push', userId).catch(() => []),
-      banco.listar('config', userId, 'chave=eq.avisos').catch(() => []),
-    ]);
-    if (!assinaturas.length) return;
-    const { minutos } = noFuso(agora, FUSO);
-    if (emSilencio(minutos, configVida(configs[0]?.valor?.vida).silencio)) return;
-    const n = linhas.length === 1
-      ? { titulo: 'Post para aprovação', texto: linhas[0].titulo, tag: 'demandas-aprovacao', url: '/#inicio' }
-      : { titulo: `${linhas.length} posts para aprovação`, texto: linhas.slice(0, 3).map((l) => l.quem).filter(Boolean).join(', '), tag: 'demandas-aprovacao', url: '/#inicio' };
-    for (const a of assinaturas) {
-      if ((await enviarPush(a, n)) === 'expirada') await banco.apagar('assinaturas_push', `user_id=eq.${userId}&id=eq.${a.id}`).catch(() => {});
-    }
-  } catch (falha) {
-    console.error('demandas push:', falha?.message);
-  }
-}
 
 // Junta o que veio da origem com o que já está guardado.
 // Nova → sugestão (IA nas primeiras); mudou → atualiza (ou avisa, se já virou tarefa);
 // sumiu da origem (feita, arquivada) → some da caixa se ainda não foi aceita.
-export async function sincronizarDemandas(userId, { agora = Date.now(), cliente, servicos = ['trello', 'notion'] } = {}) {
+// IA automática desligada (Carol, 17/11/2026: IA só em pontos estratégicos e com o toque dela): as demandas
+// novas ficam com a sugestão simples, de graça. `comIa: true` volta a usar a IA.
+export async function sincronizarDemandas(userId, { agora = Date.now(), cliente, servicos = ['trello', 'notion'], comIa = false } = {}) {
   const { data: hoje } = noFuso(agora, FUSO);
   const resultado = { ok: true, novas: 0, mudadas: 0, erros: [] };
   for (const servico of servicos) {
@@ -383,10 +362,10 @@ export async function sincronizarDemandas(userId, { agora = Date.now(), cliente,
     // Novas sem IA de leituras anteriores também ganham a vez (até o limite da rodada).
     // Os que a Bússola monta sozinha (aprovação, aprovado, atualizar Trello) não passam pela IA.
     const semIa = guardadas.filter((d) => d.status === 'nova' && d.dados?.ia === false && vistos.has(d.origem_id));
-    const paraIa = [...novos, ...semIa.map((d) => itens.find((x) => x.origem_id === d.origem_id))].filter((x) => x && !x.fixo).slice(0, IA_POR_RODADA);
+    const paraIa = comIa ? [...novos, ...semIa.map((d) => itens.find((x) => x.origem_id === d.origem_id))].filter((x) => x && !x.fixo).slice(0, IA_POR_RODADA) : [];
     let sugestoes = new Map();
     try {
-      sugestoes = await sugerirComIa(paraIa, hoje, { cliente });
+      if (paraIa.length) sugestoes = await sugerirComIa(paraIa, hoje, { cliente });
     } catch (falha) {
       if (!(falha instanceof ErroIa)) console.error('demandas IA:', falha?.message);
     }
@@ -435,7 +414,8 @@ export async function sincronizarDemandas(userId, { agora = Date.now(), cliente,
     }
     resultado.novas += novos.length;
     await banco.gravar('demandas', gravar, 'user_id,origem,origem_id');
-    await avisarAprovacoes(userId, gravar.filter((l) => l.dados?.tipo === 'aprovacao' && !porId.has(l.origem_id)), agora);
+    // (O aviso "post para aprovação" na hora saiu em 17/11/2026: no máximo 2 avisos por dia; a aprovação
+    // entra no "Seu dia" e aparece no app.)
     // Saiu da origem (concluída, arquivada, deixou de ser dela) e ainda não foi aceita: some da caixa.
     const sumiram = guardadas.filter((d) => d.status === 'nova' && !vistos.has(d.origem_id));
     for (const d of sumiram) await banco.atualizarPorId('demandas', userId, d.id, { excluido_em: new Date(agora).toISOString() });

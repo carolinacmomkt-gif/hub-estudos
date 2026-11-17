@@ -5,15 +5,15 @@
 export const MODOS = [
   { id: 'tudo', nome: 'Tudo', grupos: null },
   { id: 'trabalho', nome: 'Trabalho', grupos: ['dia', 'planejar', 'trabalho'] },
-  { id: 'estudo', nome: 'Estudo', grupos: ['dia', 'planejar', 'estudos', 'criacao'] },
+  { id: 'estudo', nome: 'Estudo', grupos: ['dia', 'planejar', 'estudos'] },
   { id: 'descanso', nome: 'Descanso', grupos: ['dia', 'vida'] },
 ];
 
 // Cards do Hoje por contexto (os que não estão aqui valem em todos os modos).
 const CARDS = {
   trabalho: ['trabalho', 'demandas'],
-  estudo: ['prazos', 'provas', 'plano', 'notas', 'precisa', 'faltas', 'avisos', 'leituras', 'cadernos', 'youtube', 'substack'],
-  vida: ['financas', 'contas', 'humor', 'sonho', 'sonhofoto', 'fimdesemana', 'recompensas', 'habitos'],
+  estudo: ['prazos', 'provas', 'plano', 'notas', 'precisa', 'faltas', 'avisos', 'leituras', 'cadernos'],
+  vida: ['humor', 'sonho', 'sonhofoto', 'fimdesemana', 'habitos'],
 };
 export const CARDS_DA_FACULDADE = ['prazos', 'provas', 'plano', 'notas', 'precisa', 'faltas', 'avisos'];
 

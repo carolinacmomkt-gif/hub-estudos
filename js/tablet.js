@@ -22,7 +22,6 @@ export function marcarAparelho() {
 const ALVOS = {
   'inicio/planejar': '[data-bloco="meudia"] [data-acao="dia-planejar"], [data-bloco="meudia"] .meu-dia',
   'tarefas/nova': '#tarefa-rapida-geral',
-  'financas/lancar': '#fin-rapido',
   'configuracoes/demandas': '#demandas-config',
 };
 let pendente = null;
@@ -113,8 +112,6 @@ export const ATALHOS_TECLADO = [
   { tecla: 't', nome: 'Tarefas', hash: '#tarefas' },
   { tecla: 'n', nome: 'Nova tarefa', hash: '#tarefas/nova' },
   { tecla: 'c', nome: 'Calendário', hash: '#calendario' },
-  { tecla: 'f', nome: 'Finanças', hash: '#financas' },
-  { tecla: 'l', nome: 'Lançar um gasto', hash: '#financas/lancar' },
   { tecla: 'k', nome: 'Cadernos', hash: '#cadernos' },
   { tecla: 'm', nome: 'Metas e lazer', hash: '#metas' },
   { tecla: '/', nome: 'Buscar (nesta tela, ou em tudo)' },

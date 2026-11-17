@@ -407,7 +407,7 @@ function estiloDoBloco(el, tag) {
   formatarBloco(el, atual === tag && tag !== 'p' ? 'p' : tag);
 }
 
-function comando(cmd) {
+function comando(cmd, endereco) {
   const el = voltarSelecao();
   if (!el) return;
   switch (cmd) {
@@ -427,7 +427,14 @@ function comando(cmd) {
     }
     case 'link': {
       if (endereco === undefined) {
-        perguntarTexto('Endereço do link (https://…)').then((e) => { if (e) comando('link', e); });
+        // A folha da pergunta tira a seleção do texto: guarda e devolve antes de criar o link.
+        const sel = getSelection();
+        const faixa = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+        perguntarTexto('Endereço do link (https://…)').then((e) => {
+          if (!e) return;
+          if (faixa) { sel.removeAllRanges(); sel.addRange(faixa); }
+          comando('link', e);
+        });
         return;
       }
       if (!endereco) break;

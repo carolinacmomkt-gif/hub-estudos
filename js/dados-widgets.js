@@ -8,13 +8,10 @@ export const AREAS_WIDGET = [
   { id: 'agenda', nome: 'Agenda', simbolo: 'calendar', descricao: 'O que vem nos próximos dias' },
   { id: 'demandas', nome: 'Demandas', simbolo: 'tray.full.fill', descricao: 'Trello, Notion e posts para aprovação' },
   { id: 'habitos', nome: 'Hábitos', simbolo: 'leaf.fill', descricao: 'Os de hoje, feitos e por fazer' },
-  { id: 'financas', nome: 'Finanças', simbolo: 'creditcard.fill', descricao: 'Gasto do mês, quanto dá para gastar e contas' },
   { id: 'faculdade', nome: 'Faculdade', simbolo: 'graduationcap.fill', descricao: 'Próxima prova, quanto preciso tirar e faltas' },
   { id: 'metas', nome: 'Metas', simbolo: 'target', descricao: 'Progresso das metas ativas' },
   { id: 'foco', nome: 'Foco', simbolo: 'timer', descricao: 'Minutos de foco hoje e na semana' },
   { id: 'frase', nome: 'Frase do dia', simbolo: 'quote.opening', descricao: 'A frase do dia' },
-  { id: 'youtube', nome: 'YouTube', simbolo: 'play.rectangle.fill', descricao: 'Próximo vídeo e o quadro por etapa' },
-  { id: 'substack', nome: 'Substack', simbolo: 'square.and.pencil', descricao: 'Textos do mês e o próximo' },
   { id: 'leituras', nome: 'Leituras', simbolo: 'book.fill', descricao: 'O que está lendo e o que vem' },
 ];
 

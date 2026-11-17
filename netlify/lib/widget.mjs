@@ -7,15 +7,11 @@ import { banco } from './supabase.mjs';
 import { noFuso } from './avisos.mjs';
 import { tarefasDeHoje } from '../../js/dados-tarefas.js';
 import { habitosDoDia, feitoNoDia, valorNoDia } from '../../js/dados-habitos.js';
-import { resumoDoMes, mesDe, livreParaGastar, contasDaSemana, CATEGORIAS_PADRAO } from '../../js/dados-financas.js';
-import { livreHoje } from '../../js/dados-comprar.js';
 import { leituraDe, minutosNoDia, sequenciaLeitura } from '../../js/dados-leitura.js';
 import { planoDeHoje, blocoAgora } from '../../js/dados-dia.js';
 import { listaQuantoPrecisa, situacaoFaltas } from '../../js/dados-faculdade.js';
 import { ativas, progressoDaMeta } from '../../js/dados-metas.js';
 import { fraseDoDia } from '../../js/frases.js';
-import { configSubstack, publicadosNoMesSubstack } from '../../js/dados-substack.js';
-import { ETAPAS } from '../../js/dados-youtube.js';
 import { widgetsDaConfig, widgetDoParametro, coresDoWidget, AREAS_WIDGET } from '../../js/dados-widgets.js';
 
 const FUSO = 'America/Sao_Paulo';
@@ -79,19 +75,6 @@ const AREAS = {
       lista: h.lista.slice(0, 8).map((x) => ({ nome: x.nome, icone: x.icone || null, feito: feitoNoDia(registros, x, hoje), valor: valorNoDia(registros, x, hoje), meta: Math.max(1, Number(x.meta) || 1), unidade: x.unidade || null })),
     };
   },
-  async financas({ hoje, ler }) {
-    const [linhas, configs] = await Promise.all([ler('financas'), ler('config', 'chave=eq.financas')]);
-    const cats = configs[0]?.valor?.categorias || CATEGORIAS_PADRAO;
-    const r = resumoDoMes(linhas, mesDe(hoje), { categorias: cats });
-    const l = livreParaGastar(linhas, hoje);
-    const h = livreHoje(linhas, hoje);
-    return {
-      saiu: r2(r.saiu), entrou: r2(r.entrou), livre: r2(l.livre), porDia: r2(l.porDia), diasRestantes: l.diasRestantes,
-      livreHoje: r2(h.sobra), gastoHoje: r2(h.gastoHoje),
-      categorias: r.porCategoria.slice(0, 4).map((c) => ({ nome: c.nome, total: r2(c.total) })),
-      contas: contasDaSemana(linhas, hoje).slice(0, 4).map((x) => ({ nome: x.conta.descricao, valor: r2(x.conta.valor), dias: x.dias, atrasada: x.estado === 'atrasada' })),
-    };
-  },
   async faculdade({ agora, ler }) {
     const [disciplinas, notasLyceum, notasAva, frequencias, eventos] = await Promise.all([
       ler('disciplinas'), ler('notas_lyceum'), ler('notas_ava'), ler('frequencias'),
@@ -111,8 +94,8 @@ const AREAS = {
     };
   },
   async metas({ hoje, ler }) {
-    const [metas, financas, habitos, habitoRegistros, tarefas] = await Promise.all([ler('metas'), ler('financas'), ler('habitos'), ler('habito_registros'), ler('tarefas')]);
-    const dados = { financas, habitos, habitoRegistros, tarefas };
+    const [metas, habitos, habitoRegistros, tarefas] = await Promise.all([ler('metas'), ler('habitos'), ler('habito_registros'), ler('tarefas')]);
+    const dados = { financas: [], habitos, habitoRegistros, tarefas };
     return {
       lista: ativas(metas).map((m) => ({ m, p: progressoDaMeta(m, dados, hoje) })).filter((x) => x.p).slice(0, 5)
         .map(({ m, p }) => ({ titulo: m.titulo, fracao: p.fracao, texto: p.texto || `${Math.round(p.fracao * 100)}%` })),
@@ -131,22 +114,6 @@ const AREAS = {
   async frase({ hoje }) {
     const f = fraseDoDia(new Date(`${hoje}T12:00:00`));
     return typeof f === 'string' ? { texto: f } : { texto: f?.texto || f?.frase || '', autor: f?.autor || null };
-  },
-  async youtube({ ler }) {
-    const videos = (await ler('videos')).filter((v) => v.etapa !== 'publicado');
-    const proximo = [...videos].sort((a, b) => String(a.data_publicacao || '9').localeCompare(String(b.data_publicacao || '9')))[0];
-    return {
-      proximo: proximo ? { titulo: proximo.titulo, etapa: ETAPAS.find((e) => e.id === proximo.etapa)?.nome || proximo.etapa, publicacao: proximo.data_publicacao ? hora(proximo.data_publicacao).dia : null } : null,
-      etapas: ETAPAS.filter((e) => e.id !== 'publicado').map((e) => ({ nome: e.nome, total: videos.filter((v) => v.etapa === e.id).length })).filter((e) => e.total),
-    };
-  },
-  async substack({ agora, ler }) {
-    const [pautas, config] = await Promise.all([ler('pautas_substack'), ler('config', 'chave=eq.substack')]);
-    const estado = { pautas, config };
-    const meta = configSubstack(estado).porMes;
-    const feitos = publicadosNoMesSubstack(estado, agora).length;
-    const proxima = pautas.filter((p) => p.etapa !== 'publicado').sort((a, b) => ['revisao', 'rascunho', 'ideia'].indexOf(a.etapa) - ['revisao', 'rascunho', 'ideia'].indexOf(b.etapa))[0];
-    return { feitos, meta, fracao: Math.min(1, feitos / meta), proxima: proxima ? { titulo: proxima.titulo, etapa: proxima.etapa } : null };
   },
   async leituras({ hoje, ler }) {
     const [artigos, configs] = await Promise.all([ler('artigos', 'status=in.(lendo,ler)'), ler('config', 'chave=eq.leitura')]);

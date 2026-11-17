@@ -3,7 +3,6 @@
 import { DIA } from './utilidades.js';
 import { areasAtivas, nomeDaArea, progressoDaArea } from './dados-estudos.js';
 import { filtrarArtigos } from './dados-biblioteca.js';
-import { pautasAtivas, configSubstack, publicadosNoMesSubstack } from './dados-substack.js';
 
 const tempo = (iso) => (iso ? new Date(iso).getTime() : null);
 
@@ -178,11 +177,6 @@ export function dadosReaisDoInicio(estado, agora = Date.now()) {
         const p = progressoDaArea(estado, a);
         return { id: a.id, nome: a.nome, detalhe: p.detalhe, progresso: p.fracao, destino: `#estudos/${a.id}` };
       }),
-      ...(pautasAtivas(estado).length ? [(() => {
-        const meta = configSubstack(estado).porMes;
-        const feitos = publicadosNoMesSubstack(estado, agora).length;
-        return { id: 'substack', nome: 'Substack', detalhe: `${feitos} de ${meta} textos publicados no mês`, progresso: feitos / meta, destino: '#substack' };
-      })()] : []),
     ],
     leituras: filtrarArtigos(estado, {}).filter((a) => a.status === 'lendo' || a.status === 'ler').map((a) => ({ id: a.id, titulo: a.titulo, status: a.status })),
   };

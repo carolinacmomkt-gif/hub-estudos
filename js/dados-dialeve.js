@@ -35,7 +35,7 @@ export function inegociaveis({ tarefas = [], eventos = [], contas = [], hoje }) 
     const data = String(e.inicio || '').slice(0, 10);
     if (data === hoje || data === amanha) itens.push({ tipo: 'prazo', titulo: e.titulo, hora: null, rota: '#faculdade', prazo: data });
   }
-  for (const c of contas) itens.push({ tipo: 'conta', titulo: c, hora: null, rota: '#financas/contas' });
+  for (const c of contas) itens.push({ tipo: 'conta', titulo: c, hora: null, rota: '#inicio' });
   const ordem = { compromisso: 0, tarefa: 1, prazo: 2, conta: 3 };
   return itens.sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99') || ordem[a.tipo] - ordem[b.tipo]);
 }

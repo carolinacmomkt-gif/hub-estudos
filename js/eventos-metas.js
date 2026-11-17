@@ -7,7 +7,6 @@ import { lerLazer, sortearLazer, spotifyEmbed, TIPOS_LAZER } from './dados-metas
 import { formMeta, detalheMeta, formLazer } from './views-metas.js';
 import { reduzirImagem, carregarThumbsDaTela, apagarThumb, guardarImagemLocal } from './thumbs-youtube.js';
 import { enviarArquivo, idDaUsuaria } from './nuvem.js';
-import { recompensasDe, RECOMPENSAS_PADRAO } from './dados-recompensas.js';
 import { celebrar } from './celebracao.js';
 import { tocarTrilha } from './trilha.js';
 import { prefsMetas } from './views-metas.js';
@@ -69,27 +68,6 @@ async function enviarFoto(metaId, arquivo) {
   await enviarArquivo(caminho, new File([blob], 'sonho.jpg', { type: 'image/jpeg' }));
   guardarImagemLocal(caminho, blob);
   return caminho;
-}
-
-// Pontos de uma recompensa a partir do custo: cerca de 2 pontos por real, de 10 em 10, no mínimo 50.
-const pontosDoCusto = (custo) => Math.max(50, Math.round((Number(custo) * 2) / 10) * 10);
-
-async function virarRecompensa(l) {
-  const atual = (await listar('config')).find((c) => c.chave === 'recompensas');
-  const v = atual?.valor || {};
-  const itens = Array.isArray(v.itens) ? [...v.itens] : RECOMPENSAS_PADRAO.map((r) => ({ ...r }));
-  if (recompensasDe(obterEstado().config).itens.some((r) => r.lazer_id === l.id)) {
-    app.avisoCurto('Isso já está nas suas recompensas.');
-    return;
-  }
-  const t = TIPOS_LAZER.find((x) => x.id === l.tipo);
-  const custo = pontosDoCusto(l.dados?.custo);
-  itens.push({ id: crypto.randomUUID(), emoji: t?.emoji || '🎁', nome: l.titulo.slice(0, 60), custo, valor: Number(l.dados?.custo) || 0, lazer_id: l.id });
-  await salvar('config', { ...(atual || {}), chave: 'recompensas', valor: { ...v, itens, resgates: Array.isArray(v.resgates) ? v.resgates : [] } });
-  atualizarEstado({ config: await listar('config') });
-  fecharFolha();
-  app.renderizar();
-  app.avisoCurto(`${l.titulo} virou recompensa de ${custo} pontos.`, { rotulo: 'Ver', fn: () => { location.hash = '#financas/recompensas'; } });
 }
 
 export function cliqueMetas(alvo) {
@@ -189,11 +167,6 @@ export function cliqueMetas(alvo) {
       }
       const t = TIPOS_LAZER.find((x) => x.id === s.tipo);
       celebrar('🎲', s.titulo, `${t?.emoji || ''} ${t?.nome || ''}`.trim());
-      break;
-    }
-    case 'lazer-recompensa': {
-      const l = itemLazer(id);
-      if (l) virarRecompensa(l);
       break;
     }
     case 'lazer-excluir': {

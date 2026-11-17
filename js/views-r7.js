@@ -1,7 +1,7 @@
 // Telas da R7 (quarta casa do Trabalho; Carol, 16/11/2026): a lista de clientes com o contador do
 // contrato e a ficha completa de cada um (identificação, briefing, rotina, voz, equipe, links,
 // acessos e memória). Só desenha; as ações ficam em eventos-r7.js.
-// Rotas: #r7 (ou #r7/clientes), #r7/novo e #r7/cliente:<chave>.
+// Rotas: #r7 (ou #r7/clientes), #r7/novo, #r7/cliente:<chave> e #r7/cronograma:<chave>[:<início>].
 
 import { esc } from './utilidades.js';
 import { cabecalho } from './componentes.js';
@@ -10,6 +10,9 @@ import {
   DIAS, FORMATOS, TIPOS_VIDEO, MODELOS_STORY, ESTILO_VISUAL, ESTILO_CONTEUDO, CAMPOS_VOZ, LISTAS_VOZ,
   conferirFichaR7, contadorR7, configR7, fontesDaVoz, checarVoz,
 } from './dados-r7.js';
+import { telaCronograma, linhaDoCronograma } from './views-cronograma.js';
+import { cardSemanaR7, telaVideos, linhaDoTrello, cardRobo } from './views-robo.js';
+import { chaveDoTrello, configPublica } from './nuvem.js';
 
 export const ABAS_R7 = [
   ['identificacao', 'Identificação'], ['briefing', 'Briefing'], ['rotina', 'Rotina'], ['voz', 'Voz'],
@@ -23,6 +26,12 @@ export const fichaDe = (c) => conferirFichaR7(c?.dados?.r7 || {});
 export function renderR7(estado) {
   const p = estado.parametro || '';
   if (p === 'novo') return telaNovo(estado);
+  if (p === 'videos') return telaVideos(estado, clientesR7(estado), fichaDe);
+  if (p.startsWith('cronograma:')) {
+    const [chave, inicio] = p.slice(11).split(':');
+    const c = clientesR7(estado).find((x) => x.chave === chave);
+    return c ? telaCronograma(estado, c, fichaDe(c), inicio) : `${cabecalho('Cliente não encontrado', 'Ele pode ter sido apagado.', '<a class="botao botao-secundario" href="#r7">← Clientes da R7</a>')}`;
+  }
   if (p.startsWith('cliente:')) {
     const c = clientesR7(estado).find((x) => x.chave === p.slice(8));
     return c ? telaFicha(estado, c) : `${cabecalho('Cliente não encontrado', 'Ele pode ter sido apagado.', '<a class="botao botao-secundario" href="#r7">← Clientes da R7</a>')}`;
@@ -48,6 +57,7 @@ function telaLista(estado) {
   const DIA = (n) => DIAS.find((d) => d.n === Number(n))?.curto || '';
   return `
     ${cabecalho('R7', 'Os clientes da R7 Estratégias Digitais: ficha completa, rotina de postagem, voz de cada um e os acessos guardados com segurança.', '<a class="botao botao-primario" href="#r7/novo">+ Novo cliente</a>')}
+    ${lista.length ? cardSemanaR7(estado, lista, fichaDe) : ''}
     <section class="card r7-contador" aria-label="Clientes do contrato">
       <div>
         <p class="r7-numero"><strong class="num">${conta.total}</strong> <span>de ${conta.limite} clientes</span></p>
@@ -65,6 +75,8 @@ function telaLista(estado) {
           <span class="r7-cliente-topo"><strong>${esc(c.nome)}</strong>${extras.has(c.chave) ? '<span class="selo r7-extra">Extra</span>' : ''}</span>
           <span class="campo-ajuda">${esc([esp?.nome, f.identificacao.instagram].filter(Boolean).join(' · ') || 'Especialidade a definir')}</span>
           <span class="r7-cliente-linha">${esc([f.equipe.designer && `Design: ${f.equipe.designer}`, feed && `Feed: ${feed}`, f.rotina.grupo ? `Grupo ${f.rotina.grupo}` : 'Rodízio a definir'].filter(Boolean).join(' · '))}</span>
+          <span class="r7-cliente-cron">${esc(linhaDoCronograma(estado, c, f))}</span>
+          ${linhaDoTrello(estado, c, f) ? `<span class="r7-cliente-linha">Trello: ${esc(linhaDoTrello(estado, c, f))}</span>` : ''}
         </a></li>`;
       }).join('')}</ul>`
     : `<section class="card"><p class="texto-suave">Nenhum cliente da R7 ainda. Toque em "+ Novo cliente" para começar o cadastro.</p></section>`}
@@ -80,6 +92,7 @@ function telaLista(estado) {
           <input name="grupoGestao" type="text" maxlength="120" value="${esc(cfg.grupoGestao)}" placeholder="Nome do grupo no WhatsApp"></label>
         <div class="acoes"><button class="botao botao-primario" type="submit">Salvar ajustes</button></div>
       </form>
+      ${cardRobo(estado, { supabaseUrl: configPublica().supabaseUrl, chaveTrello: chaveDoTrello() })}
     </details>`;
 }
 
@@ -108,7 +121,7 @@ function telaFicha(estado, c) {
   const esp = especialidade(f.identificacao.especialidade);
   const aba = abaAtual(estado);
   return `
-    ${cabecalho(c.nome, [esp?.nome, f.identificacao.instagram].filter(Boolean).join(' · ') || 'Cliente da R7', '<a class="botao botao-secundario" href="#r7">← Clientes da R7</a>')}
+    ${cabecalho(c.nome, [esp?.nome, f.identificacao.instagram].filter(Boolean).join(' · ') || 'Cliente da R7', `<a class="botao botao-secundario" href="#r7">← Clientes</a><a class="botao botao-primario" href="#r7/cronograma:${esc(c.chave)}">Cronograma</a>`)}
     <div class="segmentado r7-abas" role="tablist" aria-label="Partes da ficha">${ABAS_R7.map(([id, nome]) => `
       <button type="button" role="tab" class="segmentado-opcao${aba === id ? ' ativo' : ''}" data-acao="r7-aba" data-valor="${id}" aria-selected="${aba === id}" aria-pressed="${aba === id}">${esc(nome)}</button>`).join('')}</div>
     <section class="card r7-secao" data-cliente="${esc(c.chave)}">

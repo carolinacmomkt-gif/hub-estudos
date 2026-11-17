@@ -8,7 +8,6 @@ import {
 } from './dados-metas.js';
 import { fraseDoDia } from './frases.js';
 import { trilhaAberta } from './trilha.js';
-import { caixinhas } from './dados-financas.js';
 import { ativos as habitosAtivos } from './dados-habitos.js';
 
 export const ABAS_METAS = [
@@ -145,7 +144,7 @@ function abaLista(estado) {
   return `
     <div class="acoes"><button class="botao botao-primario" type="button" data-acao="meta-nova">Nova meta</button></div>
     ${lista.length ? `<ul class="metas">${lista.map((m) => linhaMeta(m, dados)).join('')}</ul>`
-      : '<p class="texto-suave tarefa-vazio">Ligue uma meta a uma caixinha, a um hábito, a um projeto ou aos livros lidos, e o progresso anda sozinho.</p>'}
+      : '<p class="texto-suave tarefa-vazio">Ligue uma meta a um hábito, a um projeto ou aos livros lidos, e o progresso anda sozinho.</p>'}
     ${pausadas.length ? `<details class="card"><summary>Pausadas (${pausadas.length})</summary><ul class="metas">${pausadas.map((m) => linhaMeta(m, dados)).join('')}</ul></details>` : ''}`;
 }
 
@@ -211,7 +210,7 @@ const opcao = (v, atual, nome) => `<option value="${esc(v)}"${String(v) === Stri
 
 export function formMeta(m = {}, estado) {
   const lig = m.dados?.ligacao || { tipo: 'nenhuma' };
-  const cx = caixinhas(estado.financas);
+  const cx = []; // as Finanças saíram (17/11/2026): meta não liga mais a caixinha
   const hab = habitosAtivos(estado.habitos);
   const proj = vivos(estado.projetos).filter((p) => p.status !== 'concluido');
   return `
@@ -304,7 +303,6 @@ export function formLazer(l = {}) {
       <p class="ava-alerta" role="alert" data-erro hidden></p>
       <div class="acoes">
         <button class="botao botao-primario" type="submit">${l.id ? 'Salvar' : 'Adicionar'}</button>
-        ${l.id && l.dados?.custo ? `<button class="botao botao-secundario" type="button" data-acao="lazer-recompensa" data-id="${esc(l.id)}">Virar recompensa</button>` : ''}
         ${l.id ? `<button class="botao botao-secundario botao-perigo" type="button" data-acao="lazer-excluir" data-id="${esc(l.id)}">Excluir</button>` : ''}
       </div>
     </form>`;

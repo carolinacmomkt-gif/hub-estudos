@@ -1,9 +1,8 @@
 // Avisos uma vez por dia (16/11/2026): os momentos do dia e o "Seu dia".
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { momentosDoDia, avisoDoDia, linhaDoDia } from '../netlify/functions/avisos-agendado.mjs';
+import { momentosDoDia, avisoDoDia, linhaDoDia, avisoDaTarde, linhaDaDemanda } from '../netlify/functions/avisos-agendado.mjs';
 import { config as cfgAvisos } from '../netlify/functions/avisos-agendado.mjs';
-import { config as cfgRadar } from '../netlify/functions/radar-agendado.mjs';
 import { config as cfgDemandas } from '../netlify/functions/demandas-agendado.mjs';
 import { config as cfgTrabalho } from '../netlify/functions/trabalho-agendado.mjs';
 import { config as cfgSincronizar } from '../netlify/functions/sincronizar-agendado.mjs';
@@ -33,9 +32,31 @@ test('mais de 6 coisas: mostra 6 e "e mais N"', () => {
 });
 
 test('tarefas automáticas: no máximo 1 vez por dia (trabalho a cada 2 h)', () => {
-  assert.equal(cfgAvisos.schedule, '45 10 * * *');
-  assert.equal(cfgRadar.schedule, '31 10 * * 1,4');
+  assert.equal(cfgAvisos.schedule, '45 10,19 * * *');
   assert.equal(cfgDemandas.schedule, '0 10 * * *');
   assert.equal(cfgSincronizar.schedule, '0 9 * * *');
   assert.equal(cfgTrabalho.schedule, '17 10,15,20 * * 1-5');
+});
+
+test('o Radar saiu: nenhuma tarefa automática dele', async () => {
+  const { existsSync } = await import('node:fs');
+  assert.equal(existsSync(new URL('../netlify/functions/radar-agendado.mjs', import.meta.url)), false);
+});
+
+test('fim da tarde: só com pendência, e as etapas da R7 pelo dia da semana', () => {
+  const cron = (nome, marcas = {}) => ({ nome, inicio: '2026-11-23', fim: '2026-12-04', pecas: [], marcas });
+  assert.equal(avisoDaTarde({ hoje: '2026-11-19', diaDaSemana: 4, cronogramas: [cron('Cliente A', { finalizado: 'x' })] }), null);
+  const qui = avisoDaTarde({ hoje: '2026-11-19', diaDaSemana: 4, cronogramas: [cron('Cliente A'), cron('Cliente B', { finalizado: 'x' })] });
+  assert.equal(qui.texto, 'Entrega da R7 hoje: Cliente A');
+  const sex = avisoDaTarde({ hoje: '2026-11-20', diaDaSemana: 5, cronogramas: [cron('Cliente A', { finalizado: 'x' })], tarefasAbertas: 1 });
+  assert.equal(sex.texto, 'Mandar o cronograma ao cliente: Cliente A\n1 tarefa de hoje aberta');
+  assert.equal(avisoDaTarde({ hoje: '2026-11-17', diaDaSemana: 1, cronogramas: [cron('Cliente A')] }), null);
+});
+
+test('segunda: a demanda de vídeos entra no Seu dia', () => {
+  const robo = { briefings: [{ arquivo: 'BRIENF Dra Exemplo NOVEMBRO.docx', ano: '2026', pasta: 'Novembro', texto: 'Vídeo 1 TREND\nVídeo 2 CONTEÚDO' }], producao: [] };
+  const clientes = [{ nome: 'Dra. Exemplo Teste', dados: {} }];
+  assert.equal(linhaDaDemanda({ clientes, robo, hoje: '2026-11-23' }).titulo, 'Demanda de vídeos: 1 cliente');
+  assert.equal(linhaDaDemanda({ clientes, robo, hoje: '2026-11-24' }), null);
+  assert.equal(linhaDaDemanda({ clientes, robo: null, hoje: '2026-11-23' }), null);
 });

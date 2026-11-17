@@ -1,5 +1,6 @@
-// Avisos no aparelho, UMA VEZ POR DIA (decisão da Carol, 16/11/2026, para gastar menos crédito da
-// Netlify): às 7h45 de Brasília a função olha o dia inteiro de uma vez (prazos, contas, hábitos,
+// Avisos no aparelho, NO MÁXIMO 2 POR DIA (Carol, 16 e 17/11/2026, para gastar menos crédito da
+// Netlify e não encher o celular): às 16h45 sai o "Fim da tarde" só se tiver pendência (as entregas da
+// R7 do dia e as tarefas de hoje abertas). Às 7h45 de Brasília a função olha o dia inteiro de uma vez (prazos, contas, hábitos,
 // remédios com os horários, consultas, trabalho, datas) e manda um aviso só, "Seu dia". O resumo da
 // semana continua num aviso próprio, no dia escolhido. Cada coisa sai uma vez por dia (as marcas
 // continuam em config "avisos_vida_enviados" e na tabela avisos_enviados).
@@ -8,6 +9,8 @@ import { banco } from '../lib/supabase.mjs';
 import { avisosDevidos, montarNotificacoes, enviarPush, configDeAvisos, chaveEnviado, ErroPush } from '../lib/avisos.mjs';
 import { avisosDaVida } from '../lib/avisos-vida.mjs';
 import { resumoDevido, resumoDaSemana, textoDaNotificacao } from '../../js/dados-resumo.js';
+import { normalizarCronograma } from '../../js/dados-cronograma.js';
+import { videosDoCliente } from '../../js/dados-robo.js';
 
 const DIA = 24 * 60 * 60 * 1000;
 
@@ -131,6 +134,26 @@ export function avisoDoDia(lista, hoje) {
   };
 }
 
+// Segunda: a demanda de vídeos da R7 (o robô do Google lê o Drive às 6h) entra no "Seu dia".
+export function linhaDaDemanda({ clientes = [], robo, pedidos = [], hoje }) {
+  if (!robo || new Date(`${hoje}T12:00:00Z`).getUTCDay() !== 1) return null;
+  const linhas = clientes.map((c) => videosDoCliente(c.nome, robo, pedidos, { porSemana: c.dados?.r7?.rotina?.videos?.porSemana || 2, hoje }));
+  const pedir = linhas.filter((l) => l.pedir.length).length;
+  const captar = linhas.filter((l) => l.captacao === 'acabou').length;
+  if (!pedir && !captar) return null;
+  return { chave: `r7-videos:${hoje}`, titulo: `Demanda de vídeos: ${pedir} ${pedir === 1 ? 'cliente' : 'clientes'}${captar ? `, ${captar} sem vídeo (pedir captação)` : ''}` };
+}
+
+async function linhaDosVideos(userId, hoje) {
+  if (new Date(`${hoje}T12:00:00Z`).getUTCDay() !== 1) return null;
+  const [clientes, linhasRobo, linhasPedidos] = await Promise.all([
+    banco.listar('clientes_trabalho', userId, 'casa=eq.r7&excluido_em=is.null'),
+    banco.listar('config', userId, 'chave=eq.r7-robo:videos'),
+    banco.listar('config', userId, 'chave=eq.r7-videos'),
+  ]);
+  return linhaDaDemanda({ clientes, robo: linhasRobo[0]?.valor?.dados, pedidos: linhasPedidos[0]?.valor?.pedidos || [], hoje });
+}
+
 export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.now()) {
   const [linhaConfig] = await banco.listar('config', userId, 'chave=eq.avisos');
   const config = configDeAvisos(linhaConfig?.valor);
@@ -139,9 +162,10 @@ export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.no
   await enviarResumoDaUsuaria(userId, assinaturas, linhaConfig?.valor, fimDoDia).catch((erro) => console.error('resumo:', erro?.message));
   const vida = await avisosDaVidaDoDia(userId, linhaConfig?.valor, agora).catch((erro) => { console.error('avisos do dia:', erro?.message); return { notificacoes: [], enviados: new Set() }; });
   const prazos = await prazosDoDia(userId, config, agora).catch((erro) => { console.error('prazos:', erro?.message); return { devidos: [], notificacoes: [] }; });
-  const todas = [...prazos.notificacoes, ...vida.notificacoes];
-  if (!todas.length) return { enviados: 0 };
   const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: config.fuso }).format(new Date(agora));
+  const r7 = await linhaDosVideos(userId, hoje).catch(() => null);
+  const todas = [...(r7 ? [r7] : []), ...prazos.notificacoes, ...vida.notificacoes];
+  if (!todas.length) return { enviados: 0 };
   const aviso = avisoDoDia(todas, hoje);
   let entregue = false;
   for (const assinatura of assinaturas) {
@@ -159,8 +183,44 @@ export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.no
   return { enviados: 1, itens: todas.length };
 }
 
+// "Fim da tarde" (16h45): as etapas da R7 que vencem hoje (esboço na terça e na quarta, entrega na quinta,
+// envio na sexta) para os cronogramas que começam nos próximos 10 dias, e as tarefas de hoje abertas.
+// Sem pendência, não manda nada.
+export function avisoDaTarde({ hoje, diaDaSemana, cronogramas = [], tarefasAbertas = 0 }) {
+  const ate = new Date(Date.parse(`${hoje}T12:00:00Z`) + 10 * DIA).toISOString().slice(0, 10);
+  const proximos = cronogramas.map((v) => normalizarCronograma(v)).filter((c) => c.inicio > hoje && c.inicio <= ate);
+  const etapa = { 2: ['esboco', 'Apresentar o esboço à R7'], 3: ['esboco', 'Apresentar o esboço à R7'], 4: ['finalizado', 'Entrega da R7 hoje'], 5: ['enviado', 'Mandar o cronograma ao cliente'] }[diaDaSemana];
+  const linhas = [];
+  if (etapa) {
+    const faltam = proximos.filter((c) => !c.marcas?.[etapa[0]]).map((c) => c.nome);
+    if (faltam.length) linhas.push(`${etapa[1]}: ${faltam.slice(0, 4).join(', ')}${faltam.length > 4 ? ` e mais ${faltam.length - 4}` : ''}`);
+  }
+  if (tarefasAbertas) linhas.push(`${tarefasAbertas} ${tarefasAbertas === 1 ? 'tarefa de hoje aberta' : 'tarefas de hoje abertas'}`);
+  if (!linhas.length) return null;
+  return { titulo: 'Fim da tarde', texto: linhas.join('\n'), tag: `tarde-${hoje}`, url: etapa && linhas.length > (tarefasAbertas ? 1 : 0) ? '/#r7' : '/#tarefas' };
+}
+
+async function enviarTardeDaUsuaria(userId, assinaturas, agora) {
+  const [linhaAvisos] = await banco.listar('config', userId, 'chave=eq.avisos').catch(() => []);
+  const fuso = configDeAvisos(linhaAvisos?.valor).fuso;
+  const local = new Intl.DateTimeFormat('en-CA', { timeZone: fuso, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }).formatToParts(new Date(agora)).reduce((o, p) => ({ ...o, [p.type]: p.value }), {});
+  const hoje = `${local.year}-${local.month}-${local.day}`;
+  const diaDaSemana = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(local.weekday);
+  const [crons, tarefas] = await Promise.all([
+    banco.listar('config', userId, 'chave=like.cronograma-r7:*&excluido_em=is.null').catch(() => []),
+    banco.listar('tarefas', userId, `data=eq.${hoje}&feita_em=is.null&excluido_em=is.null`).catch(() => []),
+  ]);
+  const n = avisoDaTarde({ hoje, diaDaSemana, cronogramas: crons.map((c) => c.valor || {}), tarefasAbertas: tarefas.length });
+  if (!n) return { enviados: 0 };
+  let entregue = false;
+  for (const a of assinaturas) if ((await enviarPush(a, n)) === 'ok') entregue = true;
+  return { enviados: entregue ? 1 : 0 };
+}
+
 export default async () => {
   const agora = Date.now();
+  // 19:45 UTC = 16h45 em Brasília: o segundo aviso (e último) do dia.
+  const tarde = new Date(agora).getUTCHours() >= 18;
   let assinaturas;
   try {
     assinaturas = await banco.listarTodas('assinaturas_push', 'excluido_em=is.null');
@@ -176,7 +236,8 @@ export default async () => {
   }
   for (const [userId, lista] of porUsuaria) {
     try {
-      await enviarAvisosDaUsuaria(userId, lista, agora);
+      if (tarde) await enviarTardeDaUsuaria(userId, lista, agora);
+      else await enviarAvisosDaUsuaria(userId, lista, agora);
     } catch (erro) {
       console.error('avisos:', erro instanceof ErroPush ? erro.message : erro?.message);
       if (erro instanceof ErroPush) break;
@@ -186,5 +247,5 @@ export default async () => {
   return new Response('ok');
 };
 
-// 10:45 UTC = 7h45 em Brasília, todo dia.
-export const config = { schedule: '45 10 * * *' };
+// 10:45 UTC = 7h45 e 19:45 UTC = 16h45 em Brasília, todo dia (no máximo 2 avisos).
+export const config = { schedule: '45 10,19 * * *' };

@@ -259,3 +259,119 @@ input[type="color"][name="estilo-cor"] {
   min-height: var(--toque);
   padding: 4px;
 }
+
+/* Esta semana, demanda de vídeos e robô do Google (17/11/2026) */
+.r7-semana-lista {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.r7-semana-lista li {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.r7-semana-rotulo {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.r7-semana-lista small {
+  color: var(--cor-texto-suave);
+}
+
+.r7-videos-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.r7-videos-lista {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.r7-videos-pedido {
+  position: sticky;
+  top: 16px;
+}
+
+.r7-videos-texto {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.r7-video-numeros {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.r7-video-num {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 6px;
+  min-height: var(--toque);
+  padding: 6px 8px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  cursor: default;
+}
+
+.r7-video-num b { font-variant-numeric: tabular-nums; }
+.r7-video-num small { grid-column: 1 / -1; color: var(--cor-texto-suave); font-size: 0.75rem; }
+.r7-video-num:has(input) { cursor: pointer; }
+.r7-video-usado { opacity: 0.45; }
+.r7-video-editado { background: var(--cor-destaque-suave); }
+.r7-video-pedido { border-style: dashed; }
+.r7-video-atrasado { border-color: var(--urg-hoje-borda, var(--cor-destaque)); }
+.r7-video-falta:has(input:checked) { border-color: var(--cor-texto-destaque); }
+.r7-video-alerta { color: var(--cor-texto); }
+
+.r7-robo {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.r7-robo-passos {
+  display: grid;
+  gap: 12px;
+  padding-left: 20px;
+}
+
+.r7-robo-props {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 18px;
+  overflow-wrap: anywhere;
+}
+
+.r7-robo-codigo {
+  display: block;
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1000px) {
+  .r7-videos-grade { grid-template-columns: minmax(0, 1fr); }
+  .r7-videos-pedido { position: static; }
+}
+
+@media (max-width: 520px) {
+  .r7-semana-lista li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}

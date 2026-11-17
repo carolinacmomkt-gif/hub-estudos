@@ -7,7 +7,6 @@
 import { somarDias } from './dados-tarefas.js';
 import { leituraDe, minutosNoDia } from './dados-leitura.js';
 import { habitosDoDia, feitoNoDia } from './dados-habitos.js';
-import { lancamentos } from './dados-financas.js';
 import { diaLeveDe } from './dados-dialeve.js';
 
 export const DIAS_PADROES = 56;
@@ -26,7 +25,7 @@ export function seriesDiarias(estado, hoje, dias = DIAS_PADROES) {
     foco.set(d, (foco.get(d) || 0) + (Number(s.minutos) || 0));
   }
   const gasto = new Map();
-  for (const l of lancamentos(estado.financas || [])) if (l.tipo === 'saida') gasto.set(l.data, (gasto.get(l.data) || 0) + (Number(l.valor) || 0));
+  // (Os gastos saíram com as Finanças em 17/11/2026: a série fica vazia e os achados de gasto não aparecem.)
   const leves = new Set(diaLeveDe(estado.config).historico || []);
   const habitos = vivos(estado.habitos);
   const registros = estado.habitoRegistros || [];

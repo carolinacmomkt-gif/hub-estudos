@@ -4,7 +4,6 @@
 import { esc } from './utilidades.js';
 import { protegidosDe, protegidosComoEventos } from './dados-protegidos.js';
 import { tarefasDeHoje } from './dados-tarefas.js';
-import { situacaoDasContas, mesDe } from './dados-financas.js';
 import { habitosDoDia, feitoNoDia } from './dados-habitos.js';
 import { entradaDoDia, prefsDoDia, planoDeHoje, paraMin, blocoAgora } from './dados-dia.js';
 
@@ -39,7 +38,7 @@ export function montarEntrada(estado, { nota = '', agora = Date.now() } = {}) {
     .map((e) => ({ e, dias: Math.round((new Date(`${dataLocal(Date.parse(e.inicio))}T12:00:00`) - new Date(`${hoje}T12:00:00`)) / DIA_MS) }))
     .filter((x) => x.dias >= 1 && x.dias <= 5).sort((a, b) => a.dias - b.dias)
     .map((x) => ({ titulo: x.e.titulo, tipo: x.e.tipo, em_dias: x.dias }));
-  const contas = situacaoDasContas(estado.financas || [], mesDe(hoje), hoje).filter((x) => x.estado !== 'paga' && x.vence === hoje).map((x) => x.conta.descricao);
+  const contas = []; // as Finanças saíram do app (17/11/2026)
   const registros = estado.habitoRegistros || [];
   const habitos = habitosDoDia(estado.habitos || [], registros, hoje).lista.filter((h) => !feitoNoDia(registros, h, hoje))
     .map((h) => ({ nome: h.nome, periodo: h.periodo || 'qualquer' }));

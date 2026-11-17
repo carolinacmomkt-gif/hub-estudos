@@ -421,17 +421,6 @@ export function cliqueTrabalho(alvo) {
       if (p) { iniciarFoco({ titulo: `${p.titulo} · ${p.cliente_nome || ''}`.slice(0, 140) }); location.hash = '#foco'; }
       return true;
     }
-    case 'tb-criar-de': {
-      const p = peca(id);
-      if (!p) return true;
-      atualizarEstado({ criar: { cliente: p.cliente, formato: FORMATOS.find((f) => (p.formato || '').toLowerCase().includes(f.split(' ')[0].toLowerCase())) || FORMATOS[0], objetivo: p.dados?.objetivo || 'Educação', tema: p.titulo, texto: p.texto || '', titulo: p.titulo, calendario: p.origem === 'notion' ? p.fonte : '', data: p.data || '' }, criarStatus: '' });
-      location.hash = '#criar';
-      return true;
-    }
-    case 'tb-criar-para':
-      atualizarEstado({ criar: { ...(estado.criar || {}), cliente: valor, texto: estado.criar?.cliente === valor ? estado.criar?.texto || '' : '' }, criarStatus: '' });
-      location.hash = '#criar';
-      return true;
     case 'tb-modelo': {
       const r = lerCriar();
       const modelo = MODELOS[r.formato] || '';

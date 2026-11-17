@@ -1,10 +1,8 @@
 // Captura por voz no "+": o microfone do navegador (quando existe), "Organizar" com a IA
 // (sem internet, o jeito simples), a prévia para conferir e o "Salvar" com Desfazer.
 
-import { obterEstado } from './estado.js';
 import { salvar } from './persistencia.js';
 import { chamar } from './funcoes.js';
-import { CATEGORIAS_PADRAO } from './dados-financas.js';
 import { capturaSimples, registroDoItem, resumoDaCaptura, DESTINOS_CAPTURA } from './dados-captura.js';
 import { previaCaptura } from './views-captura.js';
 import { dataLocal } from './views-dia.js';
@@ -19,7 +17,6 @@ export function ligarCaptura(funcoes) {
   document.getElementById('folha-criar')?.addEventListener('close', () => { pararDeOuvir(); modoPrevia(false); });
 }
 
-const categorias = () => (obterEstado().config || []).find((c) => c.chave === 'financas' && !c.excluido_em)?.valor?.categorias || CATEGORIAS_PADRAO;
 const campo = () => document.getElementById('captura-texto');
 const previa = () => document.getElementById('captura-previa');
 
@@ -89,11 +86,11 @@ async function organizar(form) {
   let simples = false;
   if (navigator.onLine) {
     previa().innerHTML = '<p class="dia-pensando" role="status"><span class="dia-pensando-ponto" aria-hidden="true"></span>Organizando…</p>';
-    const r = await chamar('capturar', { texto, hoje, categorias: categorias().map((c) => ({ id: c.id, nome: c.nome })) });
+    const r = await chamar('capturar', { texto, hoje });
     if (r.ok) itens = r.itens;
-    else { itens = capturaSimples(texto, hoje, { categorias: categorias() }); simples = true; }
+    else { itens = capturaSimples(texto, hoje); simples = true; }
   } else {
-    itens = capturaSimples(texto, hoje, { categorias: categorias() });
+    itens = capturaSimples(texto, hoje);
     simples = true;
   }
   if (botao) botao.disabled = false;

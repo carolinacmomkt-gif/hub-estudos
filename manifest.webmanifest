@@ -57,17 +57,6 @@
       ]
     },
     {
-      "name": "Lançar um gasto",
-      "short_name": "Gasto",
-      "url": "./#financas/lancar",
-      "icons": [
-        {
-          "src": "icones/icone-192-v4.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
       "name": "Cadernos",
       "url": "./#cadernos",
       "icons": [

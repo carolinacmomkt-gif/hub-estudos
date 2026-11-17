@@ -1,4 +1,4 @@
-// Captura por voz (só quando a Carol toca em "Organizar"). Corpo: { texto, hoje, categorias }.
+// Captura por voz (só quando a Carol toca em "Organizar"). Corpo: { texto, hoje }.
 // "Colar demandas" da Caixa de entrada: { modo: 'demandas', texto, hoje } devolve as tarefas do texto.
 // Devolve os itens para ela conferir; quem grava é o app.
 
@@ -24,10 +24,8 @@ export default async (req) => {
       return resposta(200, { ok: false, erro: 'A IA não respondeu agora. Separei do jeito simples.' });
     }
   }
-  const categorias = (Array.isArray(entrada.categorias) ? entrada.categorias : []).slice(0, 40)
-    .map((c) => ({ id: texto(c?.id, 40), nome: texto(c?.nome, 60) })).filter((c) => c.id);
   try {
-    return resposta(200, { ok: true, itens: await organizarCaptura({ texto: falado, hoje: entrada.hoje, categorias }) });
+    return resposta(200, { ok: true, itens: await organizarCaptura({ texto: falado, hoje: entrada.hoje }) });
   } catch (falha) {
     if (falha instanceof ErroIa) return resposta(200, { ok: false, erro: falha.message });
     console.error('capturar:', falha?.message);

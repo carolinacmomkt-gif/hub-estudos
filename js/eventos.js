@@ -1,6 +1,7 @@
 // Cliques, formulários e interações globais (delegação no documento).
 
 import { definirTema } from './tema.js';
+import { definirDestaque } from './destaque.js';
 import { definirTamanhoTexto, definirVidro } from './preferencias.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 import { entrarComSenha, sair, baixarArquivo } from './nuvem.js';
@@ -22,18 +23,15 @@ import { ligarFoco, cliqueFoco, enviarFoco, mudancaFoco } from './foco.js';
 import { ligarAcompanhado, cliqueAcompanhado, enviarAcompanhado } from './foco-acompanhado.js';
 import { ligarDitado, cliqueDitado } from './ditado.js';
 import { ligarColar, cliqueColar, enviarColar } from './eventos-colar.js';
-import { ligarRadar, cliqueRadar, enviarRadar, mudancaRadar } from './eventos-radar.js';
 import { ligarR7, cliqueR7, enviarR7, mudancaR7 } from './eventos-r7.js';
+import { ligarCronograma, cliqueCronograma, enviarCronograma, mudancaCronograma } from './eventos-cronograma.js';
+import { ligarRobo, cliqueRobo, mudancaRobo } from './eventos-robo.js';
 import { ligarContinuar, cliqueContinuar } from './continuar.js';
 import { ligarLeitor, enviarLeitor } from './leitor-livro.js';
-import { ligarYoutube, cliqueYoutube, enviarYoutube, mudancaYoutube } from './eventos-youtube.js';
 import { ligarBiblioteca, cliqueBiblioteca, enviarBiblioteca, mudancaBiblioteca } from './eventos-biblioteca.js';
-import { ligarSubstack, cliqueSubstack, enviarSubstack, mudancaSubstack } from './eventos-substack.js';
 import { cliqueMenu, mudancaMenu, alternarMenu } from './views-navegacao.js';
 import { cliqueHoje, mudancaHoje } from './hoje.js';
 import { ligarTarefas, cliqueTarefas, enviarTarefas, mudancaTarefas } from './eventos-tarefas.js';
-import { ligarFinancas, cliqueFinancas, enviarFinancas, mudancaFinancas } from './eventos-financas.js';
-import { ligarRecompensas, cliqueRecompensas, enviarRecompensas } from './eventos-recompensas.js';
 import { ligarHabitos, cliqueHabitos, enviarHabitos, mudancaHabitos } from './eventos-habitos.js';
 import { ligarFolhas } from './folhas-dialogo.js';
 import { ligarConfirmar } from './confirmar.js';
@@ -58,8 +56,8 @@ import { ligarMetas, cliqueMetas, enviarMetas, mudancaMetas } from './eventos-me
 import { ligarEstudos, cliqueEstudos, enviarEstudos, mudancaEstudos } from './eventos-estudos.js';
 import { confirmar } from './confirmar.js';
 
-// Biblioteca, Questões, Substack e Estudos: recebem o tipo do evento ('input' ou 'change').
-const mudancaAreas = (alvo, tipo) => mudancaRadar(alvo, tipo) || mudancaR7(alvo, tipo) || mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaRelatorio(alvo, tipo) || mudancaPauta(alvo, tipo) || mudancaDatas(alvo, tipo) || mudancaPortfolio(alvo, tipo) || mudancaProjetos(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaFinancas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaSubstack(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
+// Biblioteca, Estudos e as outras áreas: recebem o tipo do evento ('input' ou 'change').
+const mudancaAreas = (alvo, tipo) => mudancaCronograma(alvo, tipo) || mudancaRobo(alvo, tipo) || mudancaR7(alvo, tipo) || mudancaMenu(alvo, tipo) || mudancaRituais(alvo, tipo) || mudancaCantinho(alvo, tipo) || mudancaMaos(alvo, tipo) || mudancaTrabalho(alvo, tipo) || mudancaRelatorio(alvo, tipo) || mudancaPauta(alvo, tipo) || mudancaDatas(alvo, tipo) || mudancaPortfolio(alvo, tipo) || mudancaProjetos(alvo, tipo) || mudancaHoje(alvo, tipo) || mudancaTarefas(alvo, tipo) || mudancaHabitos(alvo, tipo) || mudancaMetas(alvo, tipo) || mudancaDemandas(alvo, tipo) || mudancaOrganizar(alvo, tipo) || mudancaBusca(alvo, tipo) || mudancaWidgets(alvo, tipo) || mudancaBiblioteca(alvo, tipo) || mudancaEstudos(alvo, tipo) || mudancaCadernos(alvo, tipo) || mudancaFoco(alvo, tipo);
 
 let app; // { renderizar, mostrarLogin, entrarNoApp }
 
@@ -413,15 +411,14 @@ export function ligarEventos(funcoesDoApp) {
   ligarCalendario({ renderizar: () => app.renderizar(), avisoCurto });
   ligarAvisos({ avisoCurto });
   ligarInicio({ renderizar: () => app.renderizar(), avisoCurto });
-  ligarYoutube({ renderizar: () => app.renderizar(), avisoCurto });
-  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarMaos, ligarTrabalho, ligarRelatorio, ligarPauta, ligarPortfolio, ligarProjetos, ligarFinancas, ligarRecompensas, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarSubstack, ligarEstudos, ligarCadernos, ligarFoco, ligarAcompanhado, ligarDitado, ligarColar, ligarRadar, ligarR7, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
+  for (const ligar of [ligarTarefas, ligarProtegidos, ligarRituais, ligarCantinho, ligarCuidar, ligarMaos, ligarTrabalho, ligarRelatorio, ligarPauta, ligarPortfolio, ligarProjetos, ligarHabitos, ligarDia, ligarDemandas, ligarOrganizar, ligarCaptura, ligarWidgets, ligarMetas, ligarBiblioteca, ligarEstudos, ligarCadernos, ligarFoco, ligarAcompanhado, ligarDitado, ligarColar, ligarR7, ligarCronograma, ligarRobo, ligarContinuar, ligarLeitor]) ligar({ renderizar: () => app.renderizar(), avisoCurto });
   ligarFolhas();
   ligarConfirmar(); // os diálogos do navegador viram folhas do app
   const folhaMais = document.getElementById('folha-mais');
   const folhaCriar = document.getElementById('folha-criar');
 
   document.addEventListener('click', (evento) => {
-    const alvo = evento.target.closest('[data-tema-opcao], [data-texto-opcao], [data-vidro-opcao], [data-acao], a[href^="#"]');
+    const alvo = evento.target.closest('[data-tema-opcao], [data-texto-opcao], [data-vidro-opcao], [data-destaque-opcao], [data-acao], a[href^="#"]');
     if (!alvo || alvo.matches('input[type="file"]')) return;
 
     if (alvo.dataset.temaOpcao) {
@@ -434,6 +431,10 @@ export function ligarEventos(funcoesDoApp) {
     }
     if (alvo.dataset.vidroOpcao) {
       definirVidro(alvo.dataset.vidroOpcao);
+      return;
+    }
+    if (alvo.dataset.destaqueOpcao) {
+      definirDestaque(alvo.dataset.destaqueOpcao).then(() => app.renderizar());
       return;
     }
 
@@ -524,8 +525,8 @@ export function ligarEventos(funcoesDoApp) {
           if (folhaMais.open) folhaMais.close();
           return;
         }
-        if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo) || cliqueYoutube(alvo)
-          || cliqueFoco(alvo) || cliqueAcompanhado(alvo) || cliqueDitado(alvo) || cliqueColar(alvo) || cliqueRadar(alvo) || cliqueR7(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueMaos(alvo) || cliqueTrabalho(alvo) || cliqueRelatorio(alvo) || cliquePauta(alvo) || cliquePortfolio(alvo) || cliqueProjetos(alvo) || cliqueTarefas(alvo) || cliqueFinancas(alvo) || cliqueRecompensas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueSubstack(alvo) || cliqueEstudos(alvo))) return;
+        if (alvo.dataset.acao && (cliqueCalendario(alvo) || cliqueAvisos(alvo) || cliqueInicio(alvo) || cliqueCadernos(alvo)
+          || cliqueFoco(alvo) || cliqueAcompanhado(alvo) || cliqueDitado(alvo) || cliqueColar(alvo) || cliqueCronograma(alvo) || cliqueRobo(alvo) || cliqueR7(alvo) || cliqueContinuar(alvo) || cliqueHoje(alvo) || cliqueProtegidos(alvo) || cliqueRituais(alvo) || cliqueCantinho(alvo) || cliqueCuidar(alvo) || cliqueMaos(alvo) || cliqueTrabalho(alvo) || cliqueRelatorio(alvo) || cliquePauta(alvo) || cliquePortfolio(alvo) || cliqueProjetos(alvo) || cliqueTarefas(alvo) || cliqueHabitos(alvo) || cliqueDia(alvo) || cliqueDemandas(alvo) || cliqueOrganizar(alvo) || cliqueBusca(alvo) || cliqueCaptura(alvo) || cliqueWidgets(alvo) || cliqueMetas(alvo) || cliqueBiblioteca(alvo) || cliqueEstudos(alvo))) return;
     }
 
     // Um link escolhido dentro da folha "Mais" fecha a folha.
@@ -549,15 +550,15 @@ export function ligarEventos(funcoesDoApp) {
 
   document.addEventListener('change', (evento) => {
     if (evento.target.matches('[data-acao="importar-backup"]')) restaurarBackup(evento.target);
+    else if (evento.target.matches('input[name="destaque-propria"]')) definirDestaque(evento.target.value).then(() => app.renderizar());
     else if (mudancaAreas(evento.target, 'change')) return;
-    else if (!mudancaYoutube(evento.target) && !mudancaInicio(evento.target) && !mudancaAvisos(evento.target)) mudancaCalendario(evento.target);
+    else if (!mudancaInicio(evento.target) && !mudancaAvisos(evento.target)) mudancaCalendario(evento.target);
   });
 
   document.addEventListener('input', (evento) => {
     const form = evento.target.closest('[data-form="calculadora"]');
     if (form) aoMudarCalculadora(form);
     else if (mudancaAreas(evento.target, 'input')) return;
-    else if (mudancaYoutube(evento.target)) return;
     else if (evento.target.type !== 'checkbox') mudancaCalendario(evento.target);
   });
 
@@ -567,8 +568,8 @@ export function ligarEventos(funcoesDoApp) {
     evento.preventDefault();
     // Qual botão enviou (ex.: "Salvar e fazer agora" ou "Só salvar").
     form.dataset.enviadoPor = evento.submitter?.value || '';
-    if (enviarLeitor(form) || enviarProtegidos(form) || enviarRituais(form) || enviarCantinho(form) || enviarCuidar(form) || enviarMaos(form) || enviarTrabalho(form) || enviarRelatorio(form) || enviarPauta(form) || enviarProjetos(form) || enviarTarefas(form) || enviarFinancas(form) || enviarRecompensas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarAcompanhado(form) || enviarColar(form) || enviarRadar(form) || enviarR7(form) || enviarBiblioteca(form) || enviarSubstack(form) || enviarEstudos(form)) return;
-    if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form) || enviarYoutube(form)) return;
+    if (enviarLeitor(form) || enviarProtegidos(form) || enviarRituais(form) || enviarCantinho(form) || enviarCuidar(form) || enviarMaos(form) || enviarTrabalho(form) || enviarRelatorio(form) || enviarPauta(form) || enviarProjetos(form) || enviarTarefas(form) || enviarHabitos(form) || enviarDia(form) || enviarDemandas(form) || enviarOrganizar(form) || enviarBusca(form) || enviarCaptura(form) || enviarWidgets(form) || enviarMetas(form) || enviarFoco(form) || enviarAcompanhado(form) || enviarColar(form) || enviarCronograma(form) || enviarR7(form) || enviarBiblioteca(form) || enviarEstudos(form)) return;
+    if (enviarCalendario(form) || enviarAvisos(form) || enviarInicio(form) || enviarCadernos(form)) return;
     switch (form.dataset.form) {
       case 'login':
         entrar(form);

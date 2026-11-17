@@ -8,7 +8,6 @@ import { textoMin } from './dados-leitura.js';
 import { dataLocal } from './views-dia.js';
 import { HUMORES } from './hoje.js';
 
-const dinheiro = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric' });
 
 function mesDoParametro(parametro, hoje) {
@@ -29,9 +28,7 @@ export function htmlNumeros(n) {
       ${numero('Leitura', esc(textoMin(n.minutosLeitura)), n.livros.length ? `${n.livros.length} ${n.livros.length === 1 ? 'livro terminado' : 'livros terminados'}: ${esc(n.livros.slice(0, 3).join(', '))}` : 'nenhum livro terminado')}
       ${numero('Hábitos', n.taxaHabitos === null ? '—' : `${Math.round(n.taxaHabitos * 100)}%`, n.taxaHabitos === null ? 'nenhum hábito ativo' : 'dos dias, na média')}
       ${numero('Tarefas feitas', String(n.tarefasFeitas))}
-      ${numero('Dinheiro', `${n.sobrou < 0 ? '−' : ''}${esc(dinheiro(Math.abs(n.sobrou)))}`, `entrou ${esc(dinheiro(n.entrou))} · saiu ${esc(dinheiro(n.saiu))}`)}
       ${numero('Humor', humor ? `${humor.rosto} ${esc(humor.nome)}` : '—', n.diasLeves ? `${n.diasLeves} ${n.diasLeves === 1 ? 'dia leve' : 'dias leves'}` : 'nenhum dia leve')}
-      ${n.publicados ? numero('Publicações', String(n.publicados), 'Substack e YouTube') : ''}
     </ul>`;
 }
 

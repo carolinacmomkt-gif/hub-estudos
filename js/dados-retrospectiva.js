@@ -1,9 +1,9 @@
 // Retrospectiva do mês (decisão da Carol, 29/10/2026): um ritual guiado de 10 minutos no fim do
-// mês: os números (foco, leitura, hábitos, tarefas, dinheiro, dias leves, humor), três perguntas e
+// mês: os números (foco, leitura, hábitos, tarefas, dias leves, humor), três perguntas e
 // três intenções que viram metas. Fica em config "retrospectivas" ({ lista: [{ mes, numeros,
 // respostas, intencoes, feita_em }] }).
 
-import { resumoDoMes, mesDe, somarMeses, ultimoDia } from './dados-financas.js';
+import { mesDe, somarMeses, ultimoDia } from './dados-financas.js';
 import { taxa } from './dados-habitos.js';
 import { leituraDe, minutosNoMes } from './dados-leitura.js';
 import { diaLeveDe } from './dados-dialeve.js';
@@ -47,20 +47,16 @@ export function numerosDoMes(estado, mes, hoje) {
   const taxas = habitos.map((h) => taxa(estado.habitoRegistros || [], h, ateQuando, Math.min(30, Number(ateQuando.slice(8, 10))))).filter((t) => t !== null);
   const taxaHabitos = taxas.length ? taxas.reduce((a, b) => a + b, 0) / taxas.length : null;
   const tarefasFeitas = vivos(estado.tarefas).filter((t) => noMes(t.feita_em, mes)).length;
-  const fin = resumoDoMes(estado.financas || [], mes);
   const diasLeves = (diaLeveDe(estado.config).historico || []).filter((d) => d.startsWith(mes)).length;
   const humores = vivos(estado.diario).filter((d) => noMes(d.data, mes) && Number(d.humor) > 0).map((d) => Number(d.humor));
   const humor = humores.length ? humores.reduce((a, b) => a + b, 0) / humores.length : null;
-  const publicados = vivos(estado.pautas).filter((p) => p.etapa === 'publicado' && noMes(p.publicado_em, mes)).length
-    + vivos(estado.videos).filter((v) => v.etapa === 'publicado' && noMes(v.data_publicacao, mes)).length;
   const melhorDia = sessoes.reduce((m, s) => { const d = String(s.inicio).slice(0, 10); m[d] = (m[d] || 0) + (Number(s.minutos) || 0); return m; }, {});
   const topo = Object.entries(melhorDia).sort((a, b) => b[1] - a[1])[0] || null;
   return {
     minutosFoco, sessoes: sessoes.length, melhorDia: topo ? { dia: topo[0], minutos: topo[1] } : null,
     minutosLeitura: minutosNoMes(leitura, mes), livros,
     taxaHabitos, tarefasFeitas,
-    entrou: fin.entrou, saiu: fin.saiu, sobrou: fin.sobrou,
-    diasLeves, humor, publicados,
+    diasLeves, humor,
   };
 }
 

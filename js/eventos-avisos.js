@@ -140,7 +140,6 @@ export function mudancaAvisos(alvo) {
     }]));
     vida.blocos = { ativo: Boolean(form.querySelector('[name="vida-blocos"]')?.checked) };
     vida.trabalho = { ativo: Boolean(form.querySelector('[name="vida-trabalho"]')?.checked) };
-    vida.radar = { ativo: Boolean(form.querySelector('[name="vida-radar"]')?.checked) };
     vida.silencio = { ativo: Boolean(form.querySelector('[name="silencio-ativo"]')?.checked), de: horaDe('silencio-de', atual.vida.silencio.de), ate: horaDe('silencio-ate', atual.vida.silencio.ate) };
     salvarConfigAvisos({ hora, marcos, tipos, resumo, vida }).then(() => app.avisoCurto('Preferências dos avisos salvas.'));
   } else {

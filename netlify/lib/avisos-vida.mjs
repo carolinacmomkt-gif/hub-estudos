@@ -4,7 +4,6 @@
 
 import { tarefasDeHoje } from '../../js/dados-tarefas.js';
 import { habitosDoDia, feitoNoDia, valorNoDia } from '../../js/dados-habitos.js';
-import { situacaoDasContas, cartoes, fatura, mesDe, somarMeses } from '../../js/dados-financas.js';
 import { noFuso } from './avisos.mjs';
 import { valeNoDia } from '../../js/dados-cuidar.js';
 import { somarDias } from '../../js/dados-tarefas.js';
@@ -58,19 +57,9 @@ export function emSilencio(agoraMin, silencio) {
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 const dinheiro = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0);
 
-// Contas fixas e faturas que vencem hoje e ainda não foram pagas.
-export function contasDeHoje(financas, hoje) {
-  const mes = mesDe(hoje);
-  const contas = situacaoDasContas(financas, mes, hoje).filter((x) => x.estado !== 'paga' && x.vence === hoje)
-    .map((x) => ({ nome: x.conta.descricao, valor: x.conta.valor }));
-  for (const c of cartoes(financas)) {
-    // A fatura que vence hoje pode ser a do mês anterior (fecha num mês e vence no outro).
-    for (const m of [mes, somarMeses(mes, -1)]) {
-      const f = fatura(financas, c, m);
-      if (f.vencimento === hoje && !f.paga && f.total > 0) contas.push({ nome: `Fatura ${c.descricao}`, valor: f.total });
-    }
-  }
-  return contas;
+// As Finanças saíram do app (17/11/2026): não há mais contas para avisar.
+export function contasDeHoje() {
+  return [];
 }
 
 export function habitosPendentes(habitos, registros, hoje) {
@@ -155,7 +144,7 @@ export function avisosDaVida({ dados, config, fuso = 'America/Sao_Paulo', agora 
       titulo: contas.length === 1 ? `Vence hoje: ${contas[0].nome}` : `${contas.length} contas vencem hoje`,
       texto: contas.length === 1 ? `${dinheiro(contas[0].valor)}. Toque em "Paguei" quando pagar.` : `${contas.slice(0, 3).map((c) => c.nome).join(', ')}${contas.length > 3 ? ` e mais ${contas.length - 3}` : ''} · ${dinheiro(total)}`,
       tag: `contas-${hoje}`,
-      url: '/#financas/contas',
+      url: '/#inicio',
     });
   }
 
@@ -229,18 +218,18 @@ export function avisosDoTrabalho(dados, cfg, hoje, agoraMin, enviados) {
     const mudou = oQueMudou(pecas).length;
     if (!itens.length && !mudou) return [];
     const texto = [itens.map((i, n) => `${n + 1}. ${i.titulo}`).join(' · '), mudou ? `${plural(mudou, 'peça mudou', 'peças mudaram')} sem você.` : ''].filter(Boolean).join(' ');
-    return [{ chave, titulo: 'Trabalho: comece por aqui', texto, tag, url: '/#aprovar' }];
+    return [{ chave, titulo: 'Trabalho: comece por aqui', texto, tag, url: '/#conteudo' }];
   }
   const mandar = q.voce.filter((p) => p.origem === 'trello').length;
   const copy = q.voce.length - mandar;
   const agendar = q.agendar.length;
   if (momento === 'trabalho-meio') {
     const partes = [mandar && `${plural(mandar, 'arte', 'artes')} para mandar ao cliente`, agendar && `${agendar} para agendar`, copy && `${plural(copy, 'copy', 'copies')} com você`].filter(Boolean);
-    return partes.length ? [{ chave, titulo: 'Meio do dia', texto: `${partes.join(' · ')}.`, tag, url: '/#aprovar' }] : [];
+    return partes.length ? [{ chave, titulo: 'Meio do dia', texto: `${partes.join(' · ')}.`, tag, url: '/#conteudo' }] : [];
   }
   const abertas = mandar + agendar + copy;
   if (!abertas) return [];
-  return [{ chave, titulo: 'Perto de fechar', texto: `Ainda ${abertas === 1 ? 'tem 1 peça' : `tem ${abertas} peças`} com você. O que ficar aberto passa para amanhã. Sem culpa.`, tag, url: '/#aprovar' }];
+  return [{ chave, titulo: 'Perto de fechar', texto: `Ainda ${abertas === 1 ? 'tem 1 peça' : `tem ${abertas} peças`} com você. O que ficar aberto passa para amanhã. Sem culpa.`, tag, url: '/#conteudo' }];
 }
 
 // Datas especiais (Calendário): as datas das clientes N dias antes (para produzir o post) e no dia,

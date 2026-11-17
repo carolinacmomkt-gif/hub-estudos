@@ -6,7 +6,6 @@ import { enviarArquivo, baixarArquivo, idDaUsuaria } from './nuvem.js';
 import { iniciarTrabalho, trabalhosDoTipo, encerrarTrabalho } from './trabalhos-ia.js';
 import { gravar, criarGravador } from './gravacao.js';
 import { artigoPeloId, lerTags, fichamentoEmTexto, paragrafos, STATUS, trechosDosDestaques } from './dados-biblioteca.js';
-import { novoVideo } from './dados-youtube.js';
 import { salvar } from './persistencia.js';
 import { lerLivro, guardarLivro } from './livros.js';
 import { confirmar } from './confirmar.js';
@@ -208,33 +207,8 @@ export function cliqueBiblioteca(alvo) {
       }).catch((e) => { alvo.disabled = false; app.avisoCurto(e.message); });
       return true;
     }
-    case 'bib-ficha-substack': {
-      const a = artigoPeloId(obterEstado(), obterEstado().parametro);
-      if (!a) return true;
-      gravar('pautas_substack', 'pautas', {
-        titulo: `Sobre "${a.titulo}"`.slice(0, 120), etapa: 'ideia', texto: fichamentoEmTexto(a), referencias: [a.id], tags: [], checklist: {},
-        detalhes: { angulo: 'Fichamento pelos destaques' }, link: null, publicado_em: null, agendado_para: null,
-      }).then((p) => { app.avisoCurto('Pauta criada no Substack com o fichamento e a referência.', { rotulo: 'Abrir', fn: () => { location.hash = `#substack/${p.id}`; } }); });
-      return true;
-    }
-    case 'bib-ficha-video': {
-      const a = artigoPeloId(obterEstado(), obterEstado().parametro);
-      if (!a) return true;
-      const v = novoVideo({ titulo: `Ideia do livro: ${a.titulo}`.slice(0, 100), etapa: 'ideia', detalhes: { ideia: fichamentoEmTexto(a).slice(0, 4000), origem: 'fichamento', artigo_id: a.id } });
-      salvar('videos', v).then(async () => {
-        atualizarEstado({ videos: await (await import('./persistencia.js')).listar('videos') });
-        app.avisoCurto('Ideia guardada no banco de ideias do YouTube.', { rotulo: 'Abrir', fn: () => { location.hash = '#youtube/ideias'; } });
-      });
-      return true;
-    }
     case 'bib-copiar-ficha':
       if (a) copiar(fichamentoEmTexto(a), 'Fichamento copiado.');
-      break;
-    case 'bib-substack':
-      if (!a) break;
-      atualizarEstado({ substackReferencia: a.id });
-      location.hash = '#substack';
-      app.avisoCurto('Abra uma pauta (ou crie uma) para ligar esta leitura.');
       break;
     case 'bib-editar':
       gravador.agora().then(() => {

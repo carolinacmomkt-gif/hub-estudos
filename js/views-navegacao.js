@@ -252,7 +252,7 @@ export function cliqueMenu(alvo) {
       abrirEditor();
       break;
     case 'menu-padrao-novo':
-      confirmar('Voltar ao menu padrão? Os grupos e a ordem voltam ao novo padrão (Hoje, Planejar, Trabalho, Estudos, Criação e Vida). Favoritos, itens escondidos e a barra do celular ficam como estão.', { botao: 'Voltar ao padrão' }).then((ok) => {
+      confirmar('Voltar ao menu padrão? Os grupos e a ordem voltam ao novo padrão (Hoje, Agenda, Trabalho, Estudos e Vida). Favoritos, itens escondidos e a barra do celular ficam como estão.', { botao: 'Voltar ao padrão' }).then((ok) => {
         if (!ok) return;
         mudarMenu((v) => { v.grupos = []; }).then(() => montarNavegacao());
       });

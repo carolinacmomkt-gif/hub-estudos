@@ -14,8 +14,6 @@ const TIPOS = [
   { id: 'trabalho', nome: 'Trabalhos' },
   { id: 'atividade', nome: 'Atividades' },
   { id: 'revisao', nome: 'Sessões de revisão' },
-  { id: 'youtube', nome: 'Gravar e publicar vídeos' },
-  { id: 'substack', nome: 'Publicar no Substack' },
   { id: 'aula', nome: 'Aulas' },
   { id: 'feriado', nome: 'Feriados' },
   { id: 'pessoal', nome: 'Eventos pessoais' },
@@ -43,7 +41,7 @@ export function cardAvisos(estado) {
   return `
     <section class="card" aria-labelledby="config-avisos">
       <h2 class="card-titulo" id="config-avisos">Avisos no aparelho</h2>
-      <p class="texto-suave">Os avisos chegam mesmo com o app fechado, juntos, uma vez por dia: às 7h45 sai o "Seu dia", com tudo o que o dia pede (os horários abaixo aparecem dentro dele). Ative em cada aparelho onde quiser receber.</p>
+      <p class="texto-suave">Os avisos chegam mesmo com o app fechado, no máximo 2 por dia: às 7h45 o "Seu dia", com tudo o que o dia pede (os horários abaixo aparecem dentro dele), e às 16h45 o "Fim da tarde", só se ainda tiver entrega da R7 ou tarefa de hoje aberta. Ative em cada aparelho onde quiser receber.</p>
       <div id="avisos-situacao" aria-live="polite"><p class="ava-status">Verificando este aparelho…</p></div>
       <form class="formulario" data-form="avisos" novalidate>
         <label class="campo campo-curto">
@@ -61,11 +59,9 @@ export function cardAvisos(estado) {
         </fieldset>
         <fieldset class="grupo-marcar avisos-vida">
           <legend class="campo-rotulo">Do dia a dia</legend>
-          ${linhaVida('manha', 'Resumo da manhã', 'Tarefas, provas, contas e hábitos do dia', cfg.vida.manha)}
-          ${linhaVida('contas', 'Contas do dia', 'Contas fixas e faturas que vencem hoje', cfg.vida.contas)}
+          ${linhaVida('manha', 'Resumo da manhã', 'Tarefas, provas, prazos e hábitos do dia', cfg.vida.manha)}
           ${linhaVida('habitos', 'Hábitos que faltam', 'Só se ainda faltar algum no dia', cfg.vida.habitos)}
           <div class="aviso-vida">${marcar('vida-blocos', '1', 'Começo de cada bloco do "Meu dia"', cfg.vida.blocos.ativo)}</div>
-          <div class="aviso-vida">${marcar('vida-radar', '1', 'Radar do nicho: as urgentes, de manhã', cfg.vida.radar?.ativo ?? true)}</div>
           <div class="aviso-vida">${marcar('vida-trabalho', '1', 'Trabalho nos dias úteis (comece por aqui, artes para mandar e agendar), no "Seu dia"', cfg.vida.trabalho?.ativo ?? true)}</div>
           <div class="aviso-vida">
             ${marcar('silencio-ativo', '1', 'Horário de silêncio', cfg.vida.silencio.ativo)}

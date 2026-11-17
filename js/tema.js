@@ -5,7 +5,7 @@ const PADRAO = 'escuro';
 const consultaClaro = window.matchMedia('(prefers-color-scheme: light)');
 
 export const OPCOES_TEMA = [
-  { id: 'claro', rotulo: 'Claro', descricao: 'Fundo creme' },
+  { id: 'claro', rotulo: 'Claro', descricao: 'Fundo cinza claro' },
   { id: 'escuro', rotulo: 'Escuro', descricao: 'Padrão da Central' },
   { id: 'auto', rotulo: 'Automático', descricao: 'Segue o aparelho' },
 ];

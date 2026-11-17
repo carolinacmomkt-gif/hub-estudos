@@ -4,6 +4,8 @@ import { cabecalho } from './componentes.js';
 import { icone } from './icones.js';
 import { OPCOES_TEMA, lerPreferenciaTema } from './tema.js';
 import { OPCOES_TEXTO, lerTamanhoTexto, OPCOES_VIDRO, lerVidro } from './preferencias.js';
+import { TONS_DESTAQUE } from './dados-destaque.js';
+import { destaqueAtual } from './destaque.js';
 import { esc, haQuantoTempo } from './utilidades.js';
 import { cardAvisos, cardPlanoPrefs } from './views-avisos.js';
 import { cardDatasConfig } from './views-datas.js';
@@ -122,13 +124,27 @@ function cardAparencia() {
     <button class="opcao-tema opcao-texto opcao-texto--${o.id}" type="button" data-texto-opcao="${o.id}" aria-pressed="${o.id === texto}">
       <span aria-hidden="true">Aa</span><span>${esc(o.rotulo)}</span>
     </button>`).join('');
+  const destaque = destaqueAtual() || TONS_DESTAQUE[0].cor;
+  const doTom = TONS_DESTAQUE.some((t) => t.cor === destaque);
+  const opcoesDestaque = TONS_DESTAQUE.map((t) => `
+    <button class="opcao-destaque" type="button" data-destaque-opcao="${t.cor}" aria-pressed="${t.cor === destaque}" style="--amostra:${t.cor}">
+      <span class="amostra-destaque" aria-hidden="true"></span><span>${esc(t.nome)}</span>
+    </button>`).join('');
 
   return `
     <section class="card" aria-labelledby="config-aparencia">
       <h2 class="card-titulo" id="config-aparencia">Aparência</h2>
-      <p class="texto-suave">As escolhas ficam salvas neste aparelho.</p>
+      <p class="texto-suave">O tema, o texto e o vidro ficam neste aparelho. A cor de destaque vale em todos.</p>
       <h3 class="ava-subtitulo">Tema</h3>
       <div class="opcoes-tema">${opcoesTema}</div>
+      <h3 class="ava-subtitulo">Cor de destaque</h3>
+      <div class="opcoes-destaque">${opcoesDestaque}
+        <label class="opcao-destaque opcao-destaque-propria" data-escolhida="${!doTom}" style="--amostra:${destaque}">
+          <span class="amostra-destaque" aria-hidden="true"></span><span>Sua cor</span>
+          <input type="color" name="destaque-propria" value="${destaque.toLowerCase()}" aria-label="Escolher uma cor própria">
+        </label>
+      </div>
+      <p class="campo-ajuda">Muda o botão principal, a aba escolhida, as barras e o dia de hoje. Se a cor ficar difícil de ler, o app ajusta o tom sozinho.</p>
       <h3 class="ava-subtitulo">Tamanho do texto</h3>
       <div class="opcoes-tema">${opcoesTexto}</div>
       <h3 class="ava-subtitulo">Vidro</h3>

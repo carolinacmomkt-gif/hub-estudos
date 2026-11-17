@@ -18,8 +18,6 @@ export const TIPOS_CONTINUAR = {
   caderno: { nome: 'Caderno', acao: 'Abrir o caderno' },
   leitura: { nome: 'Leitura', acao: 'Continuar lendo' },
   livro: { nome: 'Livro', acao: 'Continuar lendo' },
-  pauta: { nome: 'Rascunho do Substack', acao: 'Continuar escrevendo' },
-  roteiro: { nome: 'Roteiro do YouTube', acao: 'Abrir o roteiro' },
 };
 
 // ---------------------------------------------------------------------------
@@ -30,8 +28,6 @@ function aindaExiste(estado, tipo, id) {
   const ativo = (lista) => (lista || []).find((x) => x.id === id && !x.excluido_em);
   if (tipo === 'caderno') return ativo(estado.cadernos);
   if (tipo === 'leitura' || tipo === 'livro') return ativo(estado.artigos);
-  if (tipo === 'pauta') return ativo(estado.pautas);
-  if (tipo === 'roteiro') return ativo(estado.videos);
   return null;
 }
 
@@ -138,12 +134,6 @@ export function notarTela(estado = obterEstado()) {
     // Abrir marca a leitura; até onde leu vem da rolagem (um redesenho não zera a posição).
     if (pedido?.tipo === 'leitura' && pedido.id === id) restaurarLeitura(id);
     else if (a && (pendentes.leitura || gravados.leitura)?.id !== id) marcar('leitura', { id, titulo: a.titulo, rota: `#biblioteca/${id}`, posicao: 0, detalhe: '' });
-  } else if (rota === 'substack') {
-    const p = aindaExiste(estado, 'pauta', id);
-    if (p) marcar('pauta', { id, titulo: p.titulo, rota: `#substack/${id}` });
-  } else if (rota === 'youtube' && estado.ytAba === 'roteiro') {
-    const v = aindaExiste(estado, 'roteiro', id);
-    if (v) marcar('roteiro', { id, titulo: v.titulo, rota: `#youtube/${id}` });
   }
 }
 
@@ -215,7 +205,6 @@ export function cliqueContinuar(alvo) {
     const { aparelho, tipoAparelho, quando, tipo: _t, ...lugar } = item;
     marcar(tipo, lugar);
     gravar();
-    if (tipo === 'roteiro') atualizarEstado({ ytAba: 'roteiro' });
     location.hash = item.rota;
     return true;
   }

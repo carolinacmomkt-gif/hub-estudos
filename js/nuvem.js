@@ -85,6 +85,11 @@ export function chaveDoTrello() {
   return config?.trelloApiKey || null;
 }
 
+// Endereço e chave pública do Supabase (públicos; vão para as Propriedades do robô do Google da R7).
+export function configPublica() {
+  return { supabaseUrl: config?.supabaseUrl || '', supabaseAnonKey: config?.supabaseAnonKey || '' };
+}
+
 export function nuvemConfigurada() {
   return Boolean(config?.supabaseUrl && config?.supabaseAnonKey);
 }

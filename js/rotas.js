@@ -6,11 +6,10 @@
 export const ROTAS = [
   // Hoje: executar
   { id: 'inicio', titulo: 'Hoje', curto: 'Hoje', icone: 'inicio', fixaCelular: true, grupo: 'dia' },
-  { id: 'calendario', titulo: 'Calendário', curto: 'Agenda', icone: 'calendario', fixaCelular: true, grupo: 'dia' },
   { id: 'foco', titulo: 'Sessão de foco', curto: 'Foco', icone: 'foco', grupo: 'dia' },
   { id: 'entrada', titulo: 'Entrada', curto: 'Entrada', icone: 'entrada', grupo: 'dia' },
-  { id: 'buscar', titulo: 'Pergunte à Bússola', curto: 'Buscar', icone: 'buscar', grupo: 'dia' },
-  // Planejar: planejar e revisar
+  // Agenda: o calendário, o que fazer e o que revisar (Carol, 17/11/2026: de 28 telas para 5 lugares)
+  { id: 'calendario', titulo: 'Calendário', curto: 'Agenda', icone: 'calendario', fixaCelular: true, grupo: 'planejar' },
   { id: 'tarefas', titulo: 'Tarefas e projetos', curto: 'Tarefas', icone: 'tarefas', fixaCelular: true, grupo: 'planejar' },
   { id: 'projetos', titulo: 'Projetos', curto: 'Projetos', icone: 'projetos', grupo: 'planejar' },
   { id: 'portfolio', titulo: 'Painel de projetos', curto: 'Painel', icone: 'painel', grupo: 'planejar' },
@@ -18,12 +17,9 @@ export const ROTAS = [
   { id: 'metas', titulo: 'Metas e lazer', curto: 'Metas', icone: 'metas', grupo: 'planejar' },
   { id: 'habitos', titulo: 'Hábitos e rotinas', curto: 'Hábitos', icone: 'habitos', grupo: 'planejar' },
   { id: 'resumo', titulo: 'Resumo da semana', curto: 'Semana', icone: 'calendario', grupo: 'planejar' },
-  // Trabalho, na ordem do fluxo: planejar → produzir → aprovar → entregar → medir
+  // Trabalho: só acompanhamento e a burocracia (Criar, Radar e Aprovar saíram em 17/11/2026)
   { id: 'clientes', titulo: 'Clientes', curto: 'Clientes', icone: 'clientes', grupo: 'trabalho' },
-  { id: 'radar', titulo: 'Radar do nicho', curto: 'Radar', icone: 'radar', grupo: 'trabalho' },
   { id: 'conteudo', titulo: 'Conteúdo', curto: 'Conteúdo', icone: 'conteudo', grupo: 'trabalho' },
-  { id: 'criar', titulo: 'Criar', curto: 'Criar', icone: 'criar', grupo: 'trabalho' },
-  { id: 'aprovar', titulo: 'Aprovar', curto: 'Aprovar', icone: 'aprovar', grupo: 'trabalho' },
   { id: 'r7', titulo: 'R7', curto: 'R7', icone: 'clientes', grupo: 'trabalho' },
   { id: 'pautas', titulo: 'Pautas', curto: 'Pautas', icone: 'pauta', grupo: 'trabalho' },
   { id: 'relatorio', titulo: 'Relatórios', curto: 'Relatórios', icone: 'relatorio', grupo: 'trabalho' },
@@ -32,11 +28,7 @@ export const ROTAS = [
   { id: 'estudos', titulo: 'Estudos gerais', curto: 'Estudos', icone: 'estudos', grupo: 'estudos' },
   { id: 'cadernos', titulo: 'Cadernos', curto: 'Cadernos', icone: 'cadernos', grupo: 'estudos' },
   { id: 'faculdade', titulo: 'Faculdade', curto: 'Faculdade', icone: 'faculdade', fixaCelular: true, grupo: 'estudos' },
-  // Criação
-  { id: 'youtube', titulo: 'YouTube', curto: 'YouTube', icone: 'youtube', grupo: 'criacao' },
-  { id: 'substack', titulo: 'Substack', curto: 'Substack', icone: 'substack', grupo: 'criacao' },
   // Vida
-  { id: 'financas', titulo: 'Finanças', curto: 'Finanças', icone: 'financas', grupo: 'vida' },
   { id: 'cantinho', titulo: 'Meu cantinho', curto: 'Cantinho', icone: 'cantinho', grupo: 'vida' },
 ];
 
@@ -45,6 +37,7 @@ export const ROTA_CONFIGURACOES = { id: 'configuracoes', titulo: 'Configuraçõe
 // Telas que não aparecem no menu (abertas por um botão).
 const ROTAS_INTERNAS = [
   { id: 'caneta', titulo: 'Testar a caneta', icone: 'cadernos' },
+  { id: 'buscar', titulo: 'Pergunte à Bússola', icone: 'buscar' }, // a lupa do topo
   { id: 'livro', titulo: 'Leitor', icone: 'biblioteca' },
   { id: 'retrospectiva', titulo: 'Retrospectiva do mês', icone: 'calendario' },
 ];

@@ -1,6 +1,7 @@
 // Ponto de partida do app.
 
 import { iniciarTema, atualizarBotoesTema } from './tema.js';
+import { acompanharDestaque } from './destaque.js';
 import { ROTAS, rotaAtual } from './rotas.js';
 import { obterEstado, atualizarEstado } from './estado.js';
 import { montarNavegacao, marcarRotaAtiva, atualizarIndicadorSincronizacao } from './views-navegacao.js';
@@ -8,11 +9,9 @@ import { renderInicio } from './views-inicio.js';
 import { renderBiblioteca } from './views-biblioteca.js';
 import { renderLivro } from './views-livro.js';
 import { montarLeitor, desmontarLeitor } from './leitor-livro.js';
-import { renderSubstack } from './views-substack.js';
 import { renderEstudos } from './views-estudos.js';
 import { renderFoco } from './views-foco.js';
 import { renderTarefas } from './views-tarefas.js';
-import { renderFinancas } from './views-financas.js';
 import { montarEditorTexto, desmontarEditorTexto } from './editor-texto.js';
 import { formatoDoCaderno } from './dados-texto.js';
 import { retomarTrilha } from './trilha.js';
@@ -23,17 +22,14 @@ import { abrirCompartilhado, conectarComToken, tokenDoTrelloNoEndereco, lerDeman
 import { organizarSozinha } from './eventos-organizar.js';
 import { renderHabitos } from './views-habitos.js';
 import { renderMetas } from './views-metas.js';
-import { conferirConquistas } from './eventos-recompensas.js';
 import { renderResumo } from './views-resumo.js';
 import { renderRetrospectiva } from './views-retrospectiva.js';
 import { renderCantinho } from './views-cantinho.js';
-import { renderConteudo, renderAprovar, renderClientes, renderCriar } from './views-trabalho.js';
+import { renderConteudo, renderClientes } from './views-trabalho.js';
 import { montarTrabalho } from './eventos-trabalho.js';
 import { renderRelatorio } from './views-relatorio.js';
-import { renderRadar } from './views-radar.js';
 import { renderR7 } from './views-r7.js';
 import { montarR7 } from './eventos-r7.js';
-import { montarRadar } from './eventos-radar.js';
 import { montarRelatorio, desmontarRelatorio } from './eventos-relatorio.js';
 import { renderPautas } from './views-pauta.js';
 import { renderPortfolio, renderRevisao, renderEntrada } from './views-portfolio.js';
@@ -44,7 +40,6 @@ import { renderBusca } from './views-busca.js';
 import { montarBusca, dadosDaBusca } from './eventos-busca.js';
 import { retomarTrabalhos } from './trabalhos-ia.js';
 import { iniciarBiblioteca, reaplicarBusca } from './eventos-biblioteca.js';
-import { salvarSubstackAgora } from './eventos-substack.js';
 import { reaplicarBuscaCadernos } from './eventos-cadernos.js';
 import { atualizarTela as atualizarFoco } from './foco.js';
 import { notarTela } from './continuar.js';
@@ -54,7 +49,6 @@ import { renderCaneta, montarCaneta, desmontarCaneta } from './views-caneta.js';
 import { renderFaculdade, textoSituacaoFaculdade } from './views-faculdade.js';
 import { renderCalendario } from './views-calendario.js';
 import { renderCadernos } from './views-cadernos.js';
-import { renderYoutube } from './views-youtube.js';
 import { montarEditorCaderno, desmontarEditorCaderno } from './editor-caderno.js';
 import { retomarImportacao } from './importar-calendario.js';
 import { atualizarSituacaoAvisos } from './eventos-avisos.js';
@@ -72,25 +66,19 @@ const VIEWS = {
   faculdade: renderFaculdade,
   calendario: renderCalendario,
   cadernos: renderCadernos,
-  youtube: renderYoutube,
   biblioteca: renderBiblioteca,
   livro: renderLivro,
-  substack: renderSubstack,
   estudos: renderEstudos,
   foco: renderFoco,
   tarefas: renderTarefas,
-  financas: renderFinancas,
   habitos: renderHabitos,
   metas: renderMetas,
   resumo: renderResumo,
   retrospectiva: renderRetrospectiva,
   cantinho: renderCantinho,
   conteudo: renderConteudo,
-  aprovar: renderAprovar,
   clientes: renderClientes,
-  criar: renderCriar,
   relatorio: renderRelatorio,
-  radar: renderRadar,
   r7: renderR7,
   pautas: renderPautas,
   portfolio: renderPortfolio,
@@ -121,11 +109,8 @@ const CICLO = {
   livro: { montar: (id) => id && montarLeitor(id), desmontar: desmontarLeitor },
   cantinho: { montar: montarCantinho, desmontar: desmontarCantinho },
   conteudo: { montar: montarTrabalho, desmontar: () => {} },
-  aprovar: { montar: montarTrabalho, desmontar: () => {} },
   clientes: { montar: montarTrabalho, desmontar: () => {} },
-  criar: { montar: montarTrabalho, desmontar: () => {} },
   relatorio: { montar: montarRelatorio, desmontar: desmontarRelatorio },
-  radar: { montar: montarRadar, desmontar: () => {} },
   r7: { montar: montarR7, desmontar: () => {} },
   pautas: { montar: montarPauta, desmontar: desmontarPauta },
 };
@@ -208,7 +193,6 @@ function devolverCampos(guardados) {
 export function renderizar({ mudouDeTela = false } = {}) {
   if (!noApp) return;
   const rota = rotaAtual();
-  if (mudouDeTela) salvarSubstackAgora();
   // Sair do Hoje no meio da arrumação encerra o modo de personalizar (as mudanças já estão salvas).
   if (mudouDeTela && rota.id !== 'inicio' && obterEstado().editandoInicio) atualizarEstado({ editandoInicio: false });
   if (telaMontada) {
@@ -220,6 +204,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
   const foco = mudouDeTela ? null : seletorDoFoco();
   conteudo.dataset.tela = rota.id;
   const guardados = mudouDeTela ? [] : camposMexidos();
+  acompanharDestaque(obterEstado().config); // a cor de outro aparelho entra antes de desenhar
   conteudo.innerHTML = VIEWS[rota.id](obterEstado());
   if (guardados.length) devolverCampos(guardados);
   if (foco) conteudo.querySelector(`${foco}:not([disabled])`)?.focus({ preventScroll: true });
@@ -303,28 +288,28 @@ async function carregarDadosLocais(tabelas = Object.keys(TABELAS_NA_MEMORIA)) {
 const TELAS_DA_TABELA = {
   caixa_entrada: ['inicio', 'entrada', 'revisao'],
   demandas: ['inicio', 'entrada', 'revisao'],
-  conexoes: ['configuracoes', 'faculdade', 'inicio', 'conteudo', 'aprovar', 'clientes', 'criar'],
-  conteudos: ['conteudo', 'aprovar', 'clientes', 'inicio'],
+  conexoes: ['configuracoes', 'faculdade', 'inicio', 'conteudo', 'clientes'],
+  conteudos: ['conteudo', 'clientes', 'inicio'],
   maos: [], // o Com as mãos cuida da própria tela (a folha não pode ser refeita no meio do traço)
-  clientes_trabalho: ['clientes', 'criar', 'conteudo', 'aprovar', 'pautas', 'relatorio', 'radar', 'r7'],
-  rascunhos: ['criar', 'r7'],
+  clientes_trabalho: ['clientes', 'conteudo', 'pautas', 'relatorio', 'r7'],
+  rascunhos: ['r7'],
   cadernos: ['inicio', 'cadernos', 'estudos'],
   pastas: ['cadernos'],
   sessoes_foco: ['foco', 'inicio', 'resumo'],
   diario: ['inicio'],
   tarefas: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao', 'projetos'],
   projetos: ['tarefas', 'inicio', 'metas', 'portfolio', 'revisao', 'projetos'],
-  financas: ['financas', 'inicio', 'metas'],
+  financas: [],
   habitos: ['habitos', 'inicio', 'metas'],
   habito_registros: ['habitos', 'inicio', 'metas'],
   metas: ['metas', 'inicio', 'portfolio', 'projetos'],
   lazer: ['metas', 'inicio'],
   eventos: ['inicio', 'faculdade', 'calendario', 'projetos'],
   disciplinas: ['inicio', 'faculdade', 'calendario'],
-  config: ['inicio', 'calendario', 'configuracoes', 'youtube', 'substack', 'foco', 'financas', 'metas', 'radar', 'r7'],
-  videos: ['youtube', 'inicio'],
-  artigos: ['biblioteca', 'inicio', 'estudos', 'substack', 'livro'],
-  pautas_substack: ['substack', 'inicio'],
+  config: ['inicio', 'calendario', 'configuracoes', 'foco', 'metas', 'r7'],
+  videos: [],
+  artigos: ['biblioteca', 'inicio', 'estudos', 'livro'],
+  pautas_substack: [],
   areas: ['estudos', 'inicio', 'biblioteca', 'cadernos'],
 };
 
@@ -357,7 +342,6 @@ export async function entrarNoApp() {
   aplicarCompartilhado();
   const tokenTrello = tokenDoTrelloNoEndereco(); // volta da autorização do Trello (pode perguntar antes: Promise)
   montarNavegacao(); // o menu guardado só chega com a config
-  conferirConquistas(); // anota o que já existe neste aparelho (sem comemorar o antigo)
   renderizar();
   if (compartilhadoPendente) {
     abrirCompartilhado(compartilhadoPendente);
@@ -395,7 +379,6 @@ window.addEventListener('hub:dados', async (evento) => {
   await carregarDadosLocais([tabela]);
   // Sessão de foco e "onde parei" salvos aqui: a tela já sabe, não precisa redesenhar.
   if (tabela === 'config' && !daNuvem && semRedesenho(chave)) return;
-  if (tabela === 'financas' && noApp) conferirConquistas();
   if (tabela === 'config') {
     montarNavegacao();
     marcarRotaAtiva(obterEstado().rota);

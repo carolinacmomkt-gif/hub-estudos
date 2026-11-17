@@ -341,9 +341,10 @@ function detalheSomenteLeitura(estado, evento) {
 // Eventos que vêm de outra área do app (YouTube, Substack): a data muda lá.
 function detalheDeOutraArea(evento) {
   const id = String(evento.origem_id || '').split(':')[0];
+  // O YouTube e o Substack saíram do app (17/11/2026): o evento fica, sem levar a uma tela.
   const area = evento.origem === 'substack'
-    ? { nome: 'Substack', href: `#substack/${id}`, abrir: 'Abrir a pauta', onde: 'a pauta' }
-    : { nome: 'Hub do YouTube', href: `#youtube/${id}`, abrir: 'Abrir o vídeo', onde: 'o vídeo' };
+    ? { nome: 'Substack', href: '#calendario', abrir: 'Voltar ao calendário', onde: 'a pauta' }
+    : { nome: 'YouTube', href: '#calendario', abrir: 'Voltar ao calendário', onde: 'o vídeo' };
   const quando = evento.dia_inteiro
     ? maiuscula(fmtDiaLongo.format(new Date(evento.inicio)))
     : `${maiuscula(fmtDiaLongo.format(new Date(evento.inicio)))} · ${horaLocal(evento.inicio)}`;

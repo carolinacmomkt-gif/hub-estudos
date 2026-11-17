@@ -20,12 +20,11 @@ export function formCaptura() {
         <button class="botao botao-primario" type="submit">✨ Organizar</button>
         <button class="botao botao-secundario" type="button" data-acao="captura-caixa">Só guardar na caixa</button>
       </div>
-      <p class="campo-ajuda">${mic ? 'Toque em Falar e diga tudo de uma vez.' : 'Use o microfone do teclado para ditar.'} A IA separa em tarefas, compromissos, gastos, ideias de vídeo, pautas e demandas, e você confere antes de salvar.</p>
+      <p class="campo-ajuda">${mic ? 'Toque em Falar e diga tudo de uma vez.' : 'Use o microfone do teclado para ditar.'} A IA separa em tarefas, compromissos, demandas e ideias, e você confere antes de salvar.</p>
     </form>
     <div id="captura-previa" aria-live="polite"></div>`;
 }
 
-const dinheiro = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dia = (d) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '');
 
 export function previaCaptura(itens, { simples = false } = {}) {
@@ -42,8 +41,8 @@ export function previaCaptura(itens, { simples = false } = {}) {
           </div>
           <label class="visualmente-oculto" for="captura-titulo-${i}">Título do item ${i + 1}</label>
           <input id="captura-titulo-${i}" name="titulo-${i}" type="text" maxlength="200" value="${esc(x.titulo)}">
-          ${[x.data && dia(x.data), x.hora, x.valor && dinheiro(x.valor), x.prioridade === 2 ? 'urgente' : x.prioridade === 1 ? 'importante' : '', x.notas].filter(Boolean).length
-    ? `<small class="campo-ajuda">${esc([x.data && dia(x.data), x.hora, x.valor && dinheiro(x.valor), x.prioridade === 2 ? 'urgente' : x.prioridade === 1 ? 'importante' : '', x.notas].filter(Boolean).join(' · '))}</small>` : ''}
+          ${[x.data && dia(x.data), x.hora, x.prioridade === 2 ? 'urgente' : x.prioridade === 1 ? 'importante' : '', x.notas].filter(Boolean).length
+    ? `<small class="campo-ajuda">${esc([x.data && dia(x.data), x.hora, x.prioridade === 2 ? 'urgente' : x.prioridade === 1 ? 'importante' : '', x.notas].filter(Boolean).join(' · '))}</small>` : ''}
         </li>`).join('')}</ul>
       <div class="acoes">
         <button class="botao botao-primario" type="submit">Salvar ${itens.length === 1 ? 'o item' : `os ${itens.length}`}</button>

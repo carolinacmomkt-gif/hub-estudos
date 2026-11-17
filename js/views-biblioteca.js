@@ -6,7 +6,6 @@ import { icone } from './icones.js';
 import { esc, haQuantoTempo } from './utilidades.js';
 import { disciplinasAtivas, nomeDaDisciplina } from './dados-faculdade.js';
 import { areasAtivas, nomeDaArea } from './dados-estudos.js';
-import { opcoes } from './views-youtube.js';
 import { trabalhosDoTipo } from './trabalhos-ia.js';
 import {
   STATUS, CORES_DESTAQUE, PARTES_FICHAMENTO, nomeStatus, artigoPeloId, filtrarArtigos, tagsDosArtigos,
@@ -14,6 +13,10 @@ import {
 } from './dados-biblioteca.js';
 import { trechosDosDestaques, destaquesSemFichar, referenciaPronta } from './dados-biblioteca.js';
 import { ehLivro, formatoDoLivro, textoPct } from './dados-livros.js';
+
+function opcoes(lista, atual) {
+  return lista.map((o) => `<option value="${esc(o.id)}"${String(o.id) === String(atual ?? '') ? ' selected' : ''}>${esc(o.nome)}</option>`).join('');
+}
 
 const ABAS = [
   { id: 'ler', nome: 'Ler' },
@@ -278,9 +281,7 @@ function secaoPelosDestaques(a) {
       ${total ? `<p class="campo-ajuda">Cada destaque vira uma citação com de onde veio e uma linha sua. ${novos ? `${novos} ${novos === 1 ? 'destaque ainda não está' : 'destaques ainda não estão'} aqui.` : 'Tudo o que você destacou já está aqui.'}</p>
       <div class="acoes">
         ${novos || !trechos.length ? `<button class="botao botao-primario botao-pequeno" type="button" data-acao="bib-fichar-destaques">${trechos.length ? (novos === 1 ? 'Trazer o destaque novo' : `Trazer os ${novos} novos`) : `Montar com ${total === 1 ? 'o destaque' : `os ${total} destaques`}`}</button>` : ''}
-        ${trechos.length ? `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-ficha-ia">Resumir as ideias com a IA</button>
-        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-ficha-substack">Levar para o Substack</button>
-        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-ficha-video">Virar ideia de vídeo</button>` : ''}
+        ${trechos.length ? '<button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-ficha-ia">Resumir as ideias com a IA</button>' : ''}
       </div>` : '<p class="texto-suave">Destaque trechos no leitor e eles aparecem aqui prontos para fichar.</p>'}
       ${trechos.length ? `<ol class="bib-trechos">${trechos.map((t) => `
         <li class="bib-trecho">
@@ -355,7 +356,6 @@ function leitor(estado, a) {
       <details class="menu-mais">
         <summary class="botao botao-secundario botao-pequeno">Mais</summary>
         <div class="menu-mais-lista">
-          <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-substack">Usar numa pauta do Substack</button>
           <button class="botao botao-secundario botao-pequeno" type="button" data-acao="bib-editar">Editar dados e texto</button>
           <button class="botao botao-secundario botao-pequeno botao-perigo" type="button" data-acao="bib-excluir">Excluir</button>
         </div>

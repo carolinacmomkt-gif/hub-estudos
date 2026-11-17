@@ -21,7 +21,7 @@ import { cifrar } from '../lib/cripto.mjs';
 import { ErroIa } from '../lib/ia-comum.mjs';
 import {
   ErroOrigem, contaNotionTrabalho, trelloEscreve, tokenDe, partesDaSincronizacao, sincronizarParte, mudarPeca, comentarPeca,
-  lerTextoDaPeca, criarPeca, pedirIa, calendariosDe, buscarCalendarios, salvarCalendarios, cartoesDaPauta, anexoDaPauta,
+  lerTextoDaPeca, criarPeca, pedirIa, escreverLegendasR7, calendariosDe, buscarCalendarios, salvarCalendarios, cartoesDaPauta, anexoDaPauta,
 } from '../lib/trabalho.mjs';
 import { fontes } from '../lib/trabalho-fontes.mjs';
 import { escreverConsideracoes } from '../lib/ia-relatorio.mjs';
@@ -106,6 +106,13 @@ export default async (req) => {
           acao: e.pedido, clienteChave: texto(e.cliente, 120) || null, formato: texto(e.formato, 60), objetivo: texto(e.objetivo, 60),
           tema: texto(e.tema, 300), notas: texto(e.notas, 1000), texto: texto(e.texto, 12000),
         }));
+      case 'r7-legendas': {
+        const pecas = (Array.isArray(e.pecas) ? e.pecas : []).slice(0, 2).map((p) => ({
+          id: texto(p?.id, 80), data: texto(p?.data, 10), tipo: p?.tipo === 'reels' ? 'reels' : 'post', formato: texto(p?.formato, 20), tema: texto(p?.tema, 300), slides: texto(p?.slides, 3000),
+        })).filter((p) => p.id);
+        if (!pecas.length || !texto(e.cliente, 120)) return resposta(200, { ok: false, erro: 'Nada para escrever.' });
+        return resposta(200, await escreverLegendasR7(usuaria.id, { clienteChave: texto(e.cliente, 120), pecas }));
+      }
       case 'pauta-cartoes':
         if (!texto(e.cliente, 120)) return resposta(200, { ok: false, erro: 'Escolha a cliente.' });
         return resposta(200, await cartoesDaPauta(usuaria.id, texto(e.cliente, 120)));

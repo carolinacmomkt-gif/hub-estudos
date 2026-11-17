@@ -8,17 +8,17 @@ import { ROTAS } from './rotas.js';
 import { listar, salvar } from './persistencia.js';
 import { faculdadeArquivada } from './modos.js';
 
-// Grupos pelo fluxo (decisão da Carol, 03/11/2026): executar hoje, planejar e revisar, e cada área de
-// ponta a ponta. Grupo sem tela (ex.: Consultoria antes de existir) não aparece.
+// Cinco lugares (Carol, 17/11/2026: "o Bússola está bagunçado"): Hoje, Agenda, Trabalho, Estudos e
+// Vida. Grupo sem tela não aparece. A arrumação guardada antes da versão 2 dos grupos é deixada de
+// lado (as telas mudaram de lugar); escondidos, favoritos e a barra do celular continuam.
 export const GRUPOS_PADRAO = [
   { id: 'dia', nome: 'Hoje' },
-  { id: 'planejar', nome: 'Planejar' },
+  { id: 'planejar', nome: 'Agenda' },
   { id: 'trabalho', nome: 'Trabalho' },
-  { id: 'consultoria', nome: 'Consultoria' },
   { id: 'estudos', nome: 'Estudos' },
-  { id: 'criacao', nome: 'Criação' },
   { id: 'vida', nome: 'Vida' },
 ];
+const VERSAO_GRUPOS = 2;
 export const MODOS_MENU = [
   { id: 'aberto', nome: 'Aberto, com os nomes' },
   { id: 'icones', nome: 'Só os ícones' },
@@ -36,7 +36,8 @@ function guardado(estado) {
 // Organização atual, já completada: rota nova (de uma atualização do app) entra no grupo dela.
 export function organizacaoDoMenu(estado = obterEstado()) {
   const v = guardado(estado);
-  const grupos = (Array.isArray(v.grupos) && v.grupos.length ? v.grupos : GRUPOS_PADRAO.map((g) => ({ ...g, itens: [] })))
+  const guardados = v.versaoGrupos === VERSAO_GRUPOS && Array.isArray(v.grupos) && v.grupos.length ? v.grupos : null;
+  const grupos = (guardados || GRUPOS_PADRAO.map((g) => ({ ...g, itens: [] })))
     .map((g) => ({ id: g.id, nome: g.nome, aberto: g.aberto !== false, itens: (g.itens || []).filter(rotaPeloId) }));
   const colocados = new Set(grupos.flatMap((g) => g.itens));
   for (const r of ROTAS) {
@@ -66,6 +67,7 @@ export async function mudarMenu(fn) {
   const atual = (await listar('config')).find((c) => c.chave === 'menu');
   const org = organizacaoDoMenu(obterEstado());
   const valor = {
+    versaoGrupos: VERSAO_GRUPOS,
     grupos: org.grupos.map((g) => ({ id: g.id, nome: g.nome, aberto: g.aberto, itens: [...g.itens] })),
     escondidos: [...org.escondidos], favoritos: [...org.favoritos], celular: [...org.celular],
   };

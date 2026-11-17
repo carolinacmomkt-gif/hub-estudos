@@ -9,7 +9,8 @@
 import { banco } from './supabase.mjs';
 import { decifrar } from './cripto.mjs';
 import { ErroOrigem, chaveTrello } from './demandas.mjs';
-import { pedirJson, objeto, texto as tipoTexto, ErroIa } from './ia-comum.mjs';
+import { pedirJson, objeto, lista as tipoLista, texto as tipoTexto, ErroIa } from './ia-comum.mjs';
+import { REGRAS_DA_VOZ, semTravessao } from './revisao-texto.mjs';
 import { fontes, calendariosDaConexao } from './trabalho-fontes.mjs';
 import { regraDoCta } from '../../js/especialidades.js';
 import {
@@ -710,6 +711,39 @@ ${PEDIDOS_IA[acao]}`;
 }
 
 const saudeDo = (cliente) => Boolean(cliente && clienteDeSaude(cliente.nome, cliente.dados?.nicho));
+
+// Cronograma da R7: as legendas que faltam (até 2 por chamada, para a função responder rápido), na voz do
+// cliente, com o convite para agendar e a assinatura exata no fim. Só quando a Carol toca no botão.
+export async function escreverLegendasR7(userId, { clienteChave, pecas }) {
+  const cliente = (await clientesGuardados(userId)).find((c) => c.chave === clienteChave);
+  if (!cliente || cliente.casa !== 'r7') throw new ErroIa('Cliente da R7 não encontrado.');
+  const assinatura = String(cliente.dados?.r7?.identificacao?.assinatura || '').trim();
+  const voz = cliente.dados?.voz || {};
+  const vozTexto = Object.entries(voz).filter(([k]) => !['atualizado_em', 'fontes'].includes(k))
+    .map(([k, v]) => `- ${k}: ${Array.isArray(v) ? v.map((x) => x?.valor ?? x).join(', ') : (v?.valor ?? v)}`).filter((l) => !/: (undefined|null|)$/.test(l)).join('\n');
+  const memoria = (cliente.dados?.memoria || []).map((m) => m.texto).slice(-20);
+  const conteudo = `<ficha cliente="${cliente.nome}">
+${(cliente.dados?.ficha || 'Ficha ainda não preenchida.').slice(0, 12000)}
+</ficha>
+${vozTexto ? `<voz>\n${vozTexto}\n</voz>\n` : ''}${memoria.length ? `<ajustes_ja_pedidos>\n${memoria.map((m) => `- ${m}`).join('\n')}\n</ajustes_ja_pedidos>\n` : ''}
+<pedido>
+Escreva a legenda de cada peça abaixo para o Instagram do cliente. Uma legenda por peça, devolvida com o mesmo id.
+${saudeDo(cliente) ? 'Cliente da área da saúde: siga as normas do conselho (sem promessa de resultado, sem antes e depois, sem preço).\n' : ''}${regraDoCta(cliente.dados?.nicho || '', { saude: Boolean(saudeDo(cliente)) })}
+Primeira frase forte, parágrafos curtos separados por linha em branco, português do Brasil, sem hashtag (a não ser que a ficha peça).
+${assinatura ? `Termine cada legenda com a assinatura exata, sozinha na última linha: ${assinatura}` : ''}
+${pecas.map((p) => `- id ${p.id} · ${p.data} · ${p.tipo === 'reels' ? 'Reels' : `Post${p.formato ? ` (${p.formato})` : ''}`} · tema: ${p.tema || 'escolha um tema útil para o público da ficha'}${p.slides ? `\n  Copy das lâminas (a legenda complementa, não repete):\n  ${String(p.slides).slice(0, 2500).replace(/\n/g, '\n  ')}` : ''}`).join('\n')}
+</pedido>
+
+${REGRAS_DA_VOZ}`;
+  const r = await pedirJson({ system: METODO, conteudo, esquema: objeto({ legendas: tipoLista('Uma por peça', objeto({ id: tipoTexto, legenda: tipoTexto })) }), maxTokens: 3000, esforco: 'low' });
+  const ids = new Set(pecas.map((p) => p.id));
+  const legendas = (r.legendas || []).filter((x) => ids.has(x.id) && String(x.legenda || '').trim()).map((x) => {
+    let t = semTravessao(String(x.legenda).trim());
+    if (assinatura && !t.includes(assinatura)) t = `${t}\n\n${assinatura}`;
+    return { id: x.id, legenda: t.slice(0, 4000) };
+  });
+  return { ok: true, legendas };
+}
 export { casaDoCliente };
 
 // ---------------------------------------------------------------------------

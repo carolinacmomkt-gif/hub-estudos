@@ -1,5 +1,5 @@
-// Grupo Trabalho: Conteúdo (#conteudo e #conteudo/<id>), Aprovar (#aprovar), Clientes (#clientes e
-// #clientes/<chave>) e Criar (#criar). Visual do Bússola; regras em dados-trabalho.js.
+// Grupo Trabalho: Conteúdo (#conteudo e #conteudo/<id>) e Clientes (#clientes e #clientes/<chave>), só
+// acompanhamento (Aprovar e Criar saíram do menu em 17/11/2026). Regras em dados-trabalho.js.
 
 import { cabecalho } from './componentes.js';
 import { icone } from './icones.js';
@@ -144,7 +144,6 @@ export function renderConteudo(estado) {
         <button type="button" role="tab" data-acao="tb-visao" data-valor="${id}" aria-selected="${visao === id}" aria-pressed="${visao === id}">${nome}</button>`).join('')}</div>
       ${visao === 'semana' ? `<span class="tb-setas"><button class="botao-icone" type="button" data-acao="tb-semana" data-passo="-7" aria-label="Semana anterior">‹</button><button class="botao botao-secundario botao-pequeno" type="button" data-acao="tb-semana" data-passo="0">Hoje</button><button class="botao-icone" type="button" data-acao="tb-semana" data-passo="7" aria-label="Próxima semana">›</button></span>` : ''}
       ${barraSync(estado)}
-      <a class="botao botao-primario botao-pequeno" href="#criar">+ Peça nova</a>
     </div>
     ${chipsCasa(estado)}
     ${cardMudou(estado, pecas)}
@@ -249,7 +248,6 @@ function fichaDaPeca(estado, id) {
           ${p.origem === 'notion' ? `<button class="card-link" type="button" data-acao="tb-ler-texto" data-id="${esc(p.id)}">${p.texto ? 'Ler de novo' : 'Ler do Notion'}</button>` : ''}</div>
         ${p.texto ? `<div class="tb-texto-corpo">${marcarTexto(p.texto, alertas)}</div>` : '<p class="texto-suave">Ainda sem texto copiado.</p>'}
         ${alertas.length ? `<p class="campo-ajuda">Revisor: ${alertas.length} ${alertas.length === 1 ? 'ponto' : 'pontos'} marcados.</p>` : ''}
-        <div class="acoes"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="tb-criar-de" data-id="${esc(p.id)}">Abrir no Criar</button></div>
         <form class="formulario" data-form="tb-comentar" data-id="${esc(p.id)}" novalidate>
           <label class="campo"><span class="campo-rotulo">Comentar no ${p.origem === 'trello' ? 'cartão' : 'Notion'}</span><textarea name="texto" rows="2" maxlength="2000" placeholder="O que precisa mudar"></textarea></label>
           <label class="campo-marcar"><input type="checkbox" name="memoria"> Guardar na memória de ${esc(p.cliente_nome || 'cliente')} (a IA lê nos próximos pedidos)</label>
@@ -317,7 +315,7 @@ function cartaoArte(estado, p, etapa, hoje) {
   } else if (etapa === 'voce' && p.origem === 'notion') {
     // Essence: planejamento, copy ou algo atribuído a você.
     pe = `<span class="tb-arte-pe"><small>${esc(quandoTxt || 'sem data')}</small>${seloGrupo(p)}</span>
-      <span class="tb-arte-acoes"><a class="botao botao-secundario botao-pequeno" href="#conteudo/${esc(p.id)}">Abrir</a><button class="botao botao-secundario botao-pequeno" type="button" data-acao="tb-criar-de" data-id="${esc(p.id)}">Escrever no Criar</button></span>`;
+      <span class="tb-arte-acoes"><a class="botao botao-secundario botao-pequeno" href="#conteudo/${esc(p.id)}">Abrir</a></span>`;
   } else if (etapa === 'equipe') {
     pe = `<span class="tb-arte-pe"><small>${esc(quandoTxt || 'sem data')}</small>${seloGrupo(p)}</span>`;
   } else if (etapa === 'voce') {
@@ -367,7 +365,7 @@ export function renderClientes(estado) {
       ${aberta && aberta.cliente.url ? `<a class="botao botao-secundario botao-pequeno" href="${esc(aberta.cliente.url)}" target="_blank" rel="noopener">Abrir no ${String(aberta.cliente.url).includes('trello') ? 'Trello' : 'Notion'}</a>` : ''}
       ${aberta ? `<a class="botao botao-secundario botao-pequeno" href="#pautas/${esc(parametroDaPauta(aberta.cliente.chave, mesDaPautaPadrao()))}">Pauta de ${esc(nomeDoMes(mesDaPautaPadrao()).toLowerCase())}</a>` : ''}
       ${aberta ? `<a class="botao botao-secundario botao-pequeno" href="#relatorio/${esc(parametroDe(aberta.cliente.chave, mesPadrao()))}">Relatório de ${esc(nomeDoMes(mesPadrao()).toLowerCase())}</a>` : ''}
-      ${aberta ? `<button class="botao botao-primario botao-pequeno" type="button" data-acao="tb-criar-para" data-valor="${esc(aberta.cliente.chave)}">Criar para ${esc(aberta.cliente.nome.split(' ')[0] === 'Dra.' || aberta.cliente.nome.split(' ')[0] === 'Dr.' ? 'ela' : aberta.cliente.nome.split(' ')[0])}</button>` : barraSync(estado)}
+      ${barraSync(estado)}
     </div>
     <div class="tb-clientes${aberta ? ' com-ficha' : ''}">
       ${listaHtml}
@@ -554,7 +552,7 @@ export function cardTrabalhoConfig(estado) {
 export function cardComecePorAqui(estado, itens, tese) {
   return `
     <section class="card tb-comece" aria-labelledby="tb-comece-titulo">
-      <div class="card-topo"><h2 class="card-titulo" id="tb-comece-titulo">Comece por aqui</h2><a class="card-link" href="#aprovar">Trabalho</a></div>
+      <div class="card-topo"><h2 class="card-titulo" id="tb-comece-titulo">Comece por aqui</h2><a class="card-link" href="#conteudo">Trabalho</a></div>
       ${itens.length ? `<ol class="tb-comece-lista">${itens.map((i) => `<li><a href="${esc(i.rota)}"><b>${esc(i.titulo)}</b><small>${esc(i.motivo)}</small></a></li>`).join('')}</ol>`
     : '<p class="texto-suave">Nada do trabalho apertando agora.</p>'}
       ${tese ? `<p class="tb-tese">“${esc(tese)}”</p>` : ''}

@@ -20,4 +20,15 @@
     vidro = localStorage.getItem('hub.vidro') === 'nao' ? 'nao' : 'sim';
   } catch (e) {}
   document.documentElement.dataset.vidro = vidro;
+
+  // Cor de destaque escolhida (destaque.js guarda o CSS pronto; vence o temas.css pela especificidade).
+  try {
+    var css = localStorage.getItem('hub.destaque.css');
+    if (css) {
+      var estilo = document.createElement('style');
+      estilo.id = 'estilo-destaque';
+      estilo.textContent = css;
+      document.head.appendChild(estilo);
+    }
+  } catch (e) {}
 })();

@@ -388,9 +388,9 @@ export function comecePorAqui(estado, hoje, limite = 3) {
   for (const p of q.voce) {
     itens.push(p.origem === 'notion'
       ? { id: p.id, titulo: `Copy: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · ${String(p.status || 'com você').toLowerCase()}`, rota: `#conteudo/${p.id}` }
-      : { id: p.id, titulo: `Mandar para aprovar: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · arte pronta`, rota: '#aprovar' });
+      : { id: p.id, titulo: `Mandar para aprovar: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · arte pronta`, rota: `#conteudo/${p.id}` });
   }
-  for (const p of q.agendar) itens.push({ id: p.id, titulo: `Agendar: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · aprovada`, rota: '#aprovar' });
+  for (const p of q.agendar) itens.push({ id: p.id, titulo: `Agendar: ${p.titulo}`, motivo: `${p.cliente_nome || ''} · aprovada`, rota: `#conteudo/${p.id}` });
   // Uma linha por peça (a primeira, que é a mais urgente).
   const vistos = new Set();
   return itens.filter((i) => (vistos.has(i.id) ? false : vistos.add(i.id))).slice(0, limite);

@@ -1,0 +1,177 @@
+/* Cronograma de 15 dias da R7 (17/11/2026): escrever à esquerda, entregar à direita (em cima no celular).
+   Só tokens do tema. */
+
+.cron-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 16px;
+  align-items: start;
+}
+
+.cron-principal,
+.cron-lado {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cron-lado {
+  position: sticky;
+  top: 16px;
+}
+
+.cron-passos {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.cron-passos li {
+  display: grid;
+  gap: 8px;
+}
+
+.cron-passos li > .botao {
+  justify-self: start;
+}
+
+.cron-colar textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.cron-pecas {
+  display: grid;
+  gap: 12px;
+}
+
+.cron-peca {
+  display: grid;
+  gap: 8px;
+  border-left: 3px solid var(--cor-linha);
+}
+
+.cron-peca.cron-pronta { border-left-color: var(--cor-sucesso, var(--cor-destaque)); }
+.cron-peca.cron-falta { border-left-color: var(--urg-hoje-borda, var(--cor-destaque)); }
+.cron-peca.cron-atencao { border-left-color: var(--urg-semana, var(--cor-destaque)); }
+
+.cron-peca-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cron-peca-titulo {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.cron-peca-tipo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.cron-peca-tipo select {
+  min-height: var(--toque);
+  max-width: 100%;
+}
+
+.cron-falta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.cron-falta:empty { display: none; }
+
+.cron-chip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font-size: 0.8rem;
+}
+
+.cron-chip-atencao {
+  color: var(--cor-texto-suave);
+}
+
+.cron-ok {
+  color: var(--cor-texto-destaque);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cron-stories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 0 12px;
+}
+
+.cron-peca-acoes:empty { display: none; }
+
+.cron-periodo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cron-contagem {
+  margin: 0 0 8px;
+}
+
+.cron-contagem strong {
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cron-etapas small,
+.cron-outros small {
+  display: block;
+  color: var(--cor-texto-suave);
+  font-weight: 400;
+}
+
+.cron-outros li {
+  display: grid;
+  gap: 2px;
+}
+
+.cron-saidas {
+  flex-wrap: wrap;
+}
+
+.r7-cliente-cron {
+  color: var(--cor-texto-destaque);
+  font-size: 0.85rem;
+}
+
+.cron-mais-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 0 12px;
+  align-items: end;
+}
+
+@media (max-width: 1000px) {
+  .cron-grade { grid-template-columns: minmax(0, 1fr); }
+  .cron-lado { position: static; order: -1; }
+}
+
+.cron-checklist {
+  margin: 12px 0;
+}
+
+.cron-checklist summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--toque);
+  font-weight: 600;
+  cursor: pointer;
+}

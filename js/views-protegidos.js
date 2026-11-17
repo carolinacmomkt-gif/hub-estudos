@@ -4,7 +4,6 @@ import { esc } from './utilidades.js';
 import { protegidosDe, textoDias, NOMES_DIA_CURTO, SUGESTOES_PROTEGIDOS } from './dados-protegidos.js';
 import { diaLeveDe, inegociaveis, passoPequeno, versaoMinima, tarefasParaAmanha } from './dados-dialeve.js';
 import { habitosDoDia, feitoNoDia } from './dados-habitos.js';
-import { situacaoDasContas, mesDe } from './dados-financas.js';
 
 // ---------------------------------------------------------------------------
 // Configurações → Horas protegidas
@@ -55,7 +54,7 @@ export function botaoDiaLeve(ativo) {
 
 export function cardDiaLeve(estado, hoje) {
   const d = diaLeveDe(estado.config);
-  const contas = situacaoDasContas(estado.financas || [], mesDe(hoje), hoje).filter((x) => x.estado !== 'paga' && x.vence === hoje).map((x) => x.conta.descricao);
+  const contas = []; // as Finanças saíram do app (17/11/2026)
   const itens = inegociaveis({ tarefas: estado.tarefas, eventos: estado.eventos, contas, hoje });
   const movidas = (d.movidas || []).length;
   const passo = passoPequeno(hoje);

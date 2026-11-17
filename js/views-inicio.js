@@ -4,13 +4,11 @@ import { cardNoModo, modoAtual, nomeDoModo, faculdadeArquivada, CARDS_DA_FACULDA
 import { cardPrioridadesHoje } from './views-portfolio.js';
 import { cardAgendaHoje, cardHumor, resumoDoDia } from './hoje.js';
 import { cardTarefasHoje, cardProjetosHoje } from './views-tarefas.js';
-import { cardFinancasHoje, cardContasHoje } from './views-financas.js';
 import { cardDiaLeve, botaoDiaLeve } from './views-protegidos.js';
 import { cardLeituraHoje } from './views-leitura.js';
 import { cardPadroes } from './views-padroes.js';
 import { emDiaLeve } from './dados-dialeve.js';
 import { dataLocal } from './views-dia.js';
-import { cardRecompensasHoje } from './views-recompensas.js';
 import { cardHabitosHoje } from './views-habitos.js';
 import { cardMeuDia } from './views-dia.js';
 import { cardDemandas } from './views-demandas.js';
@@ -20,9 +18,7 @@ import { cardCaixaEntrada } from './views-criar.js';
 import { cardPlano } from './views-plano.js';
 import { blocosDoInicio, nomeDoBloco, TAMANHOS, TIPOS_PROPRIOS, aparelhoDoInicio } from './inicio-layout.js';
 import { renderProprio } from './views-inicio-proprios.js';
-import { cardYoutubeInicio } from './views-youtube.js';
 import { cardLeiturasInicio } from './views-biblioteca.js';
-import { cardSubstackInicio } from './views-substack.js';
 import { cardFocoInicio } from './views-foco.js';
 import { cardContinuar } from './continuar.js';
 import { cardResumoInicio } from './views-resumo.js';
@@ -386,7 +382,6 @@ export function renderInicio(estado) {
     demandas: () => (estado.usandoExemplo ? '' : cardDemandas(estado, agora)),
     agenda: () => (estado.usandoExemplo ? '' : cardAgendaHoje(estado, agora)),
     humor: () => cardHumor(estado, agora),
-    recompensas: () => cardRecompensasHoje(estado),
     tarefas: () => cardTarefasHoje(estado),
     prioridades: () => (estado.usandoExemplo ? '' : cardPrioridadesHoje(estado)),
     habitos: () => cardHabitosHoje(estado),
@@ -394,8 +389,6 @@ export function renderInicio(estado) {
     sonhofoto: () => cardSonhoHoje(estado),
     fimdesemana: () => cardFimDeSemanaHoje(estado),
     projetos: () => cardProjetosHoje(estado),
-    contas: () => cardContasHoje(estado),
-    financas: () => ((estado.financas || []).some((l) => !l.excluido_em) ? cardFinancasHoje(estado) : ''),
     prazos: () => cardPrazos(dados, agora),
     provas: () => cardProvas(dados, agora),
     plano: () => (estado.usandoExemplo ? '' : cardPlano(estado, { agora })),
@@ -403,13 +396,11 @@ export function renderInicio(estado) {
     faltas: () => (estado.usandoExemplo ? '' : cardFaltas(estado)),
     precisa: () => (estado.usandoExemplo ? '' : cardPrecisa(estado, agora)),
     avisos: () => (estado.usandoExemplo ? '' : cardAvisos(estado, agora)),
-    youtube: () => ((estado.videos || []).some((v) => !v.excluido_em) ? cardYoutubeInicio(estado, agora) : ''),
     foco: () => cardFocoInicio(estado),
     resumo: () => (estado.usandoExemplo ? '' : cardResumoInicio(estado)),
     padroes: () => (estado.usandoExemplo ? '' : cardPadroes(estado, { limite: 2 })),
     leitura: () => (estado.usandoExemplo ? '' : cardLeituraHoje(estado, agora)),
     leituras: () => (estado.usandoExemplo ? '' : cardLeiturasInicio(estado)),
-    substack: () => (estado.usandoExemplo ? '' : cardSubstackInicio(estado, agora)),
     caixa: () => cardCaixaEntrada(estado.caixa || [], agora),
     cadernos: () => cardCadernos(dados, agora),
     progresso: () => cardProgresso(dados),
