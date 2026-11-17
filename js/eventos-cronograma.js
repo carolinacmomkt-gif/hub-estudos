@@ -12,7 +12,7 @@ import { clientesR7, fichaDe } from './views-r7.js';
 import { contextoDoCliente, cronogramaAberto } from './views-cronograma.js';
 import {
   chaveDoCronograma, cronogramaVazio, normalizarCronograma, pecaVazia, pedidoParaClaude, lerRespostaDoClaude, oQueFalta,
-  textoWhatsApp, textoParaTrello, textoDaEntrega, montarSlidesDoCronograma, nomeDoArquivoDoCronograma,
+  textoWhatsApp, textoParaTrello, entregaDoDesigner, textoDaEntrega, montarSlidesDoCronograma, nomeDoArquivoDoCronograma,
 } from './dados-cronograma.js';
 
 let app; // { renderizar, avisoCurto }
@@ -156,9 +156,12 @@ export function cliqueCronograma(alvo) {
       return true;
     }
     case 'cron-trello': {
-      const { c, cron } = doAlvo(alvo);
+      const { cron } = doAlvo(alvo);
       const p = cron?.pecas.find((x) => x.id === alvo.dataset.peca);
-      if (p) copiar(textoParaTrello(p, c?.nome), 'Copy das lâminas copiada. Cole no cartão do designer.');
+      if (p) {
+        const [dia, hora] = entregaDoDesigner(new Date().toLocaleDateString('sv-SE')).split('T');
+        copiar(textoParaTrello(p), `Copy copiada. No card: nome "${p.formato === 'estatico' ? 'estático' : 'carrossel'}", topo da lista, entrega ${dia.slice(8, 10)}/${dia.slice(5, 7)} às ${hora}.`);
+      }
       return true;
     }
     case 'cron-tirar':

@@ -10,6 +10,9 @@ export const FONTES = {
   open: { familia: 'Bussola Open Sans', nome: 'Open Sans', arquivo: 'open-sans', asc: 1.069, linha: 1.362 },
   raleway: { familia: 'Bussola Raleway', nome: 'Raleway', arquivo: 'raleway', asc: 0.94, linha: 1.174 },
   lato: { familia: 'Bussola Lato', nome: 'Lato', arquivo: 'lato', asc: 0.987, linha: 1.2 },
+  // Cronograma da R7 (manual da R7, 17/11/2026): Instrument Serif nos títulos e Instrument Sans no texto.
+  serif: { familia: 'Bussola Instrument Serif', nome: 'Instrument Serif', arquivo: 'instrument-serif', asc: 0.99, linha: 1.3 },
+  isans: { familia: 'Bussola Instrument Sans', nome: 'Instrument Sans', variavel: 'instrument-sans-var', asc: 0.97, linha: 1.22 },
 };
 const fonteDe = (f) => FONTES[f] || FONTES.open;
 let fontes = null;
@@ -19,7 +22,9 @@ export function carregarFontes() {
   fontes = (async () => {
     if (typeof FontFace === 'undefined' || !document.fonts) return false;
     try {
-      const lista = Object.values(FONTES).flatMap((f) => [400, 700].map((peso) => new FontFace(f.familia, `url(js/vendor/fontes/${f.arquivo}-${peso}.woff2)`, { weight: String(peso) })));
+      const lista = Object.values(FONTES).flatMap((f) => (f.variavel
+        ? [new FontFace(f.familia, `url(js/vendor/fontes/${f.variavel}.woff2)`, { weight: '400 700' })]
+        : [400, 700].map((peso) => new FontFace(f.familia, `url(js/vendor/fontes/${f.arquivo}-${peso}.woff2)`, { weight: String(peso) }))));
       await Promise.all(lista.map((f) => f.load()));
       lista.forEach((f) => document.fonts.add(f));
       return true;
@@ -31,13 +36,13 @@ export function carregarFontes() {
   return fontes;
 }
 
-const fonte = (tam, negrito, f) => `${negrito ? 700 : 400} ${tam}px "${fonteDe(f).familia}", "${fonteDe(f).nome}", system-ui, sans-serif`;
+const fonte = (tam, negrito, f, italico = false) => `${italico ? 'italic ' : ''}${typeof negrito === 'number' ? negrito : negrito ? 700 : 400} ${tam}px "${fonteDe(f).familia}", "${fonteDe(f).nome}", system-ui, sans-serif`;
 
 let ctxMedida = null;
 const medidas = new Map();
 export function medir(texto, tam, negrito, f = 'open') {
   if (!texto) return 0;
-  const chave = `${f}|${negrito ? 1 : 0}|${tam}|${texto}`;
+  const chave = `${f}|${typeof negrito === 'number' ? negrito : negrito ? 1 : 0}|${tam}|${texto}`;
   if (medidas.has(chave)) return medidas.get(chave);
   if (!ctxMedida) ctxMedida = document.createElement('canvas').getContext('2d');
   ctxMedida.font = fonte(tam, negrito, f);
@@ -79,7 +84,7 @@ function desenharRuns(ctx, runs, x, base, tam, fPadrao) {
   for (const r of runs) {
     if (!r.t) continue;
     const f = r.f || fPadrao;
-    ctx.font = fonte(tam, r.b, f);
+    ctx.font = fonte(tam, r.b, f, r.i);
     ctx.fillStyle = cor(r.cor);
     ctx.fillText(r.t, cx, base);
     cx += medir(r.t, tam, r.b, f);
@@ -178,33 +183,35 @@ const hex = (c) => cor(c).replace('#', '').toUpperCase();
 const NS = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
 const CABECALHO = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
-function run(r, tam, fPadrao) {
+// r.i = itálico; r.link = endereço (no PPTX vira link clicável; ligar(url) devolve o rId da relação).
+function run(r, tam, fPadrao, ligar) {
   if (!r.t) return '';
   const nome = fonteDe(r.f || fPadrao).nome;
-  return `<a:r><a:rPr lang="pt-BR" sz="${Math.round(tam * 100)}"${r.b ? ' b="1"' : ' b="0"'} dirty="0"><a:solidFill><a:srgbClr val="${hex(r.cor)}"/></a:solidFill><a:latin typeface="${nome}"/><a:cs typeface="${nome}"/></a:rPr><a:t>${xml(r.t)}</a:t></a:r>`;
+  const link = r.link && ligar ? `<a:hlinkClick r:id="${ligar(r.link)}"/>` : '';
+  return `<a:r><a:rPr lang="pt-BR" sz="${Math.round(tam * 100)}"${r.b ? ' b="1"' : ' b="0"'}${r.i ? ' i="1"' : ''}${r.link ? ' u="sng"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${hex(r.cor)}"/></a:solidFill><a:latin typeface="${nome}"/><a:cs typeface="${nome}"/>${link}</a:rPr><a:t>${xml(r.t)}</a:t></a:r>`;
 }
 
 const ALINHAR = { l: 'l', c: 'ctr', r: 'r' };
 const espacamento = (el) => (el.entrelinha ? `<a:lnSpc><a:spcPts val="${Math.round(el.entrelinha * el.tam * 100)}"/></a:lnSpc>` : '');
 
-function caixaDeTexto(id, el) {
+function caixaDeTexto(id, el, ligar) {
   const altura = el.tipo === 'paragrafos' ? el.h : linhaDe(el);
   const vazio = (sz) => `<a:p><a:pPr>${espacamento(el)}</a:pPr><a:endParaRPr lang="pt-BR" sz="${sz}"/></a:p>`;
   const corpo = el.tipo === 'paragrafos'
-    ? el.paragrafos.map((p, i) => `${i ? vazio(Math.round(el.tam * 100)) : ''}<a:p><a:pPr algn="l">${espacamento(el)}</a:pPr>${p.map((r) => run(r, el.tam, el.f)).join('')}</a:p>`).join('')
-    : `<a:p><a:pPr algn="${ALINHAR[el.alinhar] || 'l'}">${espacamento(el)}</a:pPr>${el.runs.map((r) => run(r, el.tam, el.f)).join('')}</a:p>`;
+    ? el.paragrafos.map((p, i) => `${i ? vazio(Math.round(el.tam * 100)) : ''}<a:p><a:pPr algn="l">${espacamento(el)}</a:pPr>${p.map((r) => run(r, el.tam, el.f, ligar)).join('')}</a:p>`).join('')
+    : `<a:p><a:pPr algn="${ALINHAR[el.alinhar] || 'l'}">${espacamento(el)}</a:pPr>${el.runs.map((r) => run(r, el.tam, el.f, ligar)).join('')}</a:p>`;
   return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Texto ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>`
     + `<p:spPr><a:xfrm><a:off x="${emu(el.x)}" y="${emu(el.y)}"/><a:ext cx="${emu(el.w)}" cy="${emu(altura)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>`
     + `<p:txBody><a:bodyPr wrap="${el.tipo === 'paragrafos' || el.quebrar ? 'square' : 'none'}" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" rtlCol="0"><a:noAutofit/></a:bodyPr><a:lstStyle/>${corpo}</p:txBody></p:sp>`;
 }
 
-function retangulo(id, el) {
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Forma ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>`
+function retangulo(id, el, ligar) {
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Forma ${id}">${el.link && ligar ? `<a:hlinkClick r:id="${ligar(el.link)}"/>` : ''}</p:cNvPr><p:cNvSpPr/><p:nvPr/></p:nvSpPr>`
     + `<p:spPr><a:xfrm><a:off x="${emu(el.x)}" y="${emu(el.y)}"/><a:ext cx="${emu(el.w)}" cy="${emu(el.h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${hex(el.cor)}"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`;
 }
 
 // A imagem vai recortada (srcRect) para cobrir a área, como no canvas.
-function figura(id, el, rId, dims) {
+function figura(id, el, rId, dims, ligar) {
   const geo = el.raio
     ? `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${Math.round((el.raio / Math.min(el.w, el.h)) * 100000)}"/></a:avLst></a:prstGeom>`
     : '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>';
@@ -219,7 +226,7 @@ function figura(id, el, rId, dims) {
       if (aImg > aCaixa) { const c = Math.round(((1 - aCaixa / aImg) / 2) * 100000); corte = `<a:srcRect l="${c}" r="${c}"/>`; } else { const c = Math.round(((1 - aImg / aCaixa) / 2) * 100000); corte = `<a:srcRect t="${c}" b="${c}"/>`; }
     }
   }
-  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Imagem ${id}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>`
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Imagem ${id}">${el.link && ligar ? `<a:hlinkClick r:id="${ligar(el.link)}"/>` : ''}</p:cNvPr><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>`
     + `<p:blipFill><a:blip r:embed="${rId}"/>${corte}<a:stretch><a:fillRect/></a:stretch></p:blipFill>`
     + `<p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(w)}" cy="${emu(h)}"/></a:xfrm>${geo}</p:spPr></p:pic>`;
 }
@@ -280,6 +287,15 @@ export async function pptxDeSlides(slides, { titulo = 'Apresentação' } = {}) {
     const rels = [`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`];
     let id = 2;
     const formas = [];
+    const links = new Map();
+    const ligar = (url) => {
+      if (!links.has(url)) {
+        const rId = `rId${rels.length + 1}`;
+        rels.push(`<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${xml(url)}" TargetMode="External"/>`);
+        links.set(url, rId);
+      }
+      return links.get(url);
+    };
     for (const el of slide.elementos) {
       if (el.tipo === 'imagem') {
         if (!el.src) continue;
@@ -295,9 +311,9 @@ export async function pptxDeSlides(slides, { titulo = 'Apresentação' } = {}) {
         if (!m) continue;
         const rId = `rId${rels.length + 1}`;
         rels.push(`<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${m.nome}"/>`);
-        formas.push(figura(id++, el, rId, m));
-      } else if (el.tipo === 'retangulo') formas.push(retangulo(id++, el));
-      else formas.push(caixaDeTexto(id++, el));
+        formas.push(figura(id++, el, rId, m, ligar));
+      } else if (el.tipo === 'retangulo') formas.push(retangulo(id++, el, ligar));
+      else formas.push(caixaDeTexto(id++, el, ligar));
     }
     add(`ppt/slides/slide${i + 1}.xml`, `${CABECALHO}<p:sld ${NS}><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${hex(slide.fundo || 'fundo')}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${formas.join('')}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`);
     add(`ppt/slides/_rels/slide${i + 1}.xml.rels`, `${CABECALHO}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>`);

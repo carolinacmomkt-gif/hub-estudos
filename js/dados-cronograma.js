@@ -35,9 +35,12 @@ export function periodoPadrao(hoje) {
   return { inicio, fim: somarDias(inicio, 11) };
 }
 
-export function periodoEmTexto(inicio, fim) {
-  const [, mi, di] = inicio.split('-').map(Number);
-  const [, mf, df] = fim.split('-').map(Number);
+export function periodoEmTexto(inicio, fim, { zeros = false } = {}) {
+  const dia = (n) => (zeros ? String(n).padStart(2, '0') : n);
+  const [, mi, di0] = inicio.split('-').map(Number);
+  const [, mf, df0] = fim.split('-').map(Number);
+  const di = dia(di0);
+  const df = dia(df0);
   return mi === mf ? `${di} a ${df} de ${MESES[mf - 1]}` : `${di} de ${MESES[mi - 1]} a ${df} de ${MESES[mf - 1]}`;
 }
 
@@ -68,9 +71,44 @@ export function tituloDaPeca(p) {
   return `${rotuloDe(p.tipo)} - ${ddmm(p.data)} - ${nomeDoDia(p.data)}`;
 }
 
-// Figurinha que entra por cima da sequência, pelo modelo de story da rotina.
-const FIGURINHA_DO_MODELO = { contexto_enquete: 'enquete Sim / Não', enquete: 'enquete Sim / Não', caixinha: 'caixinha de perguntas', repost: 'repost do post do dia', bomdia: '' };
-export const FUNCOES_TELA = ['gancho', 'pergunta', 'desenvolvimento', 'solução', 'chamada'];
+// O que entra por cima da sequência (manual da R7): repost do post do dia na primeira tela, enquete (com as
+// duas opções) ou caixinha logo no começo e o link para agendar sempre na última tela. Vários, separados por ";".
+const FIGURINHA_DO_MODELO = { contexto_enquete: 'enquete Sim / Não', enquete: 'enquete Sim / Não', caixinha: 'caixinha de perguntas', repost: '', bomdia: '' };
+export const FUNCOES_TELA = ['gancho', 'interação', 'virada', 'prova', 'chamada'];
+
+export function figurinhaPadrao(modelo, temPost = false) {
+  if (modelo === 'bomdia') return '';
+  return [temPost || modelo === 'repost' ? 'repost do post do dia' : '', FIGURINHA_DO_MODELO[modelo] ?? '', 'link de agendamento'].filter(Boolean).join('; ');
+}
+
+// "repost; enquete Sim / Não; link" → [{ tipo, texto, opcoes }]
+export function acoesDaFigurinha(fig) {
+  return String(fig || '').split(/[;\n]+/).map((x) => x.trim()).filter(Boolean).map((t) => {
+    const tipo = /repost/i.test(t) ? 'repost' : /enquete/i.test(t) ? 'enquete' : /caixinha|pergunta/i.test(t) ? 'caixinha' : /link/i.test(t) ? 'link' : 'outro';
+    const opcoes = tipo === 'enquete' ? t.replace(/^.*?enquete\s*:?\s*/i, '').split(/\s*\/\s*/).map((o) => o.trim()).filter(Boolean) : [];
+    return { tipo, texto: t, opcoes };
+  });
+}
+
+// Em que tela entra cada ação: repost na 1, enquete e caixinha na 2 (ou na 1 sem repost), link na última.
+export function telaDaAcao(acao, total, acoes = []) {
+  if (acao.tipo === 'repost') return 1;
+  if (acao.tipo === 'link') return total;
+  const temRepost = acoes.some((a) => a.tipo === 'repost');
+  return Math.min(total, temRepost || total >= 3 ? 2 : 1);
+}
+
+// Linha curta do que entra por cima ("Enquete: Sim / Não", "Link de agendamento", "Repost do post do dia").
+export function rotuloDaAcao(a) {
+  if (a.tipo === 'enquete') return a.opcoes.length ? `Enquete: ${a.opcoes.join(' / ')}` : 'Enquete';
+  if (a.tipo === 'caixinha') return 'Caixinha de perguntas';
+  if (a.tipo === 'link') return 'Link de agendamento';
+  if (a.tipo === 'repost') return 'Repost do post do dia';
+  return a.texto.charAt(0).toUpperCase() + a.texto.slice(1);
+}
+
+// O direcionamento que vai escrito na arte, no lugar da figurinha (30 px, sem seta nem caixa).
+export const direcionamentoDe = (a) => ({ enquete: 'colocar a enquete aqui', caixinha: 'colocar a caixinha de perguntas aqui', link: 'colocar o link aqui', repost: 'colocar o repost do post do dia aqui' }[a.tipo] || `colocar ${a.texto} aqui`);
 
 const novoId = (data, tipo, i) => `${data}-${tipo}-${i}`;
 
@@ -79,7 +117,7 @@ export function pecaVazia(data, tipo, extra = {}) {
     id: extra.id || novoId(data, tipo, Math.random().toString(36).slice(2, 7)),
     data, tipo, formato: tipo === 'post' ? (extra.formato || 'carrossel') : '', modelo: ehStory({ tipo }) ? (extra.modelo || (tipo === 'bomdia' ? 'bomdia' : 'contexto_enquete')) : '',
     tema: '', legenda: '', slides: '', video: '', capa: '', telas: '',
-    figurinha: ehStory({ tipo }) ? (FIGURINHA_DO_MODELO[extra.modelo || (tipo === 'bomdia' ? 'bomdia' : 'contexto_enquete')] ?? '') : '',
+    figurinha: ehStory({ tipo }) ? figurinhaPadrao(extra.modelo || (tipo === 'bomdia' ? 'bomdia' : 'contexto_enquete'), extra.temPost) : '',
     pode: false,
   };
 }
@@ -99,7 +137,8 @@ export function gradeDoPeriodo(rotina = {}, inicio, fim) {
       }
     }
     const modelo = stories[n] || stories[String(n)];
-    if (modelo) pecas.push(pecaVazia(dia, modelo === 'bomdia' ? 'bomdia' : 'story', { id: novoId(dia, 'story', 0), modelo }));
+    const temPost = pecas.some((p) => p.data === dia);
+    if (modelo) pecas.push(pecaVazia(dia, modelo === 'bomdia' ? 'bomdia' : 'story', { id: novoId(dia, 'story', 0), modelo, temPost }));
   }
   return pecas;
 }
@@ -111,7 +150,7 @@ export function cronogramaVazio({ cliente, nome, inicio, fim, rotina }) {
 // Cronogramas antigos (Story 1/Story 2/enquete) viram sequência de telas.
 function migrarStory(p) {
   if (!ehStory(p) || p.telas || !(p.story1 || p.story2 || p.pergunta)) return p;
-  const telas = [p.story1 && `Tela 1 (gancho): ${p.story1}`, p.story2 && `Tela 2 (pergunta): ${p.story2}`, p.pergunta && `Tela ${p.story2 ? 3 : 2} (pergunta): ${p.pergunta}`].filter(Boolean).join('\n');
+  const telas = [p.story1 && `Tela 1 (gancho): ${p.story1}`, p.story2 && `Tela 2 (interação): ${p.story2}`, p.pergunta && `Tela ${p.story2 ? 3 : 2} (interação): ${p.pergunta}`].filter(Boolean).join('\n');
   return { ...p, telas, figurinha: p.figurinha || (p.enquete ? `enquete ${p.enquete}` : FIGURINHA_DO_MODELO[p.modelo] || '') };
 }
 
@@ -153,9 +192,20 @@ export function totaisDoCronograma(cron) {
 // O que falta (no aparelho, sem IA)
 // ---------------------------------------------------------------------------
 
-export function oQueFalta(p, { assinatura = '', voz = {}, ficha = null } = {}) {
+// Frases que o manual da R7 proíbe em qualquer copy.
+const PROIBIDAS = [/entre uma coisa e outra/i, /vamos l[aá](?!\p{L})/iu];
+const EMOJI = /\p{Extended_Pictographic}/u;
+const palavras = (t) => String(t || '').split(/\s+/).filter(Boolean).length;
+
+// O que falta e o que conferir em cada peça. contexto.diaComPost diz se há post no feed no mesmo dia (o
+// story abre com o repost); sem RQE na assinatura, o texto não chama o cliente de especialista.
+export function oQueFalta(p, { assinatura = '', voz = {}, ficha = null, diaComPost = false } = {}) {
   const falta = [];
   const atencao = [];
+  const textos = [p.legenda, p.slides, p.capa, p.telas, p.tema].join('\n');
+  const proibida = PROIBIDAS.map((re) => textos.match(re)?.[0]).find(Boolean);
+  if (proibida) atencao.push(`tirar "${proibida.toLowerCase()}"`);
+  if (assinatura && !/\bRQE\b/i.test(assinatura) && /\bespecialista\b/i.test(textos)) atencao.push('"especialista" sem RQE na assinatura');
   if (ehFeed(p)) {
     if (!p.tema.trim()) atencao.push('sem tema');
     if (!p.legenda.trim()) falta.push('legenda');
@@ -164,7 +214,14 @@ export function oQueFalta(p, { assinatura = '', voz = {}, ficha = null } = {}) {
       if (/[—–]/.test(p.legenda)) atencao.push('travessão');
       for (const a of checarVoz(p.legenda, voz, ficha).avisos) if (!/assinatura/i.test(a)) atencao.push(a);
     }
-    if (p.tipo === 'post' && p.formato === 'carrossel' && !p.slides.trim()) falta.push('lâminas');
+    if (p.tipo === 'post' && p.formato === 'carrossel') {
+      const laminas = lerLaminas(p.slides);
+      if (!p.slides.trim()) falta.push('lâminas');
+      else {
+        if (laminas.length < 5 || laminas.length > 8) atencao.push(`${plural(laminas.length, 'lâmina', 'lâminas')} (capa + 4 a 7 cards)`);
+        if (laminas.some((l) => EMOJI.test(l.texto))) atencao.push('emoji nas lâminas');
+      }
+    }
     if (p.tipo === 'reels') {
       if (!p.video.trim()) falta.push('link do vídeo');
       if (!p.capa.trim()) falta.push('texto da capa');
@@ -175,14 +232,24 @@ export function oQueFalta(p, { assinatura = '', voz = {}, ficha = null } = {}) {
     if (!telas.length) falta.push('telas');
     else if (telas.length < minimo) atencao.push(`${plural(telas.length, 'tela', 'telas')} (o manual pede de 3 a 5)`);
     if (telas.length > 5) atencao.push('mais de 5 telas');
+    if (telas.some((t) => palavras(t.titulo) > 12)) atencao.push('título com mais de 12 palavras');
     if (telas.some((t) => t.apoio.length > 110)) atencao.push('texto de apoio longo (até duas linhas)');
-    if (p.tipo === 'story' && !p.figurinha.trim()) atencao.push('sem interação (enquete, caixinha, link ou repost)');
+    if (p.tipo === 'story') {
+      const acoes = acoesDaFigurinha(p.figurinha);
+      if (!acoes.some((a) => a.tipo === 'enquete' || a.tipo === 'caixinha')) atencao.push('sem interação (enquete ou caixinha)');
+      if (acoes.some((a) => a.tipo === 'enquete' && a.opcoes.length < 2)) atencao.push('enquete sem as duas opções');
+      if (!acoes.some((a) => a.tipo === 'link')) atencao.push('sem o link na última tela');
+      if (diaComPost && !acoes.some((a) => a.tipo === 'repost')) atencao.push('dia de post: abrir com o repost');
+    }
   }
   return { falta, atencao, pronta: !falta.length && (!atencao.length || p.pode) };
 }
 
+const diasComPost = (cron) => new Set(cron.pecas.filter(ehFeed).map((p) => p.data));
+
 export function resumoDoQueFalta(cron, contexto) {
-  const itens = cron.pecas.map((p) => ({ p, ...oQueFalta(p, contexto) }));
+  const dias = diasComPost(cron);
+  const itens = cron.pecas.map((p) => ({ p, ...oQueFalta(p, { ...contexto, diaComPost: dias.has(p.data) }) }));
   const legendas = itens.filter((x) => x.falta.includes('legenda')).length;
   const outros = itens.reduce((n, x) => n + x.falta.filter((f) => f !== 'legenda').length, 0);
   const atencao = itens.filter((x) => x.atencao.length && !x.p.pode).length;
@@ -198,16 +265,14 @@ export function frasesDoQueFalta(r) {
   return partes.length ? `Falta: ${partes.join(', ')}` : 'Tudo pronto';
 }
 
-// Checklist final do manual (a Carol marca antes de enviar).
+// Checklist final do manual da R7 (a Carol marca antes de mandar).
 export const CHECKLIST_FINAL = [
-  'Duplicado do último cronograma e com datas certas',
-  'Resumo bate com as páginas',
-  'Todas as lâminas, capas e links do vídeo no lugar',
-  'Legendas revisadas, no tom e com assinatura',
-  'Stories sem palavra sozinha e com contraste',
-  'Sombra leve, longe do rosto',
-  'Direcionamentos só em texto',
-  'Arquivos nomeados e na pasta de cada peça',
+  'Cronograma duplicado do último, com as datas certas e na ordem de postagem',
+  'Registro profissional em artes e legendas, sem título de especialista que o cliente não tem',
+  'Copys revisadas no tom do cliente, sem "entre uma coisa e outra" e sem "vamos lá"',
+  'Stories com uma fonte só, linhas equilibradas, contraste e direcionamento só em texto',
+  'Pasta do Drive com uma pasta por peça e arquivos nomeados',
+  'Cards do Trello com orientação curta, copy, fotos nomeadas, referência acessível e entrega na quinta',
 ];
 
 // ---------------------------------------------------------------------------
@@ -216,17 +281,18 @@ export const CHECKLIST_FINAL = [
 
 function blocoModelo(p) {
   const cab = `### ${ddmm(p.data)} · ${rotuloDe(p.tipo)}${p.tipo === 'post' && p.formato && p.formato !== 'post' ? ` · ${formatoDaPeca(p)}` : ''}`;
-  if (p.tipo === 'post') return [cab, 'Tema:', 'Legenda:', ...(p.formato === 'carrossel' ? ['Slides:', 'Slide 01 | Capa (indicação de foto): texto'] : [])].join('\n');
+  if (p.tipo === 'post') return [cab, 'Tema:', 'Legenda:', ...(p.formato === 'carrossel' ? ['Slides:', 'Slide 01 | Capa (indicação de foto): texto', 'Slide 02 | Card 1: texto'] : [])].join('\n');
   if (p.tipo === 'reels') return [cab, 'Tema:', 'Texto da capa:', 'Legenda:'].join('\n');
   if (p.tipo === 'bomdia') return [cab, 'Tela 1 (gancho): título | texto de apoio'].join('\n');
-  return [cab, 'Tela 1 (gancho): título | texto de apoio', 'Tela 2 (pergunta): título | texto de apoio', 'Tela 3 (chamada): título | texto de apoio', `Figurinha: ${p.figurinha || 'enquete Sim / Não'}`].join('\n');
+  return [cab, 'Tela 1 (gancho): título | texto de apoio', 'Tela 2 (interação): título | texto de apoio', 'Tela 3 (virada): título | texto de apoio', 'Tela 4 (prova): título | texto de apoio', 'Tela 5 (chamada): título | texto de apoio', `Por cima: ${p.figurinha || figurinhaPadrao('contexto_enquete')}`].join('\n');
 }
 
 // O que vai para o Claude: a ficha, a voz, as regras do manual e os blocos que faltam, no formato que o app
 // lê de volta.
 export function pedidoParaClaude(cron, { nome, fichaTexto = '', voz = {}, nicho = '', assinatura = '' }, contexto = {}) {
   const r = resumoDoQueFalta(cron, { ...contexto, assinatura, voz });
-  const faltando = r.itens.filter((x) => x.falta.length || x.atencao.some((a) => /telas|interação/.test(a))).map((x) => x.p);
+  const faltando = r.itens.filter((x) => x.falta.length || x.atencao.some((a) => /tela|interação|lâmina|vamos|entre uma|especialista/.test(a))).map((x) => x.p);
+  const semRqe = assinatura && !/\bRQE\b/i.test(assinatura);
   const prontas = r.itens.filter((x) => !faltando.includes(x.p)).map((x) => x.p);
   const esp = especialidade(nicho) || especialidadeDoTexto(nicho);
   const areas = new Set(areasDoNicho(esp?.nome || nicho, nome));
@@ -240,11 +306,14 @@ export function pedidoParaClaude(cron, { nome, fichaTexto = '', voz = {}, nicho 
     '## Regras',
     '- Escreva no tom do cliente (ficha e voz abaixo).',
     `- Toda legenda termina com a assinatura exata: ${assinatura || '(a ficha ainda não tem assinatura)'}`,
-    '- Português do Brasil, frases curtas, sem travessão, sem hashtag (a não ser que a ficha peça), sem promessa de resultado.',
+    '- Português do Brasil, primeira pessoa do cliente, frases curtas, sem jargão, sem travessão, sem hashtag (a não ser que a ficha peça), sem promessa de resultado.',
+    '- Nunca use "entre uma coisa e outra" nem "vamos lá".',
+    ...(semRqe ? ['- O registro do cliente não tem RQE: nunca o chame de especialista nem pelo nome da especialidade (ex.: "psiquiatra"); use o registro da assinatura.'] : []),
     `- ${regraDoCta(esp?.nome || nicho)}`,
-    '- Carrossel: "Slides:" com a copy lâmina por lâmina, uma por linha: "Slide 01 | Capa (indicação de foto): texto".',
+    '- Carrossel: capa + 4 a 7 cards. Capa com cena reconhecível ou pergunta direta; primeiro card com a situação real da pessoa; cards do meio com uma ideia cada, frases ligadas por vírgula no ritmo da fala; penúltimo com o risco de não agir; último com a chamada. Sem emoji nas lâminas. "Slides:" com uma lâmina por linha: "Slide 01 | Capa (indicação de foto): texto".',
+    '- Legenda do carrossel: resume em 4 a 6 frases, fecha com uma frase-assinatura e depois a assinatura com o registro. Emoji só na legenda e pontual.',
     '- Reel: "Texto da capa:" curto, separado da legenda, para o cliente revisar.',
-    '- Stories: de 3 a 5 telas. Abra com um gancho (pergunta ou afirmação), desenvolva em uma ou duas telas e feche com a chamada. Uma ideia por tela: título curto | texto de apoio de no máximo duas linhas. Enquete ou caixinha no começo da sequência, link na última tela, repost do post do feed no dia em que ele sai. "Figurinha:" diz o que entra por cima (enquete com as opções, caixinha, link ou repost).',
+    '- Stories: de 3 a 5 telas que vendem uma coisa só (quase sempre a consulta). Ordem: 1 gancho (pergunta ou frase que a pessoa reconhece; em dia de post, a tela 1 é o repost do post do dia), 2 interação (enquete com as duas opções ou caixinha, logo no começo), 3 virada (o que o profissional faz diferente, em primeira pessoa), 4 prova concreta (um dado real do atendimento), 5 chamada (a última tela sempre tem o link para agendar). Uma ideia por tela: título de até 12 palavras | apoio de no máximo duas linhas. "Por cima:" lista, separado por ";", o que entra por cima (repost do post do dia; enquete Opção A / Opção B; caixinha de perguntas; link de agendamento).',
     '',
     '## Ficha do cliente',
     texto(fichaTexto, 8000) || '(sem ficha)',
@@ -259,7 +328,7 @@ export function pedidoParaClaude(cron, { nome, fichaTexto = '', voz = {}, nicho 
 
 const CAMPOS = [
   ['tema', /^tema$/], ['legenda', /^legenda$/], ['slides', /^(slides?|laminas?|copy das laminas)$/], ['video', /^(link do video|video)$/],
-  ['capa', /^(texto da capa|capa)$/], ['figurinha', /^(figurinha|interacao|enquete|caixinha)$/],
+  ['capa', /^(texto da capa|capa)$/], ['figurinha', /^(figurinha|por cima|interacao|enquete|caixinha)$/],
 ];
 const semAcentoMin = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
@@ -329,7 +398,8 @@ function textoDaPeca(p, { whatsapp = false } = {}) {
   if (ehFeed(p)) {
     return [cab, ...(p.tipo === 'reels' && p.capa ? [`Texto da capa: ${p.capa}`] : []), 'Legenda:', p.legenda, ...(p.tipo === 'reels' && p.video ? [`Vídeo: ${p.video}`] : [])].filter((l) => l !== '').join('\n');
   }
-  return [cab, ...lerTelas(p.telas).map((t) => `${t.n}. ${t.titulo}${t.apoio ? ` · ${t.apoio}` : ''}`), ...(p.figurinha ? [`Por cima: ${p.figurinha.replace(/\s*\/\s*/g, ' · ')}`] : [])].join('\n');
+  const acoes = acoesDaFigurinha(p.figurinha);
+  return [cab, ...lerTelas(p.telas).map((t) => `${t.n}. ${t.titulo}${t.apoio ? ` · ${t.apoio}` : ''}`), ...(acoes.length ? [`Por cima: ${acoes.map((a) => rotuloDaAcao(a).replace(/\s*\/\s*/g, ' · ')).join('; ')}`] : [])].join('\n');
 }
 
 export function textoWhatsApp(cron, { abertura = '', fechamento = 'Para pedir ajuste, é só responder citando a data do post ou do story.' } = {}) {
@@ -343,38 +413,48 @@ export function textoWhatsApp(cron, { abertura = '', fechamento = 'Para pedir aj
   ].join('\n').trim();
 }
 
-// Copy do carrossel no formato dos designers ("Slide 01 | Capa (foto)" + texto), para colar no cartão do Trello.
-export function textoParaTrello(p, nome = '') {
-  return [`${nome ? `${nome} · ` : ''}${tituloDaPeca(p)}${p.tema ? ` · ${p.tema}` : ''}`, '', p.slides || p.legenda || ''].join('\n').trim();
+// Descrição do card do designer no Trello da R7 (manual): a orientação só quando muda a estética, depois a
+// copy em "**Capa**" e "**Card N**". Nome do card: carrossel ou estático; entrega na quinta às 10h.
+export function textoParaTrello(p, { orientacao = '' } = {}) {
+  const laminas = lerLaminas(p.slides);
+  const blocos = laminas.length
+    ? laminas.map((l, i) => `**${i === 0 ? 'Capa' : `Card ${i}`}**\n${l.texto}`)
+    : [p.legenda || ''];
+  return [...(orientacao.trim() ? [orientacao.trim(), ''] : []), blocos.join('\n\n')].join('\n').trim();
+}
+
+// Quinta-feira da semana do envio, às 10h (a entrega do designer).
+export function entregaDoDesigner(hoje) {
+  const d = diaDaSemana(hoje);
+  return `${somarDias(hoje, d <= 4 ? 4 - d : 11 - d)}T10:00`;
 }
 
 const nomeDePasta = (t) => String(t || '').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+const ddTracoMm = (iso) => `${iso.slice(8, 10)}-${iso.slice(5, 7)}`;
 
-// Onde vai a figurinha: enquete e caixinha no começo da sequência, link e repost na última tela.
-function telaDaFigurinha(p, total) {
-  if (!p.figurinha) return 0;
-  return /link|repost/i.test(p.figurinha) ? total : Math.min(2, total);
-}
-
-// Entrega no Drive (manual, parte 3): uma pasta por peça, numerada na ordem de postagem, e os nomes dos arquivos.
+// Entrega no Drive (manual da R7): uma pasta por peça, numerada na ordem de postagem
+// ("01 · 23-11 seg · Stories · tema"), e os nomes dos arquivos de cada uma.
 export function nomesDaEntrega(cron) {
   let sequencia = 0;
   return cron.pecas.map((p, i) => {
-    const pasta = `${String(i + 1).padStart(2, '0')} - ${ddmm(p.data)} - ${formatoDaPeca(p)}${p.tema ? ` - ${nomeDePasta(p.tema)}` : ''}`;
+    const tema = p.tema || (ehStory(p) ? lerTelas(p.telas)[0]?.titulo || '' : '');
+    const pasta = [String(i + 1).padStart(2, '0'), `${ddTracoMm(p.data)} ${CURTOS_DIA[diaDaSemana(p.data)].toLowerCase()}`, formatoDaPeca(p), tema && nomeDePasta(tema)].filter(Boolean).join(' · ');
     let arquivos;
     if (p.tipo === 'post' && p.formato === 'carrossel') {
       const n = Math.max(1, lerLaminas(p.slides).length);
       arquivos = [...Array.from({ length: n }, (_, k) => `${String(k + 1).padStart(2, '0')}.jpg`), 'Legenda'];
     } else if (p.tipo === 'reels') {
-      arquivos = ['video.mp4', 'capa.jpg', 'Legenda'];
+      arquivos = [`capa-reel-${ddTracoMm(p.data)}.jpg`, 'video.MP4', 'Legenda'];
     } else if (p.tipo === 'post') {
       arquivos = ['01.jpg', 'Legenda'];
     } else {
       sequencia += 1;
       const telas = Math.max(1, lerTelas(p.telas).length);
-      const naFigurinha = telaDaFigurinha(p, telas);
-      const acao = p.figurinha.replace(/\s*\/\s*/g, ' ou ').replace(/^repost.*$/i, 'repost do post do dia').trim();
-      arquivos = Array.from({ length: telas }, (_, k) => `S${sequencia}_${k + 1}${k + 1 === naFigurinha && acao ? ` - ${acao}` : ''}.jpg`);
+      const acoes = acoesDaFigurinha(p.figurinha);
+      arquivos = Array.from({ length: telas }, (_, k) => {
+        const aqui = acoes.filter((a) => telaDaAcao(a, telas, acoes) === k + 1).map((a) => (a.tipo === 'enquete' && a.opcoes.length ? `enquete ${a.opcoes.join(' ou ')}` : a.tipo === 'repost' ? 'repost do post do dia' : a.tipo === 'link' ? 'link' : a.tipo === 'caixinha' ? 'caixinha' : nomeDePasta(a.texto)));
+        return `S${sequencia}_${k + 1}${aqui.length ? ` - ${aqui.join(' e ')}` : ''}.jpg`;
+      });
     }
     return { pasta, arquivos };
   });
@@ -388,8 +468,20 @@ export function textoDaEntrega(cron) {
 // Slides do PDF/PPTX (manual, parte 1): fundo branco, poucos elementos, tipografia organizada
 // ---------------------------------------------------------------------------
 
-export const CORES_CRONOGRAMA = { fundo: '#FFFFFF', texto: '#1F1F1F', suave: '#6B6B6B', claro: '#9A9A9A', linha: '#E6E6E6', caixa: '#F5F5F5', acentoPadrao: '#1F1F1F' };
-const corOk = (c) => (/^#[0-9a-f]{6}$/i.test(String(c || '')) ? c : CORES_CRONOGRAMA.acentoPadrao);
+export const CORES_CRONOGRAMA = { fundo: '#FFFFFF', texto: '#1F1F1F', suave: '#6B6B6B', claro: '#9A9A9A', linha: '#E8E8E8', caixa: '#F2F3F5', telaClara: '#EFEDE8', branco: '#FFFFFF', acentoPadrao: '#34505C' };
+
+// A cor da ficha vira o acento só se ler bem no branco (4,5:1); senão escurece até ler.
+const luz = (hex) => {
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+export function acentoDoCronograma(c) {
+  let cor = /^#[0-9a-f]{6}$/i.test(String(c || '')) ? c.toUpperCase() : CORES_CRONOGRAMA.acentoPadrao;
+  for (let i = 0; i < 20 && 1.05 / (luz(cor) + 0.05) < 4.5; i += 1) {
+    cor = `#${[1, 3, 5].map((k) => Math.round(parseInt(cor.slice(k, k + 2), 16) * 0.85).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+  }
+  return cor;
+}
 
 function caber(medir, t, tam, largura, f, negrito = true, minimo = 14) {
   let s = tam;
@@ -397,126 +489,185 @@ function caber(medir, t, tam, largura, f, negrito = true, minimo = 14) {
   return s;
 }
 
-function paragrafosQueCabem(blocos, x, y, w, h, medir, { f = 'lato', tam = 20, minimo = 11, entrelinha = 1.35 } = {}) {
+function paragrafosQueCabem(blocos, x, y, w, h, medir, { f = 'isans', tam = 13, minimo = 8, entrelinha = 1.4, espaco = 0.55 } = {}) {
   let s = tam;
-  const altura = (t) => blocos.reduce((soma, b) => soma + quebrar(b.map((r) => ({ ...r, f: r.f || f })), w, t, medir).length * t * entrelinha, 0) + (blocos.length - 1) * t * 0.6;
-  while (s > minimo && altura(s) > h) s -= 0.5;
-  return { tipo: 'paragrafos', x, y, w, h, tam: s, f, entrelinha, espaco: s * 0.6, paragrafos: blocos };
+  const altura = (t) => blocos.reduce((soma, b) => soma + quebrar(b.map((r) => ({ ...r, f: r.f || f })), w, t, medir).length * t * entrelinha, 0) + (blocos.length - 1) * t * espaco;
+  while (s > minimo && altura(s) > h) s -= 0.25;
+  return { tipo: 'paragrafos', x, y, w, h, tam: s, f, entrelinha, espaco: s * espaco, paragrafos: blocos };
 }
 
 const paragrafosDe = (t, cor = CORES_CRONOGRAMA.texto) => String(t || '').split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => [{ t: l, cor }]);
+const rotulo = (t, x, y, w = 300, cor = CORES_CRONOGRAMA.suave) => ({ tipo: 'texto', x, y, w, tam: 8.5, f: 'isans', alinhar: 'l', runs: [{ t: t.toUpperCase(), b: 600, cor }] });
+const MARGEM = 40;
+const LARG = 1200 - MARGEM * 2;
 
-// Cabeçalho das páginas de peça: data grande, título do post, dia da semana e formato.
-function cabecalhoDaPeca(p, A, medir) {
+// Cabeçalho e rodapé de toda página: o nome do cliente, o contador da peça e a linha do cronograma.
+function moldura(cron, A, contador, rodape) {
   const C = CORES_CRONOGRAMA;
-  const titulo = p.tema || formatoDaPeca(p);
   return [
-    { tipo: 'texto', x: 64, y: 44, w: 200, tam: 54, f: 'raleway', alinhar: 'l', runs: [{ t: ddmm(p.data), b: true, cor: A }] },
-    { tipo: 'texto', x: 250, y: 50, w: 886, tam: caber(medir, titulo, 30, 886, 'raleway'), f: 'raleway', alinhar: 'l', runs: [{ t: titulo, b: true, cor: C.texto }] },
-    { tipo: 'texto', x: 250, y: 92, w: 886, tam: 17, f: 'lato', alinhar: 'l', runs: [{ t: `${nomeDoDia(p.data)} · ${formatoDaPeca(p)}`, cor: C.suave }] },
-    { tipo: 'retangulo', x: 64, y: 132, w: 1072, h: 1, cor: C.linha },
+    { tipo: 'texto', x: MARGEM, y: 26, w: 600, tam: 9, f: 'isans', alinhar: 'l', runs: [{ t: String(cron.nome || '').toUpperCase(), b: 700, cor: A }] },
+    ...(contador ? [{ tipo: 'texto', x: 600, y: 26, w: 600 - MARGEM, tam: 9, f: 'isans', alinhar: 'r', runs: [{ t: contador, cor: C.claro }] }] : []),
+    { tipo: 'texto', x: MARGEM, y: 640, w: 800, tam: 8.5, f: 'isans', alinhar: 'l', runs: [{ t: rodape, cor: C.claro }] },
   ];
 }
 
+// Cabeçalho das páginas de peça: data grande, dia e formato embaixo, título ao lado e a linha.
+function cabecalhoDaPeca(p, A, medir) {
+  const C = CORES_CRONOGRAMA;
+  const titulo = p.tema || (ehStory(p) ? lerTelas(p.telas)[0]?.titulo : '') || formatoDaPeca(p);
+  return [
+    { tipo: 'texto', x: MARGEM, y: 66, w: 190, tam: 50, f: 'serif', alinhar: 'l', runs: [{ t: ddBarraMm(p.data), cor: A }] },
+    rotulo(`${nomeDoDia(p.data)} · ${formatoDaPeca(p)}`, MARGEM, 128, 190, A),
+    { tipo: 'texto', x: 240, y: 80, w: LARG - 200, tam: caber(medir, titulo, 28, LARG - 200, 'serif', false, 16), f: 'serif', alinhar: 'l', runs: [{ t: titulo, cor: C.texto }] },
+    { tipo: 'retangulo', x: MARGEM, y: 160, w: LARG, h: 1, cor: C.linha },
+  ];
+}
+
+// "Dr. Nome | Médico | CRM-XX 0000" → nome em negrito numa linha e o registro na outra.
+function assinaturaEmDuasLinhas(assinatura) {
+  const [nome, ...resto] = String(assinatura || '').split(/\s*\|\s*/);
+  return [[{ t: nome, b: 700, cor: CORES_CRONOGRAMA.texto }], ...(resto.length ? [[{ t: resto.join(' | '), cor: CORES_CRONOGRAMA.texto }]] : [])];
+}
+
+const ehSaude = (assinatura) => /\b(CRM|CRO|CRP|CRN|CREFITO|CREFONO|COREN|CRF|CRBM|RQE)\b/i.test(assinatura || '');
+const avisoDaSaude = (assinatura) => `Este conteúdo tem caráter educativo e não substitui uma consulta${/\bCRM\b/i.test(assinatura) ? ' médica' : ''}.`;
+
 function legendaEmBlocos(p, assinatura) {
   const C = CORES_CRONOGRAMA;
-  const corpo = String(p.legenda || '').replace(assinatura || '\u0000', '').trim();
-  const blocos = paragrafosDe(corpo);
-  if (blocos.length) blocos[0] = [{ t: 'Legenda: ', b: true, cor: C.texto }, ...blocos[0]];
-  if (assinatura && p.legenda.includes(assinatura)) blocos.push([{ t: assinatura, b: true, cor: C.texto }]);
+  const tem = assinatura && p.legenda.includes(assinatura);
+  const blocos = paragrafosDe(String(p.legenda || '').replace(tem ? assinatura : '\u0000', '').trim());
+  if (tem) blocos.push(...assinaturaEmDuasLinhas(assinatura));
+  if (ehSaude(assinatura)) blocos.push([{ t: avisoDaSaude(assinatura), i: true, cor: C.claro }]);
   return blocos;
 }
 
+function blocoDaLegenda(p, assinatura, x, y, w, h, medir) {
+  return [rotulo('Legenda', x, y), paragrafosQueCabem(legendaEmBlocos(p, assinatura), x, y + 24, w, h - 24, medir, { tam: 12.5, minimo: 8 })];
+}
+
+// Telas dos stories (manual): liso escuro no gancho, na interação e na virada; liso claro na prova e na chamada.
+const telaEscura = (t, k, total) => (/gancho|intera|pergunta|virada|dor|resposta|sinais/i.test(t.funcao) ? true : /prova|chamada|solu/i.test(t.funcao) ? false : k < total - 1 && k % 2 === 0);
+
 export function montarSlidesDoCronograma(cron, { cor = '', assinatura = '' } = {}, medir) {
   const C = CORES_CRONOGRAMA;
-  const A = corOk(cor);
+  const A = acentoDoCronograma(cor);
+  const rodape = `Cronograma ${ddBarraMm(cron.inicio)} a ${ddBarraMm(cron.fim)} · R7 Estratégias Digitais`;
   const slides = [];
-  // Capa: rótulo pequeno, nome em destaque, período por extenso e o total.
+  // Capa: rótulo pequeno, nome em destaque, período por extenso, um fio e o total.
   slides.push({ id: 'capa', fundo: C.fundo, elementos: [
-    { tipo: 'texto', x: 96, y: 210, w: 1008, tam: 20, f: 'lato', alinhar: 'l', runs: [{ t: 'Cronograma de conteúdo', b: true, cor: A }] },
-    { tipo: 'texto', x: 96, y: 246, w: 1008, tam: caber(medir, cron.nome || '', 62, 1008, 'raleway'), f: 'raleway', alinhar: 'l', runs: [{ t: cron.nome || '', b: true, cor: C.texto }] },
-    { tipo: 'texto', x: 96, y: 336, w: 1008, tam: 26, f: 'lato', alinhar: 'l', runs: [{ t: periodoEmTexto(cron.inicio, cron.fim), cor: C.texto }] },
-    { tipo: 'texto', x: 96, y: 380, w: 1008, tam: 18, f: 'lato', alinhar: 'l', runs: [{ t: totaisDoCronograma(cron), cor: C.suave }] },
+    { tipo: 'texto', x: 90, y: 196, w: 1000, tam: 10.5, f: 'isans', alinhar: 'l', runs: [{ t: 'CRONOGRAMA DE CONTEÚDO', b: 700, cor: A }] },
+    { tipo: 'texto', x: 90, y: 224, w: 1020, tam: caber(medir, cron.nome || '', 62, 1020, 'serif', false, 30), f: 'serif', alinhar: 'l', runs: [{ t: cron.nome || '', cor: C.texto }] },
+    { tipo: 'texto', x: 90, y: 318, w: 1000, tam: 15, f: 'isans', alinhar: 'l', runs: [{ t: periodoEmTexto(cron.inicio, cron.fim, { zeros: true }), cor: C.suave }] },
+    { tipo: 'retangulo', x: 90, y: 384, w: 48, h: 1, cor: C.claro },
+    { tipo: 'texto', x: 90, y: 400, w: 1000, tam: 10.5, f: 'isans', alinhar: 'l', runs: [{ t: totaisDoCronograma(cron), cor: C.claro }] },
+    { tipo: 'texto', x: 90, y: 590, w: 1000, tam: 9, f: 'isans', alinhar: 'l', runs: [{ t: 'Rascunho para aprovação · R7 Estratégias Digitais', cor: C.claro }] },
   ] });
-  // Resumo da quinzena: data com dia da semana, formato, tema e página (feed em negrito, stories em cinza).
-  const POR_PAGINA = 13;
+  // Resumo da quinzena: data e dia, formato, tema e página; feed em negrito (formato no acento), stories em cinza.
+  const POR_PAGINA = 16;
+  const paginasResumo = Math.max(1, Math.ceil(cron.pecas.length / POR_PAGINA));
   for (let i = 0; i < Math.max(1, cron.pecas.length); i += POR_PAGINA) {
     const els = [
-      { tipo: 'texto', x: 64, y: 44, w: 1072, tam: 30, f: 'raleway', alinhar: 'l', runs: [{ t: 'Resumo da quinzena', b: true, cor: C.texto }] },
-      ...[['Data', 64], ['Formato', 270], ['Tema', 470], ['Página', 1036]].map(([t, x]) => ({ tipo: 'texto', x, y: 112, w: 180, tam: 14, f: 'lato', alinhar: 'l', runs: [{ t: t.toUpperCase(), b: true, cor: C.claro }] })),
-      { tipo: 'retangulo', x: 64, y: 138, w: 1072, h: 1, cor: C.linha },
+      ...moldura(cron, A, 'Resumo da quinzena', rodape),
+      { tipo: 'texto', x: MARGEM, y: 70, w: LARG, tam: 30, f: 'serif', alinhar: 'l', runs: [{ t: 'Resumo da quinzena', cor: C.texto }] },
+      ...[['Data', MARGEM], ['Formato', 200], ['Tema', 400], ['Página', 1100]].map(([t, x]) => rotulo(t, x, 166, 160, C.claro)),
+      { tipo: 'retangulo', x: MARGEM, y: 186, w: LARG, h: 1, cor: C.texto },
     ];
     cron.pecas.slice(i, i + POR_PAGINA).forEach((p, k) => {
-      const y = 152 + k * 37;
-      const cor = ehStory(p) ? C.claro : C.texto;
-      const b = !ehStory(p);
-      const tema = p.tema || (ehStory(p) ? lerTelas(p.telas)[0]?.titulo || '' : '');
+      const y = 194 + k * 26;
+      const story = ehStory(p);
+      const b = story ? 400 : 700;
+      const cor = story ? C.claro : C.texto;
+      const tema = p.tema || (story ? lerTelas(p.telas)[0]?.titulo || '' : '');
       els.push(
-        { tipo: 'texto', x: 64, y, w: 200, tam: 16, f: 'lato', alinhar: 'l', runs: [{ t: `${CURTOS_DIA[diaDaSemana(p.data)]}, ${ddBarraMm(p.data)}`, b, cor }] },
-        { tipo: 'texto', x: 270, y, w: 190, tam: 16, f: 'lato', alinhar: 'l', runs: [{ t: formatoDaPeca(p), b, cor }] },
-        { tipo: 'texto', x: 470, y, w: 540, tam: caber(medir, tema, 16, 540, 'lato', b, 11), f: 'lato', alinhar: 'l', runs: [{ t: tema, b, cor }] },
-        { tipo: 'texto', x: 1036, y, w: 100, tam: 16, f: 'lato', alinhar: 'l', runs: [{ t: String(cron.pecas.indexOf(p) + 2 + Math.ceil(cron.pecas.length / POR_PAGINA)), b, cor }] },
+        { tipo: 'texto', x: MARGEM, y, w: 150, tam: 10.5, f: 'isans', alinhar: 'l', runs: [{ t: `${ddBarraMm(p.data)} ${CURTOS_DIA[diaDaSemana(p.data)].toLowerCase()}`, b, cor }] },
+        { tipo: 'texto', x: 200, y, w: 190, tam: 10.5, f: 'isans', alinhar: 'l', runs: [{ t: formatoDaPeca(p), b, cor: story ? cor : A }] },
+        { tipo: 'texto', x: 400, y, w: 680, tam: caber(medir, tema, 10.5, 680, 'isans', b, 8), f: 'isans', alinhar: 'l', runs: [{ t: tema, b, cor }] },
+        { tipo: 'texto', x: 1100, y, w: 60, tam: 10.5, f: 'isans', alinhar: 'l', runs: [{ t: String(cron.pecas.indexOf(p) + 2 + paginasResumo).padStart(2, '0'), b: 400, cor: C.claro }] },
+        { tipo: 'retangulo', x: MARGEM, y: y + 21, w: LARG, h: 1, cor: C.linha },
       );
     });
     slides.push({ id: `resumo:${i}`, fundo: C.fundo, elementos: els });
   }
-  // Uma página por peça, na ordem de postagem.
+  // Uma página por peça, na ordem de postagem, com o contador ("Post 2 de 6 · Carrossel", "Stories 3 de 6").
+  const feed = cron.pecas.filter(ehFeed);
+  const stories = cron.pecas.filter(ehStory);
   for (const p of cron.pecas) {
-    const els = cabecalhoDaPeca(p, A, medir);
-    const topo = 164;
-    const altura = 675 - topo - 48;
+    const contador = ehFeed(p) ? `Post ${feed.indexOf(p) + 1} de ${feed.length} · ${formatoDaPeca(p)}` : `Stories ${stories.indexOf(p) + 1} de ${stories.length}`;
+    const els = [...moldura(cron, A, contador, rodape), ...cabecalhoDaPeca(p, A, medir)];
+    const topo = 186;
+    const altura = 620 - topo;
     if (p.tipo === 'post' && p.formato === 'carrossel') {
-      // Grade com todas as lâminas, na ordem (o texto de cada uma, enquanto não há arte), e a legenda ao lado.
+      // Grade com todas as lâminas na ordem (o texto de cada uma) e a legenda completa ao lado.
       const laminas = lerLaminas(p.slides);
-      const area = { x: 64, y: topo, w: 560, h: altura };
-      const col = laminas.length > 6 ? 4 : 3;
-      const lin = Math.max(1, Math.ceil(laminas.length / col));
-      const lado = Math.min((area.w - (col - 1) * 10) / col, (area.h - (lin - 1) * 10) / lin);
+      els.push(rotulo(`Lâminas (${laminas.length})`, MARGEM, topo));
+      const area = { x: MARGEM, y: topo + 24, w: 580, h: altura - 24 };
+      const col = 4;
+      const lin = Math.max(2, Math.ceil(laminas.length / col));
+      const lw = (area.w - (col - 1) * 8) / col;
+      const lh = Math.min(lw * 1.25, (area.h - (lin - 1) * 8) / lin);
       laminas.forEach((l, k) => {
-        const x = area.x + (k % col) * (lado + 10);
-        const y = area.y + Math.floor(k / col) * (lado + 10);
-        els.push({ tipo: 'retangulo', x, y, w: lado, h: lado, cor: C.caixa });
-        els.push({ tipo: 'texto', x: x + 10, y: y + 8, w: lado - 20, tam: 11, f: 'lato', alinhar: 'l', runs: [{ t: String(l.n).padStart(2, '0'), b: true, cor: A }] });
-        els.push(paragrafosQueCabem([[{ t: l.texto, cor: C.texto }]], x + 10, y + 28, lado - 20, lado - 36, medir, { tam: 13, minimo: 7, entrelinha: 1.25 }));
+        const x = area.x + (k % col) * (lw + 8);
+        const y = area.y + Math.floor(k / col) * (lh + 8);
+        els.push({ tipo: 'retangulo', x, y, w: lw, h: lh, cor: C.caixa });
+        els.push({ tipo: 'texto', x: x + 8, y: y + 8, w: lw - 16, tam: 8, f: 'isans', alinhar: 'l', runs: [{ t: String(l.n).padStart(2, '0'), b: 700, cor: A }] });
+        els.push(paragrafosQueCabem([[{ t: l.texto, cor: C.suave }]], x + 8, y + 24, lw - 16, lh - 30, medir, { tam: 8.5, minimo: 6, entrelinha: 1.3 }));
       });
-      els.push(paragrafosQueCabem(legendaEmBlocos(p, assinatura), 660, topo, 476, altura, medir, { tam: 17 }));
+      els.push(...blocoDaLegenda(p, assinatura, 680, topo, 480, altura, medir));
     } else if (p.tipo === 'reels') {
-      // Capa à esquerda, "Assistir ao vídeo" ao lado, texto da capa separado e a legenda à direita.
-      const w = 230;
-      const h = w * 16 / 9 > altura - 60 ? altura - 60 : w * 16 / 9;
-      els.push({ tipo: 'retangulo', x: 64, y: topo, w, h, cor: C.caixa });
-      if (p.capa) els.push(paragrafosQueCabem([[{ t: p.capa, b: true, cor: C.texto }]], 84, topo + 24, w - 40, h - 48, medir, { tam: 20, minimo: 11, f: 'raleway' }));
-      els.push({ tipo: 'texto', x: 64, y: topo + h + 14, w: w + 40, tam: 15, f: 'lato', alinhar: 'l', runs: [{ t: p.video ? 'Assistir ao vídeo' : '', b: true, cor: A }] });
-      if (p.video) els.push({ tipo: 'texto', x: 64, y: topo + h + 36, w: 420, tam: 11, f: 'lato', alinhar: 'l', runs: [{ t: p.video.slice(0, 70), cor: C.suave }] });
-      if (p.capa) els.push(paragrafosQueCabem([[{ t: 'Texto da capa: ', b: true, cor: C.texto }, { t: p.capa, cor: C.texto }]], 330, topo, 280, 120, medir, { tam: 16 }));
-      els.push(paragrafosQueCabem(legendaEmBlocos(p, assinatura), 660, topo, 476, altura, medir, { tam: 17 }));
+      // Capa clicável (abre o vídeo), "Assistir ao vídeo", o texto da capa separado e a legenda.
+      const w = 200;
+      const h = Math.min(w * 16 / 9, altura);
+      els.push({ tipo: 'retangulo', x: MARGEM, y: topo, w, h, cor: C.caixa, ...(p.video ? { link: p.video } : {}) });
+      if (p.capa) els.push(paragrafosQueCabem([[{ t: p.capa, cor: C.texto }]], MARGEM + 16, topo + h * 0.18, w - 32, h * 0.5, medir, { tam: 22, minimo: 11, f: 'serif', entrelinha: 1.1 }));
+      const xm = 290;
+      els.push(rotulo('Vídeo', xm, topo));
+      els.push({ tipo: 'texto', x: xm, y: topo + 22, w: 300, tam: 11.5, f: 'isans', alinhar: 'l', runs: [{ t: p.video ? 'Assistir ao vídeo ↗' : 'Falta o link do vídeo', b: 600, cor: p.video ? A : C.claro, ...(p.video ? { link: p.video } : {}) }] });
+      if (p.video) els.push({ tipo: 'texto', x: xm, y: topo + 44, w: 300, tam: 9, f: 'isans', alinhar: 'l', runs: [{ t: 'Clique na capa ou no link. O vídeo já está editado.', cor: C.claro }] });
+      if (p.capa) {
+        els.push(rotulo('Texto da capa', xm, topo + 92));
+        els.push(paragrafosQueCabem([[{ t: p.capa, cor: C.texto }]], xm, topo + 116, 300, 180, medir, { tam: 17, minimo: 10, f: 'serif', entrelinha: 1.25 }));
+      }
+      els.push(...blocoDaLegenda(p, assinatura, 640, topo, 520, altura, medir));
     } else if (p.tipo === 'post') {
-      els.push(paragrafosQueCabem(legendaEmBlocos(p, assinatura), 64, topo, 1072, altura, medir, { tam: 20 }));
+      els.push(...blocoDaLegenda(p, assinatura, MARGEM, topo, 760, altura, medir));
     } else {
-      // Sequência de stories: as telas lado a lado na ordem, o número e a função embaixo, e o que entra por cima.
+      // Sequência de stories: as telas lado a lado na ordem (liso escuro ou claro, como a arte vai sair), com o
+      // direcionamento escrito onde entra a figurinha; embaixo, o número e a função e o que entra por cima.
       const telas = lerTelas(p.telas);
       const n = Math.max(1, telas.length);
-      const alturaTela = altura - 70;
-      const larg = Math.min(alturaTela * 9 / 16, (1072 - (n - 1) * 16) / n);
+      const acoes = acoesDaFigurinha(p.figurinha);
+      const th = 330;
+      const tw = Math.min(th * 9 / 16, (LARG - (n - 1) * 18) / n);
+      const x0 = MARGEM + (LARG - (n * tw + (n - 1) * 18)) / 2;
+      const y0 = topo + 14;
       telas.forEach((t, k) => {
-        const x = 64 + k * (larg + 16);
-        els.push({ tipo: 'retangulo', x, y: topo, w: larg, h: alturaTela, cor: C.caixa });
-        els.push(paragrafosQueCabem([[{ t: t.titulo, b: true, cor: C.texto, f: 'raleway' }], ...(t.apoio ? [[{ t: t.apoio, cor: C.texto }]] : [])], x + 14, topo + alturaTela * 0.16, larg - 28, alturaTela * 0.66, medir, { tam: 17, minimo: 9 }));
-        els.push({ tipo: 'texto', x, y: topo + alturaTela + 10, w: larg, tam: 13, f: 'lato', alinhar: 'l', runs: [{ t: `${t.n}${t.funcao ? ` · ${t.funcao}` : ''}`, b: true, cor: C.suave }] });
+        const x = x0 + k * (tw + 18);
+        const escura = telaEscura(t, k, n);
+        const corTexto = escura ? C.branco : C.texto;
+        const aqui = acoes.filter((a) => telaDaAcao(a, n, acoes) === k + 1);
+        // Enquadramento do manual em 1080 × 1920: 96 de lado, 250 livres no topo e 340 embaixo.
+        const mx = tw * 96 / 1080;
+        const yTexto = y0 + th * 0.36;
+        const blocos = [[{ t: t.titulo, b: 600, cor: corTexto }], ...(t.apoio ? [[{ t: t.apoio, cor: corTexto }]] : []), ...aqui.map((a) => [{ t: direcionamentoDe(a), b: 600, cor: escura ? '#D0D0D0' : C.claro }])];
+        els.push({ tipo: 'retangulo', x, y: y0, w: tw, h: th, cor: escura ? A : C.telaClara });
+        els.push(paragrafosQueCabem(blocos, x + mx, yTexto, tw - mx * 2, y0 + th * (1 - 340 / 1920) - yTexto, medir, { tam: 12.5, minimo: 6, entrelinha: 1.2, espaco: 0.5 }));
+        els.push({ tipo: 'texto', x, y: y0 + th + 10, w: tw, tam: 8, f: 'isans', alinhar: 'l', runs: [{ t: `${t.n}${t.funcao ? ` · ${t.funcao.toUpperCase()}` : ''}`, b: 700, cor: C.texto }] });
+        if (aqui.length) els.push(paragrafosQueCabem([[{ t: aqui.map(rotuloDaAcao).join(' · '), cor: C.claro }]], x, y0 + th + 26, tw, 30, medir, { tam: 8, minimo: 6, entrelinha: 1.25 }));
       });
-      if (p.figurinha) els.push({ tipo: 'texto', x: 64, y: 675 - 48, w: 1072, tam: 15, f: 'lato', alinhar: 'l', runs: [{ t: 'Por cima: ', b: true, cor: C.texto }, { t: p.figurinha.replace(/\s*\/\s*/g, ' · '), cor: C.texto }] });
     }
     slides.push({ id: `peca:${p.id}`, fundo: C.fundo, elementos: els });
   }
-  // Para aprovar
+  // Para aprovar: o que o cliente confere e como pedir ajuste.
   slides.push({ id: 'final', fundo: C.fundo, elementos: [
-    { tipo: 'texto', x: 96, y: 150, w: 1008, tam: 40, f: 'raleway', alinhar: 'l', runs: [{ t: 'Para aprovar', b: true, cor: C.texto }] },
-    { tipo: 'paragrafos', x: 96, y: 236, w: 900, h: 320, tam: 22, f: 'lato', entrelinha: 1.4, espaco: 14, paragrafos: [
+    ...moldura(cron, A, 'Para aprovar', rodape),
+    { tipo: 'texto', x: MARGEM, y: 70, w: LARG, tam: 30, f: 'serif', alinhar: 'l', runs: [{ t: 'Para aprovar', cor: C.texto }] },
+    { tipo: 'retangulo', x: MARGEM, y: 160, w: LARG, h: 1, cor: C.linha },
+    { tipo: 'paragrafos', x: MARGEM, y: 196, w: 900, h: 360, tam: 15, f: 'isans', entrelinha: 1.5, espaco: 16, paragrafos: [
       'Conferir datas, artes, legendas e textos dos stories.',
-      'Confirmar assinatura e registro, quando houver.',
+      'Confirmar a assinatura e o registro.',
       'Confirmar o link usado nos stories.',
       'Para pedir ajuste: responder citando a data do post ou do story.',
-    ].map((t, i) => [{ t: `${String(i + 1).padStart(2, '0')}   `, b: true, cor: A }, { t, cor: C.texto }]) },
+    ].map((t, i) => [{ t: `${String(i + 1).padStart(2, '0')}   `, b: 700, cor: A }, { t, cor: C.texto }]) },
   ] });
   return slides;
 }

@@ -140,7 +140,7 @@ function cardPeca(c, { p, falta, atencao, pronta }) {
   } else {
     campos = `
       ${campoTexto(p, 'telas', p.tipo === 'bomdia' ? 'Telas' : 'Telas (de 3 a 5, uma ideia por tela)', 4, 'Tela 1 (gancho): título | texto de apoio')}
-      ${campoLinha(p, 'figurinha', 'O que entra por cima', 'enquete Sim / Não, caixinha de perguntas, link ou repost do post do dia')}`;
+      ${campoLinha(p, 'figurinha', 'O que entra por cima (separe com ;)', 'repost do post do dia; enquete Sim / Não; link de agendamento')}`;
   }
   return `
     <article class="card cron-peca cron-${estado}" id="peca-${esc(p.id)}">

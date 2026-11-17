@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   periodoPadrao, gradeDoPeriodo, oQueFalta, resumoDoQueFalta, pedidoParaClaude, lerRespostaDoClaude, textoWhatsApp, tituloDaPeca,
   normalizarCronograma, montarSlidesDoCronograma, lerTelas, lerLaminas, nomesDaEntrega, totaisDoCronograma,
+  acoesDaFigurinha, telaDaAcao, textoParaTrello, entregaDoDesigner, acentoDoCronograma, resumoDoQueFalta as resumo, CHECKLIST_FINAL,
 } from '../js/dados-cronograma.js';
 import { rotinaPadrao } from '../js/dados-r7.js';
 
@@ -19,8 +20,18 @@ test('grade pela rotina padrão: post seg/qua/sex e stories ter/qui, com a figur
   assert.equal(g.filter((p) => p.tipo === 'post').length, 6);
   assert.equal(g.filter((p) => p.tipo === 'story').length, 4);
   assert.equal(tituloDaPeca(g[0]), 'POSTAGEM - 23.11 - Segunda');
-  assert.equal(g.find((p) => p.data === '2026-11-24').figurinha, 'enquete Sim / Não');
-  assert.equal(g.find((p) => p.data === '2026-11-26').figurinha, 'caixinha de perguntas');
+  assert.equal(g.find((p) => p.data === '2026-11-24').figurinha, 'enquete Sim / Não; link de agendamento');
+  assert.equal(g.find((p) => p.data === '2026-11-26').figurinha, 'caixinha de perguntas; link de agendamento');
+  // Em dia de post, a sequência abre com o repost do post do dia.
+  const comPost = gradeDoPeriodo({ feed: [{ dia: 2, formato: 'carrossel', qtd: 1 }], stories: { dias: { 2: 'contexto_enquete' } } }, '2026-11-24', '2026-11-24');
+  assert.equal(comPost[1].figurinha, 'repost do post do dia; enquete Sim / Não; link de agendamento');
+});
+
+test('o que entra por cima: repost na 1, enquete na 2, link na última', () => {
+  const a = acoesDaFigurinha('repost do post do dia; enquete Menos de 6 meses / Mais de 1 ano; link');
+  assert.deepEqual(a.map((x) => x.tipo), ['repost', 'enquete', 'link']);
+  assert.deepEqual(a[1].opcoes, ['Menos de 6 meses', 'Mais de 1 ano']);
+  assert.deepEqual(a.map((x) => telaDaAcao(x, 4, a)), [1, 2, 4]);
 });
 
 test('telas e lâminas', () => {
@@ -39,6 +50,17 @@ test('o que falta: legenda, assinatura, lâminas, capa e link do reel, telas dos
   assert.deepEqual(oQueFalta(story).falta, ['telas']);
   assert.ok(oQueFalta({ ...story, telas: 'Tela 1 (gancho): Oi' }).atencao.some((a) => /3 a 5/.test(a)));
   assert.equal(oQueFalta({ ...story, telas: 'Tela 1: a\nTela 2: b\nTela 3: c' }).pronta, true);
+  assert.ok(oQueFalta({ ...story, telas: 'Tela 1: a\nTela 2: b\nTela 3: c', figurinha: 'enquete' }).atencao.includes('enquete sem as duas opções'));
+  assert.ok(oQueFalta({ ...story, telas: 'Tela 1: a\nTela 2: b\nTela 3: c', figurinha: 'enquete A / B' }).atencao.includes('sem o link na última tela'));
+  assert.ok(oQueFalta({ ...story, telas: 'Tela 1: a\nTela 2: b\nTela 3: c' }, { diaComPost: true }).atencao.includes('dia de post: abrir com o repost'));
+  assert.ok(oQueFalta({ ...story, telas: 'Tela 1: Vamos lá, uma coisa\nTela 2: b\nTela 3: c' }).atencao.includes('tirar "vamos lá"'));
+  assert.ok(oQueFalta({ ...story, telas: 'Tela 1: um dois três quatro cinco seis sete oito nove dez onze doze treze\nTela 2: b\nTela 3: c' }).atencao.includes('título com mais de 12 palavras'));
+  // Carrossel: capa + 4 a 7 cards, sem emoji; sem RQE, nada de "especialista".
+  const lam = (n, extra = '') => Array.from({ length: n }, (_, k) => `Slide ${k + 1} | Card: texto ${k}${extra}`).join('\n');
+  assert.ok(oQueFalta({ ...post, legenda: `Oi.\n${ASS}`, slides: lam(3) }, { assinatura: ASS }).atencao.some((a) => /capa \+ 4 a 7/.test(a)));
+  assert.ok(oQueFalta({ ...post, legenda: `Oi.\n${ASS}`, slides: lam(6, ' 😊') }, { assinatura: ASS }).atencao.includes('emoji nas lâminas'));
+  assert.ok(oQueFalta({ ...post, legenda: `Sou especialista.\n${ASS}`, slides: lam(6) }, { assinatura: ASS }).atencao.includes('"especialista" sem RQE na assinatura'));
+  assert.ok(!oQueFalta({ ...post, legenda: `Sou especialista.\nDra. X | CRM-XX 1 | RQE 2`, slides: lam(6) }, { assinatura: 'Dra. X | CRM-XX 1 | RQE 2' }).atencao.some((a) => /especialista/.test(a)));
   assert.equal(resumoDoQueFalta({ pecas: g }, { assinatura: ASS }).legendas, 2);
 });
 
@@ -49,7 +71,11 @@ test('pedido para o Claude traz as regras do manual e só o que falta', () => {
   assert.match(t, /### 25\.11 · POSTAGEM\n/);
   assert.doesNotMatch(t, /### 23\.11/);
   assert.match(t, /### 24\.11 · STORY\nTela 1 \(gancho\)/);
+  assert.match(t, /Tela 5 \(chamada\)/);
   assert.match(t, /de 3 a 5 telas/);
+  assert.match(t, /"vamos lá"/);
+  assert.match(t, /capa \+ 4 a 7 cards/);
+  assert.match(t, /nunca o chame de especialista/);
   assert.match(t, new RegExp(ASS.replace(/[|.]/g, '\\$&')));
 });
 
@@ -101,10 +127,11 @@ test('Drive: uma pasta por peça na ordem e os nomes dos arquivos do manual', ()
     { id: 'd', data: '2026-11-26', tipo: 'story', telas: 'Tela 1: a\nTela 2: b', figurinha: 'link' },
   ] });
   const n = nomesDaEntrega(cron);
-  assert.equal(n[0].pasta, '01 - 23.11 - Carrossel - Sorriso');
+  assert.equal(n[0].pasta, '01 · 23-11 seg · Carrossel · Sorriso');
+  assert.equal(n[1].pasta, '02 · 24-11 ter · Stories · a');
   assert.deepEqual(n[0].arquivos, ['01.jpg', '02.jpg', '03.jpg', 'Legenda']);
   assert.deepEqual(n[1].arquivos, ['S1_1.jpg', 'S1_2 - enquete Sim ou Não.jpg', 'S1_3.jpg']);
-  assert.deepEqual(n[2].arquivos, ['video.mp4', 'capa.jpg', 'Legenda']);
+  assert.deepEqual(n[2].arquivos, ['capa-reel-25-11.jpg', 'video.MP4', 'Legenda']);
   assert.deepEqual(n[3].arquivos, ['S2_1.jpg', 'S2_2 - link.jpg']);
   assert.equal(totaisDoCronograma(cron), '2 posts no feed · 1 reel · 1 carrossel · 2 sequências de stories');
 });
@@ -116,10 +143,28 @@ test('WhatsApp e slides (capa, resumo, peças, para aprovar)', () => {
   const w = textoWhatsApp(cron);
   assert.match(w, /^\*Cronograma de conteúdo · Dra\. Cliente Exemplo\*\n\*23 a 27 de novembro\*/);
   assert.match(w, /\*Segunda, 23\/11 · Post\*/);
-  assert.match(w, /Por cima: enquete Sim · Não/);
+  assert.match(w, /Por cima: Enquete: Sim · Não; Link de agendamento/);
   const medir = (t, tam) => String(t).length * tam * 0.5;
   const s = montarSlidesDoCronograma(cron, { assinatura: ASS, cor: '#336699' }, medir);
   assert.equal(s.length, cron.pecas.length + 3);
   assert.deepEqual([s[0].id, s[1].id, s.at(-1).id], ['capa', 'resumo:0', 'final']);
   assert.ok(!JSON.stringify(s).includes('a escrever'));
+  const texto = JSON.stringify(s);
+  assert.match(texto, /Resumo da quinzena/);
+  assert.match(texto, /Post 1 de 3 · /);
+  assert.match(texto, /Stories 1 de 2/);
+  assert.match(texto, /colocar o link aqui/);
+  assert.match(texto, /não substitui uma consulta médica/);
+});
+
+test('Trello do designer, entrega na quinta e acento legível', () => {
+  const p = { slides: 'Slide 01 | Capa (foto): Eu sou ansiosa?\nSlide 02 | Card: A situação\nSlide 03 | Card: A chamada', legenda: '' };
+  assert.equal(textoParaTrello(p), '**Capa**\nEu sou ansiosa?\n\n**Card 1**\nA situação\n\n**Card 2**\nA chamada');
+  assert.match(textoParaTrello(p, { orientacao: '**MUDANÇA NA ESTÉTICA**' }), /^\*\*MUDANÇA NA ESTÉTICA\*\*\n\n\*\*Capa\*\*/);
+  assert.equal(entregaDoDesigner('2026-11-23'), '2026-11-26T10:00');
+  assert.equal(entregaDoDesigner('2026-11-27'), '2026-12-03T10:00');
+  assert.equal(acentoDoCronograma('#2E4A57'), '#2E4A57');
+  assert.notEqual(acentoDoCronograma('#E8D3BF'), '#E8D3BF');
+  assert.equal(CHECKLIST_FINAL.length, 6);
+  assert.equal(typeof resumo, 'function');
 });
