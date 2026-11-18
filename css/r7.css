@@ -375,3 +375,20 @@ input[type="color"][name="estilo-cor"] {
 @media (max-width: 520px) {
   .r7-semana-lista li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 }
+
+/* Demanda de vídeos: ações por cliente (18/11/2026) */
+.r7-video-acoes {
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.r7-video-mes {
+  min-height: var(--toque, 44px);
+  padding: 0 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+}

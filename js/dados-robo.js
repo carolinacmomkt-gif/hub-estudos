@@ -103,6 +103,7 @@ export function videosDoCliente(nomeCliente, robo, pedidos = [], { porSemana = 2
   const briefings = (robo?.briefings || []).filter((b) => ehDoCliente(b.arquivo, nomeCliente))
     .map((b) => ({ ...b, mes: mesDoBriefing(b), ...lerBriefing(b.texto) }))
     .filter((b) => b.mes && b.videos.length)
+    .filter((b, _, todos) => b.anexado || !todos.some((x) => x.anexado && x.mes === b.mes))
     .sort((a, z) => z.mes.localeCompare(a.mes));
   const producao = (robo?.producao || []).filter((p) => ehDoCliente(p.cliente, nomeCliente));
   const mesDaPasta = (p) => mesDoTexto(p.pasta);
@@ -310,4 +311,35 @@ export function artesDoTrelloParaCronograma(cron, roboTrello, { nome = '', lista
 function numeroNoNome(n) {
   const m = /(\d+)(?!.*\d)/.exec(String(n || '').replace(/\.[a-z0-9]+$/i, ''));
   return m ? Number(m[1]) : Number.MAX_SAFE_INTEGER;
+}
+
+// ---------------------------------------------------------------------------
+// Briefings anexados à mão (Carol, 18/11/2026): quando o robô não acha o briefing novo de um cliente, ela
+// anexa o arquivo na demanda de vídeos. Fica em config "r7-briefings" { lista: [{ id, cliente, nome, mes,
+// original, texto, em }] } e entra junto com os do robô (o nome do cliente e o mês vão no "arquivo", que é
+// por onde a demanda acha o briefing de cada um).
+// ---------------------------------------------------------------------------
+
+export function briefingsAnexados(config = []) {
+  return config.find((c) => c.chave === 'r7-briefings' && !c.excluido_em)?.valor?.lista || [];
+}
+
+export function comBriefingsAnexados(robo, anexados = []) {
+  const extras = anexados.map((b) => ({
+    arquivo: `Briefing ${b.nome} - ${nomeDoMes(b.mes)}.docx`,
+    original: b.original,
+    ano: b.mes.slice(0, 4),
+    pasta: nomeDoMes(b.mes),
+    modificado: b.em,
+    texto: b.texto,
+    anexado: true,
+  }));
+  if (!robo && !extras.length) return null;
+  return { ...(robo || {}), briefings: [...(robo?.briefings || []), ...extras] };
+}
+
+// O briefing do mês anexado substitui o do robô do mesmo cliente e mês (o anexado é o que vale).
+export function briefingAnexadoNovo(lista, { cliente, nome, mes, original, texto, em = new Date().toISOString() }) {
+  const id = `${cliente}:${mes}`;
+  return [...lista.filter((b) => b.id !== id), { id, cliente, nome, mes, original: String(original || '').slice(0, 160), texto: String(texto || '').slice(0, 40000), em }];
 }

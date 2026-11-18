@@ -8,7 +8,8 @@ import { confirmar } from './confirmar.js';
 import { configPublica } from './nuvem.js';
 import { clientesR7, fichaDe } from './views-r7.js';
 import { linhasDaDemanda } from './views-robo.js';
-import { textoDaDemanda } from './dados-robo.js';
+import { textoDaDemanda, lerBriefing, briefingsAnexados, briefingAnexadoNovo } from './dados-robo.js';
+import { textoDoArquivo } from './cronograma-importar.js';
 
 let app; // { renderizar, avisoCurto }
 
@@ -46,9 +47,11 @@ async function copiarScript() {
   }
 }
 
-async function pedidoEnviado() {
+// "Pedido enviado" (todos) ou "Vídeo solicitado" (um cliente): marca os vídeos da vez como pedidos hoje, e a
+// demanda já passa para os próximos daquele cliente.
+async function pedidoEnviado(chave = '') {
   const estado = obterEstado();
-  const linhas = linhasDaDemanda(estado, clientesR7(estado), fichaDe).filter((l) => l.pedir.length && l.mes);
+  const linhas = linhasDaDemanda(estado, clientesR7(estado), fichaDe).filter((l) => l.pedir.length && l.mes && (!chave || l.chave === chave));
   if (!linhas.length) return;
   const atual = (estado.config || []).find((c) => c.chave === 'r7-videos' && !c.excluido_em)?.valor || {};
   const em = new Date().toISOString();
@@ -57,9 +60,33 @@ async function pedidoEnviado() {
   const limite = new Date(Date.now() - 240 * 864e5).toISOString();
   const pedidos = [...(atual.pedidos || []).filter((p) => p.em >= limite && !novos.some((x) => x.cliente === p.cliente && x.mes === p.mes && x.n === p.n)), ...novos];
   await gravarConfig('r7-videos', { ...atual, pedidos, ultimoPedido: em });
-  atualizarEstado({ r7VideosEscolha: {} });
+  const escolha = { ...(estado.r7VideosEscolha || {}) };
+  if (chave) delete escolha[chave];
+  atualizarEstado({ r7VideosEscolha: chave ? escolha : {} });
   app.renderizar();
-  app.avisoCurto(`${novos.length} ${novos.length === 1 ? 'vídeo marcado como pedido' : 'vídeos marcados como pedidos'} hoje.`);
+  app.avisoCurto(`${novos.length} ${novos.length === 1 ? 'vídeo marcado como pedido' : 'vídeos marcados como pedidos'} hoje${chave ? `: ${linhas[0].nome}` : ''}. A demanda já mostra os próximos.`);
+}
+
+// Briefing anexado à mão (o robô não achou): lido no aparelho, precisa ter "Vídeo 1, Vídeo 2…".
+async function anexarBriefing(input) {
+  const arquivo = input.files?.[0];
+  const chave = input.dataset.cliente;
+  input.value = '';
+  if (!arquivo) return;
+  const c = clientesR7(obterEstado()).find((x) => x.chave === chave);
+  const mes = document.querySelector(`[data-r7v-mes="${CSS.escape(chave)}"]`)?.value || new Date().toISOString().slice(0, 7);
+  if (!c) return;
+  try {
+    const texto = await textoDoArquivo(arquivo);
+    const n = lerBriefing(texto).videos.length;
+    if (!n) { app.avisoCurto('Não achei "Vídeo 1, Vídeo 2…" nesse arquivo. Confira se é o briefing de vídeos.'); return; }
+    const lista = briefingAnexadoNovo(briefingsAnexados(obterEstado().config), { cliente: chave, nome: c.nome, mes, original: arquivo.name, texto });
+    await gravarConfig('r7-briefings', { lista: lista.slice(-60) });
+    app.renderizar();
+    app.avisoCurto(`Briefing de ${c.nome} anexado: ${n} ${n === 1 ? 'vídeo' : 'vídeos'}.`);
+  } catch (e) {
+    app.avisoCurto(e?.message || 'Não deu para ler esse arquivo. Tente em Word ou PDF.');
+  }
 }
 
 export function cliqueRobo(alvo) {
@@ -77,11 +104,13 @@ export function cliqueRobo(alvo) {
       return true;
     }
     case 'r7v-enviado': pedidoEnviado(); return true;
+    case 'r7v-solicitado': pedidoEnviado(alvo.dataset.cliente); return true;
     default: return false;
   }
 }
 
 export function mudancaRobo(alvo, tipo) {
+  if (alvo.dataset?.acaoMudar === 'r7v-briefing') { if (tipo === 'change') anexarBriefing(alvo); return true; }
   if (alvo.dataset?.acaoMudar !== 'r7v-escolher') return false;
   if (tipo !== 'change') return true;
   const chave = alvo.dataset.cliente;

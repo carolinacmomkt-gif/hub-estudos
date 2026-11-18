@@ -3,7 +3,7 @@
 
 import { esc, haQuantoTempo } from './utilidades.js';
 import { cabecalho } from './componentes.js';
-import { videosDoCliente, trelloDoCliente, frasesDoTrello, dadosDoRobo, pedidosDeVideo, textoDaDemanda, clientesDosBriefings, ehDoCliente } from './dados-robo.js';
+import { videosDoCliente, trelloDoCliente, frasesDoTrello, dadosDoRobo, pedidosDeVideo, textoDaDemanda, clientesDosBriefings, ehDoCliente, comBriefingsAnexados, briefingsAnexados } from './dados-robo.js';
 import { PREFIXO_CRONOGRAMA, normalizarCronograma, resumoDoQueFalta, frasesDoQueFalta, periodoEmTexto } from './dados-cronograma.js';
 
 const hojeIso = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
@@ -14,8 +14,10 @@ const quando = (iso) => {
 };
 
 // As linhas da demanda de vídeos (uma por cliente da R7 que tem briefing).
+export const videosDaDemanda = (config) => comBriefingsAnexados(dadosDoRobo(config, 'videos'), briefingsAnexados(config));
+
 export function linhasDaDemanda(estado, clientes, fichaDe) {
-  const robo = dadosDoRobo(estado.config, 'videos');
+  const robo = videosDaDemanda(estado.config);
   const pedidos = pedidosDeVideo(estado.config);
   const escolha = estado.r7VideosEscolha || {};
   return clientes.map((c) => {
@@ -34,7 +36,7 @@ export const linhaDoTrello = (estado, c, f) => frasesDoTrello(trelloDe(estado, c
 
 // Card "Esta semana" no topo da lista da R7.
 export function cardSemanaR7(estado, clientes, fichaDe) {
-  const videos = dadosDoRobo(estado.config, 'videos');
+  const videos = videosDaDemanda(estado.config);
   const trello = dadosDoRobo(estado.config, 'trello');
   const hoje = hojeIso();
   const ate = new Date(Date.parse(`${hoje}T12:00:00Z`) + 10 * 864e5).toISOString().slice(0, 10);
@@ -62,7 +64,7 @@ export function cardSemanaR7(estado, clientes, fichaDe) {
   return `
     <section class="card r7-semana" aria-labelledby="r7-semana-titulo">
       <div class="card-topo"><h2 class="card-titulo" id="r7-semana-titulo">Esta semana</h2>
-        <span class="campo-ajuda">${videos || trello ? `Robô: Drive lido ${videos ? esc(quando(videos.recebido_em)) : '(ainda não)'} · Trello lido ${trello ? esc(quando(trello.recebido_em)) : '(ainda não)'}` : 'Robô do Google desligado'}</span></div>
+        <span class="campo-ajuda">${videos?.recebido_em || trello ? `Robô: Drive lido ${videos?.recebido_em ? esc(quando(videos.recebido_em)) : '(ainda não)'} · Trello lido ${trello ? esc(quando(trello.recebido_em)) : '(ainda não)'}` : 'Robô do Google desligado'}</span></div>
       <ul class="r7-semana-lista">
         ${robo}
         <li><span class="r7-semana-rotulo">Cronogramas</span><span>${linhasCron.length ? linhasCron.map(({ c, cron, r }) => `<a href="#r7/cronograma:${esc(c.chave)}:${esc(cron.inicio)}">${esc(c.nome)}</a> <small>${esc(frasesDoQueFalta(r))}${cron.marcas?.finalizado ? ' · finalizado' : ''}</small>`).join('<br>') : 'Nenhum cronograma começando nos próximos 10 dias.'}</span></li>
@@ -74,14 +76,13 @@ export function cardSemanaR7(estado, clientes, fichaDe) {
 
 // Tela da demanda de vídeos de segunda.
 export function telaVideos(estado, clientes, fichaDe) {
-  const robo = dadosDoRobo(estado.config, 'videos');
+  const robo = videosDaDemanda(estado.config);
   const voltar = '<a class="botao botao-secundario" href="#r7">← R7</a>';
-  if (!robo) return `${cabecalho('Demanda de vídeos', 'Toda segunda, os 2 próximos vídeos de cada cliente.', voltar)}<section class="card"><p class="texto-suave">O robô do Google ainda não mandou os briefings. Ligue em R7 → Ajustes da R7 → Robô do Google.</p></section>`;
-  const linhas = linhasDaDemanda(estado, clientes, fichaDe).filter((l) => l.briefing || l.captacao);
+  const linhas = linhasDaDemanda(estado, clientes, fichaDe);
   const texto = textoDaDemanda(linhas);
   const escolha = estado.r7VideosEscolha || {};
   return `
-    ${cabecalho('Demanda de vídeos', `Briefings lidos ${esc(quando(robo.recebido_em))}. Os 2 próximos que ainda não foram editados, na ordem do briefing.`, voltar)}
+    ${cabecalho('Demanda de vídeos', `${robo?.recebido_em ? `Briefings lidos ${esc(quando(robo.recebido_em))}. ` : 'O robô ainda não mandou os briefings; anexe o de cada cliente. '}Os 2 próximos que ainda não foram editados, na ordem do briefing.`, voltar)}
     <div class="r7-videos-grade">
       <section class="r7-videos-lista" aria-label="Clientes">
         ${linhas.map((l) => `
@@ -94,8 +95,15 @@ export function telaVideos(estado, clientes, fichaDe) {
                 <li><label class="r7-video-num r7-video-${v.estado}${v.atrasado ? ' r7-video-atrasado' : ''}" title="${esc(`${v.titulo || ''} · ${ROTULO[v.estado]}`)}">
                   ${v.estado === 'falta' ? `<input type="checkbox" data-acao-mudar="r7v-escolher" data-cliente="${esc(l.chave)}" value="${v.n}"${(escolha[l.chave] ? escolha[l.chave].includes(v.n) : l.pedir.some((p) => p.n === v.n)) ? ' checked' : ''}>` : ''}
                   <b>${v.n}</b><small>${esc(v.tipo)}</small></label></li>`).join('')}</ul>
-              ${l.atrasados?.length ? `<p class="campo-ajuda r7-video-alerta">Pedido há mais de 7 dias e ainda não chegou: ${l.atrasados.map((v) => `vídeo ${v.n}`).join(', ')}.</p>` : ''}` : '<p class="texto-suave">Sem vídeos para pedir: peça uma nova captação no grupo do cliente.</p>'}
-          </article>`).join('') || '<section class="card"><p class="texto-suave">Nenhum briefing bate com os clientes da R7 cadastrados. Confira os nomes na ficha.</p></section>'}
+              ${l.atrasados?.length ? `<p class="campo-ajuda r7-video-alerta">Pedido há mais de 7 dias e ainda não chegou: ${l.atrasados.map((v) => `vídeo ${v.n}`).join(', ')}.</p>` : ''}
+              ${l.briefing.anexado ? `<p class="campo-ajuda">Briefing anexado por você${l.briefing.original ? `: ${esc(l.briefing.original)}` : ''}.</p>` : ''}` : '<p class="texto-suave">Sem briefing com vídeos para pedir. Se o cliente mandou um briefing novo e o robô não achou, anexe aqui.</p>'}
+            <div class="acoes r7-video-acoes">
+              ${l.pedir.length ? `<button class="botao botao-primario botao-pequeno" type="button" data-acao="r7v-solicitado" data-cliente="${esc(l.chave)}">Vídeo solicitado</button>` : ''}
+              <label class="botao botao-secundario botao-pequeno cron-arquivo">Anexar briefing
+                <input type="file" accept=".docx,.pdf,.txt,.md,application/pdf,text/plain" data-acao-mudar="r7v-briefing" data-cliente="${esc(l.chave)}"></label>
+              <select class="r7-video-mes" aria-label="Mês do briefing" data-r7v-mes="${esc(l.chave)}">${mesesParaBriefing().map(([v, t], i) => `<option value="${v}"${i === 0 ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
+            </div>
+          </article>`).join('') || '<section class="card"><p class="texto-suave">Nenhum cliente da R7 cadastrado ainda.</p></section>'}
       </section>
       <aside class="card r7-videos-pedido">
         <h2 class="card-titulo">O pedido</h2>
@@ -105,9 +113,19 @@ export function telaVideos(estado, clientes, fichaDe) {
           <a class="botao botao-secundario" href="https://wa.me/?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener"${texto ? '' : ' aria-disabled="true"'}>Abrir no WhatsApp</a>
           <button class="botao botao-primario" type="button" data-acao="r7v-enviado"${texto ? '' : ' disabled'}>Pedido enviado</button>
         </div>
-        <p class="campo-ajuda">"Pedido enviado" marca os vídeos como pedidos hoje. Se o editado não aparecer na pasta em 7 dias, o app avisa.</p>
+        <p class="campo-ajuda">"Pedido enviado" marca os vídeos de todos como pedidos hoje; "Vídeo solicitado", só os do cliente. Na hora, a demanda já passa para os próximos. Se o editado não aparecer na pasta em 7 dias, o app avisa.</p>
       </aside>
     </div>`;
+}
+
+// O mês do briefing anexado: este mês, o seguinte e o anterior.
+function mesesParaBriefing() {
+  const d = new Date();
+  return [0, 1, -1].map((k) => {
+    const x = new Date(d.getFullYear(), d.getMonth() + k, 1);
+    const v = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}`;
+    return [v, `Briefing de ${nomeMes(v)}`];
+  });
 }
 
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;

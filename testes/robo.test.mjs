@@ -90,3 +90,18 @@ test('artes do Trello: o card casa com a peça pela copy e as imagens vão na or
   const r = artesDoTrelloParaCronograma(cron, trello, { nome: 'Dra. Fulana Exemplo' });
   assert.deepEqual(r.map((x) => [x.peca, x.anexos.map((a) => a.id)]), [['p2', ['a', 'b']]]);
 });
+
+test('briefing anexado à mão entra na demanda (e vale mais que o do robô no mesmo mês); solicitado passa para os próximos', async () => {
+  const { comBriefingsAnexados, briefingAnexadoNovo, videosDoCliente } = await import('../js/dados-robo.js');
+  const texto = 'Vídeo 1 Conteúdo\nTítulo: Um\nVídeo 2 Trend\nTítulo: Dois\nVídeo 3 Conteúdo\nVídeo 4 Conteúdo';
+  const lista = briefingAnexadoNovo([], { cliente: 'r7-fulana', nome: 'Dra. Fulana Exemplo', mes: '2026-12', original: 'meu briefing.docx', texto, em: '2026-11-18T10:00:00Z' });
+  const robo = comBriefingsAnexados({ briefings: [{ arquivo: 'Briefing Dra Fulana Exemplo - Dezembro.docx', ano: '2026', texto: 'Vídeo 1 Conteúdo' }] }, lista);
+  let v = videosDoCliente('Dra. Fulana Exemplo', robo, [], { hoje: '2026-11-18' });
+  assert.equal(v.briefing.anexado, true);
+  assert.deepEqual(v.pedir.map((x) => x.n), [1, 2]);
+  const pedidos = [1, 2].map((n) => ({ cliente: 'Dra. Fulana Exemplo', mes: '2026-12', n, em: '2026-11-18T10:00:00Z' }));
+  v = videosDoCliente('Dra. Fulana Exemplo', robo, pedidos, { hoje: '2026-11-18' });
+  assert.deepEqual(v.pedir.map((x) => x.n), [3, 4]);
+  assert.equal(comBriefingsAnexados(null, []), null);
+  assert.equal(briefingAnexadoNovo(lista, { cliente: 'r7-fulana', nome: 'x', mes: '2026-12', texto: 'novo' }).length, 1);
+});

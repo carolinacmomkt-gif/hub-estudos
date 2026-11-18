@@ -10,7 +10,7 @@ import { avisosDevidos, montarNotificacoes, enviarPush, configDeAvisos, chaveEnv
 import { avisosDaVida } from '../lib/avisos-vida.mjs';
 import { resumoDevido, resumoDaSemana, textoDaNotificacao } from '../../js/dados-resumo.js';
 import { normalizarCronograma } from '../../js/dados-cronograma.js';
-import { videosDoCliente } from '../../js/dados-robo.js';
+import { videosDoCliente, comBriefingsAnexados } from '../../js/dados-robo.js';
 
 const DIA = 24 * 60 * 60 * 1000;
 
@@ -146,12 +146,14 @@ export function linhaDaDemanda({ clientes = [], robo, pedidos = [], hoje }) {
 
 async function linhaDosVideos(userId, hoje) {
   if (new Date(`${hoje}T12:00:00Z`).getUTCDay() !== 1) return null;
-  const [clientes, linhasRobo, linhasPedidos] = await Promise.all([
+  const [clientes, linhasRobo, linhasPedidos, linhasAnexados] = await Promise.all([
     banco.listar('clientes_trabalho', userId, 'casa=eq.r7&excluido_em=is.null'),
     banco.listar('config', userId, 'chave=eq.r7-robo:videos'),
     banco.listar('config', userId, 'chave=eq.r7-videos'),
+    banco.listar('config', userId, 'chave=eq.r7-briefings&excluido_em=is.null'),
   ]);
-  return linhaDaDemanda({ clientes, robo: linhasRobo[0]?.valor?.dados, pedidos: linhasPedidos[0]?.valor?.pedidos || [], hoje });
+  const robo = comBriefingsAnexados(linhasRobo[0]?.valor?.dados, linhasAnexados[0]?.valor?.lista || []);
+  return linhaDaDemanda({ clientes, robo, pedidos: linhasPedidos[0]?.valor?.pedidos || [], hoje });
 }
 
 export async function enviarAvisosDaUsuaria(userId, assinaturas, agora = Date.now()) {
