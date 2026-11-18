@@ -105,3 +105,24 @@ test('briefing anexado à mão entra na demanda (e vale mais que o do robô no m
   assert.equal(comBriefingsAnexados(null, []), null);
   assert.equal(briefingAnexadoNovo(lista, { cliente: 'r7-fulana', nome: 'x', mes: '2026-12', texto: 'novo' }).length, 1);
 });
+
+test('ficha completada pelo Portfolio do Trello: só campos vazios e nunca linha com senha', async () => {
+  const { textoDoPortfolio, dadosDoCliente, completarFicha } = await import('../js/dados-robo.js');
+  const trello = { portfolio: [
+    { lista: 'DRA FULANA EXEMPLO', nome: 'INFOS', desc: 'Dra. Fulana Exemplo – Médica – CRM-XX 54321\nInstagram: @dra.fulana\nCores: #2E4A57 e #F2EDE4\nCidade: Cidade Exemplo\nSenha do Instagram: segredo123' },
+    { lista: 'DRA FULANA EXEMPLO', nome: 'ACESSOS', desc: 'login: x / senha: y' },
+    { lista: 'OUTRA CLIENTE', nome: 'INFOS', desc: 'CRM-XX 99999' },
+  ] };
+  const t = textoDoPortfolio(trello, 'Dra. Fulana Exemplo');
+  assert.ok(!/segredo123|senha|login/i.test(t), t);
+  assert.ok(!t.includes('99999'));
+  const d = dadosDoCliente('Dra. Fulana Exemplo', { portfolio: t });
+  assert.equal(d.assinatura, 'Dra. Fulana Exemplo | Médica | CRM-XX 54321');
+  assert.equal(d.instagram, '@dra.fulana');
+  assert.deepEqual(d.cores, ['#2E4A57', '#F2EDE4']);
+  assert.equal(d.cidade, 'Cidade Exemplo');
+  const { ficha, campos } = completarFicha({ identificacao: { assinatura: 'A que ela escreveu' } }, d);
+  assert.equal(ficha.identificacao.assinatura, 'A que ela escreveu');
+  assert.equal(ficha.identificacao.instagram, '@dra.fulana');
+  assert.ok(campos.includes('@') && campos.includes('cor') && !campos.includes('assinatura'));
+});

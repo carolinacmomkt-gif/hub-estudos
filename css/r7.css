@@ -392,3 +392,19 @@ input[type="color"][name="estilo-cor"] {
   color: var(--cor-texto);
   font: inherit;
 }
+
+/* Completar pela ficha do Trello (18/11/2026) */
+.r7-completar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.r7-completar .campo-ajuda {
+  flex: 1 1 320px;
+  margin: 0;
+}

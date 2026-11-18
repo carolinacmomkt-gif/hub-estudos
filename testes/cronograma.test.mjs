@@ -216,3 +216,42 @@ test('slides usam as artes no lugar das caixas', async () => {
   const imagens = s.flatMap((x) => x.elementos).filter((e) => e.tipo === 'imagem').map((e) => e.src);
   assert.deepEqual(imagens, ['blob:1', 'blob:2', 'blob:s1', 'blob:s2', 'blob:s3']);
 });
+
+test('cronograma pronto em PDF: lê pela posição (lâminas, legenda com assinatura, reel com capa e link, stories com o que entra por cima)', async () => {
+  const { lerCronogramaPronto } = await import('../js/dados-cronograma.js');
+  const L = (x, y, t) => ({ x, y, t });
+  const pag = (linhas, extra = {}) => ({ largura: 960, altura: 540, linhas, links: [], imagens: 0, ...extra });
+  const paginas = [
+    pag([L(72, 158, 'CRONOGRAMA DE CONTEÚDO'), L(72, 185, 'Dra. Cliente Exemplo'), L(72, 277, '23 de novembro a 04 de dezembro')]),
+    pag([L(43, 27, 'DRA. CLIENTE EXEMPLO'), L(43, 60, 'Resumo da quinzena'), L(43, 183, '23/11 seg')]),
+    pag([L(43, 27, 'DRA. CLIENTE EXEMPLO'), L(43, 60, '24/11'), L(216, 70, 'Sono ruim tem jeito'), L(45, 117, 'TERÇA · CARROSSEL'),
+      L(43, 162, 'LÂMINAS (3)'), L(547, 162, 'LEGENDA'),
+      L(60, 194, '01'), L(170, 191, '02'), L(288, 191, '03'),
+      L(60, 213, 'Sono ruim tem jeito'), L(170, 209, 'Dormir mal cansa'), L(170, 218, 'o corpo inteiro.'), L(288, 209, 'Agende sua consulta.'),
+      L(547, 184, 'Dormir mal todos os dias cansa.'), L(547, 214, 'A rotina da noite ajuda.'),
+      L(547, 364, 'Dra. Cliente Exemplo'), L(547, 375, 'Médica | CRM-XX 12345'), L(547, 395, 'Este conteúdo tem caráter educativo e não substitui uma consulta médica.'),
+      L(43, 504, 'Cronograma 24/11 a 04/12 · R7')]),
+    pag([L(43, 60, '25/11'), L(216, 70, 'Sono e tela'), L(45, 117, 'QUARTA · REEL'), L(252, 166, 'VÍDEO'), L(504, 166, 'LEGENDA'),
+      L(252, 186, 'Assistir ao vídeo ↗'), L(252, 270, 'TEXTO DA CAPA'), L(252, 290, 'Celular na cama'), L(252, 310, 'atrapalha o sono?'),
+      L(504, 186, 'A luz da tela atrasa o sono.'), L(504, 336, 'Dra. Cliente Exemplo'), L(504, 347, 'Médica | CRM-XX 12345')],
+    { links: [{ x: 252, y: 186, url: 'https://exemplo.com/video' }], imagens: 1 }),
+    pag([L(43, 60, '25/11'), L(216, 70, 'Revisão do sono'), L(45, 117, 'QUARTA · STORIES'),
+      L(138, 450, '1 · GANCHO'), L(138, 466, 'Repost do carrossel do dia'), L(314, 450, '2 · PERGUNTA'), L(314, 466, 'Enquete: Sim / Não'),
+      L(490, 450, '3 · CAIXINHA'), L(666, 450, '4 · CHAMADA'), L(666, 466, 'Link de agendamento')], { imagens: 4 }),
+  ];
+  const r = lerCronogramaPronto(paginas, { hoje: '2026-11-18' });
+  assert.deepEqual([r.nome, r.inicio, r.fim, r.lidas], ['Dra. Cliente Exemplo', '2026-11-23', '2026-12-04', 3]);
+  const [carrossel, reel, story] = r.pecas;
+  assert.deepEqual(lerLaminas(carrossel.slides).map((l) => l.texto), ['Sono ruim tem jeito', 'Dormir mal cansa o corpo inteiro.', 'Agende sua consulta.']);
+  assert.equal(carrossel.legenda, 'Dormir mal todos os dias cansa.\n\nA rotina da noite ajuda.\nDra. Cliente Exemplo | Médica | CRM-XX 12345');
+  assert.deepEqual([reel.tipo, reel.capa, reel.video, reel.artesDaPagina], ['reels', 'Celular na cama atrapalha o sono?', 'https://exemplo.com/video', [0]]);
+  assert.equal(story.figurinha, 'repost do post do dia; enquete Sim / Não; caixinha de perguntas; link de agendamento');
+  assert.equal(lerTelas(story.telas).length, 4);
+  assert.deepEqual(story.artesDaPagina, [0, 1, 2, 3]);
+});
+
+test('assinatura escrita de outro jeito vale pelo número do registro', () => {
+  const p = { ...gradeDoPeriodo({ feed: [{ dia: 1, formato: 'carrossel', qtd: 1 }] }, '2026-11-23', '2026-11-23')[0], tema: 'x', slides: 'Slide 01 | Capa: a\nSlide 02 | b\nSlide 03 | c\nSlide 04 | d\nSlide 05 | e' };
+  assert.ok(!oQueFalta({ ...p, legenda: 'Oi.\nDra. Cliente Exemplo · CRM XX 00000' }, { assinatura: ASS }).falta.includes('assinatura'));
+  assert.ok(oQueFalta({ ...p, legenda: 'Oi.' }, { assinatura: ASS }).falta.includes('assinatura'));
+});

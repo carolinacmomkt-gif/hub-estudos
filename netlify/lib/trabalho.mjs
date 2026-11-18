@@ -751,7 +751,7 @@ export async function organizarDocumentoR7(userId, { clienteChave, texto, hoje }
   const cliente = (await clientesGuardados(userId)).find((c) => c.chave === clienteChave);
   if (!cliente || cliente.casa !== 'r7') throw new ErroIa('Cliente da R7 não encontrado.');
   const conteudo = `<documento cliente="${cliente.nome}" hoje="${hoje || ''}">
-${String(texto).slice(0, 60000)}
+${String(texto).slice(0, 80000)}
 </documento>
 
 <pedido>
@@ -759,7 +759,7 @@ Reorganize o documento acima no formato abaixo, sem escrever nada novo: copie ca
 
 ${FORMATO_DO_DOCUMENTO}
 </pedido>`;
-  const r = await pedirJson({ system: 'Você organiza documentos de cronograma de conteúdo de Instagram num formato fixo. Nunca reescreve nem resume o texto do cliente.', conteudo, esquema: objeto({ documento: tipoTexto }), maxTokens: 16000, esforco: 'low' });
+  const r = await pedirJson({ system: 'Você organiza documentos de cronograma de conteúdo de Instagram num formato fixo. Nunca reescreve nem resume o texto do cliente.', conteudo, esquema: objeto({ documento: tipoTexto }), maxTokens: 24000, esforco: 'low' });
   const documento = String(r.documento || '').trim();
   if (!documento) throw new ErroIa('A IA não conseguiu organizar este documento.');
   return { ok: true, documento };

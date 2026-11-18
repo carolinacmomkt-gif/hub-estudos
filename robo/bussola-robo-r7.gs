@@ -220,6 +220,20 @@ function rodarTrello(forcar) {
     });
   });
   guardarEnviados(ja);
+  // Portfolio dos Clientes (informações de cada cliente: registro, @, cores, fontes). Cards e linhas com
+  // senha, login ou acesso ficam de fora: acesso nunca sai do Trello.
+  var segredo = /senha|password|login|acesso|token|e-?mail\s*:/i;
+  var portfolio = [];
+  trello('/members/me/boards?filter=open&fields=name').filter(function (q) { return /portf/i.test(q.name); }).forEach(function (q) {
+    var listasP = {};
+    trello('/boards/' + q.id + '/lists?filter=open&fields=name').forEach(function (l) { listasP[l.id] = l.name; });
+    trello('/boards/' + q.id + '/cards?filter=open&fields=name,desc,idList,labels').slice(0, 400).forEach(function (c) {
+      if (!listasP[c.idList] || segredo.test(c.name)) return;
+      portfolio.push({ quadro: q.name, lista: listasP[c.idList], nome: String(c.name).slice(0, 160),
+        desc: String(c.desc || '').split('\n').filter(function (l) { return !segredo.test(l); }).join('\n').slice(0, 2000),
+        etiquetas: (c.labels || []).map(function (e) { return e.name; }).filter(String) });
+    });
+  });
   if (guardadas) Logger.log(guardadas + ' artes novas guardadas na Bússola.');
-  enviar('trello', { quadros: saida, lido_em: agora.toISOString() });
+  enviar('trello', { quadros: saida, portfolio: portfolio, lido_em: agora.toISOString() });
 }

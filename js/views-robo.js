@@ -56,11 +56,9 @@ export function cardSemanaR7(estado, clientes, fichaDe) {
   const vencidas = trello ? clientes.reduce((n, c) => n + trelloDe(estado, c, fichaDe(c)).conta.vencida, 0) : 0;
   const ajustes = trello ? clientes.reduce((n, c) => n + trelloDe(estado, c, fichaDe(c)).conta.ajuste, 0) : 0;
   const doBriefing = videos ? clientesDosBriefings(videos, { hoje }) : [];
-  const recusados = new Set((estado.config || []).find((l) => l.chave === 'r7-auto' && !l.excluido_em)?.valor?.vistos || []);
-  const semFicha = doBriefing.filter((b) => !recusados.has(b.chave) && !clientes.some((c) => ehDoCliente(b.nome, c.nome) || ehDoCliente(c.nome, b.nome)));
   const quadros = trello?.quadros?.length || 0;
   const artes = (trello?.quadros || []).reduce((n, q) => n + (q.cartoes || []).reduce((m, c) => m + (c.anexos?.length || 0), 0), 0);
-  const robo = videos || trello ? `<li><span class="r7-semana-rotulo">Robô</span><span>${[videos && `${doBriefing.length} ${doBriefing.length === 1 ? 'cliente' : 'clientes'} nos briefings`, trello && `${quadros} ${quadros === 1 ? 'quadro' : 'quadros'} no Trello`, artes && `${artes} ${artes === 1 ? 'arte' : 'artes'} dos designers`].filter(Boolean).join(' · ')}${semFicha.length ? `<br><small>Sem ficha na Bússola: ${semFicha.slice(0, 8).map((b) => esc(b.nome)).join(', ')}${semFicha.length > 8 ? ` e mais ${semFicha.length - 8}` : ''}. Cadastre em "+ Novo cliente" se for da R7.</small>` : ''}</span></li>` : '';
+  const robo = videos || trello ? `<li><span class="r7-semana-rotulo">Robô</span><span>${[videos && `${doBriefing.length} ${doBriefing.length === 1 ? 'cliente' : 'clientes'} nos briefings`, trello && `${quadros} ${quadros === 1 ? 'quadro' : 'quadros'} no Trello`, artes && `${artes} ${artes === 1 ? 'arte' : 'artes'} dos designers`].filter(Boolean).join(' · ')}</span></li>` : '';
   return `
     <section class="card r7-semana" aria-labelledby="r7-semana-titulo">
       <div class="card-topo"><h2 class="card-titulo" id="r7-semana-titulo">Esta semana</h2>

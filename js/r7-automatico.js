@@ -1,5 +1,6 @@
-// O que a R7 faz sozinha ao abrir (Carol, 17/11/2026), com o que o robô do Google mandou:
-// 1) cadastra os clientes que aparecem nos briefings e ainda não estão na Bússola (ficha com o selo "confira");
+// O que a R7 faz sozinha ao abrir (Carol, 17 e 18/11/2026), com o que o robô do Google mandou:
+// 1) completa a ficha dos clientes que ELA cadastrou (só os campos vazios) com o briefing, a lista do Trello
+//    e o "Portfolio dos Clientes" do Trello da R7; ninguém é cadastrado sozinho ("só os que eu colocar");
 // 2) põe as artes dos cards do Trello da R7 nas peças certas do cronograma (pela copy da descrição do card),
 //    copiando cada imagem reduzida para a pasta dela e apagando a original do lugar do robô.
 // Nada é escrito no Trello nem no Drive.
@@ -7,8 +8,8 @@
 import { obterEstado, atualizarEstado } from './estado.js';
 import { listar, salvar } from './persistencia.js';
 import { baixarArquivo, apagarArquivo } from './nuvem.js';
-import { dadosDoRobo, clientesNovosDoRobo, listaDoCliente, artesDoTrelloParaCronograma, sem } from './dados-robo.js';
-import { fichaR7Vazia, conferirFichaR7, fichaEmTexto, nichoDaFicha, especialidadeSugerida, chaveDoNome } from './dados-r7.js';
+import { dadosDoRobo, listaDoCliente, artesDoTrelloParaCronograma, sem, clientesDosBriefings, ehDoCliente, textoDoPortfolio, dadosDoCliente, completarFicha } from './dados-robo.js';
+import { fichaR7Vazia, conferirFichaR7, fichaEmTexto, nichoDaFicha, especialidadeSugerida } from './dados-r7.js';
 import { PREFIXO_CRONOGRAMA, normalizarCronograma, chaveDoCronograma } from './dados-cronograma.js';
 import { reduzir, guardarArte } from './cronograma-importar.js';
 
@@ -21,50 +22,45 @@ async function gravarConfig(chave, valor) {
   await salvar('config', { ...(atual || {}), chave, valor });
 }
 
-const ehIdentidade = (nome) => /\b(idv|infos?|identidade)\b/i.test(String(nome || ''));
 
-// A ficha que o robô consegue montar: assinatura e registro do briefing, especialidade pelo cabeçalho,
-// quadro e lista do Trello, e o card de identidade (texto e a primeira cor em #hex).
-export function fichaDoRobo(c, trello) {
-  const f = fichaR7Vazia();
-  f.identificacao.assinatura = c.assinatura || '';
-  f.identificacao.especialidade = especialidadeSugerida(`${c.topo} ${c.arquivo}`) || '';
-  const onde = listaDoCliente(trello, c.nome);
-  if (onde) { f.equipe.quadro = onde.quadro; f.equipe.lista = onde.lista; }
-  const idv = (trello?.quadros || []).flatMap((q) => q.cartoes || [])
-    .find((x) => onde && sem(x.lista) === sem(onde.lista) && ehIdentidade(x.nome) && x.desc);
-  if (idv) {
-    f.briefing.idVisual = String(idv.desc).slice(0, 1500);
-    const cor = /#[0-9a-f]{6}\b/i.exec(idv.desc);
-    if (cor) f.rotina.estilo.corDestaque = cor[0].toUpperCase();
-  }
-  return conferirFichaR7(f);
+// Uma vez: os clientes que o cadastro automático de 17/11 criou e ela não conferiu vão para a lixeira.
+async function limparCadastroAutomatico() {
+  const estado = obterEstado();
+  const auto = (estado.config || []).find((l) => l.chave === 'r7-auto' && !l.excluido_em)?.valor || {};
+  if (auto.limpo) return 0;
+  const tirar = (estado.clientesTrabalho || []).filter((c) => !c.excluido_em && c.casa === 'r7' && c.dados?.r7_auto?.confira);
+  for (const c of tirar) await salvar('clientes_trabalho', { ...c, excluido_em: new Date().toISOString() });
+  await gravarConfig('r7-auto', { ...auto, limpo: new Date().toISOString() });
+  atualizarEstado({ clientesTrabalho: await listar('clientes_trabalho'), config: await listar('config') });
+  return tirar.length;
 }
 
-export async function cadastrarDoRobo() {
+// Completa a ficha de cada cliente da R7 (só o que está vazio) e guarda o que preencheu em dados.r7_auto.
+export async function completarFichas({ so = '' } = {}) {
   const estado = obterEstado();
   const videos = dadosDoRobo(estado.config, 'videos');
-  if (!videos?.briefings?.length) return 0;
   const trello = dadosDoRobo(estado.config, 'trello');
-  const todos = (estado.clientesTrabalho || []).filter((c) => !c.excluido_em);
-  const r7 = todos.filter((c) => c.casa === 'r7');
-  const auto = (estado.config || []).find((l) => l.chave === 'r7-auto' && !l.excluido_em)?.valor || {};
-  const novos = clientesNovosDoRobo(videos, r7, auto.vistos || [], { hoje: hojeIso() }).slice(0, 15);
-  if (!novos.length) return 0;
-  const usadas = new Set(todos.map((c) => c.chave));
-  for (const c of novos) {
-    let chave = `r7-${chaveDoNome(c.nome)}`;
-    for (let i = 2; usadas.has(chave); i += 1) chave = `r7-${chaveDoNome(c.nome)}-${i}`;
-    usadas.add(chave);
-    const ficha = fichaDoRobo(c, trello);
-    const dados = { r7: ficha, ficha: fichaEmTexto(c.nome, ficha), memoria: [], r7_auto: { em: new Date().toISOString(), de: c.arquivo, confira: true } };
-    const nicho = nichoDaFicha(ficha);
+  if (!videos && !trello) return 0;
+  const briefings = videos ? clientesDosBriefings(videos, { dias: 400 }) : [];
+  let mudou = 0;
+  for (const c of (estado.clientesTrabalho || []).filter((x) => !x.excluido_em && x.casa === 'r7' && (!so || x.chave === so))) {
+    const base = conferirFichaR7(c.dados?.r7 || fichaR7Vazia());
+    const brief = briefings.find((b) => ehDoCliente(b.nome, c.nome) || ehDoCliente(c.nome, b.nome));
+    const portfolio = textoDoPortfolio(trello, c.nome);
+    const d = dadosDoCliente(c.nome, { portfolio, briefing: brief?.topo || '' });
+    const { ficha, campos } = completarFicha(base, d, { especialidade: especialidadeSugerida(`${brief?.topo || ''} ${portfolio}`) });
+    const onde = listaDoCliente(trello, c.nome);
+    if (onde && !ficha.equipe?.lista) { ficha.equipe = { ...(ficha.equipe || {}), quadro: onde.quadro, lista: onde.lista }; campos.push('lista do Trello'); }
+    if (!campos.length) continue;
+    const r7 = conferirFichaR7(ficha);
+    const dados = { ...(c.dados || {}), r7, ficha: fichaEmTexto(c.nome, r7), r7_auto: { ...(c.dados?.r7_auto || {}), confira: false, preenchido: [...new Set([...(c.dados?.r7_auto?.preenchido || []), ...campos])], em: new Date().toISOString() } };
+    const nicho = nichoDaFicha(r7);
     if (nicho) dados.nicho = nicho;
-    await salvar('clientes_trabalho', { chave, nome: c.nome, casa: 'r7', dados });
+    await salvar('clientes_trabalho', { ...c, dados });
+    mudou += 1;
   }
-  await gravarConfig('r7-auto', { ...auto, vistos: [...new Set([...(auto.vistos || []), ...novos.map((c) => c.chave)])].slice(-300) });
-  atualizarEstado({ clientesTrabalho: await listar('clientes_trabalho'), config: await listar('config') });
-  return novos.length;
+  if (mudou) atualizarEstado({ clientesTrabalho: await listar('clientes_trabalho') });
+  return mudou;
 }
 
 // Artes do Trello → peças do cronograma (cronogramas que ainda não acabaram há mais de 3 semanas).
@@ -113,12 +109,13 @@ export async function rodarAutomaticoR7(app) {
   if (marca === estado.r7AutoMarca) return;
   rodando = true;
   try {
-    const cadastrados = await cadastrarDoRobo();
+    const tirados = await limparCadastroAutomatico();
+    const fichas = await completarFichas();
     const artes = await encaixarArtesDoTrello();
     atualizarEstado({ r7AutoMarca: marca });
-    if (cadastrados || artes) {
+    if (tirados || fichas || artes) {
       app?.renderizar();
-      app?.avisoCurto([cadastrados && `${cadastrados} ${cadastrados === 1 ? 'cliente cadastrado' : 'clientes cadastrados'} pelos briefings`, artes && `artes do Trello em ${artes} ${artes === 1 ? 'peça' : 'peças'}`].filter(Boolean).join(' · ') + '. Confira.');
+      app?.avisoCurto([tirados && `${tirados} ${tirados === 1 ? 'cliente que entrou sozinho foi para a lixeira' : 'clientes que entraram sozinhos foram para a lixeira'}`, fichas && `${fichas} ${fichas === 1 ? 'ficha completada' : 'fichas completadas'} pelo Trello`, artes && `artes do Trello em ${artes} ${artes === 1 ? 'peça' : 'peças'}`].filter(Boolean).join(' · ') + '.');
     }
   } catch { /* sem internet agora: tenta na próxima abertura */ } finally {
     rodando = false;

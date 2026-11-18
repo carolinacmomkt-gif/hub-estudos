@@ -66,6 +66,77 @@ async function textoDoPptx(arquivo) {
   return saida.join('\n');
 }
 
+// PDF no visual de cronograma: por página, as linhas com posição (y a partir do topo), os links e as
+// imagens grandes (artes) na ordem em que foram desenhadas. Ver lerCronogramaPronto (dados-cronograma.js).
+const MIN_ARTE = 200;
+
+async function imagensDaPagina(pagina, lib) {
+  const ops = await pagina.getOperatorList();
+  const saida = [];
+  const vistos = new Set();
+  for (let i = 0; i < ops.fnArray.length; i += 1) {
+    if (ops.fnArray[i] !== lib.OPS.paintImageXObject) continue;
+    const nome = ops.argsArray[i][0];
+    if (vistos.has(nome)) continue;
+    vistos.add(nome);
+    const obj = await new Promise((resolver) => {
+      try {
+        const objs = String(nome).startsWith('g_') ? pagina.commonObjs : pagina.objs;
+        if (objs.has(nome)) resolver(objs.get(nome)); else objs.get(nome, resolver);
+      } catch { resolver(null); }
+      setTimeout(() => resolver(null), 4000);
+    });
+    if (!obj || obj.width < MIN_ARTE || obj.height < MIN_ARTE) continue;
+    const c = document.createElement('canvas');
+    c.width = obj.width;
+    c.height = obj.height;
+    const ctx = c.getContext('2d');
+    if (obj.bitmap) ctx.drawImage(obj.bitmap, 0, 0);
+    else if (obj.data) {
+      const rgba = new Uint8ClampedArray(obj.width * obj.height * 4);
+      const tem3 = obj.data.length === obj.width * obj.height * 3;
+      for (let p = 0, q = 0; p < rgba.length; p += 4) {
+        rgba[p] = obj.data[q]; rgba[p + 1] = obj.data[q + 1]; rgba[p + 2] = obj.data[q + 2];
+        rgba[p + 3] = tem3 ? 255 : obj.data[q + 3];
+        q += tem3 ? 3 : 4;
+      }
+      ctx.putImageData(new ImageData(rgba, obj.width, obj.height), 0, 0);
+    } else continue;
+    saida.push(await reduzir(await new Promise((r) => c.toBlob(r, 'image/png'))));
+  }
+  return saida;
+}
+
+export async function paginasDoPdf(arquivo, { comImagens = true } = {}) {
+  const doc = await abrirPdf(arquivo);
+  const lib = await import('./vendor/pdfjs/pdf.min.mjs');
+  const paginas = [];
+  const imagens = [];
+  for (let n = 1; n <= Math.min(doc.numPages, 60); n += 1) {
+    const pagina = await doc.getPage(n);
+    const vista = pagina.getViewport({ scale: 1 });
+    const { items } = await pagina.getTextContent();
+    const pedacos = items.filter((it) => 'str' in it && it.str.trim()).map((it) => {
+      const h = Math.abs(it.transform[3]) || it.height || 10;
+      return { x: it.transform[4], base: vista.height - it.transform[5], h, fim: it.transform[4] + (it.width || 0), t: it.str };
+    }).sort((a, b) => a.base - b.base || a.x - b.x);
+    // Mesma linha: mesma altura de base e perto na horizontal (colunas separadas viram linhas separadas).
+    const linhas = [];
+    for (const p of pedacos) {
+      const l = linhas.find((x) => Math.abs(x.base - p.base) < p.h * 0.5 && p.x - x.fim < p.h * 2.2 && p.x >= x.x - 1);
+      if (l) { l.t += (p.x - l.fim > p.h * 0.15 && !/\s$/.test(l.t) ? ' ' : '') + p.t; l.fim = Math.max(l.fim, p.fim); } else linhas.push({ ...p });
+    }
+    const anotacoes = await pagina.getAnnotations().catch(() => []);
+    const links = anotacoes.filter((a) => a.url).map((a) => ({ x: a.rect[0], y: vista.height - a.rect[3], url: a.url }));
+    paginas.push({ largura: vista.width, altura: vista.height, linhas: linhas.map((l) => ({ x: l.x, y: l.base - l.h, t: l.t.replace(/\s+/g, ' ').trim() })), links, imagens: 0 });
+    const imgs = comImagens ? await imagensDaPagina(pagina, lib).catch(() => []) : [];
+    paginas[paginas.length - 1].imagens = imgs.length;
+    imagens.push(imgs);
+    pagina.cleanup();
+  }
+  return { paginas, imagens };
+}
+
 export async function textoDoArquivo(arquivo) {
   const nome = String(arquivo?.name || '').toLowerCase();
   if (/pdf$/.test(arquivo.type) || nome.endsWith('.pdf')) return textoDoPdf(arquivo);

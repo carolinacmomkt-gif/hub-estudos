@@ -3,23 +3,34 @@
 // por vez), marcar as etapas e baixar PDF/PPTX. Tudo fica em config "cronograma-r7:<cliente>:<início>".
 
 import { obterEstado, atualizarEstado } from './estado.js';
-import { listar, salvar, excluir } from './persistencia.js';
-import { chamar } from './funcoes.js';
+import { listar, salvar, excluir, puxarTabela } from './persistencia.js';
+import { chamar, dispararSegundoPlano } from './funcoes.js';
 import { confirmar } from './confirmar.js';
-import { prepararMedidas, medir, pptxDeSlides, pdfDeSlides } from './slides-arquivos.js';
+import { prepararMedidas, medir, pptxDeSlides, pdfDeSlides, canvasDoSlide } from './slides-arquivos.js';
 import { baixar } from './exportar-caderno.js';
 import { clientesR7, fichaDe } from './views-r7.js';
+import { conferirFichaR7, fichaEmTexto } from './dados-r7.js';
 import { contextoDoCliente, cronogramaAberto } from './views-cronograma.js';
 import {
   chaveDoCronograma, cronogramaVazio, normalizarCronograma, pecaVazia, pedidoParaClaude, lerRespostaDoClaude, oQueFalta,
   textoWhatsApp, textoParaTrello, entregaDoDesigner, pedidoDasArtesDosStories, textoDaEntrega, montarSlidesDoCronograma, nomeDoArquivoDoCronograma,
-  lerDocumentoDaQuinzena, cronogramaDoDocumento, cronogramasDoCliente, FORMATO_DO_DOCUMENTO,
+  lerDocumentoDaQuinzena, cronogramaDoDocumento, cronogramasDoCliente, FORMATO_DO_DOCUMENTO, lerCronogramaPronto, assinaturaDoCronograma,
 } from './dados-cronograma.js';
-import { textoDoArquivo, imagensDosArquivos, guardarArte, apagarArte, artesDoCronograma, urlDaArte, carregarArte } from './cronograma-importar.js';
+import { textoDoArquivo, paginasDoPdf, imagensDosArquivos, guardarArte, apagarArte, artesDoCronograma, urlDaArte, carregarArte } from './cronograma-importar.js';
 
 let app; // { renderizar, avisoCurto }
 
-export function ligarCronograma(funcoes) { app = funcoes; }
+export function ligarCronograma(funcoes) {
+  app = funcoes;
+  // Lembra quais peças estão abertas (o redesenho depois de salvar um campo não fecha a peça).
+  document.addEventListener('toggle', (e) => {
+    const d = e.target;
+    if (!(d instanceof HTMLDetailsElement) || !d.classList.contains('cron-peca')) return;
+    const abertas = new Set(obterEstado().cronAbertas || []);
+    if (d.open) abertas.add(d.dataset.pecaId); else abertas.delete(d.dataset.pecaId);
+    atualizarEstado({ cronAbertas: [...abertas] });
+  }, true);
+}
 
 const cliente = (chave) => clientesR7(obterEstado()).find((c) => c.chave === chave) || null;
 const avisar = (t) => app.avisoCurto(t);
@@ -139,19 +150,20 @@ async function baixarArquivo(alvo) {
 // O documento da quinzena: lido no aparelho; vira cronograma novo ou atualiza o do mesmo período.
 const hojeIso = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
 
-async function aplicarDocumento(chave, textoDoc, nomeArquivo) {
+// Grava o cronograma lido (do documento ou do PDF pronto): novo, ou junta ao do mesmo período.
+async function gravarDocumento(chave, doc) {
   const c = cliente(chave);
-  if (!c) return;
-  const doc = lerDocumentoDaQuinzena(textoDoc, { hoje: hojeIso() });
-  if (!doc.lidas) {
-    atualizarEstado({ cronDocSemLeitura: { cliente: chave, nome: nomeArquivo }, cronDocTexto: textoDoc });
-    app.renderizar();
-    return;
-  }
   const existentes = cronogramasDoCliente(obterEstado().config || [], chave);
   const alvo = existentes.find((x) => x.inicio <= doc.fim && x.fim >= doc.inicio) || null;
-  const { cron, novas } = cronogramaDoDocumento(doc, alvo, { cliente: chave, nome: c.nome });
+  const { cron, novas } = cronogramaDoDocumento(doc, alvo, { cliente: chave, nome: c?.nome });
   await gravar(chave, cron);
+  // Ficha sem assinatura: vem a do cronograma (o resto da ficha não muda).
+  const assinatura = assinaturaDoCronograma(cron);
+  if (c && assinatura && !fichaDe(c).identificacao.assinatura) {
+    const r7 = conferirFichaR7({ ...fichaDe(c), identificacao: { ...fichaDe(c).identificacao, assinatura } });
+    await salvar('clientes_trabalho', { ...c, dados: { ...(c.dados || {}), r7, ficha: fichaEmTexto(c.nome, r7) } });
+    atualizarEstado({ clientesTrabalho: await listar('clientes_trabalho') });
+  }
   if (alvo && alvo.inicio !== cron.inicio) {
     const velha = (await listar('config')).find((l) => l.chave === chaveDoCronograma(chave, alvo.inicio) && !l.excluido_em);
     if (velha) await excluir('config', velha.id);
@@ -160,7 +172,13 @@ async function aplicarDocumento(chave, textoDoc, nomeArquivo) {
   atualizarEstado({ cronDocSemLeitura: null, cronDocTexto: '' });
   location.hash = `#r7/cronograma:${chave}:${cron.inicio}`;
   app.renderizar();
-  avisar(alvo ? `Cronograma atualizado: ${doc.lidas} ${doc.lidas === 1 ? 'peça lida' : 'peças lidas'}${novas ? `, ${novas} ${novas === 1 ? 'nova' : 'novas'}` : ''}.` : `Cronograma montado com ${doc.lidas} ${doc.lidas === 1 ? 'peça' : 'peças'}. Confira o que falta.`);
+  const artes = doc.pecas.reduce((n, p) => n + (p.artes?.length || 0), 0);
+  avisar(`${alvo ? 'Cronograma atualizado' : 'Cronograma montado'}: ${doc.lidas} ${doc.lidas === 1 ? 'peça' : 'peças'}${novas && alvo ? ` (${novas} ${novas === 1 ? 'nova' : 'novas'})` : ''}${artes ? `, ${artes} ${artes === 1 ? 'arte' : 'artes'}` : ''}. Confira o que falta.`);
+}
+
+function semLeitura(chave, textoDoc, nomeArquivo) {
+  atualizarEstado({ cronDocSemLeitura: { cliente: chave, nome: nomeArquivo }, cronDocTexto: textoDoc, cronOcupado: '' });
+  app.renderizar();
 }
 
 async function subirDocumento(input) {
@@ -168,12 +186,37 @@ async function subirDocumento(input) {
   const chave = input.dataset.cliente;
   input.value = '';
   if (!arquivo) return;
-  atualizarEstado({ cronOcupado: 'Lendo o documento…' });
+  atualizarEstado({ cronOcupado: 'Lendo o documento…', cronDocSemLeitura: null });
   app.renderizar();
   try {
-    const textoDoc = await textoDoArquivo(arquivo);
+    const hoje = hojeIso();
+    let textoDoc = '';
+    if (/pdf$/i.test(arquivo.type) || /\.pdf$/i.test(arquivo.name)) {
+      // 1) O cronograma pronto (o visual da R7), com as artes de cada página.
+      const { paginas, imagens } = await paginasDoPdf(arquivo);
+      const pronto = lerCronogramaPronto(paginas, { hoje });
+      if (pronto.lidas) {
+        atualizarEstado({ cronOcupado: 'Guardando as artes…' });
+        app.renderizar();
+        for (const p of pronto.pecas) {
+          const blobs = (p.artesDaPagina || []).map((k) => imagens[p.paginaDoPdf]?.[k]).filter(Boolean);
+          p.artes = [];
+          for (const [i, b] of blobs.entries()) p.artes.push({ caminho: await guardarArte(b, { cliente: chave, inicio: pronto.inicio, peca: p.id, n: i + 1 }), origem: 'manual' });
+        }
+        atualizarEstado({ cronOcupado: '' });
+        await gravarDocumento(chave, pronto);
+        return;
+      }
+      textoDoc = paginas.map((pg) => [...pg.linhas].sort((a, b) => a.y - b.y || a.x - b.x).map((l) => l.t).join('\n')).join('\n');
+    } else {
+      textoDoc = await textoDoArquivo(arquivo);
+    }
+    // 2) O documento no formato da Bússola ("23.11 · CARROSSEL").
+    const doc = lerDocumentoDaQuinzena(textoDoc, { hoje });
     atualizarEstado({ cronOcupado: '' });
-    await aplicarDocumento(chave, textoDoc, arquivo.name);
+    if (doc.lidas) { await gravarDocumento(chave, doc); return; }
+    // 3) Nenhum dos dois: oferece a IA (em segundo plano).
+    semLeitura(chave, textoDoc, arquivo.name);
   } catch (e) {
     atualizarEstado({ cronOcupado: '' });
     app.renderizar();
@@ -181,16 +224,34 @@ async function subirDocumento(input) {
   }
 }
 
+// A IA organiza o documento em segundo plano (pode levar alguns minutos); o app acompanha a config
+// "r7-documento:<cliente>" e monta o cronograma quando ela chega.
 async function organizarComIa(alvo) {
   const chave = alvo.dataset.cliente;
   const textoDoc = obterEstado().cronDocTexto || '';
   if (!textoDoc.trim()) return;
-  atualizarEstado({ cronOcupado: 'A IA está organizando o documento…' });
+  const pedidoEm = new Date().toISOString();
+  const r = await dispararSegundoPlano('r7-documento-background', { cliente: chave, texto: textoDoc.slice(0, 80000), hoje: hojeIso(), pedido_em: pedidoEm });
+  if (!r.ok) { avisar(r.erro); return; }
+  atualizarEstado({ cronOcupado: 'A IA está organizando o documento. Pode levar alguns minutos; pode sair desta tela.' });
   app.renderizar();
-  const r = await chamar('trabalho', { acao: 'r7-documento', cliente: chave, texto: textoDoc.slice(0, 60000), hoje: hojeIso() }).catch((e) => ({ ok: false, erro: e.message }));
-  atualizarEstado({ cronOcupado: '' });
-  if (!r?.ok || !r.documento) { app.renderizar(); avisar(r?.erro || 'A IA não respondeu agora. Tente de novo em instantes.'); return; }
-  await aplicarDocumento(chave, r.documento, obterEstado().cronDocSemLeitura?.nome || 'documento');
+  const limite = Date.now() + 8 * 60 * 1000;
+  const conferir = async () => {
+    await puxarTabela('config').catch(() => {});
+    const linha = (await listar('config')).find((l) => l.chave === `r7-documento:${chave}` && !l.excluido_em);
+    const v = linha?.valor;
+    if (v?.pedido_em === pedidoEm && v.status === 'pronto') {
+      atualizarEstado({ config: await listar('config'), cronOcupado: '' });
+      const doc = lerDocumentoDaQuinzena(v.documento, { hoje: hojeIso() });
+      if (doc.lidas) await gravarDocumento(chave, doc);
+      else { app.renderizar(); avisar('A IA devolveu o documento, mas não achei as peças. Confira o arquivo e tente de novo.'); }
+      return;
+    }
+    if (v?.pedido_em === pedidoEm && v.status === 'erro') { atualizarEstado({ cronOcupado: '' }); app.renderizar(); avisar(v.erro); return; }
+    if (Date.now() > limite) { atualizarEstado({ cronOcupado: '' }); app.renderizar(); avisar('A IA está demorando mais que o normal. Tente de novo daqui a pouco.'); return; }
+    setTimeout(conferir, 5000);
+  };
+  setTimeout(conferir, 8000);
 }
 
 // Artes anexadas à mão (imagens ou PDF): trocam as da peça, na ordem do número no nome do arquivo.
@@ -229,6 +290,53 @@ export function montarArtes() {
     if (url) { img.src = url; return; }
     carregarArte(caminho).then((u) => { if (u && img.isConnected) img.src = u; });
   });
+}
+
+// Prévia do cronograma montado (Carol, 18/11/2026: "precisa aparecer do lado, para eu ir acompanhando"):
+// as páginas do PDF como imagens. Só remonta quando o cronograma muda (e espera meio segundo depois da
+// última mudança); entre um redesenho e outro, as mesmas imagens voltam na hora.
+const previa = { marca: '', urls: [], timer: null, montando: '' };
+
+function pintarPrevia(box) {
+  if (!previa.urls.length) return;
+  box.innerHTML = previa.urls.map((u, i) => `<img src="${u}" alt="Página ${i + 1} do cronograma" width="600" height="338" loading="lazy">`).join('');
+}
+
+export function montarPrevia() {
+  const box = document.querySelector('[data-previa]');
+  if (!box) return;
+  const [chave, inicio] = box.dataset.previa.split('|');
+  const c = cliente(chave);
+  const cron = cronogramaAberto(obterEstado(), chave, inicio);
+  if (!c || !cron) return;
+  const f = fichaDe(c);
+  const opcoes = { cor: f.rotina.estilo?.corDestaque, assinatura: f.identificacao.assinatura };
+  const marcaNova = JSON.stringify([cron.nome, cron.inicio, cron.fim, cron.pecas, opcoes]);
+  if (marcaNova === previa.marca) { pintarPrevia(box); return; }
+  pintarPrevia(box);
+  if (previa.montando === marcaNova) return;
+  clearTimeout(previa.timer);
+  previa.timer = setTimeout(async () => {
+    previa.montando = marcaNova;
+    try {
+      await prepararMedidas();
+      const artes = await artesDoCronograma(cron);
+      const slides = montarSlidesDoCronograma(cron, { ...opcoes, artes }, medir);
+      const urls = [];
+      for (const sl of slides) {
+        const canvas = await canvasDoSlide(sl, 900);
+        urls.push(await new Promise((r) => canvas.toBlob((b) => r(URL.createObjectURL(b)), 'image/jpeg', 0.86)));
+      }
+      if (previa.montando !== marcaNova) { urls.forEach((u) => URL.revokeObjectURL(u)); return; }
+      previa.urls.forEach((u) => URL.revokeObjectURL(u));
+      previa.urls = urls;
+      previa.marca = marcaNova;
+      const atual = document.querySelector('[data-previa]');
+      if (atual) pintarPrevia(atual);
+    } catch { /* sem as fontes agora: tenta no próximo redesenho */ } finally {
+      if (previa.montando === marcaNova) previa.montando = '';
+    }
+  }, previa.urls.length ? 600 : 0);
 }
 
 export function cliqueCronograma(alvo) {

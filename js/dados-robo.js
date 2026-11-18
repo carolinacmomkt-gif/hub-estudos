@@ -343,3 +343,40 @@ export function briefingAnexadoNovo(lista, { cliente, nome, mes, original, texto
   const id = `${cliente}:${mes}`;
   return [...lista.filter((b) => b.id !== id), { id, cliente, nome, mes, original: String(original || '').slice(0, 160), texto: String(texto || '').slice(0, 40000), em }];
 }
+
+// ---------------------------------------------------------------------------
+// Completar a ficha de quem ela cadastrou (Carol, 18/11/2026: "só os clientes que eu colocar", com as
+// informações do "Portfolio dos Clientes" no Trello da R7 e do briefing). Só preenche campo vazio; o que
+// ela escreveu nunca é trocado. Linhas com senha, login ou acesso nunca entram.
+// ---------------------------------------------------------------------------
+
+const SEGREDO = /senha|password|login|acesso|token|e-?mail\s*:/i;
+
+export function textoDoPortfolio(roboTrello, nome) {
+  const cards = (roboTrello?.portfolio || []).filter((c) => !SEGREDO.test(c.nome) && (ehDoCliente(c.nome, nome) || ehDoCliente(c.lista, nome)));
+  return cards.map((c) => [c.nome, ...String(c.desc || '').split('\n').filter((l) => !SEGREDO.test(l))].join('\n').trim()).filter(Boolean).join('\n\n').slice(0, 4000);
+}
+
+// O que dá para tirar do texto do portfólio e do briefing: { assinatura, instagram, cores, cidade, idVisual }.
+export function dadosDoCliente(nome, { portfolio = '', briefing = '' } = {}) {
+  const reg = registroDoBriefing(portfolio.split('\n').find((l) => new RegExp(`\\b(${CONSELHOS})\\b`, 'i').test(l)) || '', nome) || registroDoBriefing(briefing, nome);
+  const insta = /(?:^|\s)@([a-z0-9_.]{3,30})\b/i.exec(portfolio)?.[1] || '';
+  const cores = [...new Set((portfolio.match(/#[0-9a-f]{6}\b/gi) || []).map((c) => c.toUpperCase()))];
+  const cidade = /cidade\s*[:\-–]\s*([^\n]{2,60})/i.exec(portfolio)?.[1]?.trim() || '';
+  return { assinatura: assinaturaDoRegistro(nome, reg), instagram: insta ? `@${insta}` : '', cores, cidade, portfolio };
+}
+
+// Ficha (dados.r7) + dados → { ficha, campos } com só os campos vazios preenchidos.
+export function completarFicha(ficha, d, { especialidade = '' } = {}) {
+  const f = JSON.parse(JSON.stringify(ficha || {}));
+  f.identificacao ||= {}; f.briefing ||= {}; f.rotina ||= {}; f.rotina.estilo ||= {};
+  const campos = [];
+  const por = (obj, k, v, rotulo) => { if (v && !String(obj[k] || '').trim()) { obj[k] = v; campos.push(rotulo); } };
+  por(f.identificacao, 'assinatura', d.assinatura, 'assinatura');
+  por(f.identificacao, 'instagram', d.instagram, '@');
+  por(f.identificacao, 'cidade', d.cidade, 'cidade');
+  por(f.identificacao, 'especialidade', especialidade, 'especialidade');
+  por(f.rotina.estilo, 'corDestaque', d.cores?.[0] || '', 'cor');
+  por(f.briefing, 'idVisual', d.portfolio ? `Do Portfolio dos Clientes (Trello da R7):\n${d.portfolio}` : '', 'portfólio do Trello');
+  return { ficha: f, campos };
+}

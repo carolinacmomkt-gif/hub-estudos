@@ -211,7 +211,8 @@ export function oQueFalta(p, { assinatura = '', voz = {}, ficha = null, diaComPo
     if (!p.tema.trim()) atencao.push('sem tema');
     if (!p.legenda.trim()) falta.push('legenda');
     else {
-      if (assinatura && !p.legenda.includes(assinatura)) falta.push('assinatura');
+      const numeroDoRegistro = (assinatura.match(/\d{4,}/) || [])[0];
+      if (assinatura && !p.legenda.includes(assinatura) && !(numeroDoRegistro && p.legenda.includes(numeroDoRegistro))) falta.push('assinatura');
       if (/[—–]/.test(p.legenda)) atencao.push('travessão');
       for (const a of checarVoz(p.legenda, voz, ficha).avisos) if (!/assinatura/i.test(a)) atencao.push(a);
     }
@@ -458,9 +459,11 @@ export function cronogramaDoDocumento(doc, cron, { cliente, nome } = {}) {
     if (alvo) {
       usadas.add(alvo.id);
       for (const campo of ['tema', 'legenda', 'slides', 'video', 'capa', 'telas', 'figurinha']) if (String(d[campo] || '').trim()) alvo[campo] = d[campo];
+      if (d.artes?.length) alvo.artes = d.artes;
       if (d.tipo === 'post' && d.formato) alvo.formato = d.formato;
     } else {
-      pecas.push({ ...d, id: `${d.id}-${Math.random().toString(36).slice(2, 6)}` });
+      const { artesDaPagina: _a, paginaDoPdf: _p, ...limpa } = d;
+      pecas.push({ ...limpa, id: `${d.id}-${Math.random().toString(36).slice(2, 6)}` });
       usadas.add(pecas[pecas.length - 1].id);
       novas += 1;
     }
@@ -867,4 +870,151 @@ export function cronogramasDoCliente(config = [], cliente) {
   return config.filter((c) => !c.excluido_em && String(c.chave).startsWith(`${PREFIXO_CRONOGRAMA}${cliente}:`))
     .map((c) => normalizarCronograma(c.valor))
     .sort((a, z) => String(z.inicio).localeCompare(String(a.inicio)));
+}
+
+// ---------------------------------------------------------------------------
+// Cronograma pronto em PDF (Carol, 18/11/2026: "anexei o modelo e não leu"): o PDF no visual da R7 (o do
+// modelo e o que a própria Bússola gera) vira o cronograma, com as artes. Cada página chega como linhas
+// com posição (x, y a partir do topo, em pontos), links e a ordem das imagens; a leitura é só pela posição.
+// ---------------------------------------------------------------------------
+
+const RE_REGISTRO = /\b(CRM|CRO|CRP|CRN|CREFITO|CREFONO|CRFA|CRF|COREN|CRBM|RQE)\b/i;
+const RE_AVISO_SAUDE = /car[aá]ter educativo/i;
+
+// Linhas de uma coluna → parágrafos (linha nova quando o espaço entre linhas passa do normal).
+function paragrafosDaColuna(linhas) {
+  if (!linhas.length) return '';
+  const passos = linhas.slice(1).map((l, i) => l.y - linhas[i].y).filter((d) => d > 0).sort((a, b) => a - b);
+  const normal = passos.length ? passos[Math.floor(passos.length / 4)] : 12;
+  const saida = [];
+  linhas.forEach((l, i) => {
+    if (i && l.y - linhas[i - 1].y > normal * 1.3) saida.push('\n');
+    else if (i) saida.push(' ');
+    saida.push(l.t.trim());
+  });
+  return saida.join('').replace(/ *\n */g, '\n').trim();
+}
+
+// A legenda: parágrafos, sem o aviso educativo; "Dr. Nome" + "Médico | CRM…" viram uma assinatura só.
+const RE_PROFISSAO = /(M[eé]dic[oa]|Cirurgi[aã]|Dentista|Psic[oó]log|Nutricionista|Fisioterapeuta|Fonoaudi[oó]log|Biom[eé]dic|Enfermeir|Farmac[eê]utic)/;
+function legendaDaColuna(linhas) {
+  const t = paragrafosDaColuna(linhas.filter((l) => !RE_AVISO_SAUDE.test(l.t)));
+  const partes = t.split('\n');
+  const ult = partes.length - 1;
+  if (ult < 0) return '';
+  const fim = partes[ult];
+  const junto = new RegExp(`^(Dra?\\.?\\s.+?)\\s+(${RE_PROFISSAO.source}.*)$`).exec(fim);
+  if (junto && RE_REGISTRO.test(fim)) partes[ult] = `${junto[1]} | ${junto[2]}`;
+  else if (ult >= 1 && RE_REGISTRO.test(fim) && /^Dra?\.?\s/.test(partes[ult - 1]) && partes[ult - 1].length < 60) partes.splice(ult - 1, 2, `${partes[ult - 1]} | ${fim}`);
+  const assinatura = RE_REGISTRO.test(partes.at(-1)) ? partes.pop() : '';
+  return [partes.join('\n\n'), assinatura].filter(Boolean).join('\n');
+}
+
+const TIPO_DO_ROTULO = (t) => {
+  const s = semAcentoMin(t);
+  if (/stor/.test(s)) return { tipo: 'story', formato: '' };
+  if (/reel|video/.test(s)) return { tipo: 'reels', formato: '' };
+  if (/carross/.test(s)) return { tipo: 'post', formato: 'carrossel' };
+  return { tipo: 'post', formato: 'estatico' };
+};
+
+// paginas: [{ largura, altura, linhas: [{ x, y, t }], links: [{ x, y, url }], imagens: n }]
+// → { nome, inicio, fim, pecas: [{ ...peca, artesDaPagina: [índices das imagens da página] }], paginaDaPeca }
+export function lerCronogramaPronto(paginas, { hoje = new Date().toISOString().slice(0, 10) } = {}) {
+  let nome = '';
+  let periodo = null;
+  const pecas = [];
+  for (const [ip, pg] of paginas.entries()) {
+    const W = pg.largura || 960;
+    const H = pg.altura || 540;
+    const linhas = [...pg.linhas].map((l) => ({ ...l, t: String(l.t || '').trim() })).filter((l) => l.t).sort((a, b) => a.y - b.y || a.x - b.x);
+    const dentro = linhas.filter((l) => l.y < H * 0.9); // sem o rodapé
+    const capa = linhas.findIndex((l) => /^cronograma de conte[uú]do$/i.test(l.t));
+    if (capa >= 0) {
+      nome = nome || linhas[capa + 1]?.t || '';
+      const p = linhas.map((l) => /(\d{1,2}) de ([a-zç]+) a (\d{1,2}) de ([a-zç]+)/i.exec(l.t)).find(Boolean);
+      if (p) periodo = p;
+      continue;
+    }
+    const tipoLinha = dentro.find((l) => l.y < H * 0.3 && /^(segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado|domingo)\s*·\s*\S/i.test(l.t));
+    const dataLinha = dentro.find((l) => l.y < H * 0.25 && l.x < W * 0.2 && /^\d{1,2}\/\d{1,2}$/.test(l.t));
+    if (!tipoLinha || !dataLinha) continue; // resumo, para aprovar
+    if (!nome) nome = (linhas.find((l) => l.y < H * 0.08 && l.x < W * 0.4)?.t || '').replace(/\b([A-ZÀ-Ú])([A-ZÀ-Ú]+)\b/g, (m, a, b) => a + b.toLowerCase());
+    const [dia, mes] = dataLinha.t.split('/').map((x) => x.padStart(2, '0'));
+    const { tipo, formato } = TIPO_DO_ROTULO(tipoLinha.t.split('·').slice(1).join(' '));
+    const tema = (dentro.find((l) => l.y > dataLinha.y - 10 && l.y < tipoLinha.y && l.x > W * 0.15) || {}).t || '';
+    const data = isoDoDia(dia, mes, hoje);
+    const p = pecaVazia(data, tipo, { id: `${data}-${tipo}-pdf${ip}`, formato: tipo === 'post' ? formato : '', modelo: 'contexto_enquete' });
+    p.tema = limpo(tema, 200);
+    if (tipo === 'story') p.figurinha = '';
+    const corpo = dentro.filter((l) => l.y > tipoLinha.y + 8);
+    const rotulo = (re) => corpo.find((l) => re.test(semAcentoMin(l.t)));
+    const leg = rotulo(/^legenda$/);
+    if (leg) p.legenda = legendaDaColuna(corpo.filter((l) => l.x >= leg.x - 4 && l.y > leg.y + 4));
+    if (tipo === 'post') {
+      const lam = rotulo(/^laminas/);
+      const limiteX = leg ? leg.x - 10 : W;
+      const area = corpo.filter((l) => l.x < limiteX && (!lam || l.y > lam.y + 4) && !/^(laminas|arte)\b/.test(semAcentoMin(l.t)));
+      const ancoras = area.filter((l) => /^\d{1,2}$/.test(l.t)).sort((a, b) => (Math.abs(a.y - b.y) > 15 ? a.y - b.y : a.x - b.x));
+      const textos = area.filter((l) => !/^\d{1,2}$/.test(l.t));
+      const porAncora = ancoras.map(() => []);
+      // Cada texto vai para a âncora da fileira logo acima dele e, nessa fileira, a da coluna em que ele começa.
+      for (const l of textos) {
+        const acima = ancoras.filter((a) => a.y <= l.y + 2);
+        if (!acima.length) continue;
+        const yFileira = Math.max(...acima.map((a) => a.y));
+        const fileira = acima.filter((a) => yFileira - a.y < 15 && a.x <= l.x + 14);
+        if (!fileira.length) continue;
+        const alvo = fileira.reduce((m, a) => (a.x > m.x ? a : m));
+        porAncora[ancoras.indexOf(alvo)].push(l);
+      }
+      const laminas = porAncora.map((ls, i) => `Slide ${String(i + 1).padStart(2, '0')} | ${i === 0 ? 'Capa' : `Card ${i}`}: ${ls.map((l) => l.t).join(' ').replace(/\s+/g, ' ').trim()}`);
+      if (formato === 'carrossel') p.slides = laminas.join('\n');
+      else if (laminas.length) p.slides = laminas.map((l) => l.replace(/^Slide \d+ \| [^:]+: /, '')).join('\n');
+      p.artesDaPagina = Array.from({ length: pg.imagens || 0 }, (_, k) => k);
+    } else if (tipo === 'reels') {
+      const cap = rotulo(/^texto da capa$/);
+      const limiteX = leg ? leg.x - 10 : W;
+      if (cap) {
+        const fim = corpo.filter((l) => l.y > cap.y + 4 && l.x < limiteX && l.x >= cap.x - 4);
+        p.capa = limpo(fim.map((l) => l.t).join(' '), 200);
+      }
+      const video = (pg.links || []).find((k) => /^https?:/i.test(k.url));
+      if (video) p.video = video.url.slice(0, 500);
+      p.artesDaPagina = pg.imagens ? [0] : [];
+    } else {
+      // Stories: "1 · GANCHO" embaixo de cada tela e, logo abaixo, o que entra por cima.
+      const funcoes = corpo.filter((l) => /^\d\s*·\s*\S/.test(l.t)).sort((a, b) => a.x - b.x);
+      const acoes = [];
+      const telas = funcoes.map((f, i) => {
+        const [, funcao] = /^\d\s*·\s*(.+)$/.exec(f.t);
+        const notas = corpo.filter((l) => l !== f && Math.abs(l.x - f.x) < 12 && l.y > f.y + 4 && l.y < f.y + 50 && !/^\d\s*·/.test(l.t)).map((l) => l.t).join(' ').trim();
+        if (/caixinha/i.test(funcao)) acoes.push('caixinha de perguntas');
+        else if (notas) acoes.push(notas.replace(/^enquete:\s*/i, 'enquete ').replace(/\s*\/\s*/g, ' / ').replace(/^repost.*$/i, 'repost do post do dia').replace(/^link.*$/i, 'link de agendamento'));
+        return `Tela ${i + 1} (${funcao.toLowerCase()}): (texto na arte)`;
+      });
+      p.telas = telas.join('\n');
+      p.figurinha = acoes.join('; ');
+      p.artesDaPagina = Array.from({ length: Math.min(pg.imagens || 0, Math.max(telas.length, pg.imagens || 0)) }, (_, k) => k);
+    }
+    p.paginaDoPdf = ip;
+    pecas.push(p);
+  }
+  const MES = (m) => String(MESES.findIndex((x) => x.startsWith(semAcentoMin(m).slice(0, 3))) + 1).padStart(2, '0');
+  const datas = pecas.map((p) => p.data).sort();
+  let inicio = periodo ? isoDoDia(periodo[1].padStart(2, '0'), MES(periodo[2]), hoje) : datas[0] || '';
+  let fim = periodo ? isoDoDia(periodo[3].padStart(2, '0'), MES(periodo[4]), hoje) : datas.at(-1) || '';
+  if (datas[0] && datas[0] < inicio) inicio = datas[0];
+  if (datas.at(-1) && datas.at(-1) > fim) fim = datas.at(-1);
+  pecas.sort((a, z) => a.data.localeCompare(z.data) || (ehStory(a) - ehStory(z)));
+  return { nome: limpo(nome, 120), inicio, fim, pecas, lidas: pecas.length };
+}
+
+// A assinatura que aparece no fim das legendas do cronograma (para a ficha que ainda não tem).
+export function assinaturaDoCronograma(cron) {
+  for (const p of cron.pecas) {
+    const ult = String(p.legenda || '').trim().split('\n').pop() || '';
+    if (RE_REGISTRO.test(ult) && ult.length < 140) return ult.trim();
+  }
+  return '';
 }

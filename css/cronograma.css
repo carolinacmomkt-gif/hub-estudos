@@ -1,10 +1,10 @@
-/* Cronograma de 15 dias da R7 (17/11/2026): escrever à esquerda, entregar à direita (em cima no celular).
-   Só tokens do tema. */
+/* Cronograma da quinzena da R7 (redesenho de 18/11/2026: "agradável, nada bagunçado").
+   Linha do tempo por dia à esquerda, entrega ao lado (embaixo do resumo no celular). Só tokens do tema. */
 
 .cron-grade {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  gap: 20px;
   align-items: start;
 }
 
@@ -20,20 +20,217 @@
   top: 16px;
 }
 
-.cron-passos {
+@media (max-width: 1000px) {
+  .cron-grade { grid-template-columns: minmax(0, 1fr); }
+  .cron-lado { position: static; }
+}
+
+/* Resumo no topo: três números e a barra */
+.cron-topo {
+  display: grid;
+  gap: 14px;
+}
+
+.cron-topo-numeros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cron-topo-numeros div {
+  display: grid;
+  gap: 2px;
+}
+
+.cron-topo-numeros strong {
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.cron-topo-numeros small {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--cor-texto-fraco);
+}
+
+.cron-topo-numeros span {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+}
+
+.cron-progresso {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cor-trilho);
+  overflow: hidden;
+}
+
+.cron-progresso span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cor-destaque);
+  transition: width 0.3s ease;
+}
+
+.cron-topo-frase {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave);
+}
+
+/* Subir: grande quando vazio, faixa discreta depois */
+.cron-vazio {
   display: grid;
   gap: 16px;
-  margin: 0;
-  padding-left: 20px;
+  max-width: 720px;
 }
 
-.cron-passos li {
+.cron-subir {
+  display: grid;
+  gap: 12px;
+}
+
+.cron-subir-grande {
+  justify-items: center;
+  padding: 40px 28px;
+  text-align: center;
+  border: 1.5px dashed var(--cor-borda);
+  background: var(--cor-superficie);
+  box-shadow: none;
+}
+
+.cron-subir-icone {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto-destaque);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.cron-subir-titulo {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.cron-subir-texto {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--cor-texto-suave);
+}
+
+.cron-subir-acoes {
+  justify-content: center;
+}
+
+.cron-faixa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cron-faixa .card-titulo {
+  margin: 0;
+}
+
+.cron-faixa .acoes {
+  margin: 0;
+}
+
+.cron-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.cron-girando {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 2px solid var(--cor-trilho);
+  border-top-color: var(--cor-destaque);
+  border-radius: 50%;
+  animation: cron-girar 0.9s linear infinite;
+}
+
+@keyframes cron-girar { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cron-girando { animation: none; }
+  .cron-progresso span { transition: none; }
+}
+
+.cron-aviso {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+  text-align: left;
+}
+
+.cron-aviso p {
+  margin: 0;
+}
+
+.cron-aviso .acoes {
+  margin: 0;
+}
+
+.cron-outras-formas {
+  justify-self: stretch;
+  text-align: left;
+}
+
+.cron-outras-formas > summary,
+.cron-mais-peca > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.cron-outras-lista {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cron-outra {
   display: grid;
   gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
 }
 
-.cron-passos li > .botao {
+.cron-outra p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave);
+}
+
+.cron-outra p strong {
+  color: var(--cor-texto);
+}
+
+.cron-outra > .botao,
+.cron-outra .acoes {
   justify-self: start;
+  margin: 0;
 }
 
 .cron-colar textarea {
@@ -41,142 +238,6 @@
   font-size: 0.85rem;
 }
 
-.cron-pecas {
-  display: grid;
-  gap: 12px;
-}
-
-.cron-peca {
-  display: grid;
-  gap: 8px;
-  border-left: 3px solid var(--cor-linha);
-}
-
-.cron-peca.cron-pronta { border-left-color: var(--cor-sucesso, var(--cor-destaque)); }
-.cron-peca.cron-falta { border-left-color: var(--urg-hoje-borda, var(--cor-destaque)); }
-.cron-peca.cron-atencao { border-left-color: var(--urg-semana, var(--cor-destaque)); }
-
-.cron-peca-topo {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.cron-peca-titulo {
-  margin: 0;
-  font-size: 1rem;
-  letter-spacing: 0.02em;
-}
-
-.cron-peca-tipo {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.cron-peca-tipo select {
-  min-height: var(--toque);
-  max-width: 100%;
-}
-
-.cron-falta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-}
-
-.cron-falta:empty { display: none; }
-
-.cron-chip {
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: var(--cor-superficie-2);
-  color: var(--cor-texto);
-  font-size: 0.8rem;
-}
-
-.cron-chip-atencao {
-  color: var(--cor-texto-suave);
-}
-
-.cron-ok {
-  color: var(--cor-texto-destaque);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.cron-stories {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: 0 12px;
-}
-
-.cron-peca-acoes:empty { display: none; }
-
-.cron-periodo {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.cron-contagem {
-  margin: 0 0 8px;
-}
-
-.cron-contagem strong {
-  font-size: 1.6rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.cron-etapas small,
-.cron-outros small {
-  display: block;
-  color: var(--cor-texto-suave);
-  font-weight: 400;
-}
-
-.cron-outros li {
-  display: grid;
-  gap: 2px;
-}
-
-.cron-saidas {
-  flex-wrap: wrap;
-}
-
-.r7-cliente-cron {
-  color: var(--cor-texto-destaque);
-  font-size: 0.85rem;
-}
-
-.cron-mais-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
-  gap: 0 12px;
-  align-items: end;
-}
-
-@media (max-width: 1000px) {
-  .cron-grade { grid-template-columns: minmax(0, 1fr); }
-  .cron-lado { position: static; order: -1; }
-}
-
-.cron-checklist {
-  margin: 12px 0;
-}
-
-.cron-checklist summary {
-  display: flex;
-  align-items: center;
-  min-height: var(--toque);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Subir o documento e anexar artes (17/11/2026) */
 .cron-arquivo {
   position: relative;
   overflow: hidden;
@@ -192,30 +253,234 @@
 }
 
 .cron-arquivo:focus-within {
-  outline: 2px solid var(--cor-foco, var(--cor-destaque));
+  outline: 2px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
-.cron-subir .aviso-inline {
-  margin-top: 12px;
+.cron-desligado {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Linha do tempo */
+.cron-dias {
+  display: grid;
+  gap: 0;
+}
+
+.cron-dia {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.cron-dia:first-child {
+  border-top: 0;
+}
+
+.cron-dia-data {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding-top: 10px;
+}
+
+.cron-dia-data strong {
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.cron-dia-data span {
+  font-size: 0.8rem;
+  color: var(--cor-texto-fraco);
+}
+
+.cron-dia-pecas {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Peça: fechada mostra o essencial; aberta, os campos */
+.cron-peca {
+  min-width: 0;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-card);
+}
+
+.cron-peca[open] {
+  border-color: var(--cor-borda);
+}
+
+.cron-peca-resumo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "tipo tema status" "artes artes artes";
+  align-items: center;
+  gap: 10px 12px;
+  min-height: var(--toque);
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.cron-peca-resumo::-webkit-details-marker {
+  display: none;
+}
+
+.cron-tipo {
+  grid-area: tipo;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.cron-tipo-carrossel,
+.cron-tipo-estatico,
+.cron-tipo-post,
+.cron-tipo-reels {
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto-destaque);
+}
+
+.cron-peca-tema {
+  grid-area: tema;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cron-status-peca {
+  grid-area: status;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  color: var(--cor-texto-suave);
+}
+
+.cron-status-peca::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--cor-texto-fraco);
+  vertical-align: 1px;
+}
+
+.cron-status-peca.cron-ok::before { background: var(--cor-sucesso); }
+.cron-status-peca.cron-falta::before { background: var(--cor-destaque); }
+
+.cron-status-peca.cron-falta {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cron-miniaturas,
+.cron-sem-arte {
+  grid-area: artes;
+}
+
+.cron-miniaturas {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cron-miniaturas img {
+  flex: none;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--cor-superficie-2);
+}
+
+.cron-miniaturas small {
+  color: var(--cor-texto-fraco);
+}
+
+.cron-sem-arte {
+  font-size: 0.8rem;
+  color: var(--cor-texto-fraco);
+}
+
+.cron-peca-corpo {
+  display: grid;
+  gap: 16px;
+  padding: 4px 18px 18px;
+}
+
+.cron-campos {
+  display: grid;
+  gap: 4px;
+}
+
+.cron-formato {
+  max-width: 240px;
+}
+
+.cron-conferir-lista {
+  display: grid;
+  gap: 6px;
   padding: 12px 14px;
   border-radius: var(--raio);
   background: var(--cor-superficie-2);
 }
 
-.cron-subir .aviso-inline p {
-  margin: 0 0 8px;
+.cron-conferir-lista p {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+.cron-conferir-lista ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
 }
 
 .cron-artes {
-  margin: 12px 0 4px;
+  display: grid;
+  gap: 10px;
+}
+
+.cron-artes-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cron-artes-topo .acoes {
+  margin: 0;
+}
+
+.cron-artes .campo-ajuda {
+  margin: 0;
 }
 
 .cron-artes-lista {
   display: flex;
-  gap: 8px;
-  margin: 8px 0;
-  padding: 0;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 4px;
   list-style: none;
   overflow-x: auto;
 }
@@ -223,7 +488,7 @@
 .cron-artes-lista li {
   display: grid;
   justify-items: center;
-  gap: 2px;
+  gap: 4px;
   flex: none;
 }
 
@@ -239,7 +504,255 @@
   font-variant-numeric: tabular-nums;
 }
 
-.cron-auto,
-.r7-auto {
-  border-left: 3px solid var(--cor-destaque);
+.cron-peca-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cron-link {
+  min-height: var(--toque);
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.cron-link:hover {
+  color: var(--cor-texto);
+}
+
+.cron-tirar {
+  margin-left: auto;
+}
+
+.cron-mais-peca {
+  padding-left: 88px;
+}
+
+.cron-mais-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+  align-items: end;
+  max-width: 520px;
+}
+
+/* Entregar */
+.cron-entregar {
+  display: grid;
+  gap: 14px;
+}
+
+.cron-entregar .card-titulo {
+  margin: 0;
+}
+
+.cron-etapas {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cron-etapas .campo-marcar span {
+  display: grid;
+  gap: 1px;
+}
+
+.cron-etapas small {
+  color: var(--cor-texto-fraco);
+  font-size: 0.8rem;
+}
+
+.cron-baixar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.cron-copiar {
+  display: grid;
+  margin: -4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cron-copiar .cron-link {
+  text-align: left;
+}
+
+.cron-checklist summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--toque);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cron-periodos summary {
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  margin: 0;
+  cursor: pointer;
+}
+
+.cron-outros {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.cron-outros li {
+  display: grid;
+}
+
+.cron-outros small {
+  color: var(--cor-texto-fraco);
+}
+
+.cron-periodo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+}
+
+.cron-novo summary {
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+/* Celular */
+@media (max-width: 700px) {
+  .cron-dia {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .cron-dia-data {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 0;
+  }
+
+  .cron-dia-data strong {
+    font-size: 1.2rem;
+  }
+
+  .cron-peca-resumo {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "tipo status" "tema tema" "artes artes";
+    padding: 14px 16px;
+  }
+
+  .cron-status-peca {
+    justify-self: end;
+  }
+
+  .cron-peca-tema {
+    white-space: normal;
+  }
+
+  .cron-peca-corpo {
+    padding: 4px 16px 16px;
+  }
+
+  .cron-mais-peca {
+    padding-left: 0;
+  }
+
+  .cron-subir-grande {
+    padding: 28px 18px;
+  }
+
+  .cron-topo-numeros strong {
+    font-size: 1.4rem;
+  }
+
+  .cron-miniaturas img.cron-sobra {
+    display: none;
+  }
+}
+
+/* Etapas na linha do topo e a prévia ao lado (18/11/2026) */
+.cron-etapas-linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.cron-topo-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  margin: -6px 0 -10px;
+}
+
+.cron-grade {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+}
+
+.cron-previa {
+  display: grid;
+  gap: 10px;
+}
+
+.cron-previa-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cron-previa-topo .card-titulo {
+  margin: 0;
+}
+
+.cron-previa .campo-ajuda {
+  margin: 0;
+}
+
+.cron-previa-slides {
+  display: grid;
+  gap: 10px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+
+.cron-previa-slides img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+.cron-ir-previa {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .cron-grade { grid-template-columns: minmax(0, 1fr); }
+  .cron-previa-slides { max-height: none; overflow: visible; }
+  .cron-ir-previa { display: inline-flex; align-items: center; }
 }

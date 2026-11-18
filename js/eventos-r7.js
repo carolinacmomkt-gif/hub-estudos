@@ -4,8 +4,8 @@
 
 import { obterEstado, atualizarEstado } from './estado.js';
 import { listar, salvar, excluir } from './persistencia.js';
-import { rodarAutomaticoR7 } from './r7-automatico.js';
-import { montarArtes } from './eventos-cronograma.js';
+import { rodarAutomaticoR7, completarFichas } from './r7-automatico.js';
+import { montarArtes, montarPrevia } from './eventos-cronograma.js';
 import { chamar, dispararSegundoPlano } from './funcoes.js';
 import { rest, idDaUsuaria } from './nuvem.js';
 import { confirmar } from './confirmar.js';
@@ -30,6 +30,7 @@ const cliente = (chave) => clientesR7(obterEstado()).find((c) => c.chave === cha
 export function montarR7(parametro) {
   rodarAutomaticoR7(app);
   montarArtes();
+  montarPrevia();
   const p = parametro || '';
   if (!p.startsWith('cliente:')) return;
   const chave = p.slice(8);
@@ -118,7 +119,10 @@ async function criarCliente(form) {
   r7.identificacao.especialidade = esp;
   const novo = { chave, nome, casa: 'r7', dados: {} };
   await gravarCliente(novo, (d) => { d.r7 = r7; d.memoria = []; });
+  // Completa sozinha o que der com o briefing e o Portfolio dos Clientes no Trello (só campos vazios).
+  const completou = await completarFichas({ so: chave }).catch(() => 0);
   location.hash = `#r7/cliente:${chave}`;
+  if (completou) app.avisoCurto('Ficha completada com o briefing e o Trello da R7. Confira.');
 }
 
 async function salvarConfig(form) {
@@ -297,6 +301,10 @@ export function cliqueR7(alvo) {
       app.renderizar();
       return true;
     case 'r7-mostrar': mostrarAcesso(alvo.dataset.id); return true;
+    case 'r7-completar': {
+      completarFichas({ so: alvo.dataset.cliente }).then((n) => { app.renderizar(); app.avisoCurto(n ? 'Ficha completada com o que achei no briefing e no Trello.' : 'Não achei nada novo para completar. Confira se o nome do cliente está igual ao do Trello.'); });
+      return true;
+    }
     case 'r7-conferi': {
       const c = cliente(alvo.dataset.cliente);
       if (c) gravarCliente(c, (d) => { d.r7_auto = { ...(d.r7_auto || {}), confira: false }; });

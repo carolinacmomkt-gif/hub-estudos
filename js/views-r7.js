@@ -72,7 +72,7 @@ function telaLista(estado) {
         const feed = f.rotina.feed.map((x) => DIA(x.dia)).join(', ');
         return `
         <li><a class="card r7-cliente" href="#r7/cliente:${esc(c.chave)}">
-          <span class="r7-cliente-topo"><strong>${esc(c.nome)}</strong>${extras.has(c.chave) ? '<span class="selo r7-extra">Extra</span>' : ''}${c.dados?.r7_auto?.confira ? '<span class="selo">Pelo robô · confira</span>' : ''}</span>
+          <span class="r7-cliente-topo"><strong>${esc(c.nome)}</strong>${extras.has(c.chave) ? '<span class="selo r7-extra">Extra</span>' : ''}</span>
           <span class="campo-ajuda">${esc([esp?.nome, f.identificacao.instagram].filter(Boolean).join(' · ') || 'Especialidade a definir')}</span>
           <span class="r7-cliente-linha">${esc([f.equipe.designer && `Design: ${f.equipe.designer}`, feed && `Feed: ${feed}`, f.rotina.grupo ? `Grupo ${f.rotina.grupo}` : 'Rodízio a definir'].filter(Boolean).join(' · '))}</span>
           <span class="r7-cliente-cron">${esc(linhaDoCronograma(estado, c, f))}</span>
@@ -122,11 +122,10 @@ function telaFicha(estado, c) {
   const aba = abaAtual(estado);
   return `
     ${cabecalho(c.nome, [esp?.nome, f.identificacao.instagram].filter(Boolean).join(' · ') || 'Cliente da R7', `<a class="botao botao-secundario" href="#r7">← Clientes</a><a class="botao botao-primario" href="#r7/cronograma:${esc(c.chave)}">Cronograma</a>`)}
-    ${c.dados?.r7_auto?.confira ? `<section class="card r7-auto" aria-label="Ficha preenchida pelo robô">
-      <p><strong>Ficha preenchida pelo robô.</strong> Veio do briefing${c.dados.r7_auto.de ? ` "${esc(c.dados.r7_auto.de)}"` : ''}${f.equipe.lista ? ' e do Trello da R7' : ''}. Confira a assinatura, a especialidade e a rotina.</p>
-      <div class="acoes"><button class="botao botao-primario botao-pequeno" type="button" data-acao="r7-conferi" data-cliente="${esc(c.chave)}">Conferi</button>
-        <button class="botao botao-secundario botao-pequeno" type="button" data-acao="r7-nao-e" data-cliente="${esc(c.chave)}">Não é cliente da R7</button></div>
-    </section>` : ''}
+    <div class="card r7-completar">
+      <p class="campo-ajuda">${c.dados?.r7_auto?.preenchido?.length ? `Completado pelo briefing e pelo Trello da R7: ${esc(c.dados.r7_auto.preenchido.join(', '))}. Confira.` : 'A Bússola completa sozinha o que achar no briefing e no Portfolio dos Clientes do Trello (só o que estiver vazio).'}</p>
+      <button class="botao botao-secundario botao-pequeno" type="button" data-acao="r7-completar" data-cliente="${esc(c.chave)}">Completar pelo Trello</button>
+    </div>
     <div class="segmentado r7-abas" role="tablist" aria-label="Partes da ficha">${ABAS_R7.map(([id, nome]) => `
       <button type="button" role="tab" class="segmentado-opcao${aba === id ? ' ativo' : ''}" data-acao="r7-aba" data-valor="${id}" aria-selected="${aba === id}" aria-pressed="${aba === id}">${esc(nome)}</button>`).join('')}</div>
     <section class="card r7-secao" data-cliente="${esc(c.chave)}">
