@@ -124,9 +124,7 @@ div.segmentado.tb-abas-aprovar { display: none; }
 .tb-ficha-texto summary { cursor: pointer; min-height: var(--toque); display: flex; align-items: center; }
 .tb-rot { margin: 0 0 10px; color: var(--cor-texto-fraco); font-size: 0.72rem; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; }
 .tb-rot-meio { margin-top: 16px; }
-.tb-numeros { display: flex; flex-wrap: wrap; gap: 18px; }
-.tb-numeros b { display: block; font-size: 1.6rem; font-weight: 300; letter-spacing: -0.02em; }
-.tb-numeros small { color: var(--cor-texto-suave); font-size: 0.8rem; }
+.tb-ficha-cliente > .numeros { grid-column: 1 / -1; }
 .tb-memoria li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .tb-memoria small { display: block; color: var(--cor-texto-fraco); font-size: 0.75rem; }
 .tb-memoria-form { flex-direction: row; align-items: flex-end; gap: 8px; }

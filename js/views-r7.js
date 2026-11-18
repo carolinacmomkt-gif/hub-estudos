@@ -4,14 +4,15 @@
 // Rotas: #r7 (ou #r7/clientes), #r7/novo, #r7/cliente:<chave> e #r7/cronograma:<chave>[:<início>].
 
 import { esc } from './utilidades.js';
-import { cabecalho } from './componentes.js';
+import { cabecalho, numeros } from './componentes.js';
+import { resumoDoQueFalta } from './dados-cronograma.js';
 import { ESPECIALIDADES, GRUPOS_ESPECIALIDADE, especialidade } from './especialidades.js';
 import {
   DIAS, FORMATOS, TIPOS_VIDEO, MODELOS_STORY, ESTILO_VISUAL, ESTILO_CONTEUDO, CAMPOS_VOZ, LISTAS_VOZ,
   conferirFichaR7, contadorR7, configR7, fontesDaVoz, checarVoz,
 } from './dados-r7.js';
-import { telaCronograma, linhaDoCronograma } from './views-cronograma.js';
-import { cardSemanaR7, telaVideos, linhaDoTrello, cardRobo } from './views-robo.js';
+import { telaCronograma, linhaDoCronograma, cronogramaAberto, contextoDoCliente } from './views-cronograma.js';
+import { cardSemanaR7, semanaDaR7, telaVideos, linhaDoTrello, cardRobo } from './views-robo.js';
 import { chaveDoTrello, configPublica } from './nuvem.js';
 
 export const ABAS_R7 = [
@@ -48,38 +49,65 @@ function datalistEspecialidades() {
 // Lista
 // ---------------------------------------------------------------------------
 
+// Situação do cliente na lista: o cronograma em andamento e o quanto dele está pronto.
+function situacaoDoCliente(estado, c, f) {
+  const cron = cronogramaAberto(estado, c.chave);
+  if (!cron) return { cron: null, fracao: null, tom: 'parado', rotulo: 'sem cronograma' };
+  const r = resumoDoQueFalta(cron, contextoDoCliente(c, f));
+  const fracao = r.total ? r.prontas / r.total : 0;
+  if (cron.marcas?.enviado) return { cron, fracao: 1, tom: 'pronto', rotulo: 'enviado' };
+  if (r.total && r.prontas === r.total) return { cron, fracao, tom: 'pronto', rotulo: 'pronto' };
+  if (r.atencao || r.legendas || r.outros) return { cron, fracao, tom: 'atencao', rotulo: `${r.prontas} de ${r.total} prontas` };
+  return { cron, fracao, tom: 'andando', rotulo: 'em andamento' };
+}
+
+// Iniciais do nome para o quadradinho da linha ("Dra. Ana Exemplo" → "AE").
+function siglaDe(nome) {
+  const partes = String(nome || '').replace(/^(dra?\.?|dr\.?|cl[ií]nica)\s+/i, '').split(/\s+/).filter((p) => /^\p{L}/u.test(p));
+  return ((partes[0]?.[0] || '') + (partes.length > 1 ? partes.at(-1)[0] : '')).toUpperCase() || '·';
+}
+
 function telaLista(estado) {
   const cfg = configR7(estado.config);
   const todos = (estado.clientesTrabalho || []).filter((c) => !c.excluido_em);
   const lista = clientesR7(estado);
   const conta = contadorR7(todos, cfg.limite);
   const extras = new Set(conta.extras);
-  const DIA = (n) => DIAS.find((d) => d.n === Number(n))?.curto || '';
+  const semana = semanaDaR7(estado, lista, fichaDe);
+  const situacoes = lista.map((c) => ({ c, f: fichaDe(c), s: situacaoDoCliente(estado, c, fichaDe(c)) }));
+  const andando = situacoes.filter((x) => x.s.cron && !x.s.cron.marcas?.enviado).length;
+  const design = semana.vencidas + semana.ajustes;
+  const sub = `Ficha, rotina, voz e cronograma de cada cliente · ${andando ? `${andando} ${andando === 1 ? 'cronograma' : 'cronogramas'} em andamento` : 'nenhum cronograma em andamento'}`;
   return `
-    ${cabecalho('R7', 'Os clientes da R7 Estratégias Digitais: ficha completa, rotina de postagem, voz de cada um e os acessos guardados com segurança.', '<a class="botao botao-primario" href="#r7/novo">+ Novo cliente</a>')}
-    ${cardSemanaR7(estado, lista, fichaDe)}
-    <section class="card r7-contador" aria-label="Clientes do contrato">
-      <div>
-        <p class="r7-numero"><strong class="num">${conta.total}</strong> <span>de ${conta.limite} clientes</span></p>
-        <p class="campo-ajuda">${conta.extras.length ? `${conta.extras.length} ${conta.extras.length === 1 ? 'cliente passa' : 'clientes passam'} do contrato e ${conta.extras.length === 1 ? 'conta' : 'contam'} como extra.` : 'O contrato prevê até ' + conta.limite + '. Do ' + (conta.limite + 1) + 'º em diante, o cliente conta como extra.'}</p>
-      </div>
-      <div class="r7-barra" role="img" aria-label="${conta.dentro} de ${conta.limite}"><span style="width:${Math.min(100, Math.round((conta.dentro / conta.limite) * 100))}%"></span></div>
-    </section>
-    ${lista.length ? `
-      <ul class="r7-clientes">${lista.map((c) => {
-        const f = fichaDe(c);
-        const esp = especialidade(f.identificacao.especialidade);
-        const feed = f.rotina.feed.map((x) => DIA(x.dia)).join(', ');
-        return `
-        <li><a class="card r7-cliente" href="#r7/cliente:${esc(c.chave)}">
-          <span class="r7-cliente-topo"><strong>${esc(c.nome)}</strong>${extras.has(c.chave) ? '<span class="selo r7-extra">Extra</span>' : ''}</span>
-          <span class="campo-ajuda">${esc([esp?.nome, f.identificacao.instagram].filter(Boolean).join(' · ') || 'Especialidade a definir')}</span>
-          <span class="r7-cliente-linha">${esc([f.equipe.designer && `Design: ${f.equipe.designer}`, feed && `Feed: ${feed}`, f.rotina.grupo ? `Grupo ${f.rotina.grupo}` : 'Rodízio a definir'].filter(Boolean).join(' · '))}</span>
-          <span class="r7-cliente-cron">${esc(linhaDoCronograma(estado, c, f))}</span>
-          ${linhaDoTrello(estado, c, f) ? `<span class="r7-cliente-linha">Trello: ${esc(linhaDoTrello(estado, c, f))}</span>` : ''}
-        </a></li>`;
-      }).join('')}</ul>`
-    : `<section class="card"><p class="texto-suave">Nenhum cliente da R7 ainda. Toque em "+ Novo cliente" para começar o cadastro.</p></section>`}
+    ${cabecalho('R7', esc(sub), '<a class="botao botao-primario" href="#r7/novo">+ Novo cliente</a>')}
+    ${numeros([
+      { valor: `${conta.total} de ${conta.limite}`, rotulo: conta.extras.length ? `clientes · ${conta.extras.length} além do contrato` : 'clientes do contrato', fracao: conta.dentro / (conta.limite || 1) },
+      { valor: String(semana.linhasCron.length), rotulo: 'cronogramas começam em 10 dias' },
+      semana.videos ? { valor: String(semana.pedir), rotulo: semana.pedir === 1 ? 'cliente com vídeo para pedir' : 'clientes com vídeos para pedir', href: '#r7/videos', tom: semana.pedir ? 'alerta' : '' } : { valor: '—', rotulo: 'vídeos: ligue o robô', href: '#r7/videos' },
+      semana.trello ? { valor: String(design), rotulo: design === 1 ? 'peça vencida ou em ajuste' : 'peças vencidas ou em ajuste', tom: design ? 'alerta' : '' } : null,
+    ], 'A R7 em números')}
+    <div class="r7-lista-grade">
+      <section class="card r7-clientes-card" aria-labelledby="r7-clientes-titulo">
+        <div class="card-topo"><h2 class="card-titulo" id="r7-clientes-titulo">Clientes</h2><a class="card-link" href="#r7/videos">Demanda de vídeos</a></div>
+        ${lista.length ? `<ul class="linhas">${situacoes.map(({ c, f, s }) => {
+          const esp = especialidade(f.identificacao.especialidade);
+          const trello = linhaDoTrello(estado, c, f);
+          const detalhe = [esp?.nome || 'Especialidade a definir', s.cron && linhaDoCronograma(estado, c, f), trello && `Trello: ${trello}`].filter(Boolean).join(' · ');
+          return `
+          <li><a class="linha-item r7-cliente" href="#r7/cliente:${esc(c.chave)}">
+            <span class="linha-sigla" aria-hidden="true">${esc(siglaDe(c.nome))}</span>
+            <span class="linha-texto"><strong>${esc(c.nome)}</strong><span>${esc(detalhe)}</span></span>
+            <span class="linha-fim">
+              ${s.fracao == null ? '' : `<span class="linha-barra" aria-hidden="true"><i style="width:${Math.round(s.fracao * 100)}%"></i></span>`}
+              ${extras.has(c.chave) ? '<span class="selo r7-extra">Extra</span>' : ''}
+              <span class="selo selo-${s.tom}">${esc(s.rotulo)}</span>
+            </span>
+          </a></li>`;
+        }).join('')}</ul>`
+        : '<p class="texto-suave">Nenhum cliente da R7 ainda. Toque em "+ Novo cliente" para começar o cadastro.</p>'}
+      </section>
+      ${cardSemanaR7(estado, lista, fichaDe, semana)}
+    </div>
     <details class="card r7-config">
       <summary class="card-titulo">Ajustes da R7</summary>
       <form class="formulario" data-form="r7-config" novalidate>

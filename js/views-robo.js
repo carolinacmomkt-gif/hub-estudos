@@ -35,7 +35,8 @@ export function trelloDe(estado, c, f) {
 export const linhaDoTrello = (estado, c, f) => frasesDoTrello(trelloDe(estado, c, f));
 
 // Card "Esta semana" no topo da lista da R7.
-export function cardSemanaR7(estado, clientes, fichaDe) {
+// Os números da semana da R7 (cronogramas que começam em 10 dias, vídeos, design), usados no card e no topo.
+export function semanaDaR7(estado, clientes, fichaDe) {
   const videos = videosDaDemanda(estado.config);
   const trello = dadosDoRobo(estado.config, 'trello');
   const hoje = hojeIso();
@@ -59,6 +60,11 @@ export function cardSemanaR7(estado, clientes, fichaDe) {
   const quadros = trello?.quadros?.length || 0;
   const artes = (trello?.quadros || []).reduce((n, q) => n + (q.cartoes || []).reduce((m, c) => m + (c.anexos?.length || 0), 0), 0);
   const robo = videos || trello ? `<li><span class="r7-semana-rotulo">Robô</span><span>${[videos && `${doBriefing.length} ${doBriefing.length === 1 ? 'cliente' : 'clientes'} nos briefings`, trello && `${quadros} ${quadros === 1 ? 'quadro' : 'quadros'} no Trello`, artes && `${artes} ${artes === 1 ? 'arte' : 'artes'} dos designers`].filter(Boolean).join(' · ')}</span></li>` : '';
+  return { videos, trello, linhasCron, pedir, captar, vencidas, ajustes, robo };
+}
+
+export function cardSemanaR7(estado, clientes, fichaDe, semana = semanaDaR7(estado, clientes, fichaDe)) {
+  const { videos, trello, linhasCron, pedir, captar, vencidas, ajustes, robo } = semana;
   return `
     <section class="card r7-semana" aria-labelledby="r7-semana-titulo">
       <div class="card-topo"><h2 class="card-titulo" id="r7-semana-titulo">Esta semana</h2>

@@ -7,6 +7,7 @@ import { listar, salvar } from './persistencia.js';
 
 export const CARDS_DO_APP = [
   { id: 'proximo', nome: 'Próximo passo', tamanho: 'inteiro' },
+  { id: 'numeros', nome: 'Seu dia em números', tamanho: 'inteiro' },
   { id: 'continuar', nome: 'Continuar de onde parou (outro aparelho)', tamanho: 'inteiro' },
   { id: 'meudia', nome: 'Planejar meu dia', tamanho: '2/3' },
   { id: 'trabalho', nome: 'Comece por aqui (trabalho)', tamanho: '1/3' },

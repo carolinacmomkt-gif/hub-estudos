@@ -64,18 +64,24 @@ let app; // { renderizar, mostrarLogin, entrarNoApp }
 // Aviso rápido embaixo; com "acao" ({ rotulo, fn }) ganha um botão (ex.: Desfazer) e fica mais tempo.
 function avisoCurto(texto, acao = null) {
   const aviso = document.getElementById('aviso');
+  // O aviso sobe ao entrar e desce ao sair (design de 18/11/2026); "reduzir animações" deixa instantâneo.
+  const fechar = () => {
+    aviso.classList.add('saindo');
+    clearTimeout(avisoCurto.saida);
+    avisoCurto.saida = setTimeout(() => { aviso.hidden = true; aviso.classList.remove('saindo'); }, 180);
+  };
   aviso.innerHTML = `<span>${esc(texto)}</span>${acao ? `<button class="aviso-acao" type="button">${esc(acao.rotulo)}</button>` : ''}`;
+  clearTimeout(avisoCurto.saida);
+  aviso.classList.remove('saindo');
   aviso.hidden = false;
   if (acao) {
     aviso.querySelector('.aviso-acao').addEventListener('click', () => {
-      aviso.hidden = true;
+      fechar();
       acao.fn();
     }, { once: true });
   }
   clearTimeout(avisoCurto.tempo);
-  avisoCurto.tempo = setTimeout(() => {
-    aviso.hidden = true;
-  }, acao ? 6000 : 3500);
+  avisoCurto.tempo = setTimeout(fechar, acao ? 6000 : 3500);
 }
 
 // Marca a tela como ocupada durante uma operação, para ela não ser redesenhada no meio.

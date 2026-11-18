@@ -1,7 +1,7 @@
 // Service worker: guarda os arquivos do app para abrir rápido e funcionar sem internet.
 // Ao mudar qualquer arquivo da lista, aumente a VERSAO para o app oferecer a atualização.
 
-const VERSAO = 'hub-v124';
+const VERSAO = 'hub-v125';
 
 const ARQUIVOS = [
   './',
@@ -72,6 +72,7 @@ const ARQUIVOS = [
   './css/padroes.css',
   './css/vidro.css',
   './css/celular.css',
+  './css/organizado.css',
   './js/foco.js',
   './js/continuar.js',
   './js/confirmar.js',

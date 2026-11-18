@@ -1,0 +1,520 @@
+/*
+  Design organizado (Carol, 18/11/2026: "um design mais bonito e organizado do app todo", pela prévia aprovada).
+  Carregado por último, por cima do vidro e do celular. Só arruma a forma: as cores continuam vindo dos tokens
+  (tema, cor de destaque), e o Vidro, o menu arrumado, os modos e o Personalizar do Hoje seguem valendo.
+
+  As regras:
+  1. Toda tela com a mesma espinha: título e contexto, a ação no canto, os números, o conteúdo.
+  2. Quatro tamanhos de letra: título da tela, título do card, texto e detalhe (os números grandes à parte).
+  3. Um card por assunto, título dentro, "Ver tudo" à direita, linhas com fio leve.
+  4. Cor só onde pede atenção.
+  5. Espaço em degraus de 8 (16 entre cards, 20 dentro deles, 24 a 32 entre blocos).
+  6. Movimento curto e com a mesma curva: toque 120 ms, gaveta e aviso 220 ms, tela 300 ms.
+*/
+
+:root {
+  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-toque: 120ms;
+  --t-gaveta: 220ms;
+  --t-tela: 300ms;
+  --letra-titulo: clamp(1.6rem, 1.3rem + 1vw, 2rem);
+  --letra-card: 1rem;
+  --letra-texto: 0.95rem;
+  --letra-detalhe: 0.82rem;
+  interpolate-size: allow-keywords;
+}
+
+/* ---------------------------------------------------------------------------
+   1. Topo das telas: solto no alto; vira a barra de vidro só depois de rolar
+   --------------------------------------------------------------------------- */
+.cabecalho h1 {
+  font-size: var(--letra-titulo);
+  letter-spacing: -0.02em;
+}
+
+.cabecalho-sub {
+  margin-top: 6px;
+  font-size: var(--letra-texto);
+  color: var(--cor-texto-suave);
+}
+
+@media (min-width: 701px) {
+  .cabecalho {
+    align-items: center;
+    margin-bottom: 24px;
+    border-color: transparent;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    transition: background-color var(--t-gaveta) var(--curva), border-color var(--t-gaveta) var(--curva), box-shadow var(--t-gaveta) var(--curva), padding var(--t-gaveta) var(--curva);
+  }
+
+  body[data-rolou="sim"] .cabecalho {
+    padding-block: 12px;
+    border-color: var(--vidro-borda);
+    background: var(--vidro);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: var(--vidro-sombra);
+  }
+
+  body[data-rolou="sim"] .cabecalho h1 {
+    font-size: 1.35rem;
+  }
+
+  body[data-rolou="sim"] .cabecalho-sub {
+    display: none;
+  }
+
+  .cabecalho h1 {
+    transition: font-size var(--t-gaveta) var(--curva);
+  }
+
+  .cabecalho-principal {
+    align-self: center;
+    min-height: 0;
+  }
+
+  .cabecalho-acoes,
+  .cabecalho-busca {
+    align-self: center;
+  }
+}
+
+@media (min-width: 701px) and (prefers-reduced-transparency: reduce) {
+  body[data-rolou="sim"] .cabecalho {
+    background: var(--cor-fundo);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (min-width: 701px) {
+  html[data-vidro="nao"] .cabecalho { background: transparent; }
+  html[data-vidro="nao"] body[data-rolou="sim"] .cabecalho {
+    background: var(--cor-fundo);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Botões secundários do topo (Personalizar, Dia leve) e a lupa em tom, sem contorno */
+@media (min-width: 701px) {
+  .cabecalho-principal .botao-secundario,
+  .cabecalho-busca {
+    border-color: transparent;
+    background: var(--cor-superficie);
+    box-shadow: var(--sombra-card);
+  }
+
+  .cabecalho-principal .botao-secundario:hover,
+  .cabecalho-busca:hover {
+    background: var(--cor-superficie-2);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   2. Menu: mais enxuto, grupos discretos, item ativo claro
+   --------------------------------------------------------------------------- */
+@media (pointer: fine) {
+  .nav-lateral .nav-link {
+    min-height: 40px;
+    font-size: var(--letra-texto);
+  }
+
+  .nav-lateral .nav-link svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.nav-lateral .nav-grupos {
+  gap: 6px;
+}
+
+.nav-lateral .nav-grupo-titulo {
+  min-height: 30px;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--cor-texto-fraco);
+}
+
+.nav-lateral .marca {
+  padding-bottom: 18px;
+}
+
+.nav-lateral .marca-icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+/* ---------------------------------------------------------------------------
+   3. Cards: um por assunto, mesmo respiro, mesmo título
+   --------------------------------------------------------------------------- */
+.card {
+  padding: 20px;
+}
+
+@media (max-width: 700px) {
+  .card {
+    padding: 16px;
+  }
+}
+
+.card-topo {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.card-titulo {
+  font-size: var(--letra-card);
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+.card-link {
+  font-size: var(--letra-detalhe);
+}
+
+.painel {
+  gap: 16px;
+}
+
+/* Próximo passo: o único card preenchido da tela */
+.proximo {
+  padding: 24px 26px;
+  align-items: center;
+}
+
+.proximo-titulo {
+  font-size: clamp(1.2rem, 1.05rem + 0.6vw, 1.5rem);
+}
+
+/* Botões do topo e dos cards: altura e cantos iguais */
+.botao-pequeno {
+  min-height: 40px;
+  border-radius: var(--raio);
+}
+
+/* ---------------------------------------------------------------------------
+   4. Números do topo (componente numeros() de componentes.js)
+   --------------------------------------------------------------------------- */
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
+  gap: 16px;
+}
+
+.numero {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-card);
+  color: var(--cor-texto);
+  text-decoration: none;
+  transition: transform var(--t-toque) var(--curva), background-color var(--t-toque) var(--curva);
+}
+
+@media (hover: hover) {
+  a.numero:hover {
+    background: var(--cor-superficie-2);
+  }
+}
+
+a.numero:active {
+  transform: scale(0.97);
+}
+
+.numero-valor {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.numero-rotulo {
+  color: var(--cor-texto-suave);
+  font-size: var(--letra-detalhe);
+}
+
+.numero-barra {
+  display: block;
+  height: 6px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: var(--cor-trilho);
+  overflow: hidden;
+}
+
+.numero-barra i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cor-destaque);
+  transition: width var(--t-tela) var(--curva);
+}
+
+.numero-alerta .numero-rotulo {
+  color: var(--urg-urgente-texto);
+}
+
+/* Solta na tela, a fileira separa-se do que vem embaixo */
+.conteudo > .numeros {
+  margin-bottom: 16px;
+}
+
+/* Conteúdo: a peça em risco já diz o risco na linha de baixo; o contorno fica neutro (como no celular) */
+.tb-peca.risco {
+  border-color: var(--cor-linha);
+}
+
+/* No Hoje os números não ganham card por fora: a fileira já é o card */
+[data-bloco="numeros"] .numeros {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .numeros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .numero {
+    padding: 14px 16px;
+  }
+
+  .numero-valor {
+    font-size: 1.3rem;
+  }
+
+  .numero-barra {
+    margin-top: 8px;
+  }
+
+  /* Número que sobra sozinho na última linha ocupa a linha toda */
+  .numero:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   5. Lista em linhas (Clientes da R7, peças, pessoas): ícone, texto, situação
+   --------------------------------------------------------------------------- */
+.linhas {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linhas > li + li {
+  border-top: 1px solid var(--cor-linha);
+}
+
+.linha-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 10px 4px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--raio);
+  transition: background-color var(--t-toque) var(--curva), transform var(--t-toque) var(--curva);
+}
+
+@media (hover: hover) {
+  a.linha-item:hover {
+    background: var(--cor-superficie-2);
+  }
+}
+
+a.linha-item:active {
+  transform: scale(0.99);
+}
+
+.linha-sigla {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto-destaque);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.linha-texto {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.linha-texto strong {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linha-texto span {
+  color: var(--cor-texto-suave);
+  font-size: var(--letra-detalhe);
+}
+
+.linha-barra {
+  flex: none;
+  width: 96px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cor-trilho);
+  overflow: hidden;
+}
+
+.linha-barra i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cor-destaque);
+}
+
+.linha-fim {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .linha-barra {
+    display: none;
+  }
+
+  /* No celular a situação desce para baixo do nome, para o nome caber inteiro */
+  .linha-item {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 6px;
+  }
+
+  .linha-fim {
+    grid-column: 2;
+  }
+}
+
+/* Selo de situação: verde pronto, laranja precisa de você, azul andando */
+.selo-pronto { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso); }
+.selo-atencao { background: var(--urg-urgente-fundo); color: var(--urg-urgente-texto); }
+.selo-andando { background: var(--tb-producao-fundo); color: var(--tb-producao); }
+.selo-parado { background: var(--cor-superficie-2); color: var(--cor-texto-suave); }
+
+/* Título de seção solto entre cards ("Atrasadas", "Hoje") */
+.secao-titulo {
+  margin: 28px 0 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+}
+
+/* ---------------------------------------------------------------------------
+   6. Movimento
+   --------------------------------------------------------------------------- */
+
+/* A tela nova entra subindo de leve */
+.conteudo.tela-nova > * {
+  animation: tela-subir var(--t-tela) var(--curva);
+}
+
+@keyframes tela-subir {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+/* Toque que responde: chips, abas, links de card e botões de ícone afundam de leve */
+.chip-filtro,
+.segmentado-opcao span,
+.card-link,
+.botao-icone,
+.cabecalho-busca {
+  transition: transform var(--t-toque) var(--curva), background-color var(--t-toque) var(--curva), color var(--t-toque) var(--curva);
+}
+
+.chip-filtro:active,
+.segmentado-opcao:active span,
+.card-link:active,
+.botao-icone:active,
+.cabecalho-busca:active,
+.botao:active {
+  transform: scale(0.96);
+}
+
+/* Gavetas que abrem suaves (onde o navegador sabe animar até "auto") */
+details.card::details-content,
+details.detalhes::details-content,
+details.cron-peca::details-content,
+details.cron-outras-formas::details-content,
+details.cron-checklist::details-content,
+details.pauta-desc::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition: block-size var(--t-gaveta) var(--curva), content-visibility var(--t-gaveta) allow-discrete;
+}
+
+details.card[open]::details-content,
+details.detalhes[open]::details-content,
+details.cron-peca[open]::details-content,
+details.cron-outras-formas[open]::details-content,
+details.cron-checklist[open]::details-content,
+details.pauta-desc[open]::details-content {
+  block-size: auto;
+  overflow: visible;
+}
+
+/* Aviso que sobe ao entrar e desce ao sair */
+.aviso:not([hidden]) {
+  animation: aviso-subir var(--t-gaveta) var(--curva);
+}
+
+.aviso.saindo {
+  animation: aviso-descer 180ms ease-in forwards;
+}
+
+@keyframes aviso-subir {
+  from { opacity: 0; transform: translate(-50%, 12px) scale(0.98); }
+}
+
+@keyframes aviso-descer {
+  to { opacity: 0; transform: translate(-50%, 8px); }
+}
+
+/* Barra de progresso cresce até o valor */
+.progresso-barra {
+  transition: width var(--t-tela) var(--curva);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conteudo.tela-nova > *,
+  .aviso:not([hidden]),
+  .aviso.saindo {
+    animation-duration: 1ms;
+  }
+
+  details::details-content {
+    transition: none;
+  }
+}

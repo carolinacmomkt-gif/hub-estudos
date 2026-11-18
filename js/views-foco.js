@@ -12,7 +12,7 @@ import { camposDoInicio, blocoNoPalco, cardFimPendente } from './foco-acompanhad
 const opcoes = (lista, atual) => lista.map((o) => `<option value="${esc(o.id)}"${String(o.id) === String(atual ?? '') ? ' selected' : ''}>${esc(o.nome)}</option>`).join('');
 const fuso = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo';
 
-function hojeEsemana(estado, agora = Date.now()) {
+export function hojeEsemana(estado, agora = Date.now()) {
   const meia = new Date(agora);
   meia.setHours(0, 0, 0, 0);
   const hoje = sessoesDoPeriodo(estado, meia.getTime(), meia.getTime() + 864e5);

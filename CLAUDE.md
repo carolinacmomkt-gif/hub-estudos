@@ -18,6 +18,17 @@ App pessoal de vida, rotina e estudos (uso exclusivo da Carol), instalável como
 - **No máximo 2 avisos por dia**: 7h45 "Seu dia" e 16h45 "Fim da tarde" (só com pendência: etapa da R7 do dia e tarefas de hoje abertas; `avisoDaTarde`), pela mesma `avisos-agendado` (`45 10,19 * * *`). O aviso "post para aprovação" na hora saiu.
 - **Cor de destaque** (Configurações → Geral → Aparência; `js/dados-destaque.js` sem DOM e `js/destaque.js`): 8 tons (Areia é o padrão e não muda nada) ou uma cor própria; monta os tokens de destaque do escuro e do claro com contraste conferido (texto 4,5:1, detalhe 3:1; teste em `testes/destaque.test.mjs`), vence o `temas.css` pela especificidade (`html:root[...]`), fica pronta no aparelho (`hub.destaque.css`, aplicada em `tema-inicial.js`) e vale em todos pela config "aparencia".
 
+## Design organizado (Carol, 18/11/2026: "mais bonito e organizado, mantendo a personalização")
+
+- Pela prévia aprovada. Tudo em `css/organizado.css`, carregado por último (depois do `celular.css`); só arruma a forma, as cores seguem os tokens, e a cor de destaque, o tema, o Vidro, o menu arrumado, os modos e o Personalizar do Hoje continuam valendo.
+- **Toda tela com a mesma espinha**: título e uma linha de contexto, a ação no canto do topo, a fileira de **números** (`numeros(itens)` em `js/componentes.js`: `{ valor, rotulo, fracao?, href?, tom: 'alerta'? }`, colunas pelo número de itens, 2 no celular) e o conteúdo. Quatro tamanhos de letra (`--letra-titulo`, `--letra-card`, `--letra-texto`, `--letra-detalhe`); espaço em degraus de 8; cor só em selos de situação (`selo-pronto`, `selo-atencao`, `selo-andando`, `selo-parado`).
+- **Topo** solto no alto; vira a barra de vidro (mais baixa, sem o subtítulo) só depois de rolar (`body[data-rolou="sim"]`, em `main.js`). No Hoje, Personalizar e Dia leve foram para o topo, ao lado da lupa.
+- **Hoje**: card novo "Seu dia em números" (`numeros` em `CARDS_DO_APP`, logo depois do Próximo passo; tarefas feitas, hábitos, foco e leitura de hoje, cada um leva à sua tela). Entra pelo Personalizar como qualquer card (esconder, mover, tamanho).
+- **R7**: números (clientes do contrato, cronogramas em 10 dias, vídeos para pedir, design), os clientes em **linhas** (`.linhas` / `.linha-item`: iniciais, nome, especialidade e cronograma, barra do quanto está pronto e o selo da situação) e "Esta semana" ao lado (`semanaDaR7` em `views-robo.js`).
+- **Trabalho**: números no Conteúdo (peças da semana, com você, com o cliente, pedem atenção) e nos Clientes (lista e ficha); a peça em risco sem contorno colorido também no computador.
+- **Movimento** (`--t-toque` 120 ms, `--t-gaveta` 220 ms, `--t-tela` 300 ms, uma curva só): a tela entra subindo de leve, toque afunda em botões, chips, abas e links, gavetas (`details`) abrem suaves onde o navegador sabe animar, o aviso sobe e desce (`avisoCurto` com `.saindo`). "Reduzir animações" deixa tudo instantâneo.
+- Próximas telas pela mesma espinha, uma de cada vez.
+
 ## Regras gerais
 
 - Todo texto da interface fica em **português do Brasil**, com tom direto e acolhedor, igual à Central de Conteúdo.

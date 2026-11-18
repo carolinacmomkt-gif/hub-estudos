@@ -1,84 +1,26 @@
 /* R7 (quarta casa do Trabalho, 16/11/2026): lista de clientes com o contador do contrato e a ficha
    completa em abas. Só tokens do tema. */
 
-.r7-contador {
+/* Lista (design organizado, 18/11/2026): os números no topo, os clientes em linhas e "Esta semana" ao lado */
+.r7-lista-grade {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin: 0 0 16px;
 }
 
-.r7-numero {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+@media (max-width: 1099px) {
+  .r7-lista-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
-.r7-numero strong {
-  font-size: 2rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.r7-numero span {
-  color: var(--cor-texto-suave);
-}
-
-.r7-barra {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--cor-superficie-2);
+.r7-cliente .linha-texto span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.r7-barra span {
-  display: block;
-  height: 100%;
-  background: var(--cor-destaque);
-}
-
-.r7-clientes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: 12px;
-  margin: 16px 0;
-  padding: 0;
-  list-style: none;
-}
-
-.r7-clientes li {
-  display: flex;
-}
-
-.r7-cliente {
-  display: grid;
-  gap: 4px;
-  flex: 1;
-  margin: 0;
-  color: inherit;
-  text-decoration: none;
-}
-
-.r7-cliente:hover,
-.r7-cliente:focus-visible {
-  border-color: var(--cor-destaque);
-}
-
-.r7-cliente-topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-}
-
-.r7-cliente-topo strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.r7-cliente-linha {
-  color: var(--cor-texto-suave);
-  font-size: 0.85rem;
 }
 
 .r7-extra {
@@ -284,6 +226,35 @@ input[type="color"][name="estilo-cor"] {
 
 .r7-semana-lista small {
   color: var(--cor-texto-suave);
+}
+
+/* Ao lado da lista, a coluna é estreita: rótulo em cima, texto embaixo */
+.r7-lista-grade .r7-semana-lista {
+  gap: 0;
+}
+
+.r7-lista-grade .r7-semana-lista li {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 10px 0;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.r7-lista-grade .r7-semana-lista li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.r7-lista-grade .r7-semana-rotulo {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+}
+
+.r7-lista-grade .r7-semana .card-topo {
+  flex-wrap: wrap;
+  gap: 4px 12px;
 }
 
 .r7-videos-grade {

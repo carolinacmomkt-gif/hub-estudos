@@ -232,7 +232,7 @@ export function renderizar({ mudouDeTela = false } = {}) {
     conteudo.classList.add('tela-nova');
     // Tira a classe logo depois: um redesenho por fora não pode fazer a tela piscar de novo.
     clearTimeout(renderizar.entrada);
-    renderizar.entrada = setTimeout(() => conteudo.classList.remove('tela-nova'), 260);
+    renderizar.entrada = setTimeout(() => conteudo.classList.remove('tela-nova'), 340);
     window.scrollTo(0, 0);
     conteudo.querySelector('h1')?.focus({ preventScroll: true });
     // Atalhos do ícone e do teclado (ex.: #tarefas/nova): já vai até o campo certo.
@@ -425,6 +425,11 @@ ligarAjusteDaTela();
 let ultimaRolagem = 0;
 window.addEventListener('scroll', () => {
   const y = window.scrollY;
+  // O topo da tela vira a barra de vidro só depois de rolar (design de 18/11/2026); no alto ele fica solto.
+  if ((y > 12) !== (document.body.dataset.rolou === 'sim')) {
+    if (y > 12) document.body.dataset.rolou = 'sim';
+    else delete document.body.dataset.rolou;
+  }
   if (Math.abs(y - ultimaRolagem) < 8) return;
   const desce = y > ultimaRolagem && y > 120;
   if (desce !== (document.body.dataset.rolando === 'baixo')) {

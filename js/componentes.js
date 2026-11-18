@@ -31,6 +31,22 @@ export function cabecalho(titulo, subtitulo = '', acao = '') {
     </header>`;
 }
 
+// Fileira de números do topo das telas (design de 18/11/2026): cada um com o valor grande,
+// o que ele conta e, se tiver, a barra e o link para a tela. Itens vazios ficam de fora.
+export function numeros(itens, rotulo = 'Resumo em números') {
+  const lista = itens.filter(Boolean);
+  if (!lista.length) return '';
+  return `<div class="numeros" role="list" aria-label="${esc(rotulo)}" style="--n: ${lista.length}">${lista.map((n) => {
+    const pct = n.fracao == null ? null : Math.round(Math.min(1, Math.max(0, n.fracao)) * 100);
+    const tag = n.href ? 'a' : 'div';
+    return `<${tag} class="numero${n.tom ? ` numero-${esc(n.tom)}` : ''}" role="listitem"${n.href ? ` href="${esc(n.href)}"` : ''}>
+      <strong class="numero-valor">${esc(n.valor)}</strong>
+      <span class="numero-rotulo">${esc(n.rotulo)}</span>
+      ${pct == null ? '' : `<span class="numero-barra" aria-hidden="true"><i style="width:${pct}%"></i></span>`}
+    </${tag}>`;
+  }).join('')}</div>`;
+}
+
 export function barraProgresso(fracao, rotulo) {
   const pct = Math.round(Math.min(1, Math.max(0, fracao)) * 100);
   return `

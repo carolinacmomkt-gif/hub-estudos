@@ -13,7 +13,12 @@ import { cardHabitosHoje } from './views-habitos.js';
 import { cardMeuDia } from './views-dia.js';
 import { cardDemandas } from './views-demandas.js';
 import { cardFraseHoje, cardSonhoHoje, cardFimDeSemanaHoje } from './views-metas.js';
-import { cabecalho, barraProgresso } from './componentes.js';
+import { cabecalho, barraProgresso, numeros } from './componentes.js';
+import { hojeEsemana } from './views-foco.js';
+import { tarefasDeHoje } from './dados-tarefas.js';
+import { habitosDoDia } from './dados-habitos.js';
+import { leituraDe, minutosNoDia } from './dados-leitura.js';
+import { textoMinutos } from './dados-resumo.js';
 import { cardCaixaEntrada } from './views-criar.js';
 import { cardPlano } from './views-plano.js';
 import { blocosDoInicio, nomeDoBloco, TAMANHOS, TIPOS_PROPRIOS, aparelhoDoInicio } from './inicio-layout.js';
@@ -376,6 +381,7 @@ export function renderInicio(estado) {
 
   const doApp = {
     proximo: () => cardProximoPasso(escolherProximoPasso(dados, agora)),
+    numeros: () => (estado.usandoExemplo ? '' : cardNumerosHoje(estado, agora)),
     continuar: () => (estado.usandoExemplo ? '' : cardContinuar(estado, agora)),
     meudia: () => (estado.usandoExemplo ? '' : cardMeuDia(estado, agora)),
     trabalho: () => cardTrabalhoHoje(estado, agora),
@@ -411,8 +417,7 @@ export function renderInicio(estado) {
   const diaLeve = !estado.usandoExemplo && !editando && emDiaLeve(estado.config, hojeIsoLocal);
   if (diaLeve) {
     return `
-      ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
-      <div class="acoes-topo">${botaoDiaLeve(true)}</div>
+      ${cabecalho(saudacao(dados.nome, new Date(agora)), sub, botaoDiaLeve(true))}
       <div class="painel painel-leve">
         <div class="bloco tam-inteiro" data-bloco="dialeve"><div class="bloco-conteudo">${cardDiaLeve(estado, hojeIsoLocal)}</div></div>
         ${[['agenda', doApp.agenda], ['demandas', doApp.demandas]].map(([id, fn]) => { const c = fn(); return c ? `<div class="bloco tam-metade" data-bloco="${id}"><div class="bloco-conteudo">${c}</div></div>` : ''; }).join('')}
@@ -437,9 +442,26 @@ export function renderInicio(estado) {
   }).join('');
 
   return `
-    ${cabecalho(saudacao(dados.nome, new Date(agora)), sub)}
-    ${editando ? painelPersonalizar(blocos, proprios) : `<div class="acoes-topo"><button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar</button>${estado.usandoExemplo ? '' : botaoDiaLeve(false)}${modoAtual() !== 'tudo' ? `<span class="chip-modo">Modo ${esc(nomeDoModo())} <button class="botao-icone botao-icone-p" type="button" data-acao="modo-tudo" aria-label="Voltar a mostrar tudo" title="Mostrar tudo">×</button></span>` : ''}</div>`}
+    ${cabecalho(saudacao(dados.nome, new Date(agora)), sub, editando ? '' : `<button class="botao botao-secundario botao-pequeno" type="button" data-acao="inicio-personalizar">Personalizar</button>${estado.usandoExemplo ? '' : botaoDiaLeve(false)}`)}
+    ${editando ? painelPersonalizar(blocos, proprios) : modoAtual() !== 'tudo' ? `<div class="acoes-topo"><span class="chip-modo">Modo ${esc(nomeDoModo())} <button class="botao-icone botao-icone-p" type="button" data-acao="modo-tudo" aria-label="Voltar a mostrar tudo" title="Mostrar tudo">×</button></span></div>` : ''}
     <div class="painel${editando ? ' painel-editando' : ''}">${html}</div>`;
+}
+
+// Seu dia em números (18/11/2026): tarefas, hábitos, foco e leitura de hoje, cada um levando à sua tela.
+function cardNumerosHoje(estado, agora) {
+  const hoje = dataLocal(agora);
+  const t = tarefasDeHoje(estado.tarefas, hoje);
+  const totalT = t.hoje.length + t.atrasadas.length + t.feitas.length;
+  const h = habitosDoDia(estado.habitos, estado.habitoRegistros, hoje);
+  const { minHoje } = hojeEsemana(estado, agora);
+  const leitura = leituraDe(estado.config);
+  const lidos = minutosNoDia(leitura, hoje);
+  return numeros([
+    { valor: totalT ? `${t.feitas.length} de ${totalT}` : '0', rotulo: totalT ? 'tarefas de hoje feitas' : 'tarefas para hoje', fracao: totalT ? t.feitas.length / totalT : null, href: '#tarefas', tom: t.atrasadas.length ? 'alerta' : '' },
+    h.total ? { valor: `${h.feitos} de ${h.total}`, rotulo: 'hábitos de hoje', fracao: h.feitos / h.total, href: '#habitos' } : null,
+    { valor: textoMinutos(minHoje), rotulo: 'de foco hoje', href: '#foco' },
+    { valor: textoMinutos(lidos), rotulo: `de leitura · meta ${textoMinutos(leitura.metaMin)}`, fracao: lidos / (leitura.metaMin || 1), href: '#biblioteca' },
+  ], 'Seu dia em números');
 }
 
 // Comece por aqui (trabalho): até 3 coisas da agência e a tese do dia, só em dia de semana.

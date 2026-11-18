@@ -1,7 +1,7 @@
 // Grupo Trabalho: Conteúdo (#conteudo e #conteudo/<id>) e Clientes (#clientes e #clientes/<chave>), só
 // acompanhamento (Aprovar e Criar saíram do menu em 17/11/2026). Regras em dados-trabalho.js.
 
-import { cabecalho } from './componentes.js';
+import { cabecalho, numeros } from './componentes.js';
 import { icone } from './icones.js';
 import { esc } from './utilidades.js';
 import { parametroDe, mesPadrao, nomeDoMes } from './dados-relatorio.js';
@@ -136,9 +136,22 @@ export function renderConteudo(estado) {
   const fim = somarDias(inicio, 6);
   const daSemana = pecas.filter((p) => p.data && p.data >= inicio && p.data <= fim);
   const atencao = riscos(pecas, hoje).length + radar(pecas, hoje).length;
-  const sub = `${visao === 'semana' ? `Semana de ${diaMes(inicio)} a ${diaMes(fim)} · ` : ''}${daSemana.length} ${daSemana.length === 1 ? 'peça' : 'peças'}${atencao ? ` · ${atencao} ${atencao === 1 ? 'pede' : 'pedem'} atenção` : ''}`;
+  const sub = visao === 'semana' ? `Semana de ${diaMes(inicio)} a ${diaMes(fim)}` : 'Todas as peças pela etapa, das próximas às da semana passada';
+  const etapas = { voce: 0, cliente: 0, design: 0 };
+  for (const p of daSemana) {
+    const e = etapaDaPeca(p);
+    if (e === 'voce' || e === 'agendar') etapas.voce += 1;
+    else if (e === 'cliente') etapas.cliente += 1;
+    else if (e === 'design') etapas.design += 1;
+  }
   return `
     ${cabecalho('Conteúdo', esc(sub))}
+    ${numeros([
+      { valor: String(daSemana.length), rotulo: visao === 'semana' ? 'peças nesta semana' : 'peças na semana atual' },
+      { valor: String(etapas.voce), rotulo: 'com você', tom: etapas.voce ? 'alerta' : '' },
+      { valor: String(etapas.cliente), rotulo: 'com o cliente' },
+      { valor: String(atencao), rotulo: atencao === 1 ? 'pede atenção' : 'pedem atenção', tom: atencao ? 'alerta' : '' },
+    ], 'O conteúdo em números')}
     <div class="acoes cal-acoes tb-acoes">
       <div class="segmentado" role="tablist" aria-label="Visão">${[['semana', 'Semana'], ['lista', 'Lista']].map(([id, nome]) => `
         <button type="button" role="tab" data-acao="tb-visao" data-valor="${id}" aria-selected="${visao === id}" aria-pressed="${visao === id}">${nome}</button>`).join('')}</div>
@@ -358,7 +371,13 @@ export function renderClientes(estado) {
       </a>`).join('')}`;
   }).join('')}</nav>`;
   return `
-    ${cabecalho(aberta ? aberta.cliente.nome : 'Clientes', aberta ? esc([nomeCasa(aberta.casa), aberta.cliente.dados?.nicho, aberta.cliente.dados?.instagram, (aberta.cliente.dados?.servicos || []).join(', ')].filter(Boolean).join(' · ')) : `${visoes.length} clientes · ${visoes.filter((v) => v.saude === 'urgente').length} urgentes`)}
+    ${cabecalho(aberta ? aberta.cliente.nome : 'Clientes', aberta ? esc([nomeCasa(aberta.casa), aberta.cliente.dados?.nicho, aberta.cliente.dados?.instagram, (aberta.cliente.dados?.servicos || []).join(', ')].filter(Boolean).join(' · ')) : 'A saúde de cada cliente pela semana de conteúdo.')}
+    ${aberta ? '' : numeros([
+      { valor: String(visoes.length), rotulo: 'clientes' },
+      { valor: String(visoes.filter((v) => v.saude === 'urgente').length), rotulo: 'urgentes', tom: visoes.some((v) => v.saude === 'urgente') ? 'alerta' : '' },
+      { valor: String(visoes.filter((v) => v.saude === 'atencao').length), rotulo: 'pedem atenção' },
+      { valor: String(visoes.filter((v) => v.saude === 'parado').length), rotulo: 'parados' },
+    ], 'Os clientes em números')}
     <div class="acoes cal-acoes tb-acoes">
       ${aberta ? '' : chipsCasa(estado)}
       ${aberta ? `<a class="botao botao-secundario botao-pequeno tb-voltar-lista" href="#clientes">← Clientes</a>` : ''}
@@ -379,11 +398,12 @@ function fichaDoCliente(estado, v, pecas, hoje) {
   const memoria = v.cliente.dados?.memoria || [];
   const feedbacks = doCliente.filter((p) => p.dados?.feedback).slice(0, 3);
   return `<div class="tb-ficha-cliente">
-    <section class="card"><h2 class="tb-rot">Esta semana</h2>
-      <div class="tb-numeros">
-        <span><b>${v.daSemana}</b><small>peças</small></span><span><b>${v.conta.voce}</b><small>com você</small></span>
-        <span><b>${v.conta.cliente}</b><small>com o cliente</small></span><span><b>${String(ritmo(doCliente, hoje)).replace('.', ',')}</b><small>por semana no mês</small></span>
-      </div></section>
+    ${numeros([
+      { valor: String(v.daSemana), rotulo: 'peças nesta semana' },
+      { valor: String(v.conta.voce), rotulo: 'com você', tom: v.conta.voce ? 'alerta' : '' },
+      { valor: String(v.conta.cliente), rotulo: 'com o cliente' },
+      { valor: String(ritmo(doCliente, hoje)).replace('.', ','), rotulo: 'por semana no mês' },
+    ], 'Esta semana')}
     <section class="card"><h2 class="tb-rot">Radar</h2>
       ${[...v.riscos.map((r) => `<p>${esc(r.peca.titulo)}: ${esc(r.texto.toLowerCase())}.</p>`), ...alertas.map((a) => `<p>${esc(a.titulo)}. <small class="texto-suave">${esc(a.texto)}</small></p>`)].join('') || '<p class="texto-suave">Nada pedindo atenção.</p>'}</section>
     <section class="card"><h2 class="tb-rot">Próximas peças</h2>
